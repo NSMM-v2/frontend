@@ -1,5 +1,5 @@
 import {Metadata} from 'next'
-import LogIn from './logIn'
+import LogIn from './login'
 
 export const metadata: Metadata = {
   title: '로그인',
@@ -8,10 +8,8 @@ export const metadata: Metadata = {
 
 export default function LogInPage() {
   return (
-    <div className="flex flex-col w-full h-screen">
-      <div>
-        <LogIn />
-      </div>
+    <div className="flex flex-1 justify-center items-center">
+      <LogIn />
     </div>
   )
 }
