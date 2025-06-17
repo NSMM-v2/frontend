@@ -1,5 +1,5 @@
 import {Metadata} from 'next'
-import LogIn from './login'
+import LogIn from './logIn'
 
 export const metadata: Metadata = {
   title: '로그인',
