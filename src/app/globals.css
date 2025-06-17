@@ -1,5 +1,5 @@
-@import "tailwindcss";
-@import "tw-animate-css";
+@import 'tailwindcss';
+@import 'tw-animate-css';
 
 @custom-variant dark (&:is(.dark *));
 
@@ -117,4 +117,23 @@
   body {
     @apply bg-background text-foreground;
   }
+}
+
+.custom-scrollbar {
+  scrollbar-width: none; /* Firefox: 스크롤바 완전 제거 */
+  -ms-overflow-style: none; /* IE/Edge */
+}
+
+/* Webkit 기반 브라우저 */
+.custom-scrollbar::-webkit-scrollbar {
+  display: none;
+}
+
+.custom-scrollbar::-webkit-scrollbar-track {
+  background: transparent; /* 트랙 배경 투명 */
+}
+
+.custom-scrollbar::-webkit-scrollbar-thumb {
+  background-color: transparent; /* 손잡이 */
+  border-radius: 0px;
 }
