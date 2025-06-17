@@ -107,7 +107,7 @@ export default function SideBar() {
     if (!isPartnerActive) setOpenPartnerChild(false)
 
     // 활성화된 메뉴를 제외하고 모두 닫기
-    if (!isScopeActive && !isPartnerActive) {
+    if (!isScopeActive || !isPartnerActive) {
       setOpenParent(false)
     }
   }
@@ -272,7 +272,7 @@ export default function SideBar() {
               animate={openParent && hovered ? 'visible' : 'hidden'}
               variants={menuVariants}
               className="overflow-hidden">
-              <div className="mt-1 space-y-1">
+              <div className="mt-1 space-y-1 whitespace-nowrap">
                 <SubMenuItem
                   href="/scope1"
                   text="Scope 1"
@@ -308,7 +308,7 @@ export default function SideBar() {
             animate={openPartnerChild && hovered ? 'visible' : 'hidden'}
             variants={menuVariants}
             className="overflow-hidden">
-            <div className="mt-1 space-y-1">
+            <div className="mt-1 space-y-1 whitespace-nowrap">
               <SubMenuItem
                 href="/CSDDD"
                 text="공급망 실사"
