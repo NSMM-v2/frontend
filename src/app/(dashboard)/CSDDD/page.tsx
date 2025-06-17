@@ -7,7 +7,7 @@ export const metadata = {
 
 export default function CSDDDPage() {
   return (
-    <div className="flex flex-col w-full max-w-6xl px-4 py-10 mx-auto">
+    <div className="flex items-center justify-center flex-1">
       <CSDDD />
     </div>
   )
