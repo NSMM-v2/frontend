@@ -58,40 +58,21 @@ export function PartnerSelector({
   )
 
   // 파트너사 목록 로드 함수
-  const loadPartners = useCallback(
-    async (searchQuery: string = '') => {
-      setLoading(true)
-      try {
-        const response = await fetchPartnerCompaniesForScope(
-          1,
-          100,
-          searchQuery,
-          includeInactive
-        )
-        const convertedPartners = convertToPartnerCompanyForScope(response.content)
-        setPartners(convertedPartners)
-      } catch (error) {
-        console.error('파트너사 목록 로드 실패:', error)
-      } finally {
-        setLoading(false)
-      }
-    },
-    [includeInactive, convertToPartnerCompanyForScope]
-  )
+  const loadPartners = useCallback(() => {
+    setLoading(true)
+    const dummyPartner: PartnerCompanyForScope = {
+      id: 'dummy-1',
+      name: '더미 협력사',
+      status: 'ACTIVE'
+    }
+    setPartners([dummyPartner])
+    setLoading(false)
+  }, [])
 
   // 초기 파트너사 목록 로드
   useEffect(() => {
     loadPartners()
   }, [loadPartners])
-
-  // 검색어 변경 시 검색 실행
-  useEffect(() => {
-    const timeoutId = setTimeout(() => {
-      loadPartners(searchTerm)
-    }, 300) // 300ms 디바운스
-
-    return () => clearTimeout(timeoutId)
-  }, [searchTerm, loadPartners])
 
   const handleSelect = (partner: PartnerCompanyForScope) => {
     onSelect(partner.id)

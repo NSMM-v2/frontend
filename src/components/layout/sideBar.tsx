@@ -107,7 +107,7 @@ export default function SideBar() {
     if (!isPartnerActive) setOpenPartnerChild(false)
 
     // 활성화된 메뉴를 제외하고 모두 닫기
-    if (!isScopeActive || !isPartnerActive) {
+    if (!isScopeActive && !isPartnerActive) {
       setOpenParent(false)
     }
   }

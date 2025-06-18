@@ -7,7 +7,7 @@ export default function Layout({children}: {children: React.ReactNode}) {
     <div className="flex flex-col items-center w-full min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100">
       <NavigationBar />
       <SideBar />
-      <div className="flex flex-1 max-w-screen-xl mt-20">{children}</div>
+      <div className="flex flex-1 w-full max-w-screen-lg mt-20">{children}</div>
     </div>
   )
 }

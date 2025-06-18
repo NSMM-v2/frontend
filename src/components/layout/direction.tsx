@@ -63,12 +63,12 @@ export function DirectionButton({
   // 위치 고정 클래스
   const fixedPositionClass = fixed
     ? cn(
-        'fixed z-50',
+        'fixed z-30',
         position === 'top-left' && 'top-4 left-4',
         position === 'top-right' && 'top-4 right-4',
         position === 'bottom-left' && 'bottom-4 left-4',
         position === 'bottom-right' && 'bottom-4 right-4',
-        position === 'middle-left' && 'top-1/2 left-4 -translate-y-1/2',
+        position === 'middle-left' && 'top-1/2 left-24 -translate-y-1/2',
         position === 'middle-right' && 'top-1/2 right-4 -translate-y-1/2'
       )
     : ''
@@ -77,7 +77,7 @@ export function DirectionButton({
     <Button
       variant="ghost"
       className={cn(
-        'hover:bg-gray-200',
+        'hover:bg-gray-200 hover:cursor-pointer',
         color,
         fixedPositionClass,
         buttonSizeClass,

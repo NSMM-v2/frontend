@@ -444,46 +444,46 @@ export default function ScopeModal({
           <BasicInfoForm selectedPartner={selectedPartner} />
 
           {/* 협력사가 선택된 경우에만 나머지 폼 표시 */}
-          {selectedPartner && (
-            <>
-              {/* 배출 활동 유형 선택 */}
-              <ActivityTypeSelector
-                selectedActivityType={formData.emissionActivityType}
-                onActivityTypeChange={handleActivityTypeChange}
-                scope={scope}
+          {/* {selectedPartner && ( */}
+          <>
+            {/* 배출 활동 유형 선택 */}
+            <ActivityTypeSelector
+              selectedActivityType={formData.emissionActivityType}
+              onActivityTypeChange={handleActivityTypeChange}
+              scope={scope}
+            />
+
+            {/* 각 활동 유형별 폼 */}
+            {formData.emissionActivityType === 'STATIONARY_COMBUSTION' && (
+              <StationaryCombustionForm
+                formData={formData}
+                setFormData={setFormData}
+                availableFuels={availableFuels}
               />
+            )}
 
-              {/* 각 활동 유형별 폼 */}
-              {formData.emissionActivityType === 'STATIONARY_COMBUSTION' && (
-                <StationaryCombustionForm
-                  formData={formData}
-                  setFormData={setFormData}
-                  availableFuels={availableFuels}
-                />
-              )}
+            {formData.emissionActivityType === 'MOBILE_COMBUSTION' && (
+              <MobileCombustionForm
+                formData={formData}
+                setFormData={setFormData}
+                availableFuels={availableFuels}
+              />
+            )}
 
-              {formData.emissionActivityType === 'MOBILE_COMBUSTION' && (
-                <MobileCombustionForm
-                  formData={formData}
-                  setFormData={setFormData}
-                  availableFuels={availableFuels}
-                />
-              )}
+            {formData.emissionActivityType === 'ELECTRICITY' && (
+              <ElectricityForm formData={formData} setFormData={setFormData} />
+            )}
 
-              {formData.emissionActivityType === 'ELECTRICITY' && (
-                <ElectricityForm formData={formData} setFormData={setFormData} />
-              )}
+            {formData.emissionActivityType === 'STEAM' && (
+              <SteamForm formData={formData} setFormData={setFormData} />
+            )}
 
-              {formData.emissionActivityType === 'STEAM' && (
-                <SteamForm formData={formData} setFormData={setFormData} />
-              )}
-
-              {/* 계산 결과 */}
-              {calculationResult && (
-                <CalculationResult calculationResult={calculationResult} />
-              )}
-            </>
-          )}
+            {/* 계산 결과 */}
+            {calculationResult && (
+              <CalculationResult calculationResult={calculationResult} />
+            )}
+          </>
+          {/* )} */}
         </div>
 
         <DialogFooter className="flex flex-col gap-3 pt-6 border-t border-gray-100 sm:flex-row">

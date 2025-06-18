@@ -112,7 +112,7 @@ function renderAssessmentStat(stat: (typeof ASSESSMENT_STATS)[number], index: nu
   return (
     <div
       key={index}
-      className="p-6 transition-all duration-200 bg-white border border-gray-200 shadow-lg rounded-xl hover:shadow-xl hover:scale-105 bg-white/80 backdrop-blur-sm">
+      className="p-6 transition-all duration-200 bg-white border border-gray-200 shadow-lg rounded-xl hover:shadow-xl hover:scale-105 backdrop-blur-sm">
       <div className="flex items-center justify-between">
         <div>
           <p className="text-sm font-medium text-gray-500">{stat.label}</p>
