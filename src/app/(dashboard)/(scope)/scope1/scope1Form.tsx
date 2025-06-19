@@ -304,7 +304,7 @@ export default function Scope1Form() {
           - 뒤로가기 버튼과 페이지 제목/설명
           ======================================================================== */}
 
-      <div className="flex flex-row w-full h-full mb-6">
+      <div className="flex flex-row w-full h-24 mb-6">
         <Link
           href="/dashboard"
           className="flex flex-row items-center p-4 space-x-4 transition rounded-md cursor-pointer hover:bg-gray-200">
@@ -412,7 +412,7 @@ export default function Scope1Form() {
             transition={{duration: 0.4, delay: 0.1}}
             className="grid grid-cols-1 gap-4 mb-4 md:grid-cols-2 lg:grid-cols-4">
             {/* 총 Scope 1 배출량 카드 */}
-            <Card className="border-blue-100 bg-gradient-to-br from-blue-50 to-white">
+            <Card className="justify-center h-24 border-blue-100 bg-gradient-to-br from-blue-50 to-white">
               <CardContent className="flex items-center p-4">
                 <div className="p-2 mr-3 bg-blue-100 rounded-full">
                   <TrendingUp className="w-5 h-5 text-blue-600" />
@@ -428,7 +428,7 @@ export default function Scope1Form() {
             </Card>
 
             {/* 고정연소 배출량 카드 */}
-            <Card className="border-emerald-100 bg-gradient-to-br from-emerald-50 to-white">
+            <Card className="justify-center h-24 border-emerald-100 bg-gradient-to-br from-emerald-50 to-white">
               <CardContent className="flex items-center p-4">
                 <div className="p-2 mr-3 rounded-full bg-emerald-100">
                   <Factory className="w-5 h-5 text-emerald-600" />
@@ -444,7 +444,7 @@ export default function Scope1Form() {
             </Card>
 
             {/* 이동연소 배출량 카드 */}
-            <Card className="border-amber-100 bg-gradient-to-br from-amber-50 to-white">
+            <Card className="justify-center h-24 border-amber-100 bg-gradient-to-br from-amber-50 to-white">
               <CardContent className="flex items-center p-4">
                 <div className="p-2 mr-3 rounded-full bg-amber-100">
                   <Car className="w-5 h-5 text-amber-600" />
@@ -460,7 +460,7 @@ export default function Scope1Form() {
             </Card>
 
             {/* 총 데이터 건수 카드 */}
-            <Card className="border-customG-100 bg-gradient-to-br from-customG-50 to-white">
+            <Card className="justify-center h-24 border-customG-100 bg-gradient-to-br from-customG-50 to-white">
               <CardContent className="flex items-center p-4">
                 <div className="p-2 mr-3 rounded-full bg-customG-100">
                   <BarChart className="w-5 h-5 text-customG-600" />
@@ -485,8 +485,8 @@ export default function Scope1Form() {
             animate={{opacity: 1}}
             transition={{duration: 0.4, delay: 0.1}}>
             <Card className="mb-4 overflow-hidden shadow-sm">
-              <CardContent className="px-4 py-6">
-                <div className="grid grid-cols-1 gap-8 md:grid-cols-3">
+              <CardContent className="p-4">
+                <div className="grid justify-center h-16 grid-cols-1 gap-8 md:grid-cols-3">
                   {/* 협력사 선택 드롭다운 */}
                   <div className="space-y-3">
                     <label className="flex items-center gap-2 text-sm font-semibold text-customG-700">
@@ -524,6 +524,7 @@ export default function Scope1Form() {
                       보고월 (선택사항)
                     </label>
                     <MonthSelector
+                      className="w-full"
                       selectedMonth={selectedMonth}
                       onSelect={setSelectedMonth}
                     />
