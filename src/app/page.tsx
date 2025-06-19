@@ -1,19 +1,19 @@
 import {Metadata} from 'next'
-import Link from 'next/link'
+import LandingPage from '@/components/landing/LandingPage'
 
 export const metadata: Metadata = {
-  title: '랜딩페이지',
-  description: 'NSMM'
+  title: 'ESG Manager - 지속가능한 미래를 위한 ESG 관리 플랫폼',
+  description:
+    '본사와 협력사의 환경, 사회, 거버넌스 데이터를 통합 관리하고 분석하는 전문 플랫폼',
+  keywords: 'ESG, 환경경영, 지속가능경영, 탄소배출, CSDDD, 협력사관리',
+  openGraph: {
+    title: 'ESG Manager - 지속가능한 미래를 위한 ESG 관리 플랫폼',
+    description:
+      '본사와 협력사의 환경, 사회, 거버넌스 데이터를 통합 관리하고 분석하는 전문 플랫폼',
+    type: 'website'
+  }
 }
 
 export default function Home() {
-  return (
-    <div className="flex flex-row items-center justify-center w-full h-screen">
-      <Link href="/login">
-        <button className="w-24 h-12 text-white bg-black rounded-xl hover:cursor-pointer">
-          로그인
-        </button>
-      </Link>
-    </div>
-  )
+  return <LandingPage />
 }
