@@ -215,3 +215,77 @@
 .hover\:scale-102:hover {
   transform: scale(1.02);
 }
+
+/* 토스트 애니메이션 클래스 추가 */
+@keyframes toast-enter {
+  0% {
+    transform: translate3d(0, -200%, 0) scale(0.6);
+    opacity: 0;
+  }
+  100% {
+    transform: translate3d(0, 0, 0) scale(1);
+    opacity: 1;
+  }
+}
+
+@keyframes toast-leave {
+  0% {
+    transform: translate3d(0, 0, 0) scale(1);
+    opacity: 1;
+  }
+  100% {
+    transform: translate3d(0, -150%, 0) scale(0.6);
+    opacity: 0;
+  }
+}
+
+@keyframes enter {
+  0% {
+    opacity: 0;
+    transform: translate3d(0, -10px, 0);
+  }
+  100% {
+    opacity: 1;
+    transform: translate3d(0, 0, 0);
+  }
+}
+
+@keyframes leave {
+  0% {
+    opacity: 1;
+    transform: translate3d(0, 0, 0);
+  }
+  100% {
+    opacity: 0;
+    transform: translate3d(0, -10px, 0);
+  }
+}
+
+.animate-toast-enter {
+  animation: toast-enter 0.35s ease-out;
+}
+
+.animate-toast-leave {
+  animation: toast-leave 0.4s ease-in forwards;
+}
+
+.animate-enter {
+  animation: enter 0.2s ease-out;
+}
+
+.animate-leave {
+  animation: leave 0.15s ease-in forwards;
+}
+
+.toast-center-animation {
+  animation: toast-enter 0.35s ease-out;
+}
+
+/* 커스텀 컬러 추가 */
+.text-customG {
+  color: #10b981;
+}
+
+.border-l-customG {
+  border-left-color: #10b981;
+}
