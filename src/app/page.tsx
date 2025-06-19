@@ -8,9 +8,9 @@ export const metadata: Metadata = {
 
 export default function Home() {
   return (
-    <div className="flex flex-row w-full h-screen justify-center items-center">
+    <div className="flex flex-row items-center justify-center w-full h-screen">
       <Link href="/login">
-        <button className="w-24 h-12 rounded-xl hover:cursor-pointer text-white bg-black">
+        <button className="w-24 h-12 text-white bg-black rounded-xl hover:cursor-pointer">
           로그인
         </button>
       </Link>

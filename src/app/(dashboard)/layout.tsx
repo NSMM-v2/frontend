@@ -4,10 +4,10 @@ import SideBar from '@/components/layout/sideBar'
 // layout.tsx
 export default function Layout({children}: {children: React.ReactNode}) {
   return (
-    <div className="flex flex-col w-full min-h-screen">
+    <div className="flex flex-col items-center w-full min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100">
       <NavigationBar />
       <SideBar />
-      <div className="flex flex-1">{children}</div>
+      <div className="flex flex-1 w-full max-w-screen-lg mt-20">{children}</div>
     </div>
   )
 }
