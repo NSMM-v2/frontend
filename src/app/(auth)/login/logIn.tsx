@@ -3,7 +3,7 @@ import {Lock, Mail, Building, ArrowRight} from 'lucide-react'
 import InputWithIcon from '@/components/inputWithIcon'
 import {Tabs, TabsContent, TabsList, TabsTrigger} from '@/components/ui/tabs'
 
-export default function LogIn() {
+export default function Login() {
   return (
     <div className="flex flex-col">
       <Tabs defaultValue="headQuarters" className="w-[400px]">
