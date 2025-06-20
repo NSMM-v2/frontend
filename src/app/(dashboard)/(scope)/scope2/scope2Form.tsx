@@ -290,7 +290,7 @@ export default function Scope2Form() {
   // ============================================================================
 
   return (
-    <div className="flex flex-col w-full h-full p-4">
+    <div className="flex flex-col p-4 w-full h-full">
       {/* ========================================================================
           상단 네비게이션 (Top Navigation)
           - 브레드크럼을 통한 현재 위치 표시
@@ -299,7 +299,7 @@ export default function Scope2Form() {
         <Breadcrumb>
           <BreadcrumbList>
             <BreadcrumbItem>
-              <Home className="w-4 h-4 mr-1" />
+              <Home className="mr-1 w-4 h-4" />
               <BreadcrumbLink href="/dashboard">대시보드</BreadcrumbLink>
             </BreadcrumbItem>
             <BreadcrumbSeparator />
@@ -314,10 +314,10 @@ export default function Scope2Form() {
           헤더 섹션 (Header Section)
           - 뒤로가기 버튼과 페이지 제목/설명
           ======================================================================== */}
-      <div className="flex flex-row w-full h-24 mb-6">
+      <div className="flex flex-row mb-6 w-full h-24">
         <Link
           href="/home"
-          className="flex flex-row items-center p-4 space-x-4 transition rounded-md cursor-pointer hover:bg-gray-200">
+          className="flex flex-row items-center p-4 space-x-4 rounded-md transition cursor-pointer hover:bg-gray-200">
           <ArrowLeft className="w-6 h-6 text-gray-500 group-hover:text-blue-600" />
           <PageHeader
             icon={<Factory className="w-6 h-6 text-customG-600" />}
@@ -338,12 +338,12 @@ export default function Scope2Form() {
           initial={{opacity: 0, scale: 0.95}}
           animate={{opacity: 1, scale: 1}}
           transition={{delay: 0.6, duration: 0.5}}>
-          <Card className="mb-4 overflow-hidden shadow-sm">
+          <Card className="overflow-hidden mb-4 shadow-sm">
             <CardContent className="px-4 pt-8 pb-6">
               <div className="grid grid-cols-1 gap-8 md:grid-cols-3">
                 {/* 협력사 선택 드롭다운 */}
                 <motion.div className="space-y-3">
-                  <label className="flex items-center gap-2 text-sm font-semibold text-customG-700">
+                  <label className="flex gap-2 items-center text-sm font-semibold text-customG-700">
                     <Building className="w-4 h-4" />
                     협력사 선택
                   </label>
@@ -357,7 +357,7 @@ export default function Scope2Form() {
 
                 {/* 연도 선택 */}
                 <motion.div className="space-y-3">
-                  <label className="flex items-center gap-2 text-sm font-semibold text-customG-700">
+                  <label className="flex gap-2 items-center text-sm font-semibold text-customG-700">
                     <CalendarDays className="w-4 h-4" />
                     보고연도
                   </label>
@@ -367,12 +367,12 @@ export default function Scope2Form() {
                     onChange={e => setSelectedYear(parseInt(e.target.value))}
                     min="1900"
                     max="2200"
-                    className="w-full px-3 py-2 text-sm h-9 border-customG-200 focus:border-customG-400 focus:ring-customG-100 bg-white/80 backdrop-blur-sm"
+                    className="px-3 py-2 w-full h-9 text-sm backdrop-blur-sm border-customG-200 focus:border-customG-400 focus:ring-customG-100 bg-white/80"
                   />
                 </motion.div>
                 {/* 보고월 선택 드롭다운 (선택사항) */}
                 <div className="space-y-3">
-                  <label className="flex items-center gap-2 text-sm font-semibold text-customG-700">
+                  <label className="flex gap-2 items-center text-sm font-semibold text-customG-700">
                     <CalendarDays className="w-4 h-4" />
                     보고월 (선택사항)
                   </label>
@@ -386,12 +386,12 @@ export default function Scope2Form() {
             </CardContent>
           </Card>
 
-          <Card className="flex items-center justify-center shadow-sm h-80 border-customG-200/50 bg-gradient-to-br from-white via-customG-25 to-emerald-25">
+          <Card className="flex justify-center items-center h-80 bg-gradient-to-br from-white shadow-sm border-customG-200/50 via-customG-25 to-emerald-25">
             <CardContent className="py-12 text-center">
               <h3 className="mb-4 text-2xl font-bold text-customG-800">
                 협력사를 선택해주세요
               </h3>
-              <p className="max-w-md leading-relaxed text-customG-600 whitespace-nowrap">
+              <p className="max-w-md leading-relaxed whitespace-nowrap text-customG-600">
                 먼저 협력사를 선택하여 해당 협력사의 배출량 데이터를 관리하고 추적하세요
               </p>
             </CardContent>
@@ -417,7 +417,7 @@ export default function Scope2Form() {
             transition={{duration: 0.4, delay: 0.1}}
             className="grid grid-cols-1 gap-4 mb-4 md:grid-cols-2 lg:grid-cols-4">
             {/* 총 Scope 2 배출량 카드 */}
-            <Card className="justify-center h-24 border-blue-100 bg-gradient-to-br from-blue-50 to-white">
+            <Card className="justify-center h-24 bg-gradient-to-br from-blue-50 to-white border-blue-100">
               <CardContent className="flex items-center p-4">
                 <div className="p-2 mr-3 bg-blue-100 rounded-full">
                   <TrendingUp className="w-5 h-5 text-blue-600" />
@@ -433,9 +433,9 @@ export default function Scope2Form() {
             </Card>
 
             {/* 전력 사용량 카드 */}
-            <Card className="justify-center h-24 border-emerald-100 bg-gradient-to-br from-emerald-50 to-white">
+            <Card className="justify-center h-24 bg-gradient-to-br from-emerald-50 to-white border-emerald-100">
               <CardContent className="flex items-center p-4">
-                <div className="p-2 mr-3 rounded-full bg-emerald-100">
+                <div className="p-2 mr-3 bg-emerald-100 rounded-full">
                   <Zap className="w-5 h-5 text-emerald-600" />
                 </div>
                 <div>
@@ -449,9 +449,9 @@ export default function Scope2Form() {
             </Card>
 
             {/* 스팀 사용량 카드 */}
-            <Card className="justify-center h-24 border-amber-100 bg-gradient-to-br from-amber-50 to-white">
+            <Card className="justify-center h-24 bg-gradient-to-br from-amber-50 to-white border-amber-100">
               <CardContent className="flex items-center p-4">
-                <div className="p-2 mr-3 rounded-full bg-amber-100">
+                <div className="p-2 mr-3 bg-amber-100 rounded-full">
                   <Wind className="w-5 h-5 text-amber-600" />
                 </div>
                 <div>
@@ -465,7 +465,7 @@ export default function Scope2Form() {
             </Card>
 
             {/* 총 데이터 건수 카드 */}
-            <Card className="justify-center h-24 border-customG-100 bg-gradient-to-br from-customG-50 to-white">
+            <Card className="justify-center h-24 bg-gradient-to-br to-white border-customG-100 from-customG-50">
               <CardContent className="flex items-center p-4">
                 <div className="p-2 mr-3 rounded-full bg-customG-100">
                   <BarChart className="w-5 h-5 text-customG-600" />
@@ -489,12 +489,12 @@ export default function Scope2Form() {
             initial={{opacity: 0}}
             animate={{opacity: 1}}
             transition={{duration: 0.4, delay: 0.1}}>
-            <Card className="mb-4 overflow-hidden shadow-sm">
+            <Card className="overflow-hidden mb-4 shadow-sm">
               <CardContent className="p-4">
-                <div className="grid justify-center h-16 grid-cols-1 gap-8 md:grid-cols-3">
+                <div className="grid grid-cols-1 gap-8 justify-center h-16 md:grid-cols-3">
                   {/* 협력사 선택 드롭다운 */}
                   <motion.div className="space-y-3">
-                    <label className="flex items-center gap-2 text-sm font-semibold text-customG-700">
+                    <label className="flex gap-2 items-center text-sm font-semibold text-customG-700">
                       <Building className="w-4 h-4" />
                       협력사 선택
                     </label>
@@ -508,7 +508,7 @@ export default function Scope2Form() {
 
                   {/* 연도 선택 */}
                   <motion.div className="space-y-3">
-                    <label className="flex items-center gap-2 text-sm font-semibold text-customG-700">
+                    <label className="flex gap-2 items-center text-sm font-semibold text-customG-700">
                       <CalendarDays className="w-4 h-4" />
                       보고연도
                     </label>
@@ -518,12 +518,12 @@ export default function Scope2Form() {
                       onChange={e => setSelectedYear(parseInt(e.target.value))}
                       min="1900"
                       max="2200"
-                      className="w-full px-3 py-2 text-sm h-9 border-customG-200 focus:border-customG-400 focus:ring-customG-100 bg-white/80 backdrop-blur-sm"
+                      className="px-3 py-2 w-full h-9 text-sm backdrop-blur-sm border-customG-200 focus:border-customG-400 focus:ring-customG-100 bg-white/80"
                     />
                   </motion.div>
                   {/* 보고월 선택 드롭다운 (선택사항) */}
                   <div className="space-y-3">
-                    <label className="flex items-center gap-2 text-sm font-semibold text-customG-700">
+                    <label className="flex gap-2 items-center text-sm font-semibold text-customG-700">
                       <CalendarDays className="w-4 h-4" />
                       보고월 (선택사항)
                     </label>
@@ -545,7 +545,7 @@ export default function Scope2Form() {
               ================================================================== */}
           <Tabs defaultValue="electricity" className="w-full">
             {/* 탭 헤더 - 전력/스팀 전환 */}
-            <TabsList className="grid w-full grid-cols-2 p-1 bg-gray-100 rounded-lg">
+            <TabsList className="grid grid-cols-2 p-1 w-full bg-gray-100 rounded-lg">
               <TabsTrigger
                 value="electricity"
                 className="flex items-center gap-2 data-[state=active]:bg-white data-[state=active]:shadow-sm rounded-md font-medium">
@@ -571,8 +571,8 @@ export default function Scope2Form() {
                 <Card className="overflow-hidden shadow-sm">
                   {/* 전력 섹션 헤더 */}
                   <CardHeader className="border-b border-customG-100/50">
-                    <CardTitle className="flex items-center justify-between text-customG-800">
-                      <div className="flex items-center gap-3">
+                    <CardTitle className="flex justify-between items-center text-customG-800">
+                      <div className="flex gap-3 items-center">
                         {/* 아이콘 삭제 */}
                         <div>
                           <h3 className="text-lg font-bold">전력 사용량 데이터</h3>
@@ -587,8 +587,8 @@ export default function Scope2Form() {
                           setEditingType('ELECTRICITY')
                           setIsModalOpen(true)
                         }}
-                        className="px-4 py-2 text-sm font-medium text-white transition-colors duration-200 bg-black rounded-lg hover:cursor-pointer">
-                        <Plus className="w-4 h-4 mr-2" />
+                        className="px-4 py-2 text-sm font-medium text-white bg-black rounded-lg transition-colors duration-200 hover:cursor-pointer">
+                        <Plus className="mr-2 w-4 h-4" />
                         데이터 추가
                       </Button>
                     </CardTitle>
@@ -633,7 +633,7 @@ export default function Scope2Form() {
                               initial={{opacity: 0, x: -20}}
                               animate={{opacity: 1, x: 0}}
                               transition={{delay: index * 0.1, duration: 0.3}}
-                              className="transition-all duration-200 border-b border-customG-100/50 hover:bg-gradient-to-r hover:from-customG-25 hover:to-emerald-25">
+                              className="border-b transition-all duration-200 border-customG-100/50 hover:bg-gradient-to-r hover:from-customG-25 hover:to-emerald-25">
                               {/* 시설명 */}
                               <TableCell className="font-medium text-customG-800">
                                 {item.facilityName}
@@ -698,7 +698,7 @@ export default function Scope2Form() {
                           {filteredElectricityData.length === 0 && (
                             <TableRow>
                               <TableCell colSpan={7} className="py-16 text-center">
-                                <div className="flex flex-col items-center justify-center space-y-4">
+                                <div className="flex flex-col justify-center items-center space-y-4">
                                   {/* 아이콘 삭제 */}
                                   <div>
                                     <h3 className="mb-2 text-lg font-semibold text-customG-700">
@@ -730,9 +730,9 @@ export default function Scope2Form() {
                 transition={{duration: 0.5}}>
                 <Card className="overflow-hidden shadow-sm">
                   {/* 스팀 섹션 헤더 */}
-                  <CardHeader className="border-b border-customG-100/50 bg-gradient-to-r ">
-                    <CardTitle className="flex items-center justify-between text-customG-800">
-                      <div className="flex items-center gap-3">
+                  <CardHeader className="bg-gradient-to-r border-b border-customG-100/50">
+                    <CardTitle className="flex justify-between items-center text-customG-800">
+                      <div className="flex gap-3 items-center">
                         {/* 아이콘 삭제 */}
                         <div>
                           <h3 className="text-lg font-bold">스팀 사용량 데이터</h3>
@@ -747,8 +747,8 @@ export default function Scope2Form() {
                           setEditingType('STEAM')
                           setIsModalOpen(true)
                         }}
-                        className="px-4 py-2 text-sm font-medium text-white transition-colors duration-200 bg-black rounded-lg hover:cursor-pointer">
-                        <Plus className="w-4 h-4 mr-2" />
+                        className="px-4 py-2 text-sm font-medium text-white bg-black rounded-lg transition-colors duration-200 hover:cursor-pointer">
+                        <Plus className="mr-2 w-4 h-4" />
                         데이터 추가
                       </Button>
                     </CardTitle>
@@ -760,7 +760,7 @@ export default function Scope2Form() {
                       <Table>
                         {/* 테이블 헤더 */}
                         <TableHeader>
-                          <TableRow className="border-b bg-gradient-to-r border-customG-200/50">
+                          <TableRow className="bg-gradient-to-r border-b border-customG-200/50">
                             <TableHead className="font-semibold text-customG-700">
                               시설명
                             </TableHead>
@@ -790,7 +790,7 @@ export default function Scope2Form() {
                               initial={{opacity: 0, x: -20}}
                               animate={{opacity: 1, x: 0}}
                               transition={{delay: index * 0.1, duration: 0.3}}
-                              className="transition-all duration-200 border-b border-customG-100/50 hover:bg-gradient-to-r hover:from-amber-25 hover:to-orange-25">
+                              className="border-b transition-all duration-200 border-customG-100/50 hover:bg-gradient-to-r hover:from-amber-25 hover:to-orange-25">
                               {/* 시설명 */}
                               <TableCell className="font-medium text-customG-800">
                                 {item.facilityName}
@@ -838,7 +838,7 @@ export default function Scope2Form() {
                           {filteredSteamData.length === 0 && (
                             <TableRow>
                               <TableCell colSpan={6} className="py-16 text-center">
-                                <div className="flex flex-col items-center justify-center space-y-4">
+                                <div className="flex flex-col justify-center items-center space-y-4">
                                   {/* 아이콘 삭제 */}
                                   <div>
                                     <h3 className="mb-2 text-lg font-semibold text-customG-700">

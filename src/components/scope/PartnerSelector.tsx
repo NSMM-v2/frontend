@@ -14,7 +14,6 @@ import {Popover, PopoverContent, PopoverTrigger} from '@/components/ui/popover'
 import {Badge} from '@/components/ui/badge'
 import {cn} from '@/lib/utils'
 import {PartnerCompanyForScope} from '@/types/scopeType'
-import {fetchPartnerCompaniesForScope} from '@/services/partnerCompany'
 
 interface PartnerSelectorProps {
   selectedPartnerId?: string | null
@@ -124,15 +123,15 @@ export function PartnerSelector({
           )}
           disabled={disabled}>
           {selectedPartner ? (
-            <div className="flex items-center gap-2">
+            <div className="flex gap-2 items-center">
               <span className="text-gray-800 truncate">{selectedPartner.name}</span>
             </div>
           ) : (
-            <div className="flex items-center gap-2">
+            <div className="flex gap-2 items-center">
               <span>{placeholder}</span>
             </div>
           )}
-          <ChevronDown className="w-4 h-4 ml-2 opacity-50 shrink-0" />
+          <ChevronDown className="ml-2 w-4 h-4 opacity-50 shrink-0" />
         </Button>
       </PopoverTrigger>
       <PopoverContent className="w-[400px] p-0 bg-white/95 backdrop-blur-sm border border-white/50 shadow-xl">
@@ -146,12 +145,12 @@ export function PartnerSelector({
           <CommandEmpty className="py-6 text-center text-gray-500">
             {loading ? '로딩 중...' : '협력사를 찾을 수 없습니다.'}
           </CommandEmpty>
-          <CommandGroup className="p-2 overflow-auto max-h-64">
+          <CommandGroup className="overflow-auto p-2 max-h-64">
             {selectedPartner && (
               <CommandItem
                 key="clear"
                 onSelect={handleClear}
-                className="flex items-center justify-center p-3 m-1 transition-all duration-200 border-2 border-dashed rounded-lg cursor-pointer text-slate-500 hover:bg-slate-50">
+                className="flex justify-center items-center p-3 m-1 rounded-lg border-2 border-dashed transition-all duration-200 cursor-pointer text-slate-500 hover:bg-slate-50">
                 선택 해제
               </CommandItem>
             )}
@@ -166,7 +165,7 @@ export function PartnerSelector({
                     ? 'bg-customG/5 border-customG text-customG'
                     : 'border-transparent hover:border-customG/20 hover:bg-customG/5'
                 )}>
-                <div className="flex items-center flex-1 gap-3">
+                <div className="flex flex-1 gap-3 items-center">
                   <div
                     className={cn(
                       'flex items-center justify-center w-8 h-8 rounded-lg transition-all duration-200',
