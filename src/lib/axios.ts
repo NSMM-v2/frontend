@@ -1,11 +1,14 @@
 import axios from 'axios'
 
-// API URL 동적 결정 함수
+/**
+ * API URL 동적 결정 함수
+ * 환경변수 우선, 없으면 현재 호스트 기반으로 URL 생성
+ */
 const getApiBaseUrl = () => {
   // 환경변수 확인
   const configuredUrl = process.env.NEXT_PUBLIC_SPRING_API_URL
 
-  // 환경변수가 없거나 ${GATEWAY_URL}와 같은 미치환 변수가 있는 경우
+  // 환경변수가 없거나 미치환 변수가 있는 경우
   if (!configuredUrl || configuredUrl.includes('${') || configuredUrl === 'undefined') {
     // 브라우저 환경인 경우 현재 호스트 기반으로 URL 생성
     if (typeof window !== 'undefined') {
@@ -21,7 +24,10 @@ const getApiBaseUrl = () => {
   return configuredUrl
 }
 
-// Axios 인스턴스 생성
+/**
+ * Axios 인스턴스 생성 및 설정
+ * JWT 쿠키 자동 전송, 타임아웃, 기본 헤더 설정
+ */
 const api = axios.create({
   baseURL: getApiBaseUrl(),
   withCredentials: true, // JWT 쿠키 자동 전송
@@ -31,36 +37,42 @@ const api = axios.create({
   }
 })
 
-// 요청 인터셉터 - 로깅 및 디버깅
+/**
+ * 요청 인터셉터 - 로깅 및 디버깅
+ */
 api.interceptors.request.use(
   config => {
     const baseUrl = config.baseURL || ''
     const url = config.url || ''
-    console.log(`🌐 API 요청: ${config.method?.toUpperCase()} ${baseUrl}${url}`)
+    console.log(`API 요청: ${config.method?.toUpperCase()} ${baseUrl}${url}`)
     return config
   },
   error => {
-    console.error('❌ API 요청 오류:', error)
+    console.error('API 요청 오류:', error)
     return Promise.reject(error)
   }
 )
 
-// 응답 인터셉터 - 에러 처리 및 로깅
+/**
+ * 응답 인터셉터 - 에러 처리 및 로깅
+ */
 api.interceptors.response.use(
   response => {
     console.log(
-      `✅ API 응답 성공: ${response.config.method?.toUpperCase()} ${response.config.url}`
+      `API 응답 성공: ${response.config.method?.toUpperCase()} ${response.config.url}`
     )
     return response
   },
   error => {
     const status = error.response?.status
     const url = error.config?.url
-    console.error(`❌ API 응답 실패: ${status} ${url}`, error.response?.data)
 
-    // 401/403 에러 시 쿠키 정리 (선택적)
+    // 인증 관련 에러(401/403)는 로그 최소화
     if (status === 401 || status === 403) {
-      console.warn('🔑 인증 실패 - 쿠키 정리 필요할 수 있음')
+      console.log(`인증 필요: ${status} ${url}`)
+    } else {
+      // 서버 오류나 기타 에러만 상세 로그
+      console.error(`API 응답 실패: ${status} ${url}`, error.response?.data)
     }
 
     return Promise.reject(error)

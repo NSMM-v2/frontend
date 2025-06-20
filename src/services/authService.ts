@@ -1,17 +1,19 @@
 import api from '@/lib/axios'
 
-// 인증 관련 타입 정의
+// 로그인 요청 인터페이스
 export interface LoginRequest {
   email: string
   password: string
 }
 
+// 협력사 로그인 요청 인터페이스
 export interface PartnerLoginRequest {
   accountNumber: string
   email: string
   password: string
 }
 
+// 회원가입 요청 인터페이스
 export interface SignupRequest {
   name: string
   position: string
@@ -23,6 +25,7 @@ export interface SignupRequest {
   password: string
 }
 
+// 사용자 정보 인터페이스
 export interface UserInfo {
   accountNumber: string
   companyName: string
@@ -34,6 +37,7 @@ export interface UserInfo {
   position?: string
 }
 
+// API 응답 인터페이스
 export interface ApiResponse<T> {
   success: boolean
   message: string
@@ -41,7 +45,12 @@ export interface ApiResponse<T> {
   errorCode?: string
 }
 
-// 인증 서비스 클래스
+/**
+ * 인증 서비스 클래스
+ *
+ * 기능: 본사/협력사 로그인, 회원가입, 사용자 정보 관리
+ * 인증: JWT 토큰 기반 인증 시스템
+ */
 class AuthService {
   /**
    * 본사 회원가입
@@ -68,7 +77,7 @@ class AuthService {
   }
 
   /**
-   * 로그아웃 (본사/협력사 공통)
+   * 로그아웃 (쿠키 삭제)
    */
   async logout(): Promise<ApiResponse<any>> {
     const response = await api.post('/api/v1/headquarters/logout')
@@ -76,7 +85,7 @@ class AuthService {
   }
 
   /**
-   * 현재 사용자 정보 조회
+   * 현재 본사 사용자 정보 조회
    */
   async getCurrentUser(): Promise<ApiResponse<UserInfo>> {
     const response = await api.get('/api/v1/headquarters/me')
@@ -86,23 +95,40 @@ class AuthService {
   /**
    * 현재 사용자 정보 조회 (사용자 타입별 자동 분기)
    * JWT Claims에서 userType을 확인하여 적절한 API 호출
+   * 인증 실패 시 에러를 throw하지 않고 null 반환
    */
-  async getCurrentUserByType(): Promise<ApiResponse<UserInfo>> {
+  async getCurrentUserByType(): Promise<ApiResponse<UserInfo> | null> {
     try {
-      // 먼저 본사 API 시도
-      const response = await api.get('/api/v1/headquarters/me')
-      return response.data
-    } catch (error: any) {
-      // 본사 API 실패시 협력사 API 시도
-      if (error.response?.status === 403 || error.response?.status === 401) {
-        try {
-          const response = await api.get('/api/v1/partners/me')
-          return response.data
-        } catch (partnerError) {
-          throw partnerError
+      // 먼저 본사 API 시도 (에러 로그 최소화)
+      const response = await api.get('/api/v1/headquarters/me', {
+        validateStatus: status => status < 500 // 500 미만은 모두 정상으로 처리
+      })
+
+      if (response.status === 200) {
+        return response.data
+      }
+
+      // 401/403인 경우 협력사 API 시도
+      if (response.status === 401 || response.status === 403) {
+        const partnerResponse = await api.get('/api/v1/partners/me', {
+          validateStatus: status => status < 500
+        })
+
+        if (partnerResponse.status === 200) {
+          return partnerResponse.data
         }
       }
-      throw error
+
+      // 인증 실패 - null 반환 (에러 throw 안함)
+      return null
+    } catch (error: any) {
+      // 서버 연결 오류 등의 경우만 로그 출력
+      if (!error.response || error.response.status >= 500) {
+        console.error('서버 연결 실패:', error)
+        throw error
+      }
+      // 401/403 등 인증 오류는 null 반환
+      return null
     }
   }
 
@@ -241,19 +267,17 @@ class AuthService {
   }
 
   /**
-   * JWT 쿠키 존재 여부 확인 (클라이언트 사이드) - 상세 디버깅 포함
+   * JWT 쿠키 존재 여부 확인 (클라이언트 사이드)
+   * 주의: 참조용으로만 사용, 실제 인증은 서버에서 검증 필요
    */
   hasJwtCookie(): boolean {
     if (typeof window === 'undefined') {
-      console.log('🔍 hasJwtCookie: 서버사이드 환경 - false 반환')
       return false
     }
 
     const allCookies = document.cookie
-    console.log('🔍 hasJwtCookie: 모든 쿠키:', allCookies)
 
     if (!allCookies) {
-      console.log('🔍 hasJwtCookie: 쿠키가 전혀 없음')
       return false
     }
 
@@ -261,30 +285,24 @@ class AuthService {
       .split(';')
       .find(cookie => cookie.trim().startsWith('jwt='))
 
-    console.log('🔍 hasJwtCookie: JWT 쿠키 검색 결과:', jwtCookie)
-
     if (!jwtCookie) {
-      console.log('❌ hasJwtCookie: JWT 쿠키 없음')
       return false
     }
 
     const jwtValue = jwtCookie.split('=')[1]
-    console.log(
-      '✅ hasJwtCookie: JWT 값 존재:',
-      jwtValue ? jwtValue.substring(0, 20) + '...' : 'null'
-    )
-
     return !!jwtValue && jwtValue.trim() !== ''
   }
 
   /**
    * 인증 상태 확인 (서버에 실제 요청)
+   * 서버에서 JWT 토큰 검증 후 인증 상태 반환
    */
   async verifyAuth(): Promise<boolean> {
     try {
-      await this.getCurrentUserByType()
-      return true
+      const response = await this.getCurrentUserByType()
+      return response ? response.success && !!response.data : false
     } catch (error) {
+      console.warn('인증 확인 실패:', error)
       return false
     }
   }

@@ -9,6 +9,7 @@ interface InputWithIconProps {
   onChange?: (e: React.ChangeEvent<HTMLInputElement>) => void
   disabled?: boolean
   required?: boolean
+  autoComplete?: string
 }
 
 export default function InputWithIcon({
@@ -19,7 +20,8 @@ export default function InputWithIcon({
   value,
   onChange,
   disabled = false,
-  required = false
+  required = false,
+  autoComplete
 }: InputWithIconProps) {
   return (
     <div className="flex flex-col w-full gap-1">
@@ -38,6 +40,7 @@ export default function InputWithIcon({
         onChange={onChange}
         disabled={disabled}
         required={required}
+        autoComplete={autoComplete}
       />
     </div>
   )

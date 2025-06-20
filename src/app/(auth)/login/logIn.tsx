@@ -8,6 +8,18 @@ import {useRouter, useSearchParams} from 'next/navigation'
 import authService from '@/services/authService'
 import {showSuccess, showError, showWarning, showInfo} from '@/util/toast'
 
+/**
+ * 로그인 컴포넌트
+ *
+ * 기능: 본사 및 협력사 로그인, 사용자 타입별 폼 분기
+ * 인증: JWT 토큰 기반 로그인 후 대시보드 리다이렉트
+ */
+/**
+ * 로그인 컴포넌트
+ *
+ * 기능: 본사 및 협력사 로그인, 사용자 타입별 폼 분기
+ * 인증: JWT 토큰 기반 로그인 후 대시보드 리다이렉트
+ */
 export default function LoginComponent() {
   const [isVisible, setIsVisible] = useState(false)
   const [userType, setUserType] = useState<'HEADQUARTERS' | 'PARTNER'>('HEADQUARTERS')
@@ -63,9 +75,13 @@ export default function LoginComponent() {
         const userData = response.data
         showSuccess(`${userData.companyName} 본사 로그인 성공!`)
 
-        // 즉시 리다이렉트 처리 (토스트는 대시보드에서도 볼 수 있음)
+        // 로그인 성공 후 약간의 지연 후 대시보드로 이동
         const redirectPath = searchParams.get('redirect') || '/dashboard'
-        router.push(redirectPath)
+
+        // 토스트 메시지 표시 시간 확보를 위한 지연
+        setTimeout(() => {
+          router.push(redirectPath)
+        }, 800)
       }
     } catch (error: unknown) {
       console.error('본사 로그인 실패:', error)
@@ -114,9 +130,13 @@ export default function LoginComponent() {
         const userData = response.data
         showSuccess(`${userData.companyName} 협력사 로그인 성공!`)
 
-        // 즉시 리다이렉트 처리 (토스트는 대시보드에서도 볼 수 있음)
+        // 로그인 성공 후 약간의 지연 후 대시보드로 이동
         const redirectPath = searchParams.get('redirect') || '/dashboard'
-        router.push(redirectPath)
+
+        // 토스트 메시지 표시 시간 확보를 위한 지연
+        setTimeout(() => {
+          router.push(redirectPath)
+        }, 800)
       }
     } catch (error: unknown) {
       console.error('협력사 로그인 실패:', error)
@@ -223,6 +243,7 @@ export default function LoginComponent() {
                     }
                     disabled={isLoading}
                     required
+                    autoComplete="email"
                   />
                 </div>
 
@@ -282,6 +303,7 @@ export default function LoginComponent() {
                     }
                     disabled={isLoading}
                     required
+                    autoComplete="username"
                   />
                 </div>
 
@@ -296,6 +318,7 @@ export default function LoginComponent() {
                     }
                     disabled={isLoading}
                     required
+                    autoComplete="email"
                   />
                 </div>
 
@@ -311,6 +334,7 @@ export default function LoginComponent() {
                     }
                     disabled={isLoading}
                     required
+                    autoComplete="current-password"
                   />
                 </div>
 
