@@ -4,7 +4,9 @@ import './globals.css'
 export default function RootLayout({children}: {children: React.ReactNode}) {
   return (
     <html lang="ko">
-      <body className="min-h-screen flex flex-col">{children}</body>
+      <body className="flex flex-col min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100">
+        {children}
+      </body>
     </html>
   )
 }
