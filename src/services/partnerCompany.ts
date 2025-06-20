@@ -36,7 +36,7 @@ export async function fetchPartnerCompanies(
     if (!isNaN(pageNum) && isFinite(pageNum) && pageNum >= 1) {
       safePage = Math.floor(pageNum)
     } else {
-      console.warn('⚠️ 잘못된 page 값:', page, '-> 1로 설정')
+      console.warn('잘못된 page 값:', page, '-> 1로 설정')
     }
 
     // pageSize 파라미터 검증
@@ -44,13 +44,13 @@ export async function fetchPartnerCompanies(
     if (!isNaN(pageSizeNum) && isFinite(pageSizeNum) && pageSizeNum >= 1) {
       safePageSize = Math.min(100, Math.floor(pageSizeNum))
     } else {
-      console.warn('⚠️ 잘못된 pageSize 값:', pageSize, '-> 10으로 설정')
+      console.warn('잘못된 pageSize 값:', pageSize, '-> 10으로 설정')
     }
 
     // Spring Data 페이지 인덱스 계산 (0-based) - 음수 절대 불가
     const springPageIndex = Math.max(0, safePage - 1)
 
-    console.log('✅ 최종 검증된 값:', {
+    console.log('최종 검증된 값:', {
       원본: {page, pageSize},
       변환됨: {safePage, safePageSize},
       SpringData인덱스: springPageIndex
@@ -69,7 +69,7 @@ export async function fetchPartnerCompanies(
       params.companyNameFilter = companyNameFilter.trim()
     }
 
-    console.log('📡 API 요청 시작:', {url: '/api/v1/partners/partner-companies', params})
+    console.log('API 요청 시작:', {url: '/api/v1/partners/partner-companies', params})
 
     const response = await api.get('/api/v1/partners/partner-companies', {
       params: {
@@ -79,7 +79,7 @@ export async function fetchPartnerCompanies(
       }
     })
 
-    console.log('📡 API 응답 받음:', {
+    console.log('API 응답 받음:', {
       status: response.status,
       headers: response.headers,
       dataType: typeof response.data,
@@ -188,7 +188,7 @@ export async function fetchPartnerCompanies(
       empty
     }
   } catch (error: unknown) {
-    console.error('❌ 파트너사 목록을 가져오는 중 오류:', error)
+    console.error('파트너사 목록을 가져오는 중 오류:', error)
 
     // 에러 세부 정보 로깅
     if (error && typeof error === 'object') {
@@ -202,7 +202,7 @@ export async function fetchPartnerCompanies(
           }
         }
 
-        console.error('📡 API 응답 오류:', {
+        console.error('API 응답 오류:', {
           status: axiosError.response?.status,
           statusText: axiosError.response?.statusText,
           data: axiosError.response?.data,
@@ -404,7 +404,7 @@ export async function updatePartnerCompany(
         }
       }
 
-      console.error('📡 수정 API 오류 상세:', {
+      console.error('수정 API 오류 상세:', {
         status: axiosError.response?.status,
         statusText: axiosError.response?.statusText,
         responseData: axiosError.response?.data,
@@ -499,7 +499,7 @@ export async function searchCompaniesFromDart(
     if (!isNaN(pageNum) && isFinite(pageNum) && pageNum >= 1) {
       validPage = Math.floor(pageNum)
     } else {
-      console.warn('⚠️ DART 검색: 잘못된 page 값:', params.page, '-> 1로 설정')
+      console.warn('DART 검색: 잘못된 page 값:', params.page, '-> 1로 설정')
     }
 
     // pageSize 검증
@@ -507,14 +507,14 @@ export async function searchCompaniesFromDart(
     if (!isNaN(pageSizeNum) && isFinite(pageSizeNum) && pageSizeNum >= 1) {
       validPageSize = Math.min(100, Math.floor(pageSizeNum))
     } else {
-      console.warn('⚠️ DART 검색: 잘못된 pageSize 값:', params.pageSize, '-> 10으로 설정')
+      console.warn('DART 검색: 잘못된 pageSize 값:', params.pageSize, '-> 10으로 설정')
     }
 
     // Spring Data 인덱스 계산 (0-based) - 음수 절대 방지
     const page = Math.max(0, validPage - 1)
     const size = validPageSize
 
-    console.log('✅ DART 검색 검증된 값:', {
+    console.log('DART 검색 검증된 값:', {
       원본: {page: params.page, pageSize: params.pageSize},
       변환됨: {validPage, validPageSize},
       SpringData인덱스: page
@@ -905,7 +905,7 @@ export async function fetchPartnerCompaniesForScope(
       }
     )
 
-    console.log('📡 Scope용 협력사 목록 응답:', response.data)
+    console.log('Scope용 협력사 목록 응답:', response.data)
 
     const data = response.data as unknown
 
@@ -944,7 +944,7 @@ export async function fetchPartnerCompaniesForScope(
       last = number >= totalPages - 1
       empty = content.length === 0
     } else {
-      console.warn('⚠️ 예상되지 않은 응답 구조:', data)
+      console.warn('예상되지 않은 응답 구조:', data)
     }
 
     return {
@@ -959,7 +959,7 @@ export async function fetchPartnerCompaniesForScope(
       empty
     }
   } catch (error: unknown) {
-    console.error('❌ Scope용 협력사 목록 조회 중 오류:', error)
+    console.error('Scope용 협력사 목록 조회 중 오류:', error)
 
     let errorMessage = 'Scope용 협력사 목록을 가져오는 중 오류가 발생했습니다.'
 
@@ -1047,10 +1047,10 @@ export async function checkCompanyNameDuplicate(
       `/api/v1/partners/partner-companies/check-duplicate?${params.toString()}`
     )
 
-    console.log('✅ 중복 검사 응답:', response.data)
+    console.log('중복 검사 응답:', response.data)
     return response.data
   } catch (error) {
-    console.error('❌ 협력사 회사명 중복 검사 오류:', error)
+    console.error('협력사 회사명 중복 검사 오류:', error)
 
     let errorMessage = '중복 검사 중 오류가 발생했습니다.'
 

@@ -121,7 +121,7 @@ export default function Scope2Form() {
 
       setRealPartnerCompanies(response.content || [])
     } catch (error) {
-      console.error('❌ 협력사 목록 로딩 실패:', error)
+      console.error('협력사 목록 로딩 실패:', error)
       setRealPartnerCompanies([])
     }
   }
@@ -145,12 +145,12 @@ export default function Scope2Form() {
         fetchSteamUsageByPartnerAndYear(selectedPartnerId, selectedYear)
       ])
 
-      console.log('✅ 배출량 데이터 로딩 성공:', {electricity, steam})
+      console.log('배출량 데이터 로딩 성공:', {electricity, steam})
 
       setElectricityData(electricity)
       setSteamData(steam)
     } catch (error) {
-      console.error('❌ 배출량 데이터 로딩 실패:', error)
+      console.error('배출량 데이터 로딩 실패:', error)
       setElectricityData([])
       setSteamData([])
     } finally {
@@ -172,7 +172,7 @@ export default function Scope2Form() {
       // 데이터 저장 후 목록 새로고침
       await loadData()
     } catch (error) {
-      console.error('❌ 폼 제출 실패:', error)
+      console.error('폼 제출 실패:', error)
     }
   }
 

@@ -109,8 +109,19 @@ const showPartnerRestore = (message: string) => {
   return showSuccess(message) // 복구 성공 메시지
 }
 
-const dismissLoading = (toastId?: string) => {
-  return dismiss(toastId) // 로딩 토스트 해제
+const dismissLoading = (
+  toastId?: string,
+  message?: string,
+  type?: 'success' | 'error'
+) => {
+  dismiss(toastId)
+  if (message && type) {
+    if (type === 'success') {
+      showSuccess(message)
+    } else if (type === 'error') {
+      showError(message)
+    }
+  }
 }
 
 // useToast hook export (Shadcn UI와 호환)

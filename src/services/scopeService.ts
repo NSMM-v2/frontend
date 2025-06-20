@@ -273,12 +273,14 @@ export const createStationaryCombustion = async (
       data.fuelName = await getFuelNameById(data.fuelId)
     }
 
-    console.log('🚀 API 전송 데이터 (고정연소):', data)
+    console.log('API 전송 데이터 (고정연소):', data)
     const response = await api.post('/api/v1/scope/stationary-combustion', data)
-    dismissLoading(loadingId, '고정연소 데이터가 성공적으로 저장되었습니다.', 'success')
+    dismissLoading(loadingId)
+    showSuccess('고정연소 데이터가 성공적으로 저장되었습니다.')
     return response.data
   } catch (error) {
-    dismissLoading(loadingId, '고정연소 데이터 저장에 실패했습니다.', 'error')
+    dismissLoading(loadingId)
+    showError('고정연소 데이터 저장에 실패했습니다.')
     throw error
   }
 }
@@ -363,7 +365,7 @@ export const createMobileCombustion = async (
       data.fuelName = await getFuelNameById(data.fuelId)
     }
 
-    console.log('🚀 API 전송 데이터 (이동연소):', data)
+    console.log('API 전송 데이터 (이동연소):', data)
     const response = await api.post('/api/v1/scope/mobile-combustion', data)
     dismissLoading(loadingId, '이동연소 데이터가 성공적으로 저장되었습니다.', 'success')
     return response.data
@@ -446,7 +448,7 @@ export const createElectricityUsage = async (
 ): Promise<ScopeApiResponse<ElectricityUsage>> => {
   const loadingId = showLoading('전력 사용량 데이터를 저장하는 중...')
   try {
-    console.log('🚀 API 전송 데이터 (전력):', data)
+    console.log('API 전송 데이터 (전력):', data)
     const response = await api.post('/api/v1/scope/electricity-usage', data)
     dismissLoading(
       loadingId,
@@ -541,7 +543,7 @@ export const createSteamUsage = async (
 ): Promise<ScopeApiResponse<SteamUsage>> => {
   const loadingId = showLoading('스팀 사용량 데이터를 저장하는 중...')
   try {
-    console.log('🚀 API 전송 데이터 (스팀):', data)
+    console.log('API 전송 데이터 (스팀):', data)
     const response = await api.post('/api/v1/scope/steam-usage', data)
     dismissLoading(
       loadingId,
