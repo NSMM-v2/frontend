@@ -120,20 +120,21 @@
 }
 
 .custom-scrollbar {
-  scrollbar-width: none; /* Firefox: 스크롤바 완전 제거 */
-  -ms-overflow-style: none; /* IE/Edge */
+  scrollbar-width: thin; /* Firefox: 얇은 스크롤바 */
+  -ms-overflow-style: auto; /* IE/Edge */
+  overflow: auto; /* 스크롤이 필요할 때 표시되도록 */
 }
 
-/* Webkit 기반 브라우저 */
+/* WebKit 기반 브라우저 */
 .custom-scrollbar::-webkit-scrollbar {
-  display: none;
+  width: 8px; /* 스크롤바 너비 설정 */
 }
 
 .custom-scrollbar::-webkit-scrollbar-track {
-  background: transparent; /* 트랙 배경 투명 */
+  background: rgba(0, 0, 0, 0) !important;
 }
 
 .custom-scrollbar::-webkit-scrollbar-thumb {
-  background-color: transparent; /* 손잡이 */
-  border-radius: 0px;
+  background-color: rgba(0, 0, 0, 0.2); /* 손잡이는 연하게 표시 */
+  border-radius: 4px;
 }
