@@ -35,8 +35,8 @@ export default function LoginComponent() {
 
   // 협력사 로그인 폼 상태
   const [partnerForm, setPartnerForm] = useState({
-    accountNumber: '',
-    email: '',
+    hqAccountNumber: '',
+    partnerCode: '',
     password: ''
   })
 
@@ -112,7 +112,11 @@ export default function LoginComponent() {
   const handlePartnerLogin = async (e: React.FormEvent) => {
     e.preventDefault()
 
-    if (!partnerForm.accountNumber || !partnerForm.email || !partnerForm.password) {
+    if (
+      !partnerForm.hqAccountNumber ||
+      !partnerForm.partnerCode ||
+      !partnerForm.password
+    ) {
       showError('모든 필드를 입력해주세요')
       return
     }
@@ -121,8 +125,8 @@ export default function LoginComponent() {
 
     try {
       const response = await authService.loginPartner({
-        accountNumber: partnerForm.accountNumber,
-        email: partnerForm.email,
+        hqAccountNumber: partnerForm.hqAccountNumber,
+        partnerCode: partnerForm.partnerCode,
         password: partnerForm.password
       })
 
@@ -130,13 +134,36 @@ export default function LoginComponent() {
         const userData = response.data
         showSuccess(`${userData.companyName} 협력사 로그인 성공!`)
 
-        // 로그인 성공 후 약간의 지연 후 대시보드로 이동
-        const redirectPath = searchParams.get('redirect') || '/dashboard'
+        // 초기 비밀번호 변경 여부 확인
+        if (userData.userType === 'PARTNER' && userData.passwordChanged === false) {
+          // 초기 비밀번호 변경 여부 확인 다이얼로그 표시
+          const shouldChangePassword = confirm(
+            '보안을 위해 초기 비밀번호를 변경하시겠습니까?\n\n' +
+              '지금 변경: 비밀번호 변경 페이지로 이동\n' +
+              '나중에 변경: 대시보드로 이동 (다음 로그인 시 다시 요청)'
+          )
 
-        // 토스트 메시지 표시 시간 확보를 위한 지연
-        setTimeout(() => {
-          router.push(redirectPath)
-        }, 800)
+          if (shouldChangePassword) {
+            // 비밀번호 변경 페이지로 이동 (사용자 정보 포함)
+            router.push(
+              `/change-password?accountNumber=${encodeURIComponent(
+                userData.accountNumber
+              )}&companyName=${encodeURIComponent(userData.companyName)}`
+            )
+          } else {
+            // 나중에 변경하고 대시보드로 이동
+            const redirectPath = searchParams.get('redirect') || '/dashboard'
+            router.push(redirectPath)
+          }
+        } else {
+          // 일반 대시보드로 이동
+          const redirectPath = searchParams.get('redirect') || '/dashboard'
+
+          // 토스트 메시지 표시 시간 확보를 위한 지연
+          setTimeout(() => {
+            router.push(redirectPath)
+          }, 800)
+        }
       }
     } catch (error: unknown) {
       console.error('협력사 로그인 실패:', error)
@@ -180,13 +207,9 @@ export default function LoginComponent() {
           }`}>
           {/* 헤더 섹션 */}
           <div className="mb-8 text-center">
-            <div className="flex justify-center mb-4">
-              <div className="p-4 bg-gradient-to-r from-blue-600 to-purple-600 rounded-2xl shadow-sm">
-                <Sparkles className="w-8 h-8 text-white" />
-              </div>
-            </div>
+            <div className="flex justify-center mb-4"></div>
             <h1 className="mb-2 text-3xl font-bold text-transparent bg-clip-text bg-gradient-to-r from-gray-900 to-gray-700">
-              ESG Manager
+              NSMM
             </h1>
             <p className="font-medium text-gray-600">
               지속가능한 미래를 위한 ESG 관리 플랫폼
@@ -215,7 +238,7 @@ export default function LoginComponent() {
                 onClick={() => setUserType('PARTNER')}
                 className={`rounded-lg py-2.5 text-sm font-medium transition-all duration-300 h-10 flex items-center justify-center hover:bg-white/50 ${
                   userType === 'PARTNER'
-                    ? 'bg-gradient-to-r from-emerald-500 to-green-600 text-white shadow-sm'
+                    ? 'bg-gradient-to-r from-blue-500 to-indigo-600 text-white shadow-sm'
                     : 'text-gray-700'
                 }`}>
                 협력사
@@ -272,7 +295,7 @@ export default function LoginComponent() {
                   </button>
                 </div>
 
-                <div className="pt-4 text-center">
+                <div className="pt-2 text-center">
                   <div className="flex justify-center items-center space-x-2 text-sm">
                     <span className="text-gray-500">계정이 없으신가요?</span>
                     <Link href="/signup">
@@ -280,6 +303,15 @@ export default function LoginComponent() {
                         계정 생성
                       </span>
                     </Link>
+                  </div>
+                </div>
+
+                <div className="pt-4">
+                  <div className="p-3 text-sm text-gray-600 bg-blue-50 rounded-lg border border-blue-200">
+                    <div className="flex justify-center items-center">
+                      <Shield className="mr-2 w-4 h-4 text-blue-600" />
+                      <span>본사 계정으로 전체 시스템을 관리할 수 있습니다</span>
+                    </div>
                   </div>
                 </div>
               </form>
@@ -294,12 +326,12 @@ export default function LoginComponent() {
               <form onSubmit={handlePartnerLogin} className="space-y-6">
                 <div className="space-y-1">
                   <InputWithIcon
-                    header="계정 번호"
-                    placeholder="계정 번호를 입력하세요 (예: HQ001-L1-001)"
+                    header="본사 계정번호"
+                    placeholder="본사 계정번호를 입력하세요 (예: 2500101700)"
                     icon={<Building className="w-4 h-4 text-gray-400" />}
-                    value={partnerForm.accountNumber}
+                    value={partnerForm.hqAccountNumber}
                     onChange={e =>
-                      setPartnerForm(prev => ({...prev, accountNumber: e.target.value}))
+                      setPartnerForm(prev => ({...prev, hqAccountNumber: e.target.value}))
                     }
                     disabled={isLoading}
                     required
@@ -309,16 +341,15 @@ export default function LoginComponent() {
 
                 <div className="space-y-1">
                   <InputWithIcon
-                    header="이메일"
-                    placeholder="이메일을 입력하세요"
+                    header="협력사 아이디"
+                    placeholder="협력사 아이디를 입력하세요 (예: L1-001)"
                     icon={<Mail className="w-4 h-4 text-gray-400" />}
-                    value={partnerForm.email}
+                    value={partnerForm.partnerCode}
                     onChange={e =>
-                      setPartnerForm(prev => ({...prev, email: e.target.value}))
+                      setPartnerForm(prev => ({...prev, partnerCode: e.target.value}))
                     }
                     disabled={isLoading}
                     required
-                    autoComplete="email"
                   />
                 </div>
 
@@ -342,7 +373,7 @@ export default function LoginComponent() {
                   <button
                     type="submit"
                     disabled={isLoading}
-                    className="w-full flex items-center justify-center gap-2 bg-gradient-to-r from-emerald-600 to-green-700 hover:from-emerald-700 hover:to-green-800 disabled:from-gray-400 disabled:to-gray-500 text-white font-medium py-3 px-6 rounded-xl transition-all duration-300 transform hover:scale-[1.02] active:scale-[0.98] shadow-sm hover:shadow-sm disabled:cursor-not-allowed disabled:transform-none">
+                    className="w-full flex items-center justify-center gap-2 bg-gradient-to-r from-blue-600 to-indigo-700 hover:from-blue-700 hover:to-indigo-800 disabled:from-gray-400 disabled:to-gray-500 text-white font-medium py-3 px-6 rounded-xl transition-all duration-300 transform hover:scale-[1.02] active:scale-[0.98] shadow-sm hover:shadow-sm disabled:cursor-not-allowed disabled:transform-none">
                     {isLoading ? '로그인 중...' : '로그인'}
                     <ArrowRight className="w-4 h-4" />
                   </button>

@@ -20,17 +20,19 @@ export default function NavigationBar() {
     // 컴포넌트 마운트 시 서버에서 사용자 정보 가져오기
     const fetchUserInfo = async () => {
       try {
-        // 쿠키 존재 여부 확인 없이 바로 서버에서 사용자 정보 조회
+        // 서버에서 사용자 정보 조회 (에러 발생하지 않음)
         const response = await authService.getCurrentUserByType()
         if (response && response.success && response.data) {
           setUser(response.data)
           setIsAuthenticated(true)
         } else {
+          // 인증되지 않은 상태 (정상적인 경우)
           setUser(null)
           setIsAuthenticated(false)
         }
       } catch (error) {
-        console.error('서버 연결 실패:', error)
+        // 예상치 못한 네트워크 오류 등만 여기서 처리
+        console.warn('사용자 정보 조회 중 네트워크 오류:', error)
         setUser(null)
         setIsAuthenticated(false)
       }

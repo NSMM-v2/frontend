@@ -159,13 +159,13 @@ export default function ExcelCascadingSelector({
   }
 
   return (
-    <div className="p-4 border rounded w-full max-w-md shadow-sm">
+    <div className="p-4 w-full max-w-md rounded border shadow-sm">
       <div className="mb-4">
         <label className="block mb-1">대분류 (category)</label>
         <select
           value={state.category}
           onChange={e => handleSelect(e.target.value, 'category')}
-          className="border px-2 py-1 w-full">
+          className="px-2 py-1 w-full border">
           <option value="">선택하세요</option>
           {categoryList.map(c => (
             <option key={c} value={c}>
@@ -181,7 +181,7 @@ export default function ExcelCascadingSelector({
           <select
             value={state.separate}
             onChange={e => handleSelect(e.target.value, 'separate')}
-            className="border px-2 py-1 w-full">
+            className="px-2 py-1 w-full border">
             <option value="">선택하세요</option>
             {separateList.map(s => (
               <option key={s} value={s}>
@@ -198,7 +198,7 @@ export default function ExcelCascadingSelector({
           <select
             value={state.rawMaterial}
             onChange={e => handleSelect(e.target.value, 'raw')}
-            className="border px-2 py-1 w-full">
+            className="px-2 py-1 w-full border">
             <option value="">선택하세요</option>
             {rawMaterialList.map(r => (
               <option key={r} value={r}>
@@ -210,7 +210,7 @@ export default function ExcelCascadingSelector({
       )}
 
       {selectedItem && (
-        <div className="mt-4 p-4 bg-gray-100 rounded">
+        <div className="p-4 mt-4 bg-gray-100 rounded">
           <label className="block mb-2">
             수량 입력 ({selectedItem.unit}당 kgCO₂: {selectedItem.kgCO2eq})
           </label>
@@ -220,7 +220,7 @@ export default function ExcelCascadingSelector({
             value={state.quantity}
             onChange={e => handleQuantityChange(e.target.value)}
             placeholder={selectedItem.unit}
-            className="border px-2 py-1 w-full"
+            className="px-2 py-1 w-full border"
           />
           <div className="mt-2 font-semibold">
             ➤ 배출량:{' '}
