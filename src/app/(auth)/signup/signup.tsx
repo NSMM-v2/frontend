@@ -7,6 +7,7 @@ import {
   User,
   Phone,
   Building,
+  Building2,
   Briefcase,
   Lock,
   CheckCircle,
@@ -229,17 +230,10 @@ export default function SignUp() {
           }`}>
           {/* 헤더 섹션 */}
           <div className="mb-8 text-center">
-            <div className="flex justify-center mb-4">
-              <div className="p-4 bg-gradient-to-r from-blue-600 to-indigo-600 rounded-2xl shadow-sm">
-                <User className="w-8 h-8 text-white" />
-              </div>
-            </div>
             <h1 className="mb-2 text-3xl font-bold text-transparent bg-clip-text bg-gradient-to-r from-gray-900 to-gray-700">
               본사 회원가입
             </h1>
-            <p className="font-medium text-gray-600">
-              ESG Manager에 오신 것을 환영합니다
-            </p>
+            <p className="font-medium text-gray-600">NSMM에 오신 것을 환영합니다</p>
             <div className="flex justify-center items-center mt-3 text-sm text-gray-500">
               <Shield className="mr-2 w-4 h-4" />
               <span>안전하고 신뢰할 수 있는 플랫폼</span>
@@ -277,7 +271,7 @@ export default function SignUp() {
               <div className="space-y-1">
                 <InputWithIcon
                   header="이메일"
-                  placeholder="이메일을 입력하세요 (예: user@company.com)"
+                  placeholder="이메일을 입력하세요"
                   icon={<Mail className="w-4 h-4 text-gray-400" />}
                   value={signupForm.email}
                   onChange={handleInputChange('email')}
@@ -302,7 +296,7 @@ export default function SignUp() {
                 <div className="space-y-1">
                   <InputWithIcon
                     header="전화번호"
-                    placeholder="전화번호를 입력하세요 (예: 010-1234-5678)"
+                    placeholder="전화번호를 입력하세요"
                     icon={<Phone className="w-4 h-4 text-gray-400" />}
                     value={signupForm.phone}
                     onChange={handleInputChange('phone')}
@@ -314,7 +308,7 @@ export default function SignUp() {
                   <InputWithIcon
                     header="부서"
                     placeholder="부서를 입력하세요"
-                    icon={<MapPin className="w-4 h-4 text-gray-400" />}
+                    icon={<Building2 className="w-4 h-4 text-gray-400" />}
                     value={signupForm.department}
                     onChange={handleInputChange('department')}
                     disabled={isLoading}

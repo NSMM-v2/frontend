@@ -8,8 +8,8 @@ export interface LoginRequest {
 
 // 협력사 로그인 요청 인터페이스
 export interface PartnerLoginRequest {
-  accountNumber: string
-  email: string
+  hqAccountNumber: string // 본사 계정번호 (HQ001)
+  partnerCode: string // 협력사 아이디/계층형 아이디 (L1-001)
   password: string
 }
 
@@ -35,6 +35,7 @@ export interface UserInfo {
   email?: string
   department?: string
   position?: string
+  passwordChanged?: boolean // 협력사 초기 비밀번호 변경 여부
 }
 
 // API 응답 인터페이스
@@ -87,10 +88,10 @@ class AuthService {
   /**
    * 현재 본사 사용자 정보 조회
    */
-  async getCurrentUser(): Promise<ApiResponse<UserInfo>> {
-    const response = await api.get('/api/v1/headquarters/me')
-    return response.data
-  }
+  // async getCurrentUser(): Promise<ApiResponse<UserInfo>> {
+  //   const response = await api.get('/api/v1/headquarters/me')
+  //   return response.data
+  // }
 
   /**
    * 현재 사용자 정보 조회 (사용자 타입별 자동 분기)
@@ -99,35 +100,73 @@ class AuthService {
    */
   async getCurrentUserByType(): Promise<ApiResponse<UserInfo> | null> {
     try {
-      // 먼저 본사 API 시도 (에러 로그 최소화)
-      const response = await api.get('/api/v1/headquarters/me', {
-        validateStatus: status => status < 500 // 500 미만은 모두 정상으로 처리
-      })
+      // JWT에서 사용자 타입 먼저 확인
+      const userType = this.getUserTypeFromJWT()
 
-      if (response.status === 200) {
-        return response.data
-      }
+      if (userType === 'PARTNER') {
+        // 협력사 사용자인 경우 협력사 API 먼저 시도
+        try {
+          const partnerResponse = await api.get('/api/v1/partners/me', {
+            validateStatus: status => status < 500
+          })
 
-      // 401/403인 경우 협력사 API 시도
-      if (response.status === 401 || response.status === 403) {
-        const partnerResponse = await api.get('/api/v1/partners/me', {
-          validateStatus: status => status < 500
-        })
+          if (partnerResponse.status === 200) {
+            return partnerResponse.data
+          }
+        } catch (error: any) {
+          console.warn('협력사 API 호출 실패:', error.response?.status)
+        }
+      } else if (userType === 'HEADQUARTERS') {
+        // 본사 사용자인 경우 본사 API 먼저 시도
+        try {
+          const headquartersResponse = await api.get('/api/v1/headquarters/me', {
+            validateStatus: status => status < 500
+          })
 
-        if (partnerResponse.status === 200) {
-          return partnerResponse.data
+          if (headquartersResponse.status === 200) {
+            return headquartersResponse.data
+          }
+        } catch (error: any) {
+          console.warn('본사 API 호출 실패:', error.response?.status)
         }
       }
 
-      // 인증 실패 - null 반환 (에러 throw 안함)
+      // JWT 타입이 없거나 첫 번째 시도가 실패한 경우 폴백 시도
+      if (userType !== 'HEADQUARTERS') {
+        // 본사 API 시도
+        try {
+          const headquartersResponse = await api.get('/api/v1/headquarters/me', {
+            validateStatus: status => status < 500
+          })
+
+          if (headquartersResponse.status === 200) {
+            return headquartersResponse.data
+          }
+        } catch (error: any) {
+          // 조용히 실패 처리
+        }
+      }
+
+      if (userType !== 'PARTNER') {
+        // 협력사 API 시도
+        try {
+          const partnerResponse = await api.get('/api/v1/partners/me', {
+            validateStatus: status => status < 500
+          })
+
+          if (partnerResponse.status === 200) {
+            return partnerResponse.data
+          }
+        } catch (error: any) {
+          // 조용히 실패 처리
+        }
+      }
+
+      // 모든 시도 실패 - 인증되지 않은 상태
       return null
     } catch (error: any) {
-      // 서버 연결 오류 등의 경우만 로그 출력
-      if (!error.response || error.response.status >= 500) {
-        console.error('서버 연결 실패:', error)
-        throw error
-      }
-      // 401/403 등 인증 오류는 null 반환
+      // 예상치 못한 에러는 로그만 출력하고 null 반환 (에러 throw 안함)
+      console.warn('사용자 정보 조회 중 예상치 못한 오류:', error)
       return null
     }
   }
@@ -318,7 +357,7 @@ export const {
   loginHeadquarters,
   loginPartner,
   logout,
-  getCurrentUser,
+  // getCurrentUser,
   getCurrentUserByType,
   getUserTypeFromJWT,
   checkEmailExists,

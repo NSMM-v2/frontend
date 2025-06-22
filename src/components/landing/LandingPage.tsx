@@ -2,13 +2,50 @@
 
 import Link from 'next/link'
 import {useState, useEffect} from 'react'
+import {useRouter} from 'next/navigation'
+import authService from '@/services/authService'
 
 export default function LandingPage() {
   const [isVisible, setIsVisible] = useState(false)
+  const [isLoggedIn, setIsLoggedIn] = useState(false)
+  const [isCheckingAuth, setIsCheckingAuth] = useState(true)
+  const router = useRouter()
 
   useEffect(() => {
     setIsVisible(true)
+    checkAuthStatus()
   }, [])
+
+  // 로그인 상태 확인
+  const checkAuthStatus = async () => {
+    try {
+      const isAuthenticated = await authService.verifyAuth()
+      setIsLoggedIn(isAuthenticated)
+    } catch (error) {
+      console.warn('인증 상태 확인 실패:', error)
+      setIsLoggedIn(false)
+    } finally {
+      setIsCheckingAuth(false)
+    }
+  }
+
+  // 로그인 버튼 클릭 핸들러
+  const handleLoginClick = () => {
+    if (isLoggedIn) {
+      router.push('/dashboard')
+    } else {
+      router.push('/login')
+    }
+  }
+
+  // 회원가입 버튼 클릭 핸들러
+  const handleSignupClick = () => {
+    if (isLoggedIn) {
+      router.push('/dashboard')
+    } else {
+      router.push('/signup')
+    }
+  }
 
   return (
     <div className="min-h-screen bg-gradient-to-br via-blue-900 to-emerald-900 from-slate-900">
@@ -20,18 +57,31 @@ export default function LandingPage() {
         {/* Navigation */}
         <nav className="relative z-10 px-6 py-4">
           <div className="flex justify-between items-center mx-auto max-w-7xl">
-            <div className="text-xl font-bold text-white">ESG Manager</div>
+            <div className="text-xl font-bold text-white">NSMM</div>
             <div className="flex space-x-4">
-              <Link
-                href="/login"
-                className="transition-colors duration-200 text-white/80 hover:text-white">
-                로그인
-              </Link>
-              <Link
-                href="/signup"
-                className="px-4 py-2 text-white bg-emerald-600 rounded-lg transition-colors duration-200 hover:bg-emerald-700">
-                회원가입
-              </Link>
+              {isLoggedIn ? (
+                <button
+                  onClick={handleLoginClick}
+                  disabled={isCheckingAuth}
+                  className="px-4 py-2 text-white bg-emerald-600 rounded-lg transition-colors duration-200 hover:bg-emerald-700 disabled:opacity-50">
+                  대시보드
+                </button>
+              ) : (
+                <>
+                  <button
+                    onClick={handleLoginClick}
+                    disabled={isCheckingAuth}
+                    className="transition-colors duration-200 text-white/80 hover:text-white disabled:opacity-50">
+                    로그인
+                  </button>
+                  <button
+                    onClick={handleSignupClick}
+                    disabled={isCheckingAuth}
+                    className="px-4 py-2 text-white bg-emerald-600 rounded-lg transition-colors duration-200 hover:bg-emerald-700 disabled:opacity-50">
+                    회원가입
+                  </button>
+                </>
+              )}
             </div>
           </div>
         </nav>
@@ -57,16 +107,29 @@ export default function LandingPage() {
               </p>
 
               <div className="flex flex-col gap-4 justify-center items-center sm:flex-row">
-                <Link
-                  href="/login"
-                  className="px-8 py-4 text-lg font-semibold text-white bg-gradient-to-r from-emerald-600 to-blue-600 rounded-xl shadow-lg transition-all duration-300 transform hover:from-emerald-700 hover:to-blue-700 hover:scale-105 hover:shadow-xl">
-                  플랫폼 시작하기
-                </Link>
-                <Link
-                  href="/signup"
-                  className="px-8 py-4 text-lg font-semibold text-white rounded-xl border-2 backdrop-blur-sm transition-all duration-300 border-white/30 hover:border-white/50 hover:bg-white/10">
-                  무료 체험하기
-                </Link>
+                {isLoggedIn ? (
+                  <button
+                    onClick={handleLoginClick}
+                    disabled={isCheckingAuth}
+                    className="px-8 py-4 text-lg font-semibold text-white bg-gradient-to-r from-emerald-600 to-blue-600 rounded-xl shadow-lg transition-all duration-300 transform hover:from-emerald-700 hover:to-blue-700 hover:scale-105 hover:shadow-xl disabled:opacity-50 disabled:transform-none">
+                    대시보드로 이동
+                  </button>
+                ) : (
+                  <>
+                    <button
+                      onClick={handleLoginClick}
+                      disabled={isCheckingAuth}
+                      className="px-8 py-4 text-lg font-semibold text-white bg-gradient-to-r from-emerald-600 to-blue-600 rounded-xl shadow-lg transition-all duration-300 transform hover:from-emerald-700 hover:to-blue-700 hover:scale-105 hover:shadow-xl disabled:opacity-50 disabled:transform-none">
+                      플랫폼 시작하기
+                    </button>
+                    <button
+                      onClick={handleSignupClick}
+                      disabled={isCheckingAuth}
+                      className="px-8 py-4 text-lg font-semibold text-white rounded-xl border-2 backdrop-blur-sm transition-all duration-300 border-white/30 hover:border-white/50 hover:bg-white/10 disabled:opacity-50">
+                      무료 체험하기
+                    </button>
+                  </>
+                )}
               </div>
             </div>
           </div>
@@ -320,16 +383,29 @@ export default function LandingPage() {
               ESG Manager와 함께 지속가능한 미래를 만들어가세요
             </p>
             <div className="flex flex-col gap-4 justify-center sm:flex-row">
-              <Link
-                href="/signup"
-                className="px-8 py-4 text-lg font-semibold text-gray-900 bg-white rounded-xl shadow-lg transition-all duration-300 transform hover:scale-105 hover:shadow-xl">
-                무료로 시작하기
-              </Link>
-              <Link
-                href="/login"
-                className="px-8 py-4 text-lg font-semibold text-white rounded-xl border-2 border-white transition-all duration-300 hover:bg-white hover:text-gray-900">
-                로그인
-              </Link>
+              {isLoggedIn ? (
+                <button
+                  onClick={handleLoginClick}
+                  disabled={isCheckingAuth}
+                  className="px-8 py-4 text-lg font-semibold text-gray-900 bg-white rounded-xl shadow-lg transition-all duration-300 transform hover:scale-105 hover:shadow-xl disabled:opacity-50 disabled:transform-none">
+                  대시보드로 이동
+                </button>
+              ) : (
+                <>
+                  <button
+                    onClick={handleSignupClick}
+                    disabled={isCheckingAuth}
+                    className="px-8 py-4 text-lg font-semibold text-gray-900 bg-white rounded-xl shadow-lg transition-all duration-300 transform hover:scale-105 hover:shadow-xl disabled:opacity-50 disabled:transform-none">
+                    무료로 시작하기
+                  </button>
+                  <button
+                    onClick={handleLoginClick}
+                    disabled={isCheckingAuth}
+                    className="px-8 py-4 text-lg font-semibold text-white rounded-xl border-2 border-white transition-all duration-300 hover:bg-white hover:text-gray-900 disabled:opacity-50">
+                    로그인
+                  </button>
+                </>
+              )}
             </div>
           </div>
         </div>
@@ -338,7 +414,7 @@ export default function LandingPage() {
       {/* Footer */}
       <footer className="px-6 py-8 border-t border-white/10">
         <div className="mx-auto max-w-7xl text-center">
-          <p className="text-white/60">© 2024 NSMM ESG Manager. All rights reserved.</p>
+          <p className="text-white/60">© 2024 NSMM. All rights reserved.</p>
         </div>
       </footer>
     </div>

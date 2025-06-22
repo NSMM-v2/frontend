@@ -123,7 +123,7 @@ export default function Scope1Form() {
       const partners = response.data || response.content || []
       setRealPartnerCompanies(partners)
     } catch (error) {
-      console.error('❌ 협력사 데이터 로딩 실패:', error)
+      console.error('협력사 데이터 로딩 실패:', error)
       setRealPartnerCompanies([])
     }
   }
