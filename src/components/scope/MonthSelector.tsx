@@ -46,12 +46,12 @@ export function MonthSelector({
       disabled={disabled}>
       <SelectTrigger
         className={cn(
-          'bg-white border-gray-200 hover:border-indigo-300 focus-visible:ring-indigo-500 transition-all duration-200',
+          'bg-white border-gray-200 transition-all duration-200 hover:border-indigo-300 focus-visible:ring-indigo-500',
           className
         )}>
         <SelectValue placeholder={placeholder} />
       </SelectTrigger>
-      <SelectContent className="border shadow-xl bg-white/95 backdrop-blur-sm border-white/50">
+      <SelectContent className="border shadow-xl backdrop-blur-sm bg-white/95 border-white/50">
         {MONTHS.map(month => (
           <SelectItem
             key={month.value}

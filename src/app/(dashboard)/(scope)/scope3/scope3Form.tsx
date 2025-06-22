@@ -1,236 +1,323 @@
+/**
+ * Scope 3 배출량 관리 폼 컴포넌트
+ *
+ * 주요 기능:
+ * - Scope 3 15개 카테고리별 배출량 데이터 관리
+ * - 카테고리별 계산기 추가/삭제 기능
+ * - CSV 데이터 기반 배출계수 적용
+ * - 실시간 배출량 계산 및 집계
+ * - scope2Form.tsx와 동일한 레이아웃 구조 적용
+ *
+ * @author ESG Project Team
+ * @version 1.0
+ * @since 2024
+ */
 'use client'
 
-import {useState, useEffect, useRef} from 'react'
-import Papa from 'papaparse'
+// React 및 애니메이션 라이브러리 임포트
+import React, {useState} from 'react'
+import {motion} from 'framer-motion'
+import Link from 'next/link'
 
-interface CO2Data {
-  category: string
-  separate: string
-  RawMaterial: string
-  unit: string
-  kgCO2eq: number
-}
+// UI 아이콘 임포트 (Lucide React)
+import {
+  Home, // 홈 아이콘
+  ArrowLeft, // 왼쪽 화살표 (뒤로가기)
+  Factory // 공장 아이콘
+} from 'lucide-react'
 
-interface ExcelCascadingSelectorProps {
+// 브레드크럼 네비게이션 컴포넌트 임포트
+import {
+  Breadcrumb,
+  BreadcrumbItem,
+  BreadcrumbLink,
+  BreadcrumbList,
+  BreadcrumbSeparator
+} from '@/components/ui/breadcrumb'
+
+// 레이아웃 컴포넌트 임포트
+import {PageHeader} from '@/components/layout/PageHeader'
+import {DirectionButton} from '@/components/layout/direction'
+
+// 분리된 Scope3 컴포넌트들 임포트
+import {CategorySummaryCard} from '@/components/scope3/CategorySummaryCard'
+import {CategorySelector, Scope3CategoryKey} from '@/components/scope3/CategorySelector'
+import {CategoryDataInput} from '@/components/scope3/CategoryDataInput'
+import {SelectorState} from '@/components/scope3/ExcelCascadingSelector'
+
+// ============================================================================
+// 타입 정의 (Type Definitions)
+// ============================================================================
+
+/**
+ * 계산기 데이터 타입
+ */
+interface CalculatorData {
   id: number
-  state: {
-    category: string
-    separate: string
-    rawMaterial: string
-    quantity: string
-  }
-  onChangeState: (state: {
-    category: string
-    separate: string
-    rawMaterial: string
-    quantity: string
-  }) => void
-  onChangeTotal: (id: number, emission: number) => void
+  state: SelectorState
 }
 
-export default function ExcelCascadingSelector({
-  id,
-  state,
-  onChangeState,
-  onChangeTotal
-}: ExcelCascadingSelectorProps) {
-  const [data, setData] = useState<CO2Data[]>([])
-  const [selectedItem, setSelectedItem] = useState<CO2Data | null>(null)
+// ============================================================================
+// 메인 Scope3 폼 컴포넌트 (Main Scope3 Form Component)
+// ============================================================================
 
-  const prevSelectedItemRef = useRef<CO2Data | null>(null)
-  const isFirstRenderRef = useRef(true)
+/**
+ * Scope 3 배출량 관리 메인 컴포넌트
+ * scope2Form.tsx와 동일한 레이아웃 구조를 적용하여 일관성 있는 UI 제공
+ */
+export default function Scope3Form() {
+  // ========================================================================
+  // 상태 관리 (State Management)
+  // ========================================================================
 
-  useEffect(() => {
-    fetch('/co2.csv')
-      .then(res => res.text())
-      .then(csvText => {
-        const results = Papa.parse(csvText, {header: true})
-        const parsed = (results.data as any[]).map(row => ({
-          category: row['대분류'],
-          separate: row['구분'],
-          RawMaterial: row['원료/에너지'],
-          unit: row['단위'],
-          kgCO2eq: parseFloat(row['탄소발자국'])
-        }))
-        setData(parsed)
-      })
-  }, [])
+  const [activeCategory, setActiveCategory] = useState<Scope3CategoryKey | null>(null) // 현재 선택된 카테고리
 
-  const unique = (arr: string[]) => [...new Set(arr)]
+  // 카테고리별 계산기 목록 관리
+  const [categoryCalculators, setCategoryCalculators] = useState<{
+    [key in Scope3CategoryKey]?: CalculatorData[]
+  }>({})
 
-  const categoryList = unique(data.map(d => d.category))
-  const separateList = unique(
-    data.filter(d => d.category === state.category).map(d => d.separate)
-  )
-  const rawMaterialList = unique(
-    data
-      .filter(d => d.category === state.category && d.separate === state.separate)
-      .map(d => d.RawMaterial)
-  )
+  // 카테고리별 배출량 총계 관리
+  const [categoryTotals, setCategoryTotals] = useState<{
+    [key in Scope3CategoryKey]?: {id: number; emission: number}[]
+  }>({})
 
-  useEffect(() => {
-    const selected =
-      data.find(
-        d =>
-          d.category === state.category &&
-          d.separate === state.separate &&
-          d.RawMaterial === state.rawMaterial
-      ) || null
+  // ========================================================================
+  // 유틸리티 함수 (Utility Functions)
+  // ========================================================================
 
-    setSelectedItem(selected)
-
-    if (isFirstRenderRef.current) {
-      isFirstRenderRef.current = false
-      prevSelectedItemRef.current = selected
-      return
-    }
-
-    // 조건: 수량이 있고, 새 selected가 존재하고, 이전과 다를 경우에만 재계산
-    if (selected && prevSelectedItemRef.current !== selected) {
-      const quantity = parseFloat(state.quantity)
-      if (!isNaN(quantity)) {
-        const emission = quantity * selected.kgCO2eq
-        onChangeTotal(id, emission) // 수량으로 재계산
-      } else {
-        onChangeTotal(id, 0) // 수량이 없거나 잘못된 경우만 0
-      }
-      prevSelectedItemRef.current = selected
-    }
-  }, [
-    state.category,
-    state.separate,
-    state.rawMaterial,
-    state.quantity,
-    data,
-    id,
-    onChangeTotal
-  ])
-  const handleSelect = (value: string, type: 'category' | 'separate' | 'raw') => {
-    if (type === 'category') {
-      onChangeState({
-        category: value,
-        separate: '',
-        rawMaterial: '',
-        quantity: ''
-      })
-      onChangeTotal(id, 0)
-    } else if (type === 'separate') {
-      onChangeState({
-        ...state,
-        separate: value,
-        rawMaterial: '',
-        quantity: ''
-      })
-      onChangeTotal(id, 0)
-    } else if (type === 'raw') {
-      onChangeState({
-        ...state,
-        rawMaterial: value,
-        quantity: ''
-      })
-      onChangeTotal(id, 0)
-    }
+  /**
+   * 현재 활성 카테고리의 계산기 목록 반환
+   * 카테고리가 선택되지 않았을 때는 빈 배열 반환
+   */
+  const getCurrentCalculators = (): CalculatorData[] => {
+    if (!activeCategory) return []
+    return categoryCalculators[activeCategory] || []
   }
 
-  const handleQuantityChange = (value: string) => {
-    onChangeState({
-      ...state,
-      quantity: value
+  /**
+   * 특정 카테고리의 총 배출량 계산
+   */
+  const getTotalEmission = (category: Scope3CategoryKey): number =>
+    (categoryTotals[category] || []).reduce((sum, t) => sum + t.emission, 0)
+
+  // ========================================================================
+  // 이벤트 핸들러 (Event Handlers)
+  // ========================================================================
+
+  /**
+   * 계산기의 배출량 업데이트 핸들러
+   */
+  const updateTotal = (id: number, emission: number) => {
+    if (!activeCategory) return
+
+    setCategoryTotals(prev => {
+      const old = prev[activeCategory] || []
+      const updated = old.some(t => t.id === id)
+        ? old.map(t => (t.id === id ? {id, emission} : t)) // 기존 항목 업데이트
+        : [...old, {id, emission}] // 새 항목 추가
+      return {...prev, [activeCategory]: updated}
     })
+  }
 
-    if (value === '') {
-      onChangeTotal(id, 0)
-      return
-    }
+  /**
+   * 새로운 계산기 추가 핸들러
+   */
+  const addCalculator = () => {
+    if (!activeCategory) return
 
-    const num = parseFloat(value)
-    if (isNaN(num)) {
-      alert('숫자를 입력해주세요.')
-      onChangeTotal(id, 0)
-      return
-    }
+    const current = categoryCalculators[activeCategory] || []
+    const newId = current.length > 0 ? current[current.length - 1].id + 1 : 1
 
-    if (selectedItem) {
-      const emission = num * selectedItem.kgCO2eq
-      onChangeTotal(id, emission)
-    } else {
-      onChangeTotal(id, 0)
+    setCategoryCalculators(prev => ({
+      ...prev,
+      [activeCategory]: [
+        ...current,
+        {id: newId, state: {category: '', separate: '', rawMaterial: '', quantity: ''}}
+      ]
+    }))
+  }
+
+  /**
+   * 계산기 삭제 핸들러
+   */
+  const removeCalculator = (id: number) => {
+    if (!activeCategory) return
+
+    // 계산기 목록에서 제거
+    setCategoryCalculators(prev => ({
+      ...prev,
+      [activeCategory]: (prev[activeCategory] || []).filter(c => c.id !== id)
+    }))
+
+    // 배출량 총계에서도 제거
+    setCategoryTotals(prev => ({
+      ...prev,
+      [activeCategory]: (prev[activeCategory] || []).filter(t => t.id !== id)
+    }))
+  }
+
+  /**
+   * 계산기 입력 상태 업데이트 핸들러
+   */
+  const updateCalculatorState = (id: number, newState: SelectorState) => {
+    if (!activeCategory) return
+
+    setCategoryCalculators(prev => ({
+      ...prev,
+      [activeCategory]: (prev[activeCategory] || []).map(c =>
+        c.id === id ? {...c, state: newState} : c
+      )
+    }))
+  }
+
+  /**
+   * 카테고리 선택 핸들러
+   * 새로운 카테고리 선택 시 기본 계산기 1개 자동 생성
+   */
+  const handleCategorySelect = (category: Scope3CategoryKey) => {
+    setActiveCategory(category)
+
+    // 해당 카테고리에 계산기가 없으면 기본 계산기 1개 생성
+    if (!categoryCalculators[category] || categoryCalculators[category]!.length === 0) {
+      setCategoryCalculators(prev => ({
+        ...prev,
+        [category]: [
+          {id: 1, state: {category: '', separate: '', rawMaterial: '', quantity: ''}}
+        ]
+      }))
     }
   }
+
+  /**
+   * 카테고리 입력 완료 핸들러
+   */
+  const handleComplete = () => {
+    setActiveCategory(null) // 카테고리 선택 화면으로 돌아가기
+  }
+
+  /**
+   * 목록으로 돌아가기 핸들러
+   */
+  const handleBackToList = () => {
+    setActiveCategory(null)
+  }
+
+  // 전체 총 배출량 계산
+  const grandTotal = Object.keys({
+    list1: '',
+    list2: '',
+    list3: '',
+    list4: '',
+    list5: '',
+    list6: '',
+    list7: '',
+    list8: '',
+    list9: '',
+    list10: '',
+    list11: '',
+    list12: '',
+    list13: '',
+    list14: '',
+    list15: ''
+  }).reduce((sum, key) => sum + getTotalEmission(key as Scope3CategoryKey), 0)
+
+  // ========================================================================
+  // 렌더링 (Rendering)
+  // ========================================================================
 
   return (
-    <div className="p-4 w-full max-w-md rounded border shadow-sm">
-      <div className="mb-4">
-        <label className="block mb-1">대분류 (category)</label>
-        <select
-          value={state.category}
-          onChange={e => handleSelect(e.target.value, 'category')}
-          className="px-2 py-1 w-full border">
-          <option value="">선택하세요</option>
-          {categoryList.map(c => (
-            <option key={c} value={c}>
-              {c}
-            </option>
-          ))}
-        </select>
+    <div className="flex flex-col p-4 w-full h-full">
+      {/* ========================================================================
+          상단 네비게이션 (Top Navigation)
+          - 브레드크럼을 통한 현재 위치 표시
+          ======================================================================== */}
+      <div className="flex flex-row items-center p-2 px-2 mb-6 text-sm text-gray-500 bg-white rounded-lg shadow-sm">
+        <Breadcrumb>
+          <BreadcrumbList>
+            <BreadcrumbItem>
+              <Home className="mr-1 w-4 h-4" />
+              <BreadcrumbLink href="/dashboard">대시보드</BreadcrumbLink>
+            </BreadcrumbItem>
+            <BreadcrumbSeparator />
+            <BreadcrumbItem>
+              <span className="font-bold text-customG">Scope3</span>
+            </BreadcrumbItem>
+          </BreadcrumbList>
+        </Breadcrumb>
       </div>
 
-      {state.category && (
-        <div className="mb-4">
-          <label className="block mb-1">구분 (separate)</label>
-          <select
-            value={state.separate}
-            onChange={e => handleSelect(e.target.value, 'separate')}
-            className="px-2 py-1 w-full border">
-            <option value="">선택하세요</option>
-            {separateList.map(s => (
-              <option key={s} value={s}>
-                {s}
-              </option>
-            ))}
-          </select>
-        </div>
-      )}
-
-      {state.separate && (
-        <div className="mb-4">
-          <label className="block mb-1">원료/에너지 (RawMaterial)</label>
-          <select
-            value={state.rawMaterial}
-            onChange={e => handleSelect(e.target.value, 'raw')}
-            className="px-2 py-1 w-full border">
-            <option value="">선택하세요</option>
-            {rawMaterialList.map(r => (
-              <option key={r} value={r}>
-                {r}
-              </option>
-            ))}
-          </select>
-        </div>
-      )}
-
-      {selectedItem && (
-        <div className="p-4 mt-4 bg-gray-100 rounded">
-          <label className="block mb-2">
-            수량 입력 ({selectedItem.unit}당 kgCO₂: {selectedItem.kgCO2eq})
-          </label>
-          <input
-            type="number"
-            inputMode="decimal"
-            value={state.quantity}
-            onChange={e => handleQuantityChange(e.target.value)}
-            placeholder={selectedItem.unit}
-            className="px-2 py-1 w-full border"
+      {/* ========================================================================
+          헤더 섹션 (Header Section)
+          - 뒤로가기 버튼과 페이지 제목/설명
+          ======================================================================== */}
+      <div className="flex flex-row mb-6 w-full h-24">
+        <Link
+          href="/dashboard"
+          className="flex flex-row items-center p-4 space-x-4 rounded-md transition cursor-pointer hover:bg-gray-200">
+          <ArrowLeft className="w-6 h-6 text-gray-500 group-hover:text-blue-600" />
+          <PageHeader
+            icon={<Factory className="w-6 h-6 text-customG-600" />}
+            title="Scope 3 배출량 관리"
+            description="15개 카테고리별 간접 배출량 데이터를 관리하고 추적합니다"
+            module="SCOPE"
+            submodule="scope3"
           />
-          <div className="mt-2 font-semibold">
-            ➤ 배출량:{' '}
-            {state.quantity && !isNaN(parseFloat(state.quantity))
-              ? (parseFloat(state.quantity) * selectedItem.kgCO2eq).toFixed(3)
-              : '0.000'}{' '}
-            kgCO₂
-          </div>
-        </div>
+        </Link>
+      </div>
+
+      {/* ========================================================================
+          메인 컨텐츠 영역 (Main Content Area)
+          - 카테고리 선택 또는 데이터 입력 화면
+          ======================================================================== */}
+      {activeCategory === null ? (
+        /* ====================================================================
+            카테고리 선택 화면 (Category Selection Screen)
+            ==================================================================== */
+        <motion.div
+          initial={{opacity: 0, scale: 0.95}}
+          animate={{opacity: 1, scale: 1}}
+          transition={{delay: 0.6, duration: 0.5}}
+          className="space-y-6">
+          {/* 전체 배출량 요약 카드 */}
+          <CategorySummaryCard totalEmission={grandTotal} animationDelay={0.1} />
+
+          {/* 카테고리 선택 그리드 */}
+          <CategorySelector
+            getTotalEmission={getTotalEmission}
+            onCategorySelect={handleCategorySelect}
+            animationDelay={0.2}
+          />
+        </motion.div>
+      ) : (
+        /* ====================================================================
+            카테고리별 데이터 입력 화면 (Category Data Input Screen)
+            ==================================================================== */
+        <CategoryDataInput
+          activeCategory={activeCategory}
+          calculators={getCurrentCalculators()}
+          getTotalEmission={getTotalEmission}
+          onAddCalculator={addCalculator}
+          onRemoveCalculator={removeCalculator}
+          onUpdateCalculatorState={updateCalculatorState}
+          onChangeTotal={updateTotal}
+          onComplete={handleComplete}
+          onBackToList={handleBackToList}
+        />
       )}
+
+      {/* ========================================================================
+          네비게이션 버튼 (Navigation Button)
+          - scope2로 이동하는 방향 버튼
+          ======================================================================== */}
+      <DirectionButton
+        direction="left"
+        tooltip="scope2로 이동"
+        href="/scope2"
+        fixed
+        position="middle-left"
+        size={48}
+      />
     </div>
   )
 }

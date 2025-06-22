@@ -649,7 +649,7 @@ export default function ManagePartnerPage() {
   }
 
   return (
-    <div className="flex flex-col w-full h-full p-4">
+    <div className="flex flex-col p-4 w-full h-full">
       <motion.div
         initial={{opacity: 0, y: -10}}
         animate={{opacity: 1, y: 0}}
@@ -658,7 +658,7 @@ export default function ManagePartnerPage() {
         <Breadcrumb>
           <BreadcrumbList>
             <BreadcrumbItem>
-              <Home className="w-4 h-4 mr-1" />
+              <Home className="mr-1 w-4 h-4" />
               <BreadcrumbLink href="/home">대시보드</BreadcrumbLink>
             </BreadcrumbItem>
             <BreadcrumbSeparator />
@@ -669,10 +669,10 @@ export default function ManagePartnerPage() {
         </Breadcrumb>
       </motion.div>
       {/* PageHeader + ArrowLeft */}
-      <div className="flex flex-row justify-between w-full h-full mb-6">
+      <div className="flex flex-row justify-between mb-6 w-full h-full">
         <Link
           href="/home"
-          className="flex flex-row items-center p-4 space-x-4 transition rounded-md cursor-pointer hover:bg-gray-200">
+          className="flex flex-row items-center p-4 space-x-4 rounded-md transition cursor-pointer hover:bg-gray-200">
           <ArrowLeft className="w-6 h-6 text-gray-500 group-hover:text-blue-600" />
           <PageHeader
             icon={<Building2 className="w-6 h-6 text-customG" />}

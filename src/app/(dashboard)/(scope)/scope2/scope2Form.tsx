@@ -886,6 +886,15 @@ export default function Scope2Form() {
         position="middle-left"
         size={48}
       />
+
+      <DirectionButton
+        direction="right"
+        tooltip="scope3으로 이동"
+        href="/scope3"
+        fixed
+        position="middle-right"
+        size={48}
+      />
     </div>
   )
 }
