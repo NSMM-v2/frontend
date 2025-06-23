@@ -101,7 +101,7 @@ export default function LandingPage() {
             <p className="mx-auto mb-12 max-w-2xl text-xl leading-relaxed text-gray-600">
               본사와 협력사의 ESG 데이터를 체계적으로 관리하고
               <br />
-              지속가능경영을 쉽고 효율적으로 실현하세요
+              지속가능경영을 효율적으로 쉽게 실현하세요.
             </p>
 
             <div className="flex flex-col gap-4 justify-center items-center sm:flex-row">

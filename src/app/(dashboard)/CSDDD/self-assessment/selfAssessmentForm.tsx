@@ -1,34 +1,111 @@
+/**
+ * CSDDD 자가진단 폼 컴포넌트 - 공급망 실사 자가진단 시스템
+ *
+ * 기업의 지속가능성 실사 지침(CSDDD) 기준에 따른 자가진단을 수행하는 컴포넌트
+ * 5개 주요 카테고리(인권/노동, 산업안전/보건, 환경경영, 공급망/조달, 윤리경영/정보보호)에
+ * 걸쳐 총 26개 질문을 통해 ESG 리스크를 평가하고 등급을 산출
+ *
+ * 주요 기능:
+ * - 카테고리별 질문 응답 및 실시간 점수 계산
+ * - 중대위반 항목 자동 감지 및 등급 조정
+ * - 결과 요약 및 개선 권장사항 제시
+ * - PDF 보고서 다운로드 기능 (별도 컴포넌트)
+ *
+ * 사용된 기술:
+ * - Next.js 14 App Router
+ * - React 18 상태 관리
+ * - Tailwind CSS (스타일링)
+ * - Lucide React (아이콘)
+ * - Shadcn/ui 컴포넌트 시스템
+ *
+ * @author ESG Project Team
+ * @version 1.0
+ * @since 2024
+ * @lastModified 2024-12-21
+ */
+
 'use client'
-import {useEffect, useState} from 'react'
-import {Button} from '@/components/ui/button'
-import {Card} from '@/components/ui/card'
+
+// ============================================================================
+// 외부 라이브러리 임포트 (External Library Imports)
+// ============================================================================
+
+import {useEffect, useState} from 'react' // React 상태 관리 및 생명주기 훅
+import {Button} from '@/components/ui/button' // 커스텀 버튼 컴포넌트
+import {Card} from '@/components/ui/card' // 카드 레이아웃 컴포넌트
+import Link from 'next/link' // Next.js 내부 링크 컴포넌트
+import PDFReportGenerator from '@/components/CSDDD/PDFReportGenerator' // PDF 보고서 생성 컴포넌트
+
+// ============================================================================
+// 아이콘 라이브러리 임포트 (Icon Library Imports)
+// ============================================================================
+
 import {
-  Check,
-  AlertCircle,
-  Info,
-  BarChart3,
-  Download,
-  AlertTriangle,
-  Shield
+  Check, // 체크 아이콘 - 긍정적 답변 표시
+  AlertCircle, // 경고 원형 아이콘 - 부정적 답변 표시
+  Info, // 정보 아이콘 - 중대위반 정보 표시
+  BarChart3, // 막대그래프 아이콘 - 결과 보기 버튼
+  AlertTriangle, // 삼각형 경고 아이콘 - 중대위반 항목 강조
+  Shield, // 방패 아이콘 - 보안/안전 관련 표시
+  Home, // 홈 아이콘 - 브레드크럼 홈 링크
+  ArrowLeft // 왼쪽 화살표 - 뒤로가기 버튼
 } from 'lucide-react'
 
+// ============================================================================
+// 내부 컴포넌트 임포트 (Internal Component Imports)
+// ============================================================================
+
+import {
+  Breadcrumb, // 브레드크럼 컨테이너
+  BreadcrumbItem, // 브레드크럼 개별 항목
+  BreadcrumbLink, // 브레드크럼 링크
+  BreadcrumbList, // 브레드크럼 리스트
+  BreadcrumbSeparator // 브레드크럼 구분자 (>)
+} from '@/components/ui/breadcrumb'
+import {PageHeader} from '@/components/layout/PageHeader' // 페이지 헤더 컴포넌트
+
+// ============================================================================
+// 타입 정의 (Type Definitions)
+// ============================================================================
+
+/**
+ * 자가진단 질문 인터페이스
+ *
+ * CSDDD(기업 지속가능성 실사 지침) 자가진단을 위한 개별 질문 구조
+ * 각 질문은 고유 ID, 카테고리, 가중치를 가지며 중대위반 여부를 포함할 수 있음
+ */
 interface Question {
-  id: string
-  category: string
-  text: string
-  weight: number
+  id: string // 질문 고유 식별자 (예: "1.1", "2.3")
+  category: string // 질문이 속한 카테고리 (5개 주요 영역 중 하나)
+  text: string // 질문 내용 (한국어)
+  weight: number // 질문의 가중치 (점수 계산 시 사용)
   criticalViolation?: {
-    grade: 'D' | 'C' | 'B' | 'B/C'
-    reason: string
+    // 선택적 중대위반 정보
+    grade: 'D' | 'C' | 'B' | 'B/C' // 위반 시 강제 등급
+    reason: string // 위반 사유 설명
   }
 }
 
+// ============================================================================
+// 평가 카테고리 정의 (Assessment Categories)
+// ============================================================================
+
+/**
+ * CSDDD 자가진단 5개 주요 평가 카테고리
+ *
+ * 유럽연합 CSDDD 지침에 따른 핵심 평가 영역들:
+ * 1. 인권 및 노동 - ILO 핵심 협약 기반 (9개 질문)
+ * 2. 산업안전·보건 - 산업안전보건법 기반 (6개 질문)
+ * 3. 환경경영 - ISO 14001 기반 (8개 질문)
+ * 4. 공급망 및 조달 - 공급망 실사 핵심 (9개 질문)
+ * 5. 윤리경영 및 정보보호 - 내부통제 시스템 (8개 질문)
+ */
 const categories = [
-  '인권 및 노동',
-  '산업안전·보건',
-  '환경경영',
-  '공급망 및 조달',
-  '윤리경영 및 정보보호'
+  '인권 및 노동', // Human Rights & Labor
+  '산업안전·보건', // Occupational Health & Safety
+  '환경경영', // Environmental Management
+  '공급망 및 조달', // Supply Chain & Procurement
+  '윤리경영 및 정보보호' // Ethics & Information Security
 ]
 
 const questions: Question[] = [
@@ -363,31 +440,95 @@ const questions: Question[] = [
   }
 ]
 
-// 총 가중치 계산 (모든 질문의 가중치 합)
+// ============================================================================
+// 점수 계산 및 등급 기준 (Scoring and Grading Standards)
+// ============================================================================
+
+/**
+ * 전체 질문의 총 가중치 합계
+ * 모든 질문의 가중치를 합산하여 100점 만점 기준으로 환산하는데 사용
+ * 현재 총 가중치: 52.5점 (26개 질문의 가중치 합)
+ */
 const TOTAL_WEIGHT = questions.reduce((sum, q) => sum + q.weight, 0) // 52.5
 
-// 등급 기준 (100점 만점 기준)
+/**
+ * CSDDD 자가진단 등급 기준 (100점 만점)
+ *
+ * 등급 체계:
+ * - A등급 (90점 이상): 리스크 거의 없음, 계약 가능/실사 면제 가능
+ * - B등급 (75-89점): 관리 가능 수준, 개선 개별 수준
+ * - C등급 (60-74점): 중위험 구간, 세부 정밀 실사 필요
+ * - D등급 (60점 미만): 고위험 구간, 계약 중단/블랙리스트 가능성
+ *
+ * 중대위반 항목이 있을 경우 해당 위반의 등급으로 자동 강등
+ */
 const gradeThresholds = {
-  A: 90, // ≥ 90%
-  B: 75, // 75-89.9%
-  C: 60, // 60-74.9%
-  D: 0 // < 60%
+  A: 90, // 우수 등급 (90점 이상)
+  B: 75, // 양호 등급 (75-89점)
+  C: 60, // 보통 등급 (60-74점)
+  D: 0 // 미흡 등급 (60점 미만)
 }
 
+// ============================================================================
+// 메인 컴포넌트 정의 (Main Component Definition)
+// ============================================================================
+
+/**
+ * CSDDD 자가진단 폼 메인 컴포넌트
+ *
+ * 사용자 인터랙션을 관리하고 질문 응답, 점수 계산, 결과 표시 등의
+ * 핵심 기능을 제공하는 메인 컴포넌트
+ */
 export default function SelfAssessmentForm() {
+  // ========================================================================
+  // 상태 관리 (State Management)
+  // ========================================================================
+
+  /**
+   * 사용자 응답 상태 관리
+   * 각 질문 ID를 키로 하고 'yes' 또는 'no' 값을 저장
+   */
   const [answers, setAnswers] = useState<Record<string, string>>({})
+
+  /**
+   * 현재 활성화된 카테고리 탭
+   * 기본값은 첫 번째 카테고리인 '인권 및 노동'
+   */
   const [activeTab, setActiveTab] = useState('인권 및 노동')
+
+  /**
+   * 결과 표시 모드 전환
+   * false: 질문 보기 모드, true: 결과 보기 모드
+   */
   const [showResults, setShowResults] = useState(false)
 
+  // ========================================================================
+  // 초기화 및 생명주기 관리 (Initialization & Lifecycle)
+  // ========================================================================
+
+  /**
+   * 컴포넌트 마운트 시 모든 질문을 'yes'로 초기화
+   * 사용자가 명시적으로 'no'를 선택하지 않은 항목은 준수하는 것으로 간주
+   */
   useEffect(() => {
-    // 모든 질문을 'yes'로 초기화
     const initial: Record<string, string> = {}
     questions.forEach(q => {
-      initial[q.id] = 'yes'
+      initial[q.id] = 'yes' // 기본값을 'yes'로 설정
     })
     setAnswers(initial)
   }, [])
 
+  // ========================================================================
+  // 이벤트 핸들러 (Event Handlers)
+  // ========================================================================
+
+  /**
+   * 질문 응답 변경 핸들러
+   * 사용자가 라디오 버튼을 선택했을 때 응답 상태를 업데이트
+   *
+   * @param questionId 질문 고유 식별자
+   * @param value 선택된 값 ('yes' 또는 'no')
+   */
   const handleAnswerChange = (questionId: string, value: string) => {
     setAnswers(prev => ({
       ...prev,
@@ -395,54 +536,93 @@ export default function SelfAssessmentForm() {
     }))
   }
 
+  // ========================================================================
+  // 점수 계산 로직 (Score Calculation Logic)
+  // ========================================================================
+
+  /**
+   * 전체 점수 계산 함수
+   *
+   * 모든 질문의 응답을 기반으로 100점 만점 기준의 점수를 계산
+   * 'yes' 응답인 질문들의 가중치 합계를 총 가중치로 나누어 백분율로 환산
+   *
+   * @returns 100점 만점 기준 점수 (정수)
+   */
   const calculateScore = () => {
     let totalScore = 0
     questions.forEach(q => {
       if (answers[q.id] === 'yes') {
-        totalScore += q.weight
+        totalScore += q.weight // 긍정 응답인 질문의 가중치만 합산
       }
     })
-    return Math.round((totalScore / TOTAL_WEIGHT) * 100)
+    return Math.round((totalScore / TOTAL_WEIGHT) * 100) // 백분율로 환산 후 반올림
   }
 
+  /**
+   * 카테고리별 점수 계산 함수
+   *
+   * 특정 카테고리에 속한 질문들만을 대상으로 점수를 계산
+   * 해당 카테고리 내에서의 상대적 성과를 백분율로 표시
+   *
+   * @param category 점수를 계산할 카테고리명
+   * @returns 해당 카테고리의 100점 만점 기준 점수 (정수)
+   */
   const calculateCategoryScore = (category: string) => {
     const categoryQuestions = questions.filter(q => q.category === category)
-    let totalScore = 0
-    let maxScore = 0
+    let totalScore = 0 // 실제 획득 점수
+    let maxScore = 0 // 해당 카테고리 최대 점수
 
     categoryQuestions.forEach(q => {
       if (answers[q.id] === 'yes') {
         totalScore += q.weight
       }
-      maxScore += q.weight
+      maxScore += q.weight // 카테고리 내 모든 질문의 가중치 합
     })
 
     return maxScore ? Math.round((totalScore / maxScore) * 100) : 0
   }
 
-  const getFinalGrade = () => {
-    const baseScore = calculateScore()
+  // ========================================================================
+  // 등급 계산 및 평가 로직 (Grade Calculation & Assessment Logic)
+  // ========================================================================
 
-    // 중대 위반 항목 검사
+  /**
+   * 최종 등급 계산 함수
+   *
+   * 기본 점수와 중대위반 항목을 종합적으로 고려하여 최종 등급을 결정
+   * 중대위반이 있는 경우 해당 위반의 등급으로 자동 강등
+   *
+   * 계산 과정:
+   * 1. 기본 점수 계산 (가중치 기반)
+   * 2. 중대위반 항목 검사
+   * 3. 중대위반이 없으면 점수 기준 등급 적용
+   * 4. 중대위반이 있으면 가장 낮은 위반 등급으로 강등
+   *
+   * @returns 최종 등급 ('A', 'B', 'C', 'D' 중 하나)
+   */
+  const getFinalGrade = () => {
+    const baseScore = calculateScore() // 기본 점수 계산
+
+    // 중대위반 항목 검사 - 'no' 응답이면서 중대위반 속성이 있는 질문들
     const criticalViolations = questions
       .filter(q => q.criticalViolation && answers[q.id] === 'no')
       .map(q => q.criticalViolation!)
 
     if (criticalViolations.length === 0) {
-      // 일반 등급 계산
+      // 중대위반이 없는 경우 일반 등급 기준 적용
       if (baseScore >= gradeThresholds.A) return 'A'
       if (baseScore >= gradeThresholds.B) return 'B'
       if (baseScore >= gradeThresholds.C) return 'C'
       return 'D'
     }
 
-    // 중대 위반이 있는 경우 최저 등급으로 강등
+    // 중대위반이 있는 경우 가장 낮은 등급으로 강등
     const worstGrade = criticalViolations.reduce((worst, violation) => {
-      const grades = ['A', 'B', 'C', 'D']
+      const grades = ['A', 'B', 'C', 'D'] // 등급 순서 (좋은 것부터)
       const currentWorst = grades.indexOf(worst)
-      const violationGrade = violation.grade === 'B/C' ? 'C' : violation.grade
+      const violationGrade = violation.grade === 'B/C' ? 'C' : violation.grade // B/C는 C로 처리
       const violationWorst = grades.indexOf(violationGrade)
-      return violationWorst > currentWorst ? violationGrade : worst
+      return violationWorst > currentWorst ? violationGrade : worst // 더 나쁜 등급 선택
     }, 'A')
 
     return worstGrade
@@ -492,44 +672,24 @@ export default function SelfAssessmentForm() {
       }))
   }
 
-  const exportResults = () => {
-    const finalGrade = getFinalGrade()
-    const baseScore = calculateScore()
-    const criticalViolations = getCriticalViolations()
+  // ========================================================================
+  // PDF 보고서 생성 (PDF Report Generation)
+  // ========================================================================
 
-    const results = {
-      timestamp: new Date().toISOString(),
-      finalGrade: finalGrade,
-      baseScore: baseScore,
-      totalPossibleScore: TOTAL_WEIGHT,
-      actualScore: questions.reduce(
-        (sum, q) => sum + (answers[q.id] === 'yes' ? q.weight : 0),
-        0
-      ),
-      criticalViolations: criticalViolations.map(cv => ({
-        questionId: cv.question.id,
-        questionText: cv.question.text,
-        violationGrade: cv.violation.grade,
-        violationReason: cv.violation.reason
-      })),
-      categoryScores: categories.map(cat => ({
-        category: cat,
-        score: calculateCategoryScore(cat)
-      })),
-      answers: answers,
-      gradeInfo: getGradeInfo(finalGrade)
-    }
-
-    const blob = new Blob([JSON.stringify(results, null, 2)], {type: 'application/json'})
-    const url = URL.createObjectURL(blob)
-    const a = document.createElement('a')
-    a.href = url
-    a.download = `supply-chain-assessment-${finalGrade}-grade-${
-      new Date().toISOString().split('T')[0]
-    }.json`
-    a.click()
-    URL.revokeObjectURL(url)
-  }
+  /**
+   * PDF 보고서 생성 및 다운로드 함수
+   *
+   * CSDDD 자가진단 결과를 전문적인 한국어 PDF 보고서로 생성
+   * 회사 정보, 평가 결과, 카테고리별 점수, 중대위반 사항, 개선권고를 포함
+   *
+   * 포함 내용:
+   * - 보고서 표지 (제목, 생성일시, 회사정보)
+   * - 종합 평가 결과 (최종등급, 기본점수, 권장조치)
+   * - 카테고리별 세부 점수표
+   * - 중대위반 항목 상세 (발견 시)
+   * - 개선 권장사항 목록
+   * - 보고서 생성 정보 (날짜, 플랫폼)
+   */
 
   const finalGrade = getFinalGrade()
   const gradeInfo = getGradeInfo(finalGrade)
@@ -537,35 +697,74 @@ export default function SelfAssessmentForm() {
   const criticalViolations = getCriticalViolations()
 
   return (
-    <div className="w-full min-h-screen p-6">
-      <div className="mx-auto max-w-7xl">
-        {/* Header */}
-        <div className="mb-8 text-center">
-          <h1 className="mb-4 text-4xl font-bold text-gray-900">공급망 실사 자가진단</h1>
-          <p className="max-w-2xl mx-auto text-lg text-gray-600">
-            ESG 관점에서 공급망의 리스크를 평가하고 개선점을 파악해보세요
-          </p>
-        </div>
+    <div className="flex flex-col p-4 w-full h-full">
+      {/* ========================================================================
+          상단 네비게이션 섹션 (Top Navigation Section)
+          ======================================================================== */}
+      <div className="flex flex-row items-center p-2 px-2 mb-6 text-sm text-gray-500 bg-white rounded-lg shadow-sm">
+        <Breadcrumb>
+          <BreadcrumbList>
+            <BreadcrumbItem>
+              <Home className="mr-1 w-4 h-4" />
+              <BreadcrumbLink href="/dashboard">대시보드</BreadcrumbLink>
+            </BreadcrumbItem>
+            <BreadcrumbSeparator />
+            <BreadcrumbItem>
+              <BreadcrumbLink href="/CSDDD">CSDDD</BreadcrumbLink>
+            </BreadcrumbItem>
+            <BreadcrumbSeparator />
+            <BreadcrumbItem>
+              <span className="font-bold text-blue-500">자가진단</span>
+            </BreadcrumbItem>
+          </BreadcrumbList>
+        </Breadcrumb>
+      </div>
 
+      {/* ========================================================================
+          헤더 섹션 (Header Section)
+          - 뒤로가기 버튼과 페이지 제목/설명
+          ======================================================================== */}
+      <div className="flex flex-row mb-6 w-full h-24">
+        <Link
+          href="/CSDDD"
+          className="flex flex-row items-center p-4 space-x-4 rounded-md transition cursor-pointer hover:bg-gray-200">
+          <ArrowLeft className="w-6 h-6 text-gray-500 group-hover:text-blue-600" />
+          <PageHeader
+            icon={<Shield className="w-6 h-6 text-blue-500" />}
+            title="공급망 실사 자가진단"
+            description="ESG 관점에서 공급망의 리스크를 평가하고 개선점을 파악합니다"
+            module="CSDDD"
+            submodule="self-assessment"
+          />
+        </Link>
+      </div>
+
+      {/* ========================================================================
+          메인 콘텐츠 영역 (Main Content Area)
+          ======================================================================== */}
+      <div className="space-y-8">
         {/* Grade Overview */}
-        <Card className="p-6 mb-8 shadow-lg bg-white/80 backdrop-blur-sm">
-          <div className="flex items-center justify-between mb-6">
+        <Card className="p-6 mb-8 shadow-lg backdrop-blur-sm bg-white/80">
+          <div className="flex justify-between items-center mb-6">
             <h2 className="text-xl font-semibold text-gray-900">종합 평가 결과</h2>
             <div className="flex gap-2">
               <Button
                 onClick={() => setShowResults(!showResults)}
                 variant="outline"
-                className="flex items-center gap-2">
+                className="flex gap-2 items-center">
                 <BarChart3 className="w-4 h-4" />
                 {showResults ? '질문 보기' : '결과 보기'}
               </Button>
-              <Button
-                onClick={exportResults}
-                variant="outline"
-                className="flex items-center gap-2">
-                <Download className="w-4 h-4" />
-                결과 다운로드
-              </Button>
+              <PDFReportGenerator
+                answers={answers}
+                questions={questions}
+                categories={categories}
+                finalGrade={finalGrade}
+                gradeInfo={gradeInfo}
+                baseScore={baseScore}
+                criticalViolations={criticalViolations}
+                calculateCategoryScore={calculateCategoryScore}
+              />
             </div>
           </div>
 
@@ -580,7 +779,7 @@ export default function SelfAssessmentForm() {
             </div>
 
             {/* Base Score */}
-            <div className="p-6 bg-white border rounded-lg shadow-sm">
+            <div className="p-6 bg-white rounded-lg border shadow-sm">
               <div className="text-center">
                 <div className="mb-2 text-3xl font-bold text-blue-600">{baseScore}점</div>
                 <div className="mb-1 text-sm font-medium">기본 점수</div>
@@ -589,7 +788,7 @@ export default function SelfAssessmentForm() {
             </div>
 
             {/* Risk Level */}
-            <div className="p-6 bg-white border rounded-lg shadow-sm">
+            <div className="p-6 bg-white rounded-lg border shadow-sm">
               <div className="text-center">
                 <div className="mb-2 text-lg font-bold text-gray-800">
                   {gradeInfo.action}
@@ -602,9 +801,9 @@ export default function SelfAssessmentForm() {
 
           {/* Critical Violations Alert */}
           {criticalViolations.length > 0 && (
-            <div className="p-4 mb-4 border-2 border-red-200 rounded-lg bg-red-50">
-              <div className="flex items-start gap-3">
-                <AlertTriangle className="flex-shrink-0 w-6 h-6 mt-1 text-red-600" />
+            <div className="p-4 mb-4 bg-red-50 rounded-lg border-2 border-red-200">
+              <div className="flex gap-3 items-start">
+                <AlertTriangle className="flex-shrink-0 mt-1 w-6 h-6 text-red-600" />
                 <div className="flex-1">
                   <h3 className="mb-2 font-bold text-red-800">중대 위반 항목 발견</h3>
                   <p className="mb-3 text-sm text-red-700">
@@ -613,7 +812,7 @@ export default function SelfAssessmentForm() {
                   <div className="space-y-2">
                     {criticalViolations.map(cv => (
                       <div key={cv.question.id} className="p-3 bg-red-100 rounded">
-                        <div className="flex items-start gap-2">
+                        <div className="flex gap-2 items-start">
                           <Shield className="w-4 h-4 text-red-600 flex-shrink-0 mt-0.5" />
                           <div className="flex-1">
                             <div className="text-sm font-medium text-red-800">
@@ -642,7 +841,7 @@ export default function SelfAssessmentForm() {
               return (
                 <div
                   key={category}
-                  className="p-4 text-center bg-white border rounded-lg shadow-sm">
+                  className="p-4 text-center bg-white rounded-lg border shadow-sm">
                   <div className="text-xl font-bold text-blue-600">{score}%</div>
                   <div className="mt-1 text-xs text-gray-600">{category}</div>
                 </div>
@@ -663,8 +862,8 @@ export default function SelfAssessmentForm() {
               return (
                 <Card
                   key={category}
-                  className="p-6 shadow-lg bg-white/80 backdrop-blur-sm">
-                  <div className="flex items-center justify-between mb-4">
+                  className="p-6 shadow-lg backdrop-blur-sm bg-white/80">
+                  <div className="flex justify-between items-center mb-4">
                     <h3 className="text-xl font-semibold text-gray-900">{category}</h3>
                     <div className="text-right">
                       <div className="text-lg font-bold text-blue-600">{score}%</div>
@@ -676,8 +875,8 @@ export default function SelfAssessmentForm() {
                   </div>
 
                   {criticalInCategory.length > 0 && (
-                    <div className="p-4 mb-4 border border-red-200 rounded-lg bg-red-50">
-                      <h4 className="flex items-center gap-2 mb-2 font-medium text-red-800">
+                    <div className="p-4 mb-4 bg-red-50 rounded-lg border border-red-200">
+                      <h4 className="flex gap-2 items-center mb-2 font-medium text-red-800">
                         <AlertTriangle className="w-4 h-4" />
                         중대 위반 항목
                       </h4>
@@ -706,7 +905,7 @@ export default function SelfAssessmentForm() {
                           .map(q => (
                             <li
                               key={q.id}
-                              className="p-2 text-sm border border-yellow-200 rounded bg-yellow-50">
+                              className="p-2 text-sm bg-yellow-50 rounded border border-yellow-200">
                               <div className="font-medium text-yellow-800">
                                 {q.id}: {q.text}
                               </div>
@@ -726,7 +925,7 @@ export default function SelfAssessmentForm() {
           /* Questions View */
           <div className="space-y-6">
             {/* Tab Navigation */}
-            <div className="flex flex-wrap gap-2 p-1 bg-white border rounded-lg shadow-sm">
+            <div className="flex flex-wrap gap-2 p-1 bg-white rounded-lg border shadow-sm">
               {categories.map(category => (
                 <button
                   key={category}
@@ -745,7 +944,7 @@ export default function SelfAssessmentForm() {
             </div>
 
             {/* Questions for Active Tab */}
-            <Card className="p-6 shadow-lg bg-white/80 backdrop-blur-sm">
+            <Card className="p-6 shadow-lg backdrop-blur-sm bg-white/80">
               <h3 className="mb-6 text-xl font-semibold text-gray-900">{activeTab}</h3>
 
               <div className="space-y-4">
@@ -761,27 +960,27 @@ export default function SelfAssessmentForm() {
                         key={question.id}
                         className={`p-4 border rounded-lg transition-all ${
                           isCritical
-                            ? 'border-red-300 bg-red-50'
-                            : 'border-gray-200 bg-white hover:shadow-sm'
+                            ? 'bg-red-50 border-red-300'
+                            : 'bg-white border-gray-200 hover:shadow-sm'
                         }`}>
-                        <div className="flex items-start gap-4">
-                          <div className="flex items-center justify-center flex-shrink-0 w-12 h-12 bg-blue-100 rounded-full">
+                        <div className="flex gap-4 items-start">
+                          <div className="flex flex-shrink-0 justify-center items-center w-12 h-12 bg-blue-100 rounded-full">
                             <span className="text-sm font-medium text-blue-700">
                               {question.id}
                             </span>
                           </div>
 
                           <div className="flex-1">
-                            <div className="flex items-start justify-between mb-3">
+                            <div className="flex justify-between items-start mb-3">
                               <h4 className="text-base font-medium leading-relaxed text-gray-900">
                                 {question.text}
                               </h4>
-                              <div className="flex items-center gap-2 ml-4">
+                              <div className="flex gap-2 items-center ml-4">
                                 <span className="px-2 py-1 text-xs text-gray-600 bg-gray-100 rounded-full">
                                   가중치: {question.weight}
                                 </span>
                                 {question.criticalViolation && (
-                                  <span className="flex items-center gap-1 px-2 py-1 text-xs text-red-700 bg-red-100 rounded-full">
+                                  <span className="flex gap-1 items-center px-2 py-1 text-xs text-red-700 bg-red-100 rounded-full">
                                     <AlertTriangle className="w-3 h-3" />
                                     중대위반
                                   </span>
@@ -791,8 +990,8 @@ export default function SelfAssessmentForm() {
 
                             {/* Critical Violation Info */}
                             {question.criticalViolation && (
-                              <div className="p-3 mb-3 bg-red-100 border border-red-200 rounded-lg">
-                                <div className="flex items-start gap-2">
+                              <div className="p-3 mb-3 bg-red-100 rounded-lg border border-red-200">
+                                <div className="flex gap-2 items-start">
                                   <Info className="w-4 h-4 text-red-600 flex-shrink-0 mt-0.5" />
                                   <div className="text-sm text-red-800">
                                     <div className="mb-1 font-medium">
@@ -808,7 +1007,7 @@ export default function SelfAssessmentForm() {
 
                             {/* Answer Options */}
                             <div className="flex gap-3">
-                              <label className="flex items-center gap-2 cursor-pointer">
+                              <label className="flex gap-2 items-center cursor-pointer">
                                 <input
                                   type="radio"
                                   name={question.id}
@@ -819,12 +1018,12 @@ export default function SelfAssessmentForm() {
                                   }
                                   className="w-4 h-4 text-green-600"
                                 />
-                                <span className="flex items-center gap-1 text-sm font-medium text-green-700">
+                                <span className="flex gap-1 items-center text-sm font-medium text-green-700">
                                   <Check className="w-4 h-4" />예
                                 </span>
                               </label>
 
-                              <label className="flex items-center gap-2 cursor-pointer">
+                              <label className="flex gap-2 items-center cursor-pointer">
                                 <input
                                   type="radio"
                                   name={question.id}
@@ -835,7 +1034,7 @@ export default function SelfAssessmentForm() {
                                   }
                                   className="w-4 h-4 text-red-600"
                                 />
-                                <span className="flex items-center gap-1 text-sm font-medium text-red-700">
+                                <span className="flex gap-1 items-center text-sm font-medium text-red-700">
                                   <AlertCircle className="w-4 h-4" />
                                   아니오
                                 </span>
