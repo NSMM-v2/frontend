@@ -54,9 +54,9 @@ export default function LandingPage() {
         <div className="flex justify-between items-center mx-auto max-w-6xl">
           <div className="flex items-center space-x-2">
             <div className="flex justify-center items-center w-8 h-8 bg-blue-500 rounded-lg">
-              <span className="text-sm font-bold text-white">E</span>
+              <span className="text-sm font-bold text-white">N</span>
             </div>
-            <span className="text-xl font-bold text-gray-900">ESG Manager</span>
+            <span className="text-xl font-bold text-gray-900">NSMM</span>
           </div>
           <div className="flex space-x-3">
             {isLoggedIn ? (
@@ -255,7 +255,7 @@ export default function LandingPage() {
               <h2 className="mb-8 text-4xl font-bold leading-tight text-gray-900">
                 왜 많은 기업이
                 <br />
-                <span className="text-blue-500">ESG Manager를 선택할까요?</span>
+                <span className="text-blue-500">NSMM를 선택할까요?</span>
               </h2>
 
               <div className="space-y-6">
@@ -413,9 +413,9 @@ export default function LandingPage() {
           <div className="flex flex-col justify-between items-center md:flex-row">
             <div className="flex items-center mb-4 space-x-2 md:mb-0">
               <div className="flex justify-center items-center w-6 h-6 bg-blue-500 rounded-lg">
-                <span className="text-xs font-bold text-white">E</span>
+                <span className="text-xs font-bold text-white">N</span>
               </div>
-              <span className="text-lg font-bold text-gray-900">ESG Manager</span>
+              <span className="text-lg font-bold text-gray-900">NSMM</span>
             </div>
             <p className="text-sm text-gray-500">© 2024 NSMM. All rights reserved.</p>
           </div>
