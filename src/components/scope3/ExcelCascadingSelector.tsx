@@ -153,11 +153,11 @@ export function ExcelCascadingSelector({
   }
 
   return (
-    <Card className="w-full max-w-2xl shadow-sm">
+    <Card className="w-full max-w-2xl shadow-sm min-w-2xl">
       <CardContent className="p-6 space-y-6">
         <div className="space-y-2">
           <label className="flex items-center text-sm font-semibold text-customG-700">
-            <span className="flex justify-center items-center mr-2 w-6 h-6 text-xs font-bold text-white bg-blue-500 rounded-full">
+            <span className="flex items-center justify-center w-6 h-6 mr-2 text-xs font-bold text-white bg-blue-500 rounded-full">
               1
             </span>
             대분류 선택
@@ -165,8 +165,7 @@ export function ExcelCascadingSelector({
           <select
             value={state.category}
             onChange={e => handleSelect(e.target.value, 'category')}
-            className="px-3 py-2 w-full text-sm rounded-lg border border-customG-300 transition-all duration-200 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 hover:border-customG-400"
-          >
+            className="w-full px-3 py-2 text-sm transition-all duration-200 border rounded-lg border-customG-300 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 hover:border-customG-400">
             <option value="">대분류를 선택하세요</option>
             {categoryList.map(c => (
               <option key={c} value={c}>
@@ -179,7 +178,7 @@ export function ExcelCascadingSelector({
         {state.category && (
           <div className="space-y-2">
             <label className="flex items-center text-sm font-semibold text-customG-700">
-              <span className="flex justify-center items-center mr-2 w-6 h-6 text-xs font-bold text-white bg-blue-500 rounded-full">
+              <span className="flex items-center justify-center w-6 h-6 mr-2 text-xs font-bold text-white bg-blue-500 rounded-full">
                 2
               </span>
               구분 선택
@@ -187,8 +186,7 @@ export function ExcelCascadingSelector({
             <select
               value={state.separate}
               onChange={e => handleSelect(e.target.value, 'separate')}
-              className="px-3 py-2 w-full text-sm rounded-lg border border-customG-300 transition-all duration-200 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 hover:border-customG-400"
-            >
+              className="w-full px-3 py-2 text-sm transition-all duration-200 border rounded-lg border-customG-300 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 hover:border-customG-400">
               <option value="">구분을 선택하세요</option>
               {separateList.map(s => (
                 <option key={s} value={s}>
@@ -202,7 +200,7 @@ export function ExcelCascadingSelector({
         {state.separate && (
           <div className="space-y-2">
             <label className="flex items-center text-sm font-semibold text-customG-700">
-              <span className="flex justify-center items-center mr-2 w-6 h-6 text-xs font-bold text-white bg-blue-500 rounded-full">
+              <span className="flex items-center justify-center w-6 h-6 mr-2 text-xs font-bold text-white bg-blue-500 rounded-full">
                 3
               </span>
               원료/에너지 선택
@@ -210,8 +208,7 @@ export function ExcelCascadingSelector({
             <select
               value={state.rawMaterial}
               onChange={e => handleSelect(e.target.value, 'raw')}
-              className="px-3 py-2 w-full text-sm rounded-lg border border-customG-300 transition-all duration-200 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 hover:border-customG-400"
-            >
+              className="w-full p-2 text-sm transition-all duration-200 border rounded-lg border-customG-300 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 hover:border-customG-400">
               <option value="">원료/에너지를 선택하세요</option>
               {rawMaterialList.map(r => (
                 <option key={r} value={r}>
