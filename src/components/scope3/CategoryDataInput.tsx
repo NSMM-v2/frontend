@@ -6,27 +6,40 @@
  * - 계산기 추가/삭제 기능
  * - 카테고리별 배출량 소계 표시
  * - 빈 상태 및 액션 버튼 관리
+ * - 백엔드 API 연동으로 데이터 자동 저장/수정/삭제
  *
  * @author ESG Project Team
  * @version 1.0
  * @since 2024
  */
 
-import React from 'react'
+import React, {useCallback} from 'react'
 import {motion, AnimatePresence} from 'framer-motion'
 import {Button} from '@/components/ui/button'
 import {Card, CardContent} from '@/components/ui/card'
 import {Plus} from 'lucide-react'
 import {CalculatorItem} from './CalculatorItem'
 import {scope3CategoryList, Scope3CategoryKey} from './CategorySelector'
-import {SelectorState} from '@/lib/types'
+import {
+  SelectorState,
+  Scope3EmissionResponse,
+  Scope3EmissionRequest,
+  Scope3EmissionUpdateRequest
+} from '@/lib/types'
+import {
+  createScope3Emission,
+  updateScope3Emission,
+  deleteScope3Emission
+} from '@/services/scopeService'
 
 /**
- * 계산기 데이터 타입
+ * 계산기 데이터 타입 (확장: 백엔드 데이터 포함)
  */
 interface CalculatorData {
   id: number
   state: SelectorState
+  emissionId?: number // 백엔드에서 받은 배출량 데이터 ID (수정/삭제용)
+  savedData?: Scope3EmissionResponse // 백엔드에서 받은 전체 데이터
 }
 
 /**
@@ -52,8 +65,18 @@ interface CategoryDataInputProps {
   onComplete: () => void
   /** 목록으로 돌아가기 핸들러 */
   onBackToList: () => void
-  calculatorModes: { [id: number]: boolean }
+  calculatorModes: {[id: number]: boolean}
   onModeChange: (id: number, checked: boolean) => void
+
+  // ========================================================================
+  // 백엔드 연동 Props (Backend Integration Props)
+  // ========================================================================
+  /** 선택된 보고년도 (백엔드 저장용) */
+  selectedYear?: number
+  /** 선택된 보고월 (백엔드 저장용) */
+  selectedMonth?: number | null
+  /** 데이터 변경 후 콜백 (CRUD 작업 완료 후 부모 컴포넌트에서 데이터 새로고침) */
+  onDataChange?: () => void
 }
 
 /**
@@ -71,11 +94,98 @@ export function CategoryDataInput({
   onChangeTotal,
   onComplete,
   onBackToList,
-  onModeChange
+  onModeChange,
+  selectedYear,
+  selectedMonth,
+  onDataChange
 }: CategoryDataInputProps) {
   const categoryTitle = scope3CategoryList[activeCategory]
   const categoryNumber = activeCategory.replace('list', '')
   const totalEmission = getTotalEmission(activeCategory)
+
+  const handleAddCalculator = useCallback(() => {
+    onAddCalculator()
+  }, [onAddCalculator])
+
+  const handleRemoveCalculator = useCallback(
+    (id: number) => {
+      onRemoveCalculator(id)
+    },
+    [onRemoveCalculator]
+  )
+
+  const handleUpdateCalculatorState = useCallback(
+    (id: number, newState: SelectorState) => {
+      onUpdateCalculatorState(id, newState)
+    },
+    [onUpdateCalculatorState]
+  )
+
+  const handleChangeTotal = useCallback(
+    (id: number, emission: number) => {
+      onChangeTotal(id, emission)
+    },
+    [onChangeTotal]
+  )
+
+  const handleComplete = useCallback(() => {
+    onComplete()
+  }, [onComplete])
+
+  const handleBackToList = useCallback(() => {
+    onBackToList()
+  }, [onBackToList])
+
+  const handleModeChange = useCallback(
+    (id: number, checked: boolean) => {
+      onModeChange(id, checked)
+    },
+    [onModeChange]
+  )
+
+  const handleDataChange = useCallback(() => {
+    onDataChange?.()
+  }, [onDataChange])
+
+  /**
+   * 입력완료 버튼 클릭 시 모든 계산기 데이터를 백엔드에 저장/수정
+   * - emissionId가 없으면 createScope3Emission(POST)
+   * - emissionId가 있으면 updateScope3Emission(PUT)
+   * 저장 완료 후 onDataChange, onComplete 호출
+   */
+  const handleCompleteAsync = async () => {
+    if (!selectedYear || !selectedMonth) {
+      alert('보고년도와 보고월을 선택해주세요.')
+      return
+    }
+    for (const calc of calculators) {
+      const {emissionId, state, savedData} = calc
+      // 프론트엔드 상태를 백엔드 요청 형식으로 변환
+      const payload: Scope3EmissionRequest | Scope3EmissionUpdateRequest = {
+        majorCategory: state.category,
+        subcategory: state.separate,
+        rawMaterial: state.rawMaterial,
+        unit: state.unit || '',
+        emissionFactor: Number(state.kgCO2eq) || 0,
+        activityAmount: Number(state.quantity) || 0,
+        totalEmission: (Number(state.kgCO2eq) || 0) * (Number(state.quantity) || 0),
+        reportingYear: selectedYear,
+        reportingMonth: selectedMonth,
+        categoryNumber: Number(categoryNumber),
+        categoryName: categoryTitle
+      }
+      if (!emissionId) {
+        // 신규 데이터 생성
+        await createScope3Emission(payload as Scope3EmissionRequest)
+      } else {
+        // 기존 데이터 수정
+        await updateScope3Emission(emissionId, payload as Scope3EmissionUpdateRequest)
+      }
+    }
+    // 저장 완료 후 데이터 새로고침 및 화면 전환
+    onDataChange?.()
+    onComplete()
+  }
 
   return (
     <motion.div
@@ -87,12 +197,12 @@ export function CategoryDataInput({
           헤더 섹션 (Header Section)
           - 카테고리 제목 및 목록으로 돌아가기 버튼
           ======================================================================== */}
-      <div className="flex flex-row items-center justify-between w-full p-4 bg-white rounded-lg shadow-sm">
+      <div className="flex flex-row justify-between items-center p-4 w-full bg-white rounded-lg shadow-sm">
         <motion.div
           initial={{opacity: 0, x: -20}}
           animate={{opacity: 1, x: 0}}
           transition={{delay: 0.1, duration: 0.5}}
-          onClick={onBackToList}
+          onClick={handleBackToList}
           className="flex flex-row items-center p-4 rounded-lg hover:cursor-pointer hover:bg-gray-100">
           <div className="mr-4 text-2xl">←</div>
           <div>
@@ -113,8 +223,8 @@ export function CategoryDataInput({
           initial={{opacity: 0, x: -20}}
           animate={{opacity: 1, x: 0}}
           transition={{delay: 0.1, duration: 0.5}}>
-          <Card className="border-blue-200 min-w-md bg-gradient-to-r from-blue-50 to-emerald-50">
-            <CardContent className="flex items-center justify-between p-6">
+          <Card className="bg-gradient-to-r from-blue-50 to-emerald-50 border-blue-200 min-w-md">
+            <CardContent className="flex justify-between items-center p-6">
               <div>
                 <span className="text-lg font-medium text-customG-700">
                   현재 카테고리 소계:
@@ -140,7 +250,7 @@ export function CategoryDataInput({
           계산기 목록 (Calculator List)
           - 현재 카테고리의 모든 계산기 표시
           ======================================================================== */}
-      <div className="flex flex-col items-center w-full space-y-8">
+      <div className="flex flex-col items-center space-y-8 w-full">
         <AnimatePresence mode="popLayout">
           {calculators.length > 0 ? (
             calculators.map((calc, index) => (
@@ -150,12 +260,12 @@ export function CategoryDataInput({
                 index={index + 1}
                 state={calc.state}
                 totalCount={calculators.length}
-                onChangeState={onUpdateCalculatorState}
-                onChangeTotal={onChangeTotal}
-                onRemove={onRemoveCalculator}
+                onChangeState={handleUpdateCalculatorState}
+                onChangeTotal={handleChangeTotal}
+                onRemove={handleRemoveCalculator}
                 animationDelay={index * 0.1}
                 mode={calculatorModes[calc.id] || false}
-                onModeChange={(checked) => onModeChange(calc.id, checked)}
+                onModeChange={checked => handleModeChange(calc.id, checked)}
               />
             ))
           ) : (
@@ -176,7 +286,7 @@ export function CategoryDataInput({
                     transition={{delay: 0.5, duration: 0.4}}
                     className="mb-6 text-gray-400">
                     <svg
-                      className="w-16 h-16 mx-auto"
+                      className="mx-auto w-16 h-16"
                       fill="none"
                       stroke="currentColor"
                       viewBox="0 0 24 24">
@@ -205,9 +315,9 @@ export function CategoryDataInput({
 
                     {/* 첫 번째 항목 추가 버튼 */}
                     <Button
-                      onClick={onAddCalculator}
-                      className="px-8 py-3 text-lg text-white transition-all duration-200 shadow-md bg-gradient-to-r from-blue-600 to-blue-700 hover:from-blue-700 hover:to-blue-800 hover:shadow-lg">
-                      <Plus className="w-5 h-5 mr-2" />
+                      onClick={handleAddCalculator}
+                      className="px-8 py-3 text-lg text-white bg-gradient-to-r from-blue-600 to-blue-700 shadow-md transition-all duration-200 hover:from-blue-700 hover:to-blue-800 hover:shadow-lg">
+                      <Plus className="mr-2 w-5 h-5" />
                       항목 추가하기
                     </Button>
                   </motion.div>
@@ -227,20 +337,20 @@ export function CategoryDataInput({
           initial={{opacity: 0, y: 20}}
           animate={{opacity: 1, y: 0}}
           transition={{delay: 0.7, duration: 0.5}}
-          className="flex items-center justify-center gap-6 pt-8 border-t border-customG-200">
+          className="flex gap-6 justify-center items-center pt-8 border-t border-customG-200">
           {/* 항목 추가 버튼 */}
           <Button
-            onClick={onAddCalculator}
+            onClick={handleAddCalculator}
             variant="outline"
             className="px-8 py-3 text-lg transition-all duration-200 border-customG-300 hover:bg-customG-50 hover:border-customG-400">
-            <Plus className="w-5 h-5 mr-2" />
+            <Plus className="mr-2 w-5 h-5" />
             항목 추가
           </Button>
 
           {/* 입력 완료 버튼 */}
           <Button
-            onClick={onComplete}
-            className="px-12 py-3 text-lg text-white transition-all duration-200 shadow-md bg-gradient-to-r from-blue-600 to-blue-700 hover:from-blue-700 hover:to-blue-800 hover:shadow-lg">
+            onClick={handleCompleteAsync}
+            className="px-12 py-3 text-lg text-white bg-gradient-to-r from-blue-600 to-blue-700 shadow-md transition-all duration-200 hover:from-blue-700 hover:to-blue-800 hover:shadow-lg">
             입력 완료
           </Button>
         </motion.div>
