@@ -1,5 +1,6 @@
 'use client'
 import {useEffect, useState} from 'react'
+import {fetchFullSelfAssessmentResult} from '@/services/csdddService'
 import {Button} from '@/components/ui/button'
 import {Card} from '@/components/ui/card'
 import {
@@ -44,22 +45,45 @@ interface AnalysisData {
   baseScore: number
   totalPossibleScore: number
   actualScore: number
-  criticalViolations: Array<{
+  grade: string
+  summary: string
+  recommendations: string
+  criticalViolations?: Array<{
     questionId: string
     questionText: string
     violationGrade: string
     violationReason: string
   }>
-  categoryScores: Array<{
+  // categoryScores is deprecated, replaced by categoryAnalysis
+  categoryAnalysis?: Array<{
     category: string
     score: number
+    status?: string // e.g., '우수', '보통', '개선 필요'
+    color?: string // e.g., 'green', 'yellow', 'red'
+    // other fields as needed
   }>
-  answers: Record<string, string>
+  strengths?: Array<{
+    category: string
+    score: number
+    status?: string
+    color?: string
+  }>
+  answers?: Record<string, string>
   gradeInfo: {
     color: string
     description: string
     action: string
   }
+  actionPlan?: ActionPlan[]
+}
+
+type ActionPlan = {
+  priority: string
+  title: string
+  description: string
+  // color?: string
+  // timeline?: string
+  items?: string[]
 }
 
 const categories = [
@@ -68,6 +92,15 @@ const categories = [
   {name: '환경경영', icon: Leaf, color: 'from-green-500 to-emerald-500'},
   {name: '공급망 및 조달', icon: Building, color: 'from-blue-500 to-indigo-500'},
   {name: '윤리경영 및 정보보호', icon: Gavel, color: 'from-purple-500 to-indigo-500'}
+]
+
+// Desired order for category rendering
+const desiredOrder = [
+  '인권 및 노동',
+  '산업안전 보건',
+  '환경경영',
+  '공급망 및 조달',
+  '윤리경영 및 정보보호'
 ]
 
 const improvementTemplates = {
@@ -135,7 +168,13 @@ const riskLevels = {
   }
 }
 
-export default function EvaluationForm() {
+export default function EvaluationForm({
+  headquartersId,
+  accountNumber
+}: {
+  headquartersId: string
+  accountNumber: string
+}) {
   const [analysisData, setAnalysisData] = useState<AnalysisData | null>(null)
   const [activeView, setActiveView] = useState<'overview' | 'detailed' | 'improvement'>(
     'overview'
@@ -143,49 +182,15 @@ export default function EvaluationForm() {
   const [selectedCategory, setSelectedCategory] = useState<string | null>(null)
 
   useEffect(() => {
-    // 실제로는 props나 상태관리에서 받아올 데이터
-    // 여기서는 예시 데이터를 생성
-    generateSampleData()
+    fetchFullSelfAssessmentResult(headquartersId, accountNumber)
+      .then(data => {
+        console.log('📦 분석결과:', data)
+        setAnalysisData(data?.data) // 수정: 실제 결과는 data.data에 있음
+      })
+      .catch(err => {
+        console.error('❌ 분석 결과 불러오기 실패:', err)
+      })
   }, [])
-
-  const generateSampleData = () => {
-    const sampleData: AnalysisData = {
-      timestamp: new Date().toISOString(),
-      finalGrade: 'B',
-      baseScore: 78,
-      totalPossibleScore: 52.5,
-      actualScore: 41.0,
-      criticalViolations: [
-        {
-          questionId: '1.4',
-          questionText:
-            '직장 내 괴롭힘 및 폭력을 방지하기 위한 정책을 마련하고 있습니까?',
-          violationGrade: 'C',
-          violationReason: '사회적 평판 리스크 + 반복 시 B → C'
-        },
-        {
-          questionId: '3.2',
-          questionText: '온실가스 배출량을 관리하고 감축 계획을 수립하고 있습니까?',
-          violationGrade: 'B',
-          violationReason: '공시 목적 미달로 B'
-        }
-      ],
-      categoryScores: [
-        {category: '인권 및 노동', score: 85},
-        {category: '산업안전·보건', score: 92},
-        {category: '환경경영', score: 65},
-        {category: '공급망 및 조달', score: 78},
-        {category: '윤리경영 및 정보보호', score: 88}
-      ],
-      answers: {},
-      gradeInfo: {
-        color: 'text-blue-700 bg-blue-50 border-blue-200',
-        description: '관리 가능 수준',
-        action: '개선 개별 수준'
-      }
-    }
-    setAnalysisData(sampleData)
-  }
 
   const getCategoryIcon = (categoryName: string) => {
     const category = categories.find(cat => cat.name === categoryName)
@@ -197,55 +202,7 @@ export default function EvaluationForm() {
     return category?.color || 'from-gray-500 to-gray-600'
   }
 
-  const generateActionPlan = () => {
-    if (!analysisData) return []
-
-    const plans = []
-
-    // 중대 위반 사항 우선 처리
-    if (analysisData.criticalViolations.length > 0) {
-      plans.push({
-        priority: '긴급',
-        title: '중대 위반 사항 즉시 개선',
-        description: '법적 리스크가 높은 항목들을 최우선으로 개선',
-        timeline: '1개월 이내',
-        items: analysisData.criticalViolations.map(cv => cv.questionText),
-        color: 'border-red-500 bg-red-50'
-      })
-    }
-
-    // 낮은 점수 카테고리 개선
-    const lowScoreCategories = analysisData.categoryScores.filter(cat => cat.score < 80)
-    if (lowScoreCategories.length > 0) {
-      plans.push({
-        priority: '높음',
-        title: '저성과 영역 집중 개선',
-        description: '평균 이하 성과를 보이는 영역의 체계적 개선',
-        timeline: '3개월 이내',
-        items: lowScoreCategories.map(
-          cat => `${cat.category} 영역 개선 (현재 ${cat.score}점)`
-        ),
-        color: 'border-orange-500 bg-orange-50'
-      })
-    }
-
-    // 전반적 시스템 강화
-    plans.push({
-      priority: '보통',
-      title: 'ESG 관리 시스템 강화',
-      description: '전사적 ESG 관리 체계 구축 및 모니터링 시스템 도입',
-      timeline: '6개월 이내',
-      items: [
-        'ESG 전담조직 구성',
-        '정기적 모니터링 체계 구축',
-        '협력업체 관리 강화',
-        '임직원 ESG 교육 확대'
-      ],
-      color: 'border-blue-500 bg-blue-50'
-    })
-
-    return plans
-  }
+  // Deprecated: generateActionPlan, use analysisData.actionPlan directly if available.
 
   const exportDetailedReport = () => {
     if (!analysisData) return
@@ -253,8 +210,9 @@ export default function EvaluationForm() {
     const report = {
       ...analysisData,
       analysisDate: new Date().toISOString(),
-      actionPlan: generateActionPlan(),
-      recommendations: analysisData.categoryScores.map(cat => ({
+      // Use actionPlan directly if available
+      actionPlan: analysisData.actionPlan,
+      recommendations: (analysisData?.categoryAnalysis ?? []).map(cat => ({
         category: cat.category,
         score: cat.score,
         recommendations:
@@ -282,8 +240,37 @@ export default function EvaluationForm() {
     )
   }
 
-  const riskInfo = riskLevels[analysisData.finalGrade as keyof typeof riskLevels]
-  const actionPlans = generateActionPlan()
+  const RISK_LEVEL_MAP = {
+    A: {
+      level: '매우 낮음',
+      color: 'text-green-600',
+      bgColor: 'bg-green-50',
+      borderColor: 'border-green-200'
+    },
+    B: {
+      level: '낮음',
+      color: 'text-blue-600',
+      bgColor: 'bg-blue-50',
+      borderColor: 'border-blue-200'
+    },
+    C: {
+      level: '보통',
+      color: 'text-yellow-600',
+      bgColor: 'bg-yellow-50',
+      borderColor: 'border-yellow-200'
+    },
+    D: {
+      level: '높음',
+      color: 'text-red-600',
+      bgColor: 'bg-red-50',
+      borderColor: 'border-red-200'
+    }
+  }
+  const riskInfo = analysisData?.finalGrade
+    ? RISK_LEVEL_MAP[analysisData.finalGrade as 'A' | 'B' | 'C' | 'D']
+    : undefined
+  // Use actionPlan from analysisData if available, fallback to []
+  const actionPlans = analysisData?.actionPlan ?? []
 
   return (
     <div className="w-full min-h-screen p-6">
@@ -334,50 +321,21 @@ export default function EvaluationForm() {
                 </Button>
               </div>
 
-              <div className="grid grid-cols-1 gap-6 mb-8 lg:grid-cols-4">
-                <div
-                  className={`p-6 rounded-lg border-2 ${riskInfo.bgColor} ${riskInfo.borderColor}`}>
-                  <div className="text-center">
-                    <div className="mb-2 text-4xl font-bold">
-                      {analysisData.finalGrade}
-                    </div>
-                    <div className="mb-1 text-sm font-medium">최종 등급</div>
-                    <div className={`text-xs ${riskInfo.color}`}>
-                      리스크 {riskInfo.level}
+              {riskInfo && (
+                <div className="grid grid-cols-1 gap-6 mb-8 lg:grid-cols-4">
+                  <div
+                    className={`p-6 rounded-lg border-2 ${riskInfo?.bgColor ?? ''} ${
+                      riskInfo?.borderColor ?? ''
+                    }`}>
+                    <div className="text-center">
+                      <div className="mb-2 text-4xl font-bold">
+                        {analysisData?.finalGrade ?? ''}
+                      </div>
+                      <div className="text-sm font-semibold">최종 등급</div>
                     </div>
                   </div>
                 </div>
-
-                <div className="p-6 bg-white border rounded-lg shadow-sm">
-                  <div className="text-center">
-                    <div className="mb-2 text-3xl font-bold text-blue-600">
-                      {analysisData.baseScore}%
-                    </div>
-                    <div className="mb-1 text-sm font-medium">전체 준수율</div>
-                    <div className="text-xs text-gray-600">100% 만점 기준</div>
-                  </div>
-                </div>
-
-                <div className="p-6 bg-white border rounded-lg shadow-sm">
-                  <div className="text-center">
-                    <div className="mb-2 text-3xl font-bold text-red-600">
-                      {analysisData.criticalViolations.length}
-                    </div>
-                    <div className="mb-1 text-sm font-medium">중대 위반</div>
-                    <div className="text-xs text-gray-600">즉시 개선 필요</div>
-                  </div>
-                </div>
-
-                <div className="p-6 bg-white border rounded-lg shadow-sm">
-                  <div className="text-center">
-                    <div className="mb-2 text-3xl font-bold text-green-600">
-                      {analysisData.categoryScores.filter(cat => cat.score >= 80).length}
-                    </div>
-                    <div className="mb-1 text-sm font-medium">우수 영역</div>
-                    <div className="text-xs text-gray-600">80점 이상</div>
-                  </div>
-                </div>
-              </div>
+              )}
 
               {/* Risk Assessment */}
               <div className="grid grid-cols-1 gap-6 md:grid-cols-2">
@@ -385,23 +343,22 @@ export default function EvaluationForm() {
                   <h3 className="mb-4 text-lg font-semibold text-gray-900">
                     위험도 평가
                   </h3>
-                  <div
-                    className={`p-4 rounded-lg ${riskInfo.bgColor} ${riskInfo.borderColor} border`}>
+                  <div className="p-4 border border-gray-200 rounded-lg">
                     <div className="flex items-center gap-3 mb-3">
-                      <div className={`p-2 rounded-full ${riskInfo.bgColor}`}>
-                        <Shield className={`w-5 h-5 ${riskInfo.color}`} />
+                      <div className="p-2 bg-gray-100 rounded-full">
+                        <Shield className="w-5 h-5 text-gray-500" />
                       </div>
                       <div>
-                        <div className={`font-semibold ${riskInfo.color}`}>
-                          전체 위험도: {riskInfo.level}
+                        <div className="font-semibold text-gray-800">
+                          전체 위험도: {analysisData?.grade ?? ''}
                         </div>
                         <div className="text-sm text-gray-600">
-                          {analysisData.gradeInfo.description}
+                          {analysisData?.summary ?? ''}
                         </div>
                       </div>
                     </div>
                     <div className="text-sm text-gray-700">
-                      <strong>권장 조치:</strong> {analysisData.gradeInfo.action}
+                      <strong>권장 조치:</strong> {analysisData?.recommendations ?? ''}
                     </div>
                   </div>
                 </div>
@@ -409,25 +366,17 @@ export default function EvaluationForm() {
                 <div>
                   <h3 className="mb-4 text-lg font-semibold text-gray-900">주요 강점</h3>
                   <div className="space-y-2">
-                    {analysisData.categoryScores
-                      .filter(cat => cat.score >= 80)
-                      .sort((a, b) => b.score - a.score)
-                      .slice(0, 3)
-                      .map(cat => (
-                        <div
-                          key={cat.category}
-                          className="flex items-center gap-3 p-3 border border-green-200 rounded-lg bg-green-50">
-                          <CheckCircle2 className="w-5 h-5 text-green-600" />
-                          <div className="flex-1">
-                            <div className="font-medium text-green-800">
-                              {cat.category}
-                            </div>
-                            <div className="text-sm text-green-600">
-                              {cat.score}점 달성
-                            </div>
-                          </div>
+                    {(analysisData?.strengths ?? []).slice(0, 3).map((cat, index) => (
+                      <div
+                        key={`${cat.category}-${index}`}
+                        className="flex items-center gap-3 p-3 border border-green-200 rounded-lg bg-green-50">
+                        <CheckCircle2 className="w-5 h-5 text-green-600" />
+                        <div className="flex-1">
+                          <div className="font-medium text-green-800">{cat.category}</div>
+                          <div className="text-sm text-green-600">{cat.score}점 달성</div>
                         </div>
-                      ))}
+                      </div>
+                    ))}
                   </div>
                 </div>
               </div>
@@ -437,53 +386,73 @@ export default function EvaluationForm() {
             <Card className="p-6 shadow-lg bg-white/80 backdrop-blur-sm">
               <h2 className="mb-6 text-2xl font-bold text-gray-900">영역별 성과</h2>
               <div className="grid grid-cols-1 gap-4 md:grid-cols-2 lg:grid-cols-3">
-                {analysisData.categoryScores.map(cat => {
-                  const IconComponent = getCategoryIcon(cat.category)
-                  const colorClass = getCategoryColor(cat.category)
-                  const isLowScore = cat.score < 70
-
-                  return (
-                    <div
-                      key={cat.category}
-                      className={`p-4 rounded-lg border cursor-pointer transition-all hover:shadow-md ${
-                        isLowScore
-                          ? 'border-red-200 bg-red-50'
-                          : cat.score >= 90
-                          ? 'border-green-200 bg-green-50'
-                          : 'border-gray-200 bg-white'
-                      }`}
-                      onClick={() => setSelectedCategory(cat.category)}>
-                      <div className="flex items-center gap-3 mb-3">
-                        <div className={`p-2 rounded-lg bg-gradient-to-r ${colorClass}`}>
-                          <IconComponent className="w-5 h-5 text-white" />
-                        </div>
-                        <div className="flex-1">
-                          <div className="font-medium text-gray-900">{cat.category}</div>
-                          <div className="text-2xl font-bold text-gray-800">
-                            {cat.score}%
-                          </div>
-                        </div>
-                        {isLowScore && <AlertTriangle className="w-5 h-5 text-red-500" />}
-                        {cat.score >= 90 && (
-                          <CheckCircle2 className="w-5 h-5 text-green-500" />
-                        )}
-                      </div>
-
-                      <div className="w-full h-2 bg-gray-200 rounded-full">
-                        <div
-                          className={`h-2 rounded-full ${
-                            isLowScore
-                              ? 'bg-red-500'
-                              : cat.score >= 90
-                              ? 'bg-green-500'
-                              : 'bg-blue-500'
-                          }`}
-                          style={{width: `${cat.score}%`}}
-                        />
-                      </div>
-                    </div>
+                {(() => {
+                  // Sort categories according to desiredOrder before rendering
+                  const orderedCategoryAnalysis = [
+                    ...(analysisData?.categoryAnalysis ?? [])
+                  ].sort(
+                    (a, b) =>
+                      desiredOrder.indexOf(a.category.replace('·', ' ')) -
+                      desiredOrder.indexOf(b.category.replace('·', ' '))
                   )
-                })}
+                  return orderedCategoryAnalysis.map(cat => {
+                    const IconComponent = getCategoryIcon(cat.category)
+                    const colorClass = getCategoryColor(cat.category)
+                    // Use status and color from backend, fallback to old logic if not present
+                    const status = cat.status
+                    const color = cat.color
+                    // Color classes for border/background
+                    let borderBgClass = 'border-gray-200 bg-white'
+                    if (color === 'red' || status === '개선 필요') {
+                      borderBgClass = 'border-red-200 bg-red-50'
+                    } else if (color === 'green' || status === '우수') {
+                      borderBgClass = 'border-green-200 bg-green-50'
+                    } else if (color === 'yellow' || status === '보통') {
+                      borderBgClass = 'border-yellow-200 bg-yellow-50'
+                    }
+                    return (
+                      <div
+                        key={cat.category}
+                        className={`p-4 rounded-lg border cursor-pointer transition-all hover:shadow-md ${borderBgClass}`}
+                        onClick={() => setSelectedCategory(cat.category)}>
+                        <div className="flex items-center gap-3 mb-3">
+                          <div
+                            className={`p-2 rounded-lg bg-gradient-to-r ${colorClass}`}>
+                            <IconComponent className="w-5 h-5 text-white" />
+                          </div>
+                          <div className="flex-1">
+                            <div className="font-medium text-gray-900">
+                              {cat.category}
+                            </div>
+                            <div className="text-2xl font-bold text-gray-800">
+                              {cat.score}%
+                            </div>
+                          </div>
+                          {status === '개선 필요' || color === 'red' ? (
+                            <AlertTriangle className="w-5 h-5 text-red-500" />
+                          ) : null}
+                          {status === '우수' || color === 'green' ? (
+                            <CheckCircle2 className="w-5 h-5 text-green-500" />
+                          ) : null}
+                        </div>
+                        <div className="w-full h-2 bg-gray-200 rounded-full">
+                          <div
+                            className={`h-2 rounded-full ${
+                              color === 'red' || status === '개선 필요'
+                                ? 'bg-red-500'
+                                : color === 'green' || status === '우수'
+                                ? 'bg-green-500'
+                                : color === 'yellow' || status === '보통'
+                                ? 'bg-yellow-500'
+                                : 'bg-blue-500'
+                            }`}
+                            style={{width: `${cat.score}%`}}
+                          />
+                        </div>
+                      </div>
+                    )
+                  })
+                })()}
               </div>
             </Card>
           </div>
@@ -492,16 +461,16 @@ export default function EvaluationForm() {
         {activeView === 'detailed' && (
           <div className="space-y-6">
             {/* Critical Violations */}
-            {analysisData.criticalViolations.length > 0 && (
+            {(analysisData?.criticalViolations?.length ?? 0) > 0 && (
               <Card className="p-6 shadow-lg bg-white/80 backdrop-blur-sm">
                 <h2 className="flex items-center gap-2 mb-6 text-2xl font-bold text-red-800">
                   <AlertTriangle className="w-6 h-6" />
                   중대 위반 사항
                 </h2>
                 <div className="space-y-4">
-                  {analysisData.criticalViolations.map((violation, index) => (
+                  {(analysisData?.criticalViolations ?? []).map((violation, index) => (
                     <div
-                      key={index}
+                      key={`${violation.questionId}-${index}`}
                       className="p-4 border-2 border-red-200 rounded-lg bg-red-50">
                       <div className="flex items-start gap-4">
                         <div className="flex items-center justify-center flex-shrink-0 w-10 h-10 bg-red-100 rounded-full">
@@ -533,82 +502,110 @@ export default function EvaluationForm() {
             <Card className="p-6 shadow-lg bg-white/80 backdrop-blur-sm">
               <h2 className="mb-6 text-2xl font-bold text-gray-900">영역별 상세 분석</h2>
               <div className="space-y-6">
-                {analysisData.categoryScores.map(cat => {
-                  const IconComponent = getCategoryIcon(cat.category)
-                  const colorClass = getCategoryColor(cat.category)
-                  const recommendations =
-                    improvementTemplates[
-                      cat.category as keyof typeof improvementTemplates
-                    ] || []
-
-                  return (
-                    <div key={cat.category} className="p-6 border rounded-lg bg-gray-50">
-                      <div className="flex items-center gap-4 mb-4">
-                        <div className={`p-3 rounded-lg bg-gradient-to-r ${colorClass}`}>
-                          <IconComponent className="w-6 h-6 text-white" />
-                        </div>
-                        <div className="flex-1">
-                          <h3 className="text-xl font-semibold text-gray-900">
-                            {cat.category}
-                          </h3>
-                          <div className="flex items-center gap-4 mt-1">
-                            <span className="text-2xl font-bold text-blue-600">
-                              {cat.score}%
-                            </span>
-                            {cat.score >= 90 ? (
-                              <span className="flex items-center gap-1 text-green-600">
-                                <TrendingUp className="w-4 h-4" />
-                                우수
-                              </span>
-                            ) : cat.score < 70 ? (
-                              <span className="flex items-center gap-1 text-red-600">
-                                <TrendingDown className="w-4 h-4" />
-                                개선 필요
-                              </span>
-                            ) : (
-                              <span className="flex items-center gap-1 text-yellow-600">
-                                <Activity className="w-4 h-4" />
-                                보통
-                              </span>
-                            )}
-                          </div>
-                        </div>
-                      </div>
-
-                      <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
-                        <div>
-                          <h4 className="mb-3 font-medium text-gray-800">현황 분석</h4>
-                          <div className="space-y-2">
-                            <div className="flex justify-between">
-                              <span className="text-sm text-gray-600">준수율</span>
-                              <span className="font-medium">{cat.score}%</span>
-                            </div>
-                            <div className="w-full h-2 bg-gray-200 rounded-full">
-                              <div
-                                className="h-2 bg-blue-500 rounded-full"
-                                style={{width: `${cat.score}%`}}
-                              />
-                            </div>
-                          </div>
-                        </div>
-
-                        <div>
-                          <h4 className="mb-3 font-medium text-gray-800">
-                            개선 권장사항
-                          </h4>
-                          <ul className="space-y-1 text-sm text-gray-600">
-                            {recommendations.slice(0, 3).map((rec, idx) => (
-                              <li key={idx} className="flex items-center gap-2">
-                                <ArrowRight className="w-3 h-3 text-blue-500" />
-                                {rec}
-                              </li>
-                            ))}
-                          </ul>
-                        </div>
-                      </div>
-                    </div>
+                {(() => {
+                  // Sort categories according to desiredOrder before rendering
+                  const orderedCategoryAnalysis = [
+                    ...(analysisData?.categoryAnalysis ?? [])
+                  ].sort(
+                    (a, b) =>
+                      desiredOrder.indexOf(a.category.replace('·', ' ')) -
+                      desiredOrder.indexOf(b.category.replace('·', ' '))
                   )
-                })}
+                  return orderedCategoryAnalysis.map(cat => {
+                    const IconComponent = getCategoryIcon(cat.category)
+                    const colorClass = getCategoryColor(cat.category)
+                    const recommendations =
+                      improvementTemplates[
+                        cat.category as keyof typeof improvementTemplates
+                      ] || []
+                    const status = cat.status
+                    const color = cat.color
+                    let statusElem = null
+                    if (status === '우수' || color === 'green') {
+                      statusElem = (
+                        <span className="flex items-center gap-1 text-green-600">
+                          <TrendingUp className="w-4 h-4" />
+                          우수
+                        </span>
+                      )
+                    } else if (status === '개선 필요' || color === 'red') {
+                      statusElem = (
+                        <span className="flex items-center gap-1 text-red-600">
+                          <TrendingDown className="w-4 h-4" />
+                          개선 필요
+                        </span>
+                      )
+                    } else if (status === '보통' || color === 'yellow') {
+                      statusElem = (
+                        <span className="flex items-center gap-1 text-yellow-600">
+                          <Activity className="w-4 h-4" />
+                          보통
+                        </span>
+                      )
+                    } else {
+                      statusElem = (
+                        <span className="flex items-center gap-1 text-blue-600">
+                          <Activity className="w-4 h-4" />-
+                        </span>
+                      )
+                    }
+                    return (
+                      <div
+                        key={cat.category}
+                        className="p-6 border rounded-lg bg-gray-50">
+                        <div className="flex items-center gap-4 mb-4">
+                          <div
+                            className={`p-3 rounded-lg bg-gradient-to-r ${colorClass}`}>
+                            <IconComponent className="w-6 h-6 text-white" />
+                          </div>
+                          <div className="flex-1">
+                            <h3 className="text-xl font-semibold text-gray-900">
+                              {cat.category}
+                            </h3>
+                            <div className="flex items-center gap-4 mt-1">
+                              <span className="text-2xl font-bold text-blue-600">
+                                {cat.score}%
+                              </span>
+                              {statusElem}
+                            </div>
+                          </div>
+                        </div>
+
+                        <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
+                          <div>
+                            <h4 className="mb-3 font-medium text-gray-800">현황 분석</h4>
+                            <div className="space-y-2">
+                              <div className="flex justify-between">
+                                <span className="text-sm text-gray-600">준수율</span>
+                                <span className="font-medium">{cat.score}%</span>
+                              </div>
+                              <div className="w-full h-2 bg-gray-200 rounded-full">
+                                <div
+                                  className="h-2 bg-blue-500 rounded-full"
+                                  style={{width: `${cat.score}%`}}
+                                />
+                              </div>
+                            </div>
+                          </div>
+
+                          <div>
+                            <h4 className="mb-3 font-medium text-gray-800">
+                              개선 권장사항
+                            </h4>
+                            <ul className="space-y-1 text-sm text-gray-600">
+                              {(recommendations ?? []).slice(0, 3).map((rec, idx) => (
+                                <li key={rec} className="flex items-center gap-2">
+                                  <ArrowRight className="w-3 h-3 text-blue-500" />
+                                  {rec}
+                                </li>
+                              ))}
+                            </ul>
+                          </div>
+                        </div>
+                      </div>
+                    )
+                  })
+                })()}
               </div>
             </Card>
           </div>
@@ -624,7 +621,9 @@ export default function EvaluationForm() {
               </h2>
               <div className="space-y-6">
                 {actionPlans.map((plan, index) => (
-                  <div key={index} className={`p-6 border-2 rounded-lg ${plan.color}`}>
+                  <div
+                    key={plan.title + plan.priority}
+                    className="p-6 border-2 rounded-lg">
                     <div className="flex items-start justify-between mb-4">
                       <div>
                         <div className="flex items-center gap-3 mb-2">
@@ -638,10 +637,6 @@ export default function EvaluationForm() {
                             }`}>
                             {plan.priority} 우선순위
                           </span>
-                          <span className="flex items-center gap-1 text-sm text-gray-600">
-                            <Calendar className="w-4 h-4" />
-                            {plan.timeline}
-                          </span>
                         </div>
                         <h3 className="text-xl font-semibold text-gray-900">
                           {plan.title}
@@ -649,18 +644,6 @@ export default function EvaluationForm() {
                         <p className="mt-1 text-gray-600">{plan.description}</p>
                       </div>
                       <Flag className="w-6 h-6 text-gray-400" />
-                    </div>
-
-                    <div>
-                      <h4 className="mb-3 font-medium text-gray-800">세부 실행 항목</h4>
-                      <ul className="space-y-2">
-                        {plan.items.map((item, itemIndex) => (
-                          <li key={itemIndex} className="flex items-center gap-3">
-                            <div className="w-2 h-2 bg-blue-500 rounded-full" />
-                            <span className="text-sm text-gray-700">{item}</span>
-                          </li>
-                        ))}
-                      </ul>
                     </div>
                   </div>
                 ))}
@@ -697,7 +680,7 @@ export default function EvaluationForm() {
                   }
                 ].map((timeline, index) => (
                   <div
-                    key={index}
+                    key={timeline.period}
                     className={`p-4 border-2 rounded-lg ${timeline.color}`}>
                     <div className="flex items-center gap-4 mb-3">
                       <div className="flex items-center justify-center w-8 h-8 bg-white rounded-full">
@@ -708,9 +691,9 @@ export default function EvaluationForm() {
                       <div>
                         <h3 className="font-semibold text-gray-900">{timeline.period}</h3>
                         <div className="flex flex-wrap gap-2 mt-1">
-                          {timeline.tasks.map((task, taskIndex) => (
+                          {timeline.tasks.map(task => (
                             <span
-                              key={taskIndex}
+                              key={task}
                               className="px-2 py-1 text-xs bg-white rounded">
                               {task}
                             </span>
@@ -793,8 +776,9 @@ export default function EvaluationForm() {
         {/* Footer */}
         <div className="pt-8 mt-12 text-center border-t border-gray-200">
           <p className="text-sm text-gray-600">
-            분석 완료일: {new Date(analysisData.timestamp).toLocaleDateString('ko-KR')} |
-            ESG 자가진단 시스템 v2.0
+            분석 완료일:{' '}
+            {new Date(analysisData?.timestamp ?? '').toLocaleDateString('ko-KR')} | ESG
+            자가진단 시스템 v2.0
           </p>
           <div className="mt-4">
             <Button onClick={() => window.print()} variant="outline" className="mr-4">
