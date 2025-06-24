@@ -79,9 +79,9 @@ export default function Layout({children}: {children: React.ReactNode}) {
   // 로딩 중인 경우 로딩 화면 표시
   // if (isLoading) {
   //   return (
-  //     <div className="flex justify-center items-center w-full min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100">
+  //     <div className="flex items-center justify-center w-full min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100">
   //       <div className="text-center">
-  //         <div className="mx-auto mb-4 w-8 h-8 rounded-full border-4 border-blue-600 animate-spin border-t-transparent"></div>
+  //         <div className="w-8 h-8 mx-auto mb-4 border-4 border-blue-600 rounded-full animate-spin border-t-transparent"></div>
   //         <p className="text-gray-600">인증 확인 중...</p>
   //       </div>
   //     </div>
@@ -97,7 +97,9 @@ export default function Layout({children}: {children: React.ReactNode}) {
     <div className="flex flex-col items-center w-full min-h-screen">
       <NavigationBar />
       <SideBar />
-      <div className="flex flex-1 mt-20 w-full max-w-screen-xl">{children}</div>
+      <div className="flex flex-1 w-full max-w-screen-sm pl-12 mt-20 md:max-w-screen-xl md:pl-0">
+        {children}
+      </div>
     </div>
   )
 }
