@@ -36,6 +36,11 @@ export interface UserInfo {
   department?: string
   position?: string
   passwordChanged?: boolean // 협력사 초기 비밀번호 변경 여부
+  headquarters?: {
+    id: string
+  }
+  partnerId?: string
+  headquartersId?: string
 }
 
 // API 응답 인터페이스
