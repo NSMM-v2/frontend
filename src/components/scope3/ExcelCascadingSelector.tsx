@@ -262,12 +262,12 @@ export function ExcelCascadingSelector({
   // ========================================================================
 
   return (
-    <Card className="w-full max-w-2xl shadow-sm">
+    <Card className="w-full max-w-2xl shadow-sm min-w-2xl">
       <CardContent className="p-6 space-y-6">
         {/* 1단계: 대분류 선택 */}
         <div className="space-y-2">
           <label className="flex items-center text-sm font-semibold text-customG-700">
-            <span className="flex justify-center items-center mr-2 w-6 h-6 text-xs font-bold text-white bg-blue-500 rounded-full">
+            <span className="flex items-center justify-center w-6 h-6 mr-2 text-xs font-bold text-white bg-blue-500 rounded-full">
               1
             </span>
             대분류 선택
@@ -275,7 +275,7 @@ export function ExcelCascadingSelector({
           <select
             value={state.category}
             onChange={e => handleSelect(e.target.value, 'category')}
-            className="px-3 py-2 w-full text-sm rounded-lg border border-customG-300 transition-all duration-200 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 hover:border-customG-400">
+            className="w-full px-3 py-2 text-sm transition-all duration-200 border rounded-lg border-customG-300 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 hover:border-customG-400">
             <option value="">대분류를 선택하세요</option>
             {categoryList.map(c => (
               <option key={c} value={c}>
@@ -289,7 +289,7 @@ export function ExcelCascadingSelector({
         {state.category && (
           <div className="space-y-2">
             <label className="flex items-center text-sm font-semibold text-customG-700">
-              <span className="flex justify-center items-center mr-2 w-6 h-6 text-xs font-bold text-white bg-blue-500 rounded-full">
+              <span className="flex items-center justify-center w-6 h-6 mr-2 text-xs font-bold text-white bg-blue-500 rounded-full">
                 2
               </span>
               구분 선택
@@ -297,7 +297,7 @@ export function ExcelCascadingSelector({
             <select
               value={state.separate}
               onChange={e => handleSelect(e.target.value, 'separate')}
-              className="px-3 py-2 w-full text-sm rounded-lg border border-customG-300 transition-all duration-200 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 hover:border-customG-400">
+              className="w-full px-3 py-2 text-sm transition-all duration-200 border rounded-lg border-customG-300 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 hover:border-customG-400">
               <option value="">구분을 선택하세요</option>
               {separateList.map(s => (
                 <option key={s} value={s}>
@@ -312,7 +312,7 @@ export function ExcelCascadingSelector({
         {state.separate && (
           <div className="space-y-2">
             <label className="flex items-center text-sm font-semibold text-customG-700">
-              <span className="flex justify-center items-center mr-2 w-6 h-6 text-xs font-bold text-white bg-blue-500 rounded-full">
+              <span className="flex items-center justify-center w-6 h-6 mr-2 text-xs font-bold text-white bg-blue-500 rounded-full">
                 3
               </span>
               원료/에너지 선택
@@ -320,7 +320,7 @@ export function ExcelCascadingSelector({
             <select
               value={state.rawMaterial}
               onChange={e => handleSelect(e.target.value, 'raw')}
-              className="px-3 py-2 w-full text-sm rounded-lg border border-customG-300 transition-all duration-200 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 hover:border-customG-400">
+              className="w-full p-2 text-sm transition-all duration-200 border rounded-lg border-customG-300 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 hover:border-customG-400">
               <option value="">원료/에너지를 선택하세요</option>
               {rawMaterialList.map(r => (
                 <option key={r} value={r}>
@@ -333,10 +333,10 @@ export function ExcelCascadingSelector({
 
         {/* 4단계: 수량 입력 및 배출량 계산 결과 */}
         {selectedItem && (
-          <div className="p-4 space-y-4 bg-gradient-to-r from-blue-50 to-emerald-50 rounded-lg border border-blue-200">
+          <div className="p-4 space-y-4 border border-blue-200 rounded-lg">
             {/* 배출계수 정보 표시 */}
-            <div className="p-3 bg-white rounded-lg border border-blue-100">
-              <div className="flex justify-between items-center text-sm">
+            <div className="p-3 bg-white border border-blue-100 rounded-lg">
+              <div className="flex items-center justify-between text-sm">
                 <span className="font-medium text-customG-700">선택된 배출계수:</span>
                 <span className="font-bold text-blue-600">
                   {selectedItem.kgCO2eq} kgCO₂/{selectedItem.unit}
@@ -347,7 +347,7 @@ export function ExcelCascadingSelector({
             {/* 수량 입력 */}
             <div className="space-y-2">
               <label className="flex items-center text-sm font-semibold text-customG-700">
-                <span className="flex justify-center items-center mr-2 w-6 h-6 text-xs font-bold text-white bg-blue-500 rounded-full">
+                <span className="flex items-center justify-center w-6 h-6 mr-2 text-xs font-bold text-white bg-blue-500 rounded-full">
                   4
                 </span>
                 수량 입력
@@ -361,7 +361,7 @@ export function ExcelCascadingSelector({
                   value={state.quantity}
                   onChange={e => handleQuantityChange(e.target.value)}
                   placeholder={`${selectedItem.unit} 단위로 입력`}
-                  className="px-3 py-2 pr-20 w-full text-sm rounded-lg border border-customG-300 transition-all duration-200 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 hover:border-customG-400"
+                  className="w-full px-3 py-2 pr-20 text-sm transition-all duration-200 border rounded-lg border-customG-300 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 hover:border-customG-400"
                 />
                 <div className="absolute inset-y-0 right-0 flex items-center pr-3 text-sm text-customG-500">
                   {selectedItem.unit}
@@ -370,7 +370,7 @@ export function ExcelCascadingSelector({
             </div>
 
             {/* 실시간 배출량 계산 결과 */}
-            <div className="flex justify-between items-center p-4 bg-white rounded-lg border border-blue-200 shadow-sm">
+            <div className="flex items-center justify-between p-4 bg-white border border-blue-200 rounded-lg shadow-sm">
               <span className="text-sm font-medium text-customG-600">계산된 배출량:</span>
               <div className="text-right">
                 <div className="text-xl font-bold text-blue-600">
@@ -394,7 +394,7 @@ export function ExcelCascadingSelector({
 
         {/* 데이터 로딩 상태 표시 */}
         {data.length === 0 && (
-          <div className="p-4 text-center text-sm text-customG-500 bg-gray-50 rounded-lg">
+          <div className="p-4 text-sm text-center rounded-lg text-customG-500 bg-gray-50">
             배출계수 데이터를 로딩 중입니다...
           </div>
         )}

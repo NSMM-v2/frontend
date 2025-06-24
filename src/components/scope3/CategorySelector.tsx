@@ -88,8 +88,8 @@ export function CategorySelector({
                   : 'bg-white hover:border-customG-300 hover:bg-gradient-to-br hover:from-gray-50 hover:to-blue-25'
               }`}
               onClick={() => onCategorySelect(key as Scope3CategoryKey)}>
-              <CardHeader className="pb-4">
-                <div className="flex justify-between items-start">
+              <CardHeader className="p-4">
+                <div className="flex items-start justify-between">
                   {/* 카테고리 정보 */}
                   <div className="flex-1">
                     {/* 카테고리 번호 */}
@@ -97,7 +97,7 @@ export function CategorySelector({
                       카테고리 {key.replace('list', '')}
                     </div>
                     {/* 카테고리 제목 */}
-                    <CardTitle className="text-sm leading-tight text-customG-800 hover:text-blue-700 transition-colors">
+                    <CardTitle className="text-sm leading-tight transition-colors text-customG-800 hover:text-blue-700">
                       {value}
                     </CardTitle>
                   </div>
@@ -115,7 +115,7 @@ export function CategorySelector({
                 </div>
 
                 {/* 데이터 상태 표시 */}
-                <div className="flex justify-between items-center mt-3 pt-3 border-t border-gray-200">
+                <div className="flex items-center justify-between pt-3 mt-3 border-t border-gray-200">
                   <div
                     className={`flex items-center text-xs ${
                       hasData ? 'text-blue-600' : 'text-gray-500'

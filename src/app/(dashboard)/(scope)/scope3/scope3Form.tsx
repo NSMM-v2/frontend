@@ -23,7 +23,8 @@ import Link from 'next/link'
 import {
   Home, // 홈 아이콘
   ArrowLeft, // 왼쪽 화살표 (뒤로가기)
-  Factory // 공장 아이콘
+  Factory, // 공장 아이콘
+  CalendarDays
 } from 'lucide-react'
 
 // 브레드크럼 네비게이션 컴포넌트 임포트
@@ -44,6 +45,9 @@ import {CategorySummaryCard} from '@/components/scope3/CategorySummaryCard'
 import {CategorySelector, Scope3CategoryKey} from '@/components/scope3/CategorySelector'
 import {CategoryDataInput} from '@/components/scope3/CategoryDataInput'
 import {SelectorState} from '@/components/scope3/ExcelCascadingSelector'
+import {MonthSelector} from '@/components/scope/MonthSelector'
+import {Input} from '@/components/ui/input'
+import {Card, CardContent} from '@/components/ui/card'
 
 // ============================================================================
 // 타입 정의 (Type Definitions)
@@ -69,6 +73,9 @@ export default function Scope3Form() {
   // ========================================================================
   // 상태 관리 (State Management)
   // ========================================================================
+  const [selectedYear, setSelectedYear] = useState<number>(new Date().getFullYear()) // 선택된 연도
+  const currentMonth = new Date().getMonth() + 1 // JavaScript의 월은 0부터 시작하므로 1을 더함
+  const [selectedMonth, setSelectedMonth] = useState<number | null>(currentMonth) // 선택된 월 (null이면 전체)
 
   const [activeCategory, setActiveCategory] = useState<Scope3CategoryKey | null>(null) // 현재 선택된 카테고리
 
@@ -227,7 +234,7 @@ export default function Scope3Form() {
   // ========================================================================
 
   return (
-    <div className="flex flex-col p-4 w-full h-full">
+    <div className="flex flex-col w-full h-full p-4">
       {/* ========================================================================
           상단 네비게이션 (Top Navigation)
           - 브레드크럼을 통한 현재 위치 표시
@@ -236,7 +243,7 @@ export default function Scope3Form() {
         <Breadcrumb>
           <BreadcrumbList>
             <BreadcrumbItem>
-              <Home className="mr-1 w-4 h-4" />
+              <Home className="w-4 h-4 mr-1" />
               <BreadcrumbLink href="/dashboard">대시보드</BreadcrumbLink>
             </BreadcrumbItem>
             <BreadcrumbSeparator />
@@ -251,10 +258,10 @@ export default function Scope3Form() {
           헤더 섹션 (Header Section)
           - 뒤로가기 버튼과 페이지 제목/설명
           ======================================================================== */}
-      <div className="flex flex-row mb-6 w-full h-24">
+      <div className="flex flex-row justify-between w-full h-24 mb-6">
         <Link
           href="/dashboard"
-          className="flex flex-row items-center p-4 space-x-4 rounded-md transition cursor-pointer hover:bg-gray-200">
+          className="flex flex-row items-center p-4 space-x-4 transition rounded-md cursor-pointer hover:bg-gray-200">
           <ArrowLeft className="w-6 h-6 text-gray-500 group-hover:text-blue-600" />
           <PageHeader
             icon={<Factory className="w-6 h-6 text-customG-600" />}
@@ -274,13 +281,47 @@ export default function Scope3Form() {
         /* ====================================================================
             카테고리 선택 화면 (Category Selection Screen)
             ==================================================================== */
+
         <motion.div
-          initial={{opacity: 0, scale: 0.95}}
-          animate={{opacity: 1, scale: 1}}
-          transition={{delay: 0.6, duration: 0.5}}
-          className="space-y-6">
-          {/* 전체 배출량 요약 카드 */}
-          <CategorySummaryCard totalEmission={grandTotal} animationDelay={0.1} />
+          initial={{opacity: 0}}
+          animate={{opacity: 1}}
+          transition={{duration: 0.4, delay: 0.1}}>
+          <Card className="mb-4 overflow-hidden shadow-sm">
+            <CardContent className="p-4">
+              <div className="grid items-center justify-center h-24 grid-cols-1 gap-8 md:grid-cols-3">
+                <CategorySummaryCard totalEmission={grandTotal} animationDelay={0.1} />
+
+                {/* 보고연도 입력 필드 */}
+                <div className="space-y-3">
+                  <label className="flex items-center gap-2 text-sm font-semibold text-customG-700">
+                    <CalendarDays className="w-4 h-4" />
+                    보고연도
+                  </label>
+                  <Input
+                    type="number"
+                    value={selectedYear}
+                    onChange={e => setSelectedYear(parseInt(e.target.value))}
+                    min="1900"
+                    max="2200"
+                    className="w-full px-3 py-2 text-sm h-9 backdrop-blur-sm border-customG-200 focus:border-customG-400 focus:ring-customG-100 bg-white/80"
+                  />
+                </div>
+
+                {/* 보고월 선택 드롭다운 (선택사항) */}
+                <div className="space-y-3">
+                  <label className="flex items-center gap-2 text-sm font-semibold text-customG-700">
+                    <CalendarDays className="w-4 h-4" />
+                    보고월 (선택사항)
+                  </label>
+                  <MonthSelector
+                    className="w-full"
+                    selectedMonth={selectedMonth}
+                    onSelect={setSelectedMonth}
+                  />
+                </div>
+              </div>
+            </CardContent>
+          </Card>
 
           {/* 카테고리 선택 그리드 */}
           <CategorySelector
@@ -305,19 +346,6 @@ export default function Scope3Form() {
           onBackToList={handleBackToList}
         />
       )}
-
-      {/* ========================================================================
-          네비게이션 버튼 (Navigation Button)
-          - scope2로 이동하는 방향 버튼
-          ======================================================================== */}
-      <DirectionButton
-        direction="left"
-        tooltip="scope2로 이동"
-        href="/scope2"
-        fixed
-        position="middle-left"
-        size={48}
-      />
     </div>
   )
 }
