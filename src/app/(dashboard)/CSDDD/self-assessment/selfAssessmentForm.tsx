@@ -24,17 +24,33 @@
  * @lastModified 2024-12-21
  */
 
+// ============================================================================
+// 외부 서비스 함수 임포트 (예: 제출 API)
+// ============================================================================
+// ============================================================================
+// 외부 서비스 함수 임포트 (예: 제출 API)
+// ============================================================================
 'use client'
+
+import {
+  submitSelfAssessmentToBackend,
+  fetchSelfAssessmentAnswers
+} from '@/services/csdddService'
+
+import type {SelfAssessmentRequest} from '@/types/csdddType'
+import {answerConverter} from '@/util/answerConverter'
+
+import authService from '@/services/authService'
 
 // ============================================================================
 // 외부 라이브러리 임포트 (External Library Imports)
 // ============================================================================
 
 import {useEffect, useState} from 'react' // React 상태 관리 및 생명주기 훅
+import {showSuccess, showError} from '@/util/toast'
 import {Button} from '@/components/ui/button' // 커스텀 버튼 컴포넌트
 import {Card} from '@/components/ui/card' // 카드 레이아웃 컴포넌트
 import Link from 'next/link' // Next.js 내부 링크 컴포넌트
-import PDFReportGenerator from '@/components/CSDDD/PDFReportGenerator' // PDF 보고서 생성 컴포넌트
 
 // ============================================================================
 // 아이콘 라이브러리 임포트 (Icon Library Imports)
@@ -50,6 +66,13 @@ import {
   Home, // 홈 아이콘 - 브레드크럼 홈 링크
   ArrowLeft // 왼쪽 화살표 - 뒤로가기 버튼
 } from 'lucide-react'
+
+import {
+  Tooltip,
+  TooltipTrigger,
+  TooltipContent,
+  TooltipProvider
+} from '@/components/ui/tooltip'
 
 // ============================================================================
 // 내부 컴포넌트 임포트 (Internal Component Imports)
@@ -489,6 +512,56 @@ export default function SelfAssessmentForm() {
    * 각 질문 ID를 키로 하고 'yes' 또는 'no' 값을 저장
    */
   const [answers, setAnswers] = useState<Record<string, string>>({})
+  const [submitted, setSubmitted] = useState(false)
+  // zustand auth store에서 정보 가져오기
+
+  // ========================================================================
+  // 자가진단 제출 핸들러 (Self-Assessment Submission)
+  // ========================================================================
+  const handleSubmit = async () => {
+    try {
+      const userInfoResponse = await authService.getCurrentUserByType()
+      const userInfo = userInfoResponse?.data
+
+      if (!userInfo) throw new Error('User info not found')
+
+      const accountNumber = userInfo.accountNumber
+      const userType = userInfo.userType
+      const headquartersId =
+        userType === 'PARTNER' ? userInfo.headquartersId?.toString() : undefined // ✅ JSON 속성 이름에 맞춰 수정
+      const partnerId = userType === 'PARTNER' ? userInfo.partnerId : undefined
+
+      if (!accountNumber) throw new Error('accountNumber is missing')
+
+      const requestList: SelfAssessmentRequest[] =
+        answerConverter.fromStringToEnumCompatible(answers, questions)
+
+      console.log('📌 userInfo:', userInfo)
+      console.log('📌 headquartersId:', headquartersId)
+      console.log('📌 partnerId:', partnerId)
+      console.log('📦 requestList (제출 전):', requestList)
+
+      await submitSelfAssessmentToBackend(
+        requestList,
+        userType,
+        headquartersId, // ✅ '' 보내지 말고 undefined 그대로 넘기기
+        accountNumber,
+        partnerId
+      )
+
+      console.log('✅ 제출 성공')
+    } catch (error: any) {
+      console.error('❌ 제출 실패:', error)
+      if (error.response) {
+        console.error('📛 서버 응답 상태:', error.response.status)
+        console.error('📩 서버 응답 내용:', error.response.data)
+      } else if (error.request) {
+        console.error('📡 요청은 전송됐으나 응답 없음:', error.request)
+      } else {
+        console.error('🚨 설정 중 에러 발생:', error.message)
+      }
+    }
+  }
 
   /**
    * 현재 활성화된 카테고리 탭
@@ -496,26 +569,68 @@ export default function SelfAssessmentForm() {
    */
   const [activeTab, setActiveTab] = useState('인권 및 노동')
 
-  /**
-   * 결과 표시 모드 전환
-   * false: 질문 보기 모드, true: 결과 보기 모드
-   */
-  const [showResults, setShowResults] = useState(false)
-
   // ========================================================================
   // 초기화 및 생명주기 관리 (Initialization & Lifecycle)
   // ========================================================================
 
   /**
-   * 컴포넌트 마운트 시 모든 질문을 'yes'로 초기화
-   * 사용자가 명시적으로 'no'를 선택하지 않은 항목은 준수하는 것으로 간주
+   * 컴포넌트 마운트 시 기존 답변을 불러오고, 없으면 모든 질문을 'yes'로 초기화
    */
   useEffect(() => {
-    const initial: Record<string, string> = {}
-    questions.forEach(q => {
-      initial[q.id] = 'yes' // 기본값을 'yes'로 설정
-    })
-    setAnswers(initial)
+    // 폼 상태에 기존 답변을 넣어주는 함수 (향후 react-hook-form 사용 시 활용)
+    const setValueFromFetchedAnswers = (fetched: Record<string, string>) => {
+      // 여기에 react-hook-form 사용 시 form.setValue 호출
+      // 현재는 상태형이므로 setAnswers만 필요
+      // 예시: Object.entries(fetched).forEach(([q, v]) => form.setValue(q, v))
+      // 이 부분은 추후 react-hook-form 도입 시 활성화
+    }
+    async function loadAnswers() {
+      try {
+        const user = await authService.getCurrentUserByType()
+        if (user?.data?.accountNumber) {
+          const existingAnswers = await fetchSelfAssessmentAnswers(
+            user.data.accountNumber,
+            user.data.accountNumber // 본사/협력사 모두 동일 accountNumber 사용
+          )
+          setAnswers(existingAnswers)
+          setValueFromFetchedAnswers(existingAnswers) // 폼 상태에도 반영 (react-hook-form 사용 시)
+        }
+      } catch (error) {
+        console.error('답변 불러오기 실패:', error)
+      }
+    }
+    loadAnswers()
+  }, [])
+
+  useEffect(() => {
+    async function loadAnswers() {
+      try {
+        const user = await authService.getCurrentUserByType()
+        if (user?.data?.accountNumber) {
+          const existingAnswers = await fetchSelfAssessmentAnswers(
+            user.data.accountNumber,
+            user.data.accountNumber
+          )
+
+          // 대문자를 소문자로 변환
+          if (existingAnswers) {
+            const normalizedAnswers = Object.entries(existingAnswers).reduce(
+              (acc, [key, value]) => {
+                acc[key] = typeof value === 'string' ? value.toLowerCase() : value
+                return acc
+              },
+              {} as Record<string, string>
+            )
+
+            console.log('변환된 답변:', normalizedAnswers)
+            setAnswers(normalizedAnswers)
+          }
+        }
+      } catch (error) {
+        console.error('답변 불러오기 실패:', error)
+      }
+    }
+    loadAnswers()
   }, [])
 
   // ========================================================================
@@ -663,12 +778,16 @@ export default function SelfAssessmentForm() {
     }
   }
 
-  const getCriticalViolations = () => {
+  const getCriticalViolations = (): SelfAssessmentRequest[] => {
     return questions
       .filter(q => q.criticalViolation && answers[q.id] === 'no')
       .map(q => ({
-        question: q,
-        violation: q.criticalViolation!
+        questionId: q.id,
+        answer: 'no',
+        category: q.category,
+        weight: q.weight,
+        critical: true, // 👈 반드시 true
+        criticalGrade: q.criticalViolation?.grade // "B/C", "D" 등
       }))
   }
 
@@ -691,13 +810,8 @@ export default function SelfAssessmentForm() {
    * - 보고서 생성 정보 (날짜, 플랫폼)
    */
 
-  const finalGrade = getFinalGrade()
-  const gradeInfo = getGradeInfo(finalGrade)
-  const baseScore = calculateScore()
-  const criticalViolations = getCriticalViolations()
-
   return (
-    <div className="flex flex-col p-4 w-full h-full">
+    <div className="flex flex-col w-full h-full p-4">
       {/* ========================================================================
           상단 네비게이션 섹션 (Top Navigation Section)
           ======================================================================== */}
@@ -705,7 +819,7 @@ export default function SelfAssessmentForm() {
         <Breadcrumb>
           <BreadcrumbList>
             <BreadcrumbItem>
-              <Home className="mr-1 w-4 h-4" />
+              <Home className="w-4 h-4 mr-1" />
               <BreadcrumbLink href="/dashboard">대시보드</BreadcrumbLink>
             </BreadcrumbItem>
             <BreadcrumbSeparator />
@@ -722,15 +836,15 @@ export default function SelfAssessmentForm() {
 
       {/* ========================================================================
           헤더 섹션 (Header Section)
-          - 뒤로가기 버튼과 페이지 제목/설명
+          - 뒤로가기 버튼과 페이지 제목/설명 (csddd.tsx와 동일한 구조)
           ======================================================================== */}
-      <div className="flex flex-row mb-6 w-full h-24">
+      <div className="flex flex-row w-full h-24 mb-6">
         <Link
           href="/CSDDD"
-          className="flex flex-row items-center p-4 space-x-4 rounded-md transition cursor-pointer hover:bg-gray-200">
+          className="flex flex-row items-center p-4 space-x-4 transition rounded-md cursor-pointer hover:bg-gray-200">
           <ArrowLeft className="w-6 h-6 text-gray-500 group-hover:text-blue-600" />
           <PageHeader
-            icon={<Shield className="w-6 h-6 text-blue-500" />}
+            icon={<Shield className="w-6 h-6 text-blue-600" />}
             title="공급망 실사 자가진단"
             description="ESG 관점에서 공급망의 리스크를 평가하고 개선점을 파악합니다"
             module="CSDDD"
@@ -743,313 +857,211 @@ export default function SelfAssessmentForm() {
           메인 콘텐츠 영역 (Main Content Area)
           ======================================================================== */}
       <div className="space-y-8">
-        {/* Grade Overview */}
-        <Card className="p-6 mb-8 shadow-lg backdrop-blur-sm bg-white/80">
-          <div className="flex justify-between items-center mb-6">
-            <h2 className="text-xl font-semibold text-gray-900">종합 평가 결과</h2>
-            <div className="flex gap-2">
-              <Button
-                onClick={() => setShowResults(!showResults)}
-                variant="outline"
-                className="flex gap-2 items-center">
-                <BarChart3 className="w-4 h-4" />
-                {showResults ? '질문 보기' : '결과 보기'}
-              </Button>
-              <PDFReportGenerator
-                answers={answers}
-                questions={questions}
-                categories={categories}
-                finalGrade={finalGrade}
-                gradeInfo={gradeInfo}
-                baseScore={baseScore}
-                criticalViolations={criticalViolations}
-                calculateCategoryScore={calculateCategoryScore}
-              />
-            </div>
-          </div>
-
-          <div className="grid grid-cols-1 gap-6 mb-6 lg:grid-cols-3">
-            {/* Final Grade */}
-            <div className={`p-6 rounded-lg border-2 ${gradeInfo.color}`}>
-              <div className="text-center">
-                <div className="mb-2 text-4xl font-bold">{finalGrade}</div>
-                <div className="mb-1 text-sm font-medium">최종 등급</div>
-                <div className="text-xs">{gradeInfo.description}</div>
-              </div>
-            </div>
-
-            {/* Base Score */}
-            <div className="p-6 bg-white rounded-lg border shadow-sm">
-              <div className="text-center">
-                <div className="mb-2 text-3xl font-bold text-blue-600">{baseScore}점</div>
-                <div className="mb-1 text-sm font-medium">기본 점수</div>
-                <div className="text-xs text-gray-600">100점 만점 기준</div>
-              </div>
-            </div>
-
-            {/* Risk Level */}
-            <div className="p-6 bg-white rounded-lg border shadow-sm">
-              <div className="text-center">
-                <div className="mb-2 text-lg font-bold text-gray-800">
-                  {gradeInfo.action}
-                </div>
-                <div className="mb-1 text-sm font-medium">권장 조치</div>
-                <div className="text-xs text-gray-600">등급 기반 대응</div>
-              </div>
-            </div>
-          </div>
-
-          {/* Critical Violations Alert */}
-          {criticalViolations.length > 0 && (
-            <div className="p-4 mb-4 bg-red-50 rounded-lg border-2 border-red-200">
-              <div className="flex gap-3 items-start">
-                <AlertTriangle className="flex-shrink-0 mt-1 w-6 h-6 text-red-600" />
-                <div className="flex-1">
-                  <h3 className="mb-2 font-bold text-red-800">중대 위반 항목 발견</h3>
-                  <p className="mb-3 text-sm text-red-700">
-                    다음 항목들로 인해 등급이 자동으로 조정되었습니다:
-                  </p>
-                  <div className="space-y-2">
-                    {criticalViolations.map(cv => (
-                      <div key={cv.question.id} className="p-3 bg-red-100 rounded">
-                        <div className="flex gap-2 items-start">
-                          <Shield className="w-4 h-4 text-red-600 flex-shrink-0 mt-0.5" />
-                          <div className="flex-1">
-                            <div className="text-sm font-medium text-red-800">
-                              {cv.question.id}: {cv.question.text}
-                            </div>
-                            <div className="mt-1 text-xs text-red-700">
-                              <span className="font-medium">
-                                위반 시 등급: {cv.violation.grade}
-                              </span>
-                              <span className="ml-2">사유: {cv.violation.reason}</span>
-                            </div>
-                          </div>
-                        </div>
-                      </div>
-                    ))}
-                  </div>
-                </div>
-              </div>
-            </div>
-          )}
-
-          {/* Category Scores */}
-          <div className="grid grid-cols-2 gap-4 md:grid-cols-5">
-            {categories.map(category => {
-              const score = calculateCategoryScore(category)
-              return (
-                <div
-                  key={category}
-                  className="p-4 text-center bg-white rounded-lg border shadow-sm">
-                  <div className="text-xl font-bold text-blue-600">{score}%</div>
-                  <div className="mt-1 text-xs text-gray-600">{category}</div>
-                </div>
-              )
-            })}
-          </div>
-        </Card>
-
-        {showResults ? (
-          /* Results View */
-          <div className="space-y-6">
-            {categories.map(category => {
-              const score = calculateCategoryScore(category)
-              const categoryQuestions = questions.filter(q => q.category === category)
-              const noAnswers = categoryQuestions.filter(q => answers[q.id] === 'no')
-              const criticalInCategory = noAnswers.filter(q => q.criticalViolation)
-
-              return (
-                <Card
-                  key={category}
-                  className="p-6 shadow-lg backdrop-blur-sm bg-white/80">
-                  <div className="flex justify-between items-center mb-4">
-                    <h3 className="text-xl font-semibold text-gray-900">{category}</h3>
-                    <div className="text-right">
-                      <div className="text-lg font-bold text-blue-600">{score}%</div>
-                      <div className="text-xs text-gray-500">
-                        {categoryQuestions.filter(q => answers[q.id] === 'yes').length}/
-                        {categoryQuestions.length} 준수
-                      </div>
-                    </div>
-                  </div>
-
-                  {criticalInCategory.length > 0 && (
-                    <div className="p-4 mb-4 bg-red-50 rounded-lg border border-red-200">
-                      <h4 className="flex gap-2 items-center mb-2 font-medium text-red-800">
-                        <AlertTriangle className="w-4 h-4" />
-                        중대 위반 항목
-                      </h4>
-                      <ul className="space-y-2">
-                        {criticalInCategory.map(q => (
-                          <li
-                            key={q.id}
-                            className="p-2 text-sm text-red-700 bg-red-100 rounded">
-                            <div className="font-medium">{q.text}</div>
-                            <div className="mt-1 text-xs">
-                              등급: {q.criticalViolation!.grade} |{' '}
-                              {q.criticalViolation!.reason}
-                            </div>
-                          </li>
-                        ))}
-                      </ul>
-                    </div>
-                  )}
-
-                  {noAnswers.filter(q => !q.criticalViolation).length > 0 && (
-                    <div className="space-y-2">
-                      <h4 className="mb-2 font-medium text-gray-700">개선 필요 항목</h4>
-                      <ul className="space-y-2">
-                        {noAnswers
-                          .filter(q => !q.criticalViolation)
-                          .map(q => (
-                            <li
-                              key={q.id}
-                              className="p-2 text-sm bg-yellow-50 rounded border border-yellow-200">
-                              <div className="font-medium text-yellow-800">
-                                {q.id}: {q.text}
-                              </div>
-                              <div className="mt-1 text-xs text-yellow-700">
-                                가중치: {q.weight}점
-                              </div>
-                            </li>
-                          ))}
-                      </ul>
-                    </div>
-                  )}
-                </Card>
-              )
-            })}
-          </div>
-        ) : (
-          /* Questions View */
-          <div className="space-y-6">
-            {/* Tab Navigation */}
-            <div className="flex flex-wrap gap-2 p-1 bg-white rounded-lg border shadow-sm">
-              {categories.map(category => (
-                <button
-                  key={category}
-                  onClick={() => setActiveTab(category)}
-                  className={`px-4 py-2 rounded-md text-sm font-medium transition-colors ${
-                    activeTab === category
-                      ? 'bg-blue-600 text-white shadow-sm'
-                      : 'text-gray-600 hover:text-blue-600 hover:bg-blue-50'
-                  }`}>
-                  {category}
-                  <span className="ml-2 text-xs opacity-70">
-                    ({questions.filter(q => q.category === category).length})
+        <div className="space-y-6">
+          {/* Tab Navigation */}
+          <div className="flex flex-wrap justify-center gap-3 p-4 border shadow-lg bg-gradient-to-r from-slate-50 to-blue-50 border-slate-200 rounded-2xl backdrop-blur-sm">
+            {categories.map(category => (
+              <button
+                key={category}
+                onClick={() => setActiveTab(category)}
+                className={`
+        group relative h-14 px-6 py-3 rounded-2xl text-sm font-semibold 
+        transition-all duration-300 ease-in-out transform hover:scale-105
+        border-2 flex items-center justify-center min-w-[120px]
+        ${
+          activeTab === category
+            ? 'bg-gradient-to-r from-blue-600 to-indigo-600 text-white shadow-lg border-blue-500 shadow-blue-500/25'
+            : 'bg-white/80 text-slate-700 hover:text-blue-600 hover:bg-white hover:border-blue-300 border-slate-200 hover:shadow-md'
+        }
+      `}>
+                <span className="flex flex-col items-center justify-center w-full leading-tight">
+                  <span className="text-base font-bold tracking-wide">{category}</span>
+                  <span
+                    className={`
+          text-xs mt-1 px-2 py-0.5 rounded-full font-medium
+          ${
+            activeTab === category
+              ? 'bg-white/20 text-white/90'
+              : 'bg-slate-100 text-slate-500 group-hover:bg-blue-100 group-hover:text-blue-600'
+          }
+        `}>
+                    {questions.filter(q => q.category === category).length}개
                   </span>
-                </button>
-              ))}
-            </div>
-
-            {/* Questions for Active Tab */}
-            <Card className="p-6 shadow-lg backdrop-blur-sm bg-white/80">
-              <h3 className="mb-6 text-xl font-semibold text-gray-900">{activeTab}</h3>
-
-              <div className="space-y-4">
-                {questions
-                  .filter(q => q.category === activeTab)
-                  .map(question => {
-                    const isAnswered = answers[question.id]
-                    const isCritical =
-                      question.criticalViolation && answers[question.id] === 'no'
-
-                    return (
-                      <div
-                        key={question.id}
-                        className={`p-4 border rounded-lg transition-all ${
-                          isCritical
-                            ? 'bg-red-50 border-red-300'
-                            : 'bg-white border-gray-200 hover:shadow-sm'
-                        }`}>
-                        <div className="flex gap-4 items-start">
-                          <div className="flex flex-shrink-0 justify-center items-center w-12 h-12 bg-blue-100 rounded-full">
-                            <span className="text-sm font-medium text-blue-700">
-                              {question.id}
-                            </span>
+                </span>
+                {activeTab === category && (
+                  <div className="absolute w-2 h-2 transform -translate-x-1/2 bg-white rounded-full shadow-lg -bottom-1 left-1/2 animate-pulse"></div>
+                )}
+                <div className="absolute inset-0 transition-opacity duration-300 opacity-0 rounded-2xl bg-gradient-to-r from-transparent via-white/10 to-transparent group-hover:opacity-100"></div>
+              </button>
+            ))}
+          </div>
+          {/* Questions for Active Tab */}
+          <Card className="p-6 bg-white shadow-lg">
+            <h3 className="mb-6 text-xl font-semibold text-gray-900">{activeTab}</h3>
+            <div className="space-y-4">
+              {questions
+                .filter(q => q.category === activeTab)
+                .map(question => {
+                  const isAnswered = answers[question.id]
+                  const isCritical =
+                    question.criticalViolation && answers[question.id] === 'no'
+                  return (
+                    <div
+                      key={question.id}
+                      className={`p-4 border rounded-lg transition-all ${
+                        isCritical
+                          ? 'bg-red-50 border-red-300'
+                          : 'bg-white border-gray-200 hover:shadow-sm'
+                      }`}>
+                      <div className="flex items-start gap-4">
+                        <div className="flex items-center justify-center flex-shrink-0 w-12 h-12 bg-blue-100 rounded-full">
+                          <span className="text-sm font-medium text-blue-700">
+                            {question.id}
+                          </span>
+                        </div>
+                        <div className="flex-1">
+                          <div className="flex items-start justify-between mb-3">
+                            <h4 className="text-base font-medium leading-relaxed text-gray-900">
+                              {question.text}
+                            </h4>
+                            <div className="flex items-center gap-2 ml-4">
+                              {question.criticalViolation && (
+                                <TooltipProvider>
+                                  <Tooltip>
+                                    <TooltipTrigger asChild>
+                                      <span className="group relative flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold text-red-700 bg-gradient-to-r from-red-100 to-red-50 rounded-full cursor-help border border-red-200 hover:border-red-300 transition-all duration-200 hover:shadow-md hover:shadow-red-200/50 hover:scale-105">
+                                        <AlertTriangle className="w-3.5 h-3.5 animate-pulse" />
+                                        <span className="tracking-wide">중대위반</span>
+                                        <div className="absolute w-2 h-2 bg-red-500 rounded-full -top-1 -right-1 animate-pulse"></div>
+                                        <div className="absolute inset-0 transition-opacity duration-300 rounded-full opacity-0 bg-gradient-to-r from-red-200/0 via-red-200/20 to-red-200/0 group-hover:opacity-100"></div>
+                                      </span>
+                                    </TooltipTrigger>
+                                    <TooltipContent className="relative max-w-xs p-0 overflow-hidden bg-white border-0 shadow-2xl rounded-xl">
+                                      <div className="px-4 py-3 text-white bg-gradient-to-r from-red-600 to-red-700">
+                                        <div className="flex items-center gap-2">
+                                          <div className="flex items-center justify-center w-6 h-6 rounded-full bg-white/20">
+                                            <AlertTriangle className="w-4 h-4" />
+                                          </div>
+                                          <span className="text-sm font-bold">
+                                            중대위반 항목
+                                          </span>
+                                        </div>
+                                      </div>
+                                      <div className="p-4 space-y-3">
+                                        <div className="flex items-center justify-between">
+                                          <span className="text-xs font-medium text-gray-600">
+                                            위반 시 등급
+                                          </span>
+                                          <span className="px-2 py-1 text-xs font-bold text-red-700 bg-red-100 border border-red-200 rounded-full">
+                                            {question.criticalViolation.grade}
+                                          </span>
+                                        </div>
+                                        <div className="h-px bg-gradient-to-r from-transparent via-red-200 to-transparent"></div>
+                                        <div className="space-y-1">
+                                          <span className="text-xs font-medium text-gray-600">
+                                            위반 사유
+                                          </span>
+                                          <p className="p-2 text-sm leading-relaxed text-gray-800 border border-gray-100 rounded-lg bg-gray-50">
+                                            {question.criticalViolation.reason}
+                                          </p>
+                                        </div>
+                                      </div>
+                                      <div className="h-1 bg-gradient-to-r from-red-500 to-red-600"></div>
+                                    </TooltipContent>
+                                  </Tooltip>
+                                </TooltipProvider>
+                              )}
+                              <span className="inline-flex items-center justify-center gap-1 px-2.5 py-1 text-xs font-medium text-blue-700 bg-blue-50 rounded-lg border border-blue-200 hover:bg-blue-100 transition-colors duration-200 min-w-[80px]">
+                                가중치{' '}
+                                <span className="font-bold">{question.weight}</span>
+                              </span>
+                            </div>
                           </div>
-
-                          <div className="flex-1">
-                            <div className="flex justify-between items-start mb-3">
-                              <h4 className="text-base font-medium leading-relaxed text-gray-900">
-                                {question.text}
-                              </h4>
-                              <div className="flex gap-2 items-center ml-4">
-                                <span className="px-2 py-1 text-xs text-gray-600 bg-gray-100 rounded-full">
-                                  가중치: {question.weight}
-                                </span>
-                                {question.criticalViolation && (
-                                  <span className="flex gap-1 items-center px-2 py-1 text-xs text-red-700 bg-red-100 rounded-full">
-                                    <AlertTriangle className="w-3 h-3" />
-                                    중대위반
-                                  </span>
+                          <div className="flex gap-3">
+                            <label
+                              className={`
+    flex items-center gap-2 px-3 py-2 rounded-lg cursor-pointer transition-all duration-200 hover:scale-105
+    ${
+      answers[question.id] === 'yes'
+        ? 'bg-green-100 text-green-800 border-2 border-green-300'
+        : 'bg-gray-50 text-gray-700 border-2 border-gray-200 hover:border-green-200 hover:bg-green-50'
+    }
+  `}>
+                              <div
+                                className={`
+      relative w-4 h-4 rounded-full border-2 transition-all duration-200
+      ${
+        answers[question.id] === 'yes'
+          ? 'border-green-500 bg-green-500'
+          : 'border-gray-300'
+      }
+    `}>
+                                {answers[question.id] === 'yes' && (
+                                  <Check
+                                    className="w-2 h-2 text-white absolute top-0.5 left-0.5"
+                                    strokeWidth={3}
+                                  />
                                 )}
                               </div>
-                            </div>
-
-                            {/* Critical Violation Info */}
-                            {question.criticalViolation && (
-                              <div className="p-3 mb-3 bg-red-100 rounded-lg border border-red-200">
-                                <div className="flex gap-2 items-start">
-                                  <Info className="w-4 h-4 text-red-600 flex-shrink-0 mt-0.5" />
-                                  <div className="text-sm text-red-800">
-                                    <div className="mb-1 font-medium">
-                                      위반 시 등급: {question.criticalViolation.grade}
-                                    </div>
-                                    <div className="text-xs">
-                                      {question.criticalViolation.reason}
-                                    </div>
-                                  </div>
-                                </div>
+                              <input
+                                type="radio"
+                                value="yes"
+                                checked={answers[question.id] === 'yes'}
+                                onChange={() => handleAnswerChange(question.id, 'yes')}
+                                className="sr-only"
+                              />
+                              <span className="text-sm font-medium">예</span>
+                            </label>
+                            <label
+                              className={`
+    flex items-center gap-2 px-3 py-2 rounded-lg cursor-pointer transition-all duration-200 hover:scale-105
+    ${
+      answers[question.id] === 'no'
+        ? 'bg-red-100 text-red-800 border-2 border-red-300'
+        : 'bg-gray-50 text-gray-700 border-2 border-gray-200 hover:border-red-200 hover:bg-red-50'
+    }
+  `}>
+                              <div
+                                className={`
+      relative w-4 h-4 rounded-full border-2 transition-all duration-200
+      ${answers[question.id] === 'no' ? 'border-red-500 bg-red-500' : 'border-gray-300'}
+    `}>
+                                {answers[question.id] === 'no' && (
+                                  <AlertCircle
+                                    className="w-2 h-2 text-white absolute top-0.5 left-0.5"
+                                    strokeWidth={3}
+                                  />
+                                )}
                               </div>
-                            )}
-
-                            {/* Answer Options */}
-                            <div className="flex gap-3">
-                              <label className="flex gap-2 items-center cursor-pointer">
-                                <input
-                                  type="radio"
-                                  name={question.id}
-                                  value="yes"
-                                  checked={answers[question.id] === 'yes'}
-                                  onChange={e =>
-                                    handleAnswerChange(question.id, e.target.value)
-                                  }
-                                  className="w-4 h-4 text-green-600"
-                                />
-                                <span className="flex gap-1 items-center text-sm font-medium text-green-700">
-                                  <Check className="w-4 h-4" />예
-                                </span>
-                              </label>
-
-                              <label className="flex gap-2 items-center cursor-pointer">
-                                <input
-                                  type="radio"
-                                  name={question.id}
-                                  value="no"
-                                  checked={answers[question.id] === 'no'}
-                                  onChange={e =>
-                                    handleAnswerChange(question.id, e.target.value)
-                                  }
-                                  className="w-4 h-4 text-red-600"
-                                />
-                                <span className="flex gap-1 items-center text-sm font-medium text-red-700">
-                                  <AlertCircle className="w-4 h-4" />
-                                  아니오
-                                </span>
-                              </label>
-                            </div>
+                              <input
+                                type="radio"
+                                value="no"
+                                checked={answers[question.id] === 'no'}
+                                onChange={() => handleAnswerChange(question.id, 'no')}
+                                className="sr-only"
+                              />
+                              <span className="text-sm font-medium">아니오</span>
+                            </label>
                           </div>
                         </div>
                       </div>
-                    )
-                  })}
-              </div>
-            </Card>
-          </div>
-        )}
+                    </div>
+                  )
+                })}
+            </div>
+          </Card>
+        </div>
       </div>
+      {/* 제출하기 버튼 (Submit Button) */}
+      {!submitted && (
+        <div className="flex justify-end mt-8">
+          <button
+            onClick={handleSubmit}
+            className="px-6 py-3 text-white bg-blue-600 rounded hover:bg-blue-700">
+            자가진단 제출하기
+          </button>
+        </div>
+      )}
     </div>
   )
 }
