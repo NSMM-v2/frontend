@@ -48,7 +48,7 @@ export default function SteamForm({formData, setFormData}: SteamFormProps) {
       <CardContent className="p-4 space-y-6">
         {/* 스팀 타입 선택 */}
         <div>
-          <Label className="flex gap-1 items-center mb-3 text-sm font-medium text-gray-700">
+          <Label className="flex items-center gap-1 mb-3 text-sm font-medium text-gray-700">
             스팀 타입
             <span className="text-red-500">*</span>
           </Label>
@@ -106,61 +106,11 @@ export default function SteamForm({formData, setFormData}: SteamFormProps) {
             })}
           </div>
         </div>
-
-        {/* 시설 정보 입력 */}
-        <div className="grid grid-cols-1 gap-6 md:grid-cols-2">
-          <div className="space-y-2">
-            <Label
-              htmlFor="facilityName"
-              className="flex gap-1 items-center text-sm font-medium text-gray-700">
-              시설명
-              <span className="text-red-500">*</span>
-            </Label>
-            <Input
-              id="facilityName"
-              value={formData.steam?.facilityName || ''}
-              onChange={e =>
-                setFormData({
-                  ...formData,
-                  steam: {
-                    ...formData.steam!,
-                    facilityName: e.target.value
-                  }
-                })
-              }
-              placeholder="예: 스팀 보일러"
-              className="h-11 border-gray-300 focus:border-blue-500 focus:ring-blue-500/20"
-            />
-          </div>
-          <div className="space-y-2">
-            <Label
-              htmlFor="facilityLocation"
-              className="text-sm font-medium text-gray-700">
-              시설 위치
-            </Label>
-            <Input
-              id="facilityLocation"
-              value={formData.steam?.facilityLocation || ''}
-              onChange={e =>
-                setFormData({
-                  ...formData,
-                  steam: {
-                    ...formData.steam!,
-                    facilityLocation: e.target.value
-                  }
-                })
-              }
-              placeholder="예: 공장 지하 1층"
-              className="h-11 border-gray-300 focus:border-blue-500 focus:ring-blue-500/20"
-            />
-          </div>
-        </div>
-
         {/* 스팀 사용량 입력 */}
         <div className="space-y-2">
           <Label
             htmlFor="steamUsage"
-            className="flex gap-1 items-center text-sm font-medium text-gray-700">
+            className="flex items-center gap-1 text-sm font-medium text-gray-700">
             스팀 사용량
             <span className="text-red-500">*</span>
           </Label>
@@ -180,7 +130,7 @@ export default function SteamForm({formData, setFormData}: SteamFormProps) {
                 })
               }
               placeholder="0.000"
-              className="h-11 border-gray-300 focus:border-blue-500 focus:ring-blue-500/20"
+              className="border-gray-300 h-11 focus:border-blue-500 focus:ring-blue-500/20"
             />
             <div className="flex items-center justify-center px-4 text-sm font-medium text-gray-700 border border-gray-200 rounded-md bg-gray-50 min-w-[80px]">
               GJ

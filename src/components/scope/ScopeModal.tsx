@@ -412,7 +412,7 @@ export default function ScopeModal({
     <Dialog open={isOpen} onOpenChange={onClose}>
       <DialogContent className="max-w-5xl max-h-[90vh] overflow-y-auto bg-white border-gray-200 custom-scrollbar">
         <DialogHeader className="pb-4 border-b border-gray-100">
-          <DialogTitle className="flex gap-3 items-center text-2xl font-bold text-gray-800">
+          <DialogTitle className="flex items-center gap-3 text-2xl font-bold text-gray-800">
             <div className="p-3 bg-gray-100 rounded-xl">
               <Cloud className="w-6 h-6 text-gray-600" />
             </div>
@@ -428,7 +428,7 @@ export default function ScopeModal({
         <div className="py-2 space-y-4">
           {/* 오류 메시지 */}
           {errors.length > 0 && (
-            <Alert className="bg-red-50 border-red-200 shadow-sm">
+            <Alert className="border-red-200 shadow-sm bg-red-50">
               <AlertCircle className="w-4 h-4 text-red-600" />
               <AlertDescription className="text-red-800">
                 {errors.map((error, index) => (
@@ -437,9 +437,6 @@ export default function ScopeModal({
               </AlertDescription>
             </Alert>
           )}
-
-          {/* 기본 정보 */}
-          <BasicInfoForm selectedPartner={selectedPartner} />
 
           {/* 협력사가 선택된 경우에만 나머지 폼 표시 */}
           {/* {selectedPartner && ( */}
@@ -491,7 +488,7 @@ export default function ScopeModal({
               variant="outline"
               onClick={handleCalculateEmissions}
               disabled={isCalculating || !selectedPartner}
-              className="flex gap-2 items-center text-gray-700 border-gray-300 hover:bg-gray-50 hover:border-gray-400 disabled:opacity-50">
+              className="flex items-center gap-2 text-gray-700 border-gray-300 hover:bg-gray-50 hover:border-gray-400 disabled:opacity-50">
               <Calculator className="w-4 h-4" />
               {isCalculating ? '계산 중...' : '배출량 계산'}
             </Button>

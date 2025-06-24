@@ -255,13 +255,6 @@ export default function MobileCombustionForm({
             </div>
           </div>
         </div>
-
-        {/* 용도 구분 선택 */}
-        <PurposeSelector
-          selectedPurpose={formData.mobileCombustion?.purposeCategory}
-          onPurposeChange={handlePurposeChange}
-          activityType="MOBILE_COMBUSTION"
-        />
       </CardContent>
     </Card>
   )
