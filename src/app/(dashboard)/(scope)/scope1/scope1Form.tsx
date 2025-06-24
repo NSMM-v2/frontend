@@ -772,14 +772,6 @@ export default function Scope1Form() {
         defaultMonth={selectedMonth || new Date().getMonth() + 1}
         scope="SCOPE1"
       />
-      <DirectionButton
-        direction="right"
-        tooltip="scope2으로 이동"
-        href="/scope2"
-        fixed
-        position="middle-right"
-        size={48}
-      />
     </div>
   )
 }

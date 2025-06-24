@@ -290,7 +290,7 @@ export default function Scope2Form() {
   // ============================================================================
 
   return (
-    <div className="flex flex-col p-4 w-full h-full">
+    <div className="flex flex-col w-full h-full p-4">
       {/* ========================================================================
           상단 네비게이션 (Top Navigation)
           - 브레드크럼을 통한 현재 위치 표시
@@ -299,7 +299,7 @@ export default function Scope2Form() {
         <Breadcrumb>
           <BreadcrumbList>
             <BreadcrumbItem>
-              <Home className="mr-1 w-4 h-4" />
+              <Home className="w-4 h-4 mr-1" />
               <BreadcrumbLink href="/dashboard">대시보드</BreadcrumbLink>
             </BreadcrumbItem>
             <BreadcrumbSeparator />
@@ -314,10 +314,10 @@ export default function Scope2Form() {
           헤더 섹션 (Header Section)
           - 뒤로가기 버튼과 페이지 제목/설명
           ======================================================================== */}
-      <div className="flex flex-row mb-6 w-full h-24">
+      <div className="flex flex-row w-full h-24 mb-6">
         <Link
           href="/home"
-          className="flex flex-row items-center p-4 space-x-4 rounded-md transition cursor-pointer hover:bg-gray-200">
+          className="flex flex-row items-center p-4 space-x-4 transition rounded-md cursor-pointer hover:bg-gray-200">
           <ArrowLeft className="w-6 h-6 text-gray-500 group-hover:text-blue-600" />
           <PageHeader
             icon={<Factory className="w-6 h-6 text-customG-600" />}
@@ -333,31 +333,50 @@ export default function Scope2Form() {
           협력사 미선택 시 안내 메시지 (Partner Not Selected Message)
           - 협력사 선택을 유도하는 UI
           ======================================================================== */}
-      {!selectedPartnerId ? (
-        <motion.div
-          initial={{opacity: 0, scale: 0.95}}
-          animate={{opacity: 1, scale: 1}}
-          transition={{delay: 0.6, duration: 0.5}}>
-          <Card className="overflow-hidden mb-4 shadow-sm">
-            <CardContent className="px-4 pt-8 pb-6">
-              <div className="grid grid-cols-1 gap-8 md:grid-cols-3">
-                {/* 협력사 선택 드롭다운 */}
-                <motion.div className="space-y-3">
-                  <label className="flex gap-2 items-center text-sm font-semibold text-customG-700">
-                    <Building className="w-4 h-4" />
-                    협력사 선택
-                  </label>
-                  <div className="relative">
-                    <PartnerSelector
-                      selectedPartnerId={selectedPartnerId}
-                      onSelect={setSelectedPartnerId}
-                    />
-                  </div>
-                </motion.div>
+      <motion.div
+        className="space-y-4"
+        initial={{opacity: 0, y: 20}}
+        animate={{opacity: 1, y: 0}}
+        transition={{delay: 0.7, duration: 0.6}}>
+        {/* ==================================================================
+              통계 카드들 (Statistics Cards)
+              - 배출량 현황을 한눈에 볼 수 있는 대시보드
+              ================================================================== */}
 
-                {/* 연도 선택 */}
-                <motion.div className="space-y-3">
-                  <label className="flex gap-2 items-center text-sm font-semibold text-customG-700">
+        {/* ========================================================================
+          협력사 및 연도 선택 섹션 (Partner & Year Selection)
+          - 데이터 조회를 위한 필터 조건 설정
+          ======================================================================== */}
+        <motion.div
+          initial={{opacity: 0}}
+          animate={{opacity: 1}}
+          transition={{duration: 0.4, delay: 0.1}}>
+          <Card className="mb-4 overflow-hidden shadow-sm">
+            <CardContent className="p-4">
+              <div className="grid items-center justify-center h-24 grid-cols-1 gap-8 md:grid-cols-3">
+                {/* 총 Scope 1 배출량 카드 */}
+                <Card className="justify-center h-24 border-blue-100 bg-gradient-to-br from-blue-50 to-white">
+                  <CardContent className="flex items-center p-4">
+                    <div className="p-2 mr-3 bg-blue-100 rounded-full">
+                      <TrendingUp className="w-5 h-5 text-blue-600" />
+                    </div>
+                    <div>
+                      <p className="text-sm font-medium text-gray-500">
+                        총 Scope 2 배출량
+                      </p>
+                      <h3 className="text-2xl font-bold">
+                        {totalEmissions.toFixed(2)}
+                        <span className="ml-1 text-sm font-normal text-gray-500">
+                          tCO₂eq
+                        </span>
+                      </h3>
+                    </div>
+                  </CardContent>
+                </Card>
+
+                {/* 보고연도 입력 필드 */}
+                <div className="space-y-3">
+                  <label className="flex items-center gap-2 text-sm font-semibold text-customG-700">
                     <CalendarDays className="w-4 h-4" />
                     보고연도
                   </label>
@@ -367,501 +386,347 @@ export default function Scope2Form() {
                     onChange={e => setSelectedYear(parseInt(e.target.value))}
                     min="1900"
                     max="2200"
-                    className="px-3 py-2 w-full h-9 text-sm backdrop-blur-sm border-customG-200 focus:border-customG-400 focus:ring-customG-100 bg-white/80"
+                    className="w-full px-3 py-2 text-sm h-9 backdrop-blur-sm border-customG-200 focus:border-customG-400 focus:ring-customG-100 bg-white/80"
                   />
-                </motion.div>
+                </div>
+
                 {/* 보고월 선택 드롭다운 (선택사항) */}
                 <div className="space-y-3">
-                  <label className="flex gap-2 items-center text-sm font-semibold text-customG-700">
+                  <label className="flex items-center gap-2 text-sm font-semibold text-customG-700">
                     <CalendarDays className="w-4 h-4" />
                     보고월 (선택사항)
                   </label>
                   <MonthSelector
+                    className="w-full"
                     selectedMonth={selectedMonth}
                     onSelect={setSelectedMonth}
-                    placeholder={`${currentMonth}월`}
                   />
                 </div>
               </div>
             </CardContent>
           </Card>
-
-          <Card className="flex justify-center items-center h-80 bg-gradient-to-br from-white shadow-sm border-customG-200/50 via-customG-25 to-emerald-25">
-            <CardContent className="py-12 text-center">
-              <h3 className="mb-4 text-2xl font-bold text-customG-800">
-                협력사를 선택해주세요
-              </h3>
-              <p className="max-w-md leading-relaxed whitespace-nowrap text-customG-600">
-                먼저 협력사를 선택하여 해당 협력사의 배출량 데이터를 관리하고 추적하세요
-              </p>
-            </CardContent>
-          </Card>
         </motion.div>
-      ) : (
-        /* ======================================================================
-            데이터 관리 메인 영역 (Main Data Management Area)
-            - 통계 카드, 데이터 테이블 포함
-            ====================================================================== */
-        <motion.div
-          className="space-y-4"
-          initial={{opacity: 0, y: 20}}
-          animate={{opacity: 1, y: 0}}
-          transition={{delay: 0.7, duration: 0.6}}>
-          {/* ==================================================================
-              통계 카드들 (Statistics Cards)
-              - 배출량 현황을 한눈에 볼 수 있는 대시보드
-              ================================================================== */}
-          <motion.div
-            initial={{opacity: 0}}
-            animate={{opacity: 1}}
-            transition={{duration: 0.4, delay: 0.1}}
-            className="grid grid-cols-1 gap-4 mb-4 md:grid-cols-2 lg:grid-cols-4">
-            {/* 총 Scope 2 배출량 카드 */}
-            <Card className="justify-center h-24 bg-gradient-to-br from-blue-50 to-white border-blue-100">
-              <CardContent className="flex items-center p-4">
-                <div className="p-2 mr-3 bg-blue-100 rounded-full">
-                  <TrendingUp className="w-5 h-5 text-blue-600" />
-                </div>
-                <div>
-                  <p className="text-sm font-medium text-gray-500">총 Scope 2 배출량</p>
-                  <h3 className="text-2xl font-bold">
-                    {totalEmissions.toFixed(2)}
-                    <span className="ml-1 text-sm font-normal text-gray-500">tCO₂eq</span>
-                  </h3>
-                </div>
-              </CardContent>
-            </Card>
 
-            {/* 전력 사용량 카드 */}
-            <Card className="justify-center h-24 bg-gradient-to-br from-emerald-50 to-white border-emerald-100">
-              <CardContent className="flex items-center p-4">
-                <div className="p-2 mr-3 bg-emerald-100 rounded-full">
-                  <Zap className="w-5 h-5 text-emerald-600" />
-                </div>
-                <div>
-                  <p className="text-sm font-medium text-gray-500">전력 배출량</p>
-                  <h3 className="text-2xl font-bold">
-                    {electricityStats.totalEmissions.toFixed(2)}
-                    <span className="ml-1 text-sm font-normal text-gray-500">tCO₂eq</span>
-                  </h3>
-                </div>
-              </CardContent>
-            </Card>
-
-            {/* 스팀 사용량 카드 */}
-            <Card className="justify-center h-24 bg-gradient-to-br from-amber-50 to-white border-amber-100">
-              <CardContent className="flex items-center p-4">
-                <div className="p-2 mr-3 bg-amber-100 rounded-full">
-                  <Wind className="w-5 h-5 text-amber-600" />
-                </div>
-                <div>
-                  <p className="text-sm font-medium text-gray-500">스팀 배출량</p>
-                  <h3 className="text-2xl font-bold">
-                    {steamStats.totalEmissions.toFixed(2)}
-                    <span className="ml-1 text-sm font-normal text-gray-500">tCO₂eq</span>
-                  </h3>
-                </div>
-              </CardContent>
-            </Card>
-
-            {/* 총 데이터 건수 카드 */}
-            <Card className="justify-center h-24 bg-gradient-to-br to-white border-customG-100 from-customG-50">
-              <CardContent className="flex items-center p-4">
-                <div className="p-2 mr-3 rounded-full bg-customG-100">
-                  <BarChart className="w-5 h-5 text-customG-600" />
-                </div>
-                <div>
-                  <p className="text-sm font-medium text-gray-500">총 데이터 건수</p>
-                  <h3 className="text-2xl font-bold">
-                    {totalDataCount}
-                    <span className="ml-1 text-sm font-normal text-gray-500">건</span>
-                  </h3>
-                </div>
-              </CardContent>
-            </Card>
-          </motion.div>
-
-          {/* ========================================================================
-          협력사 및 연도 선택 섹션 (Partner & Year Selection)
-          - 데이터 조회를 위한 필터 조건 설정
-          ======================================================================== */}
-          <motion.div
-            initial={{opacity: 0}}
-            animate={{opacity: 1}}
-            transition={{duration: 0.4, delay: 0.1}}>
-            <Card className="overflow-hidden mb-4 shadow-sm">
-              <CardContent className="p-4">
-                <div className="grid grid-cols-1 gap-8 justify-center h-16 md:grid-cols-3">
-                  {/* 협력사 선택 드롭다운 */}
-                  <motion.div className="space-y-3">
-                    <label className="flex gap-2 items-center text-sm font-semibold text-customG-700">
-                      <Building className="w-4 h-4" />
-                      협력사 선택
-                    </label>
-                    <div className="relative">
-                      <PartnerSelector
-                        selectedPartnerId={selectedPartnerId}
-                        onSelect={setSelectedPartnerId}
-                      />
-                    </div>
-                  </motion.div>
-
-                  {/* 연도 선택 */}
-                  <motion.div className="space-y-3">
-                    <label className="flex gap-2 items-center text-sm font-semibold text-customG-700">
-                      <CalendarDays className="w-4 h-4" />
-                      보고연도
-                    </label>
-                    <Input
-                      type="number"
-                      value={selectedYear}
-                      onChange={e => setSelectedYear(parseInt(e.target.value))}
-                      min="1900"
-                      max="2200"
-                      className="px-3 py-2 w-full h-9 text-sm backdrop-blur-sm border-customG-200 focus:border-customG-400 focus:ring-customG-100 bg-white/80"
-                    />
-                  </motion.div>
-                  {/* 보고월 선택 드롭다운 (선택사항) */}
-                  <div className="space-y-3">
-                    <label className="flex gap-2 items-center text-sm font-semibold text-customG-700">
-                      <CalendarDays className="w-4 h-4" />
-                      보고월 (선택사항)
-                    </label>
-                    <MonthSelector
-                      className="w-full"
-                      selectedMonth={selectedMonth}
-                      onSelect={setSelectedMonth}
-                      placeholder={`${currentMonth}월`}
-                    />
-                  </div>
-                </div>
-              </CardContent>
-            </Card>
-          </motion.div>
-
-          {/* ==================================================================
+        {/* ==================================================================
               데이터 테이블 섹션 (Data Table Section)
               - 탭으로 구분된 전력/스팀 데이터 표시
               ================================================================== */}
-          <Tabs defaultValue="electricity" className="w-full">
-            {/* 탭 헤더 - 전력/스팀 전환 */}
-            <TabsList className="grid grid-cols-2 p-1 w-full bg-gray-100 rounded-lg">
-              <TabsTrigger
-                value="electricity"
-                className="flex items-center gap-2 data-[state=active]:bg-white data-[state=active]:shadow-sm rounded-md font-medium">
-                {/* 아이콘 삭제 */}
-                전력 ({filteredElectricityData.length})
-              </TabsTrigger>
-              <TabsTrigger
-                value="steam"
-                className="flex items-center gap-2 data-[state=active]:bg-white data-[state=active]:shadow-sm rounded-md font-medium">
-                {/* 아이콘 삭제 */}
-                스팀 ({filteredSteamData.length})
-              </TabsTrigger>
-            </TabsList>
+        <Tabs defaultValue="electricity" className="w-full">
+          {/* 탭 헤더 - 전력/스팀 전환 */}
+          <TabsList className="grid w-full grid-cols-2 p-1 bg-gray-100 rounded-lg">
+            <TabsTrigger
+              value="electricity"
+              className="flex items-center gap-2 data-[state=active]:bg-white data-[state=active]:shadow-sm rounded-md font-medium">
+              {/* 아이콘 삭제 */}
+              전력 ({filteredElectricityData.length})
+            </TabsTrigger>
+            <TabsTrigger
+              value="steam"
+              className="flex items-center gap-2 data-[state=active]:bg-white data-[state=active]:shadow-sm rounded-md font-medium">
+              {/* 아이콘 삭제 */}
+              스팀 ({filteredSteamData.length})
+            </TabsTrigger>
+          </TabsList>
 
-            {/* ================================================================
+          {/* ================================================================
                 전력 사용량 탭 (Electricity Usage Tab)
                 ================================================================ */}
-            <TabsContent value="electricity" className="mt-4">
-              <motion.div
-                initial={{opacity: 0, y: 20}}
-                animate={{opacity: 1, y: 0}}
-                transition={{duration: 0.5}}>
-                <Card className="overflow-hidden shadow-sm">
-                  {/* 전력 섹션 헤더 */}
-                  <CardHeader className="border-b border-customG-100/50">
-                    <CardTitle className="flex justify-between items-center text-customG-800">
-                      <div className="flex gap-3 items-center">
-                        {/* 아이콘 삭제 */}
-                        <div>
-                          <h3 className="text-lg font-bold">전력 사용량 데이터</h3>
-                          <p className="text-sm font-normal text-customG-600">
-                            시설별 전력 소비량 및 배출량 관리
-                          </p>
-                        </div>
+          <TabsContent value="electricity" className="mt-4">
+            <motion.div
+              initial={{opacity: 0, y: 20}}
+              animate={{opacity: 1, y: 0}}
+              transition={{duration: 0.5}}>
+              <Card className="overflow-hidden shadow-sm">
+                {/* 전력 섹션 헤더 */}
+                <CardHeader className="border-b border-customG-100/50">
+                  <CardTitle className="flex items-center justify-between text-customG-800">
+                    <div className="flex items-center gap-3">
+                      {/* 아이콘 삭제 */}
+                      <div>
+                        <h3 className="text-lg font-bold">전력 사용량 데이터</h3>
+                        <p className="text-sm font-normal text-customG-600">
+                          시설별 전력 소비량 및 배출량 관리
+                        </p>
                       </div>
-                      <Button
-                        onClick={() => {
-                          setEditingItem(null)
-                          setEditingType('ELECTRICITY')
-                          setIsModalOpen(true)
-                        }}
-                        className="px-4 py-2 text-sm font-medium text-white bg-black rounded-lg transition-colors duration-200 hover:cursor-pointer">
-                        <Plus className="mr-2 w-4 h-4" />
-                        데이터 추가
-                      </Button>
-                    </CardTitle>
-                  </CardHeader>
-
-                  {/* 전력 데이터 테이블 */}
-                  <CardContent className="p-0">
-                    <div className="overflow-x-auto">
-                      <Table>
-                        {/* 테이블 헤더 */}
-                        <TableHeader>
-                          <TableRow className="border-b">
-                            <TableHead className="font-semibold text-customG-700">
-                              시설명
-                            </TableHead>
-                            <TableHead className="font-semibold text-customG-700">
-                              보고월
-                            </TableHead>
-                            <TableHead className="font-semibold text-customG-700">
-                              사용량
-                            </TableHead>
-                            <TableHead className="font-semibold text-customG-700">
-                              단위
-                            </TableHead>
-                            <TableHead className="font-semibold text-customG-700">
-                              재생에너지
-                            </TableHead>
-                            <TableHead className="font-semibold text-customG-700">
-                              배출량
-                            </TableHead>
-                            <TableHead className="font-semibold text-customG-700">
-                              작업
-                            </TableHead>
-                          </TableRow>
-                        </TableHeader>
-
-                        {/* 테이블 바디 - 전력 데이터 목록 */}
-                        <TableBody>
-                          {filteredElectricityData.map((item, index) => (
-                            <motion.tr
-                              key={item.id}
-                              initial={{opacity: 0, x: -20}}
-                              animate={{opacity: 1, x: 0}}
-                              transition={{delay: index * 0.1, duration: 0.3}}
-                              className="border-b transition-all duration-200 border-customG-100/50 hover:bg-gradient-to-r hover:from-customG-25 hover:to-emerald-25">
-                              {/* 시설명 */}
-                              <TableCell className="font-medium text-customG-800">
-                                {item.facilityName}
-                              </TableCell>
-                              {/* 보고월 */}
-                              <TableCell className="text-customG-700">
-                                {item.reportingMonth}월
-                              </TableCell>
-                              {/* 전력 사용량 */}
-                              <TableCell className="font-medium text-customG-700">
-                                {item.electricityUsage?.toLocaleString()}
-                              </TableCell>
-                              {/* 사용량 단위 */}
-                              <TableCell className="text-customG-600">
-                                {item.unit}
-                              </TableCell>
-                              {/* 재생에너지 배지 */}
-                              <TableCell>
-                                <Badge
-                                  variant="outline"
-                                  className={`border-customG-300 font-medium ${
-                                    item.isRenewable
-                                      ? 'bg-green-50 text-green-700 border-green-300'
-                                      : 'bg-gray-50 text-gray-700 border-gray-300'
-                                  }`}>
-                                  {item.isRenewable ? '재생에너지' : '일반전력'}
-                                </Badge>
-                              </TableCell>
-                              {/* CO₂ 배출량 */}
-                              <TableCell className="font-bold text-customG-800">
-                                {(((item.electricityUsage || 0) * 0.459) / 1000).toFixed(
-                                  3
-                                )}{' '}
-                                tCO₂eq
-                              </TableCell>
-                              {/* 작업 버튼 (편집/삭제) */}
-                              <TableCell>
-                                <div className="flex space-x-1">
-                                  {/* 편집 버튼 */}
-                                  <Button
-                                    variant="ghost"
-                                    size="sm"
-                                    onClick={() => handleEditElectricity(item)}
-                                    className="hover:bg-customG-100 text-customG-600 hover:text-customG-800">
-                                    <Edit className="w-4 h-4" />
-                                  </Button>
-                                  {/* 삭제 버튼 */}
-                                  <Button
-                                    variant="ghost"
-                                    size="sm"
-                                    onClick={() =>
-                                      item.id && handleDeleteElectricity(item.id)
-                                    }
-                                    className="text-red-500 hover:text-red-700 hover:bg-red-50">
-                                    <Trash2 className="w-4 h-4" />
-                                  </Button>
-                                </div>
-                              </TableCell>
-                            </motion.tr>
-                          ))}
-                          {/* 데이터가 없을 때 표시되는 빈 상태 */}
-                          {filteredElectricityData.length === 0 && (
-                            <TableRow>
-                              <TableCell colSpan={7} className="py-16 text-center">
-                                <div className="flex flex-col justify-center items-center space-y-4">
-                                  {/* 아이콘 삭제 */}
-                                  <div>
-                                    <h3 className="mb-2 text-lg font-semibold text-customG-700">
-                                      데이터가 없습니다
-                                    </h3>
-                                    <p className="text-customG-500">
-                                      새로운 전력 사용량 데이터를 추가해보세요
-                                    </p>
-                                  </div>
-                                </div>
-                              </TableCell>
-                            </TableRow>
-                          )}
-                        </TableBody>
-                      </Table>
                     </div>
-                  </CardContent>
-                </Card>
-              </motion.div>
-            </TabsContent>
+                    <Button
+                      onClick={() => {
+                        setEditingItem(null)
+                        setEditingType('ELECTRICITY')
+                        setIsModalOpen(true)
+                      }}
+                      className="px-4 py-2 text-sm font-medium text-white transition-colors duration-200 bg-black rounded-lg hover:cursor-pointer">
+                      <Plus className="w-4 h-4 mr-2" />
+                      데이터 추가
+                    </Button>
+                  </CardTitle>
+                </CardHeader>
 
-            {/* ================================================================
+                {/* 전력 데이터 테이블 */}
+                <CardContent className="p-0">
+                  <div className="overflow-x-auto">
+                    <Table>
+                      {/* 테이블 헤더 */}
+                      <TableHeader>
+                        <TableRow className="border-b">
+                          <TableHead className="font-semibold text-customG-700">
+                            시설명
+                          </TableHead>
+                          <TableHead className="font-semibold text-customG-700">
+                            보고월
+                          </TableHead>
+                          <TableHead className="font-semibold text-customG-700">
+                            사용량
+                          </TableHead>
+                          <TableHead className="font-semibold text-customG-700">
+                            단위
+                          </TableHead>
+                          <TableHead className="font-semibold text-customG-700">
+                            재생에너지
+                          </TableHead>
+                          <TableHead className="font-semibold text-customG-700">
+                            배출량
+                          </TableHead>
+                          <TableHead className="font-semibold text-customG-700">
+                            작업
+                          </TableHead>
+                        </TableRow>
+                      </TableHeader>
+
+                      {/* 테이블 바디 - 전력 데이터 목록 */}
+                      <TableBody>
+                        {filteredElectricityData.map((item, index) => (
+                          <motion.tr
+                            key={item.id}
+                            initial={{opacity: 0, x: -20}}
+                            animate={{opacity: 1, x: 0}}
+                            transition={{delay: index * 0.1, duration: 0.3}}
+                            className="transition-all duration-200 border-b border-customG-100/50 hover:bg-gradient-to-r hover:from-customG-25 hover:to-emerald-25">
+                            {/* 시설명 */}
+                            <TableCell className="font-medium text-customG-800">
+                              {item.facilityName}
+                            </TableCell>
+                            {/* 보고월 */}
+                            <TableCell className="text-customG-700">
+                              {item.reportingMonth}월
+                            </TableCell>
+                            {/* 전력 사용량 */}
+                            <TableCell className="font-medium text-customG-700">
+                              {item.electricityUsage?.toLocaleString()}
+                            </TableCell>
+                            {/* 사용량 단위 */}
+                            <TableCell className="text-customG-600">
+                              {item.unit}
+                            </TableCell>
+                            {/* 재생에너지 배지 */}
+                            <TableCell>
+                              <Badge
+                                variant="outline"
+                                className={`border-customG-300 font-medium ${
+                                  item.isRenewable
+                                    ? 'bg-green-50 text-green-700 border-green-300'
+                                    : 'bg-gray-50 text-gray-700 border-gray-300'
+                                }`}>
+                                {item.isRenewable ? '재생에너지' : '일반전력'}
+                              </Badge>
+                            </TableCell>
+                            {/* CO₂ 배출량 */}
+                            <TableCell className="font-bold text-customG-800">
+                              {(((item.electricityUsage || 0) * 0.459) / 1000).toFixed(3)}{' '}
+                              tCO₂eq
+                            </TableCell>
+                            {/* 작업 버튼 (편집/삭제) */}
+                            <TableCell>
+                              <div className="flex space-x-1">
+                                {/* 편집 버튼 */}
+                                <Button
+                                  variant="ghost"
+                                  size="sm"
+                                  onClick={() => handleEditElectricity(item)}
+                                  className="hover:bg-customG-100 text-customG-600 hover:text-customG-800">
+                                  <Edit className="w-4 h-4" />
+                                </Button>
+                                {/* 삭제 버튼 */}
+                                <Button
+                                  variant="ghost"
+                                  size="sm"
+                                  onClick={() =>
+                                    item.id && handleDeleteElectricity(item.id)
+                                  }
+                                  className="text-red-500 hover:text-red-700 hover:bg-red-50">
+                                  <Trash2 className="w-4 h-4" />
+                                </Button>
+                              </div>
+                            </TableCell>
+                          </motion.tr>
+                        ))}
+                        {/* 데이터가 없을 때 표시되는 빈 상태 */}
+                        {filteredElectricityData.length === 0 && (
+                          <TableRow>
+                            <TableCell colSpan={7} className="py-16 text-center">
+                              <div className="flex flex-col items-center justify-center space-y-4">
+                                {/* 아이콘 삭제 */}
+                                <div>
+                                  <h3 className="mb-2 text-lg font-semibold text-customG-700">
+                                    데이터가 없습니다
+                                  </h3>
+                                  <p className="text-customG-500">
+                                    새로운 전력 사용량 데이터를 추가해보세요
+                                  </p>
+                                </div>
+                              </div>
+                            </TableCell>
+                          </TableRow>
+                        )}
+                      </TableBody>
+                    </Table>
+                  </div>
+                </CardContent>
+              </Card>
+            </motion.div>
+          </TabsContent>
+
+          {/* ================================================================
                 스팀 사용량 탭 (Steam Usage Tab)
                 ================================================================ */}
-            <TabsContent value="steam" className="mt-4">
-              <motion.div
-                initial={{opacity: 0, y: 20}}
-                animate={{opacity: 1, y: 0}}
-                transition={{duration: 0.5}}>
-                <Card className="overflow-hidden shadow-sm">
-                  {/* 스팀 섹션 헤더 */}
-                  <CardHeader className="bg-gradient-to-r border-b border-customG-100/50">
-                    <CardTitle className="flex justify-between items-center text-customG-800">
-                      <div className="flex gap-3 items-center">
-                        {/* 아이콘 삭제 */}
-                        <div>
-                          <h3 className="text-lg font-bold">스팀 사용량 데이터</h3>
-                          <p className="text-sm font-normal text-customG-600">
-                            시설별 스팀 소비량 및 배출량 관리
-                          </p>
-                        </div>
+          <TabsContent value="steam" className="mt-4">
+            <motion.div
+              initial={{opacity: 0, y: 20}}
+              animate={{opacity: 1, y: 0}}
+              transition={{duration: 0.5}}>
+              <Card className="overflow-hidden shadow-sm">
+                {/* 스팀 섹션 헤더 */}
+                <CardHeader className="border-b bg-gradient-to-r border-customG-100/50">
+                  <CardTitle className="flex items-center justify-between text-customG-800">
+                    <div className="flex items-center gap-3">
+                      {/* 아이콘 삭제 */}
+                      <div>
+                        <h3 className="text-lg font-bold">스팀 사용량 데이터</h3>
+                        <p className="text-sm font-normal text-customG-600">
+                          시설별 스팀 소비량 및 배출량 관리
+                        </p>
                       </div>
-                      <Button
-                        onClick={() => {
-                          setEditingItem(null)
-                          setEditingType('STEAM')
-                          setIsModalOpen(true)
-                        }}
-                        className="px-4 py-2 text-sm font-medium text-white bg-black rounded-lg transition-colors duration-200 hover:cursor-pointer">
-                        <Plus className="mr-2 w-4 h-4" />
-                        데이터 추가
-                      </Button>
-                    </CardTitle>
-                  </CardHeader>
-
-                  {/* 스팀 데이터 테이블 */}
-                  <CardContent className="p-0">
-                    <div className="overflow-x-auto">
-                      <Table>
-                        {/* 테이블 헤더 */}
-                        <TableHeader>
-                          <TableRow className="bg-gradient-to-r border-b border-customG-200/50">
-                            <TableHead className="font-semibold text-customG-700">
-                              시설명
-                            </TableHead>
-                            <TableHead className="font-semibold text-customG-700">
-                              보고월
-                            </TableHead>
-                            <TableHead className="font-semibold text-customG-700">
-                              사용량
-                            </TableHead>
-                            <TableHead className="font-semibold text-customG-700">
-                              단위
-                            </TableHead>
-                            <TableHead className="font-semibold text-customG-700">
-                              배출량
-                            </TableHead>
-                            <TableHead className="font-semibold text-customG-700">
-                              작업
-                            </TableHead>
-                          </TableRow>
-                        </TableHeader>
-
-                        {/* 테이블 바디 - 스팀 데이터 목록 */}
-                        <TableBody>
-                          {filteredSteamData.map((item, index) => (
-                            <motion.tr
-                              key={item.id}
-                              initial={{opacity: 0, x: -20}}
-                              animate={{opacity: 1, x: 0}}
-                              transition={{delay: index * 0.1, duration: 0.3}}
-                              className="border-b transition-all duration-200 border-customG-100/50 hover:bg-gradient-to-r hover:from-amber-25 hover:to-orange-25">
-                              {/* 시설명 */}
-                              <TableCell className="font-medium text-customG-800">
-                                {item.facilityName}
-                              </TableCell>
-                              {/* 보고월 */}
-                              <TableCell className="text-customG-700">
-                                {item.reportingMonth}월
-                              </TableCell>
-                              {/* 스팀 사용량 */}
-                              <TableCell className="font-medium text-customG-700">
-                                {item.steamUsage?.toLocaleString()}
-                              </TableCell>
-                              {/* 사용량 단위 */}
-                              <TableCell className="text-customG-600">
-                                {item.unit}
-                              </TableCell>
-                              {/* CO₂ 배출량 */}
-                              <TableCell className="font-bold text-customG-800">
-                                {((item.steamUsage || 0) * 0.07).toFixed(3)} tCO₂eq
-                              </TableCell>
-                              {/* 작업 버튼 (편집/삭제) */}
-                              <TableCell>
-                                <div className="flex space-x-1">
-                                  {/* 편집 버튼 */}
-                                  <Button
-                                    variant="ghost"
-                                    size="sm"
-                                    onClick={() => handleEditSteam(item)}
-                                    className="hover:bg-customG-100 text-customG-600 hover:text-customG-800">
-                                    <Edit className="w-4 h-4" />
-                                  </Button>
-                                  {/* 삭제 버튼 */}
-                                  <Button
-                                    variant="ghost"
-                                    size="sm"
-                                    onClick={() => item.id && handleDeleteSteam(item.id)}
-                                    className="text-red-500 hover:text-red-700 hover:bg-red-50">
-                                    <Trash2 className="w-4 h-4" />
-                                  </Button>
-                                </div>
-                              </TableCell>
-                            </motion.tr>
-                          ))}
-                          {/* 데이터가 없을 때 표시되는 빈 상태 */}
-                          {filteredSteamData.length === 0 && (
-                            <TableRow>
-                              <TableCell colSpan={6} className="py-16 text-center">
-                                <div className="flex flex-col justify-center items-center space-y-4">
-                                  {/* 아이콘 삭제 */}
-                                  <div>
-                                    <h3 className="mb-2 text-lg font-semibold text-customG-700">
-                                      데이터가 없습니다
-                                    </h3>
-                                    <p className="text-customG-500">
-                                      새로운 스팀 사용량 데이터를 추가해보세요
-                                    </p>
-                                  </div>
-                                </div>
-                              </TableCell>
-                            </TableRow>
-                          )}
-                        </TableBody>
-                      </Table>
                     </div>
-                  </CardContent>
-                </Card>
-              </motion.div>
-            </TabsContent>
-          </Tabs>
-        </motion.div>
-      )}
+                    <Button
+                      onClick={() => {
+                        setEditingItem(null)
+                        setEditingType('STEAM')
+                        setIsModalOpen(true)
+                      }}
+                      className="px-4 py-2 text-sm font-medium text-white transition-colors duration-200 bg-black rounded-lg hover:cursor-pointer">
+                      <Plus className="w-4 h-4 mr-2" />
+                      데이터 추가
+                    </Button>
+                  </CardTitle>
+                </CardHeader>
+
+                {/* 스팀 데이터 테이블 */}
+                <CardContent className="p-0">
+                  <div className="overflow-x-auto">
+                    <Table>
+                      {/* 테이블 헤더 */}
+                      <TableHeader>
+                        <TableRow className="border-b bg-gradient-to-r border-customG-200/50">
+                          <TableHead className="font-semibold text-customG-700">
+                            시설명
+                          </TableHead>
+                          <TableHead className="font-semibold text-customG-700">
+                            보고월
+                          </TableHead>
+                          <TableHead className="font-semibold text-customG-700">
+                            사용량
+                          </TableHead>
+                          <TableHead className="font-semibold text-customG-700">
+                            단위
+                          </TableHead>
+                          <TableHead className="font-semibold text-customG-700">
+                            배출량
+                          </TableHead>
+                          <TableHead className="font-semibold text-customG-700">
+                            작업
+                          </TableHead>
+                        </TableRow>
+                      </TableHeader>
+
+                      {/* 테이블 바디 - 스팀 데이터 목록 */}
+                      <TableBody>
+                        {filteredSteamData.map((item, index) => (
+                          <motion.tr
+                            key={item.id}
+                            initial={{opacity: 0, x: -20}}
+                            animate={{opacity: 1, x: 0}}
+                            transition={{delay: index * 0.1, duration: 0.3}}
+                            className="transition-all duration-200 border-b border-customG-100/50 hover:bg-gradient-to-r hover:from-amber-25 hover:to-orange-25">
+                            {/* 시설명 */}
+                            <TableCell className="font-medium text-customG-800">
+                              {item.facilityName}
+                            </TableCell>
+                            {/* 보고월 */}
+                            <TableCell className="text-customG-700">
+                              {item.reportingMonth}월
+                            </TableCell>
+                            {/* 스팀 사용량 */}
+                            <TableCell className="font-medium text-customG-700">
+                              {item.steamUsage?.toLocaleString()}
+                            </TableCell>
+                            {/* 사용량 단위 */}
+                            <TableCell className="text-customG-600">
+                              {item.unit}
+                            </TableCell>
+                            {/* CO₂ 배출량 */}
+                            <TableCell className="font-bold text-customG-800">
+                              {((item.steamUsage || 0) * 0.07).toFixed(3)} tCO₂eq
+                            </TableCell>
+                            {/* 작업 버튼 (편집/삭제) */}
+                            <TableCell>
+                              <div className="flex space-x-1">
+                                {/* 편집 버튼 */}
+                                <Button
+                                  variant="ghost"
+                                  size="sm"
+                                  onClick={() => handleEditSteam(item)}
+                                  className="hover:bg-customG-100 text-customG-600 hover:text-customG-800">
+                                  <Edit className="w-4 h-4" />
+                                </Button>
+                                {/* 삭제 버튼 */}
+                                <Button
+                                  variant="ghost"
+                                  size="sm"
+                                  onClick={() => item.id && handleDeleteSteam(item.id)}
+                                  className="text-red-500 hover:text-red-700 hover:bg-red-50">
+                                  <Trash2 className="w-4 h-4" />
+                                </Button>
+                              </div>
+                            </TableCell>
+                          </motion.tr>
+                        ))}
+                        {/* 데이터가 없을 때 표시되는 빈 상태 */}
+                        {filteredSteamData.length === 0 && (
+                          <TableRow>
+                            <TableCell colSpan={6} className="py-16 text-center">
+                              <div className="flex flex-col items-center justify-center space-y-4">
+                                {/* 아이콘 삭제 */}
+                                <div>
+                                  <h3 className="mb-2 text-lg font-semibold text-customG-700">
+                                    데이터가 없습니다
+                                  </h3>
+                                  <p className="text-customG-500">
+                                    새로운 스팀 사용량 데이터를 추가해보세요
+                                  </p>
+                                </div>
+                              </div>
+                            </TableCell>
+                          </TableRow>
+                        )}
+                      </TableBody>
+                    </Table>
+                  </div>
+                </CardContent>
+              </Card>
+            </motion.div>
+          </TabsContent>
+        </Tabs>
+      </motion.div>
 
       {/* ========================================================================
           Scope 데이터 입력 모달 (Scope Data Input Modal)
@@ -876,24 +741,6 @@ export default function Scope2Form() {
         defaultYear={selectedYear}
         defaultMonth={selectedMonth || new Date().getMonth() + 1}
         scope="SCOPE2"
-      />
-
-      <DirectionButton
-        direction="left"
-        tooltip="scope1으로 이동"
-        href="/scope1"
-        fixed
-        position="middle-left"
-        size={48}
-      />
-
-      <DirectionButton
-        direction="right"
-        tooltip="scope3으로 이동"
-        href="/scope3"
-        fixed
-        position="middle-right"
-        size={48}
       />
     </div>
   )
