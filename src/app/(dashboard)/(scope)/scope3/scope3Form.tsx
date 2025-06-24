@@ -43,7 +43,7 @@ import {DirectionButton} from '@/components/layout/direction'
 import {CategorySummaryCard} from '@/components/scope3/CategorySummaryCard'
 import {CategorySelector, Scope3CategoryKey} from '@/components/scope3/CategorySelector'
 import {CategoryDataInput} from '@/components/scope3/CategoryDataInput'
-import {SelectorState} from '@/components/scope3/ExcelCascadingSelector'
+import {SelectorState} from '@/lib/types'
 
 // ============================================================================
 // 타입 정의 (Type Definitions)
@@ -69,7 +69,9 @@ export default function Scope3Form() {
   // ========================================================================
   // 상태 관리 (State Management)
   // ========================================================================
-
+  const [calculatorModes, setCalculatorModes] = useState<{
+    [key in Scope3CategoryKey]?: { [id: number]: boolean }
+  }>({})
   const [activeCategory, setActiveCategory] = useState<Scope3CategoryKey | null>(null) // 현재 선택된 카테고리
 
   // 카테고리별 계산기 목록 관리
@@ -81,6 +83,7 @@ export default function Scope3Form() {
   const [categoryTotals, setCategoryTotals] = useState<{
     [key in Scope3CategoryKey]?: {id: number; emission: number}[]
   }>({})
+
 
   // ========================================================================
   // 유틸리티 함수 (Utility Functions)
@@ -100,10 +103,23 @@ export default function Scope3Form() {
    */
   const getTotalEmission = (category: Scope3CategoryKey): number =>
     (categoryTotals[category] || []).reduce((sum, t) => sum + t.emission, 0)
+  
 
   // ========================================================================
   // 이벤트 핸들러 (Event Handlers)
   // ========================================================================
+  const handleModeChange = (id: number, checked: boolean) => {
+    if (!activeCategory) return
+
+    setCalculatorModes(prev => ({
+      ...prev,
+      [activeCategory]: {
+        ...prev[activeCategory],
+        [id]: checked,
+      }
+    }))
+  }
+
 
   /**
    * 계산기의 배출량 업데이트 핸들러
@@ -120,8 +136,11 @@ export default function Scope3Form() {
     })
   }
 
+
+
   /**
    * 새로운 계산기 추가 핸들러
+   *
    */
   const addCalculator = () => {
     if (!activeCategory) return
@@ -303,6 +322,8 @@ export default function Scope3Form() {
           onChangeTotal={updateTotal}
           onComplete={handleComplete}
           onBackToList={handleBackToList}
+          calculatorModes={calculatorModes[activeCategory] || {}} // ✅ 현재 카테고리만 전달
+          onModeChange={handleModeChange}
         />
       )}
 
