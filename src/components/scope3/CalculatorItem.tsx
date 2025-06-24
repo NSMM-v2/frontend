@@ -15,8 +15,10 @@ import React from 'react'
 import {motion} from 'framer-motion'
 import {Button} from '@/components/ui/button'
 import {Trash2} from 'lucide-react'
-import {ExcelCascadingSelector, SelectorState} from './ExcelCascadingSelector'
-
+import {ExcelCascadingSelector} from './ExcelCascadingSelector'
+import { Switch } from "@/components/ui/switch"
+import { SelfInputCalculator } from './SelfInputCaculator'
+import type { SelectorState } from '@/lib/types'
 /**
  * CalculatorItem 컴포넌트 Props 타입
  */
@@ -37,6 +39,8 @@ interface CalculatorItemProps {
   onRemove: (id: number) => void
   /** 애니메이션 지연 시간 (초) */
   animationDelay?: number
+  mode: boolean
+  onModeChange: (checked: boolean) => void
 }
 
 /**
@@ -51,12 +55,16 @@ export function CalculatorItem({
   onChangeState,
   onChangeTotal,
   onRemove,
-  animationDelay = 0
+  animationDelay = 0,
+  mode,
+  onModeChange
 }: CalculatorItemProps) {
   /**
    * 계산기 삭제 핸들러
    * 확인 대화상자를 통해 삭제 여부 확인
    */
+  // Removed local state: use switchState prop instead
+
   const handleRemove = () => {
     const confirmed = window.confirm(
       `입력 항목 ${index}을(를) 삭제하시겠습니까?\n입력된 데이터가 모두 삭제됩니다.`
@@ -109,6 +117,17 @@ export function CalculatorItem({
         </div>
 
         {/* 삭제 버튼 (계산기가 2개 이상일 때만 표시) */}
+        {totalCount>=1 &&(
+          <motion.div
+            initial={{opacity: 0, scale: 0.8}}
+            animate={{opacity: 1, scale: 1}}
+            transition={{delay: animationDelay + 0.2, duration: 0.3}}>
+                    <Switch
+                      checked={mode}
+                      onCheckedChange={onModeChange}
+                    /><> 수동입력</>
+          </motion.div>
+        )}
         {totalCount > 1 && (
           <motion.div
             initial={{opacity: 0, scale: 0.8}}
@@ -134,12 +153,30 @@ export function CalculatorItem({
         initial={{opacity: 0}}
         animate={{opacity: 1}}
         transition={{delay: animationDelay + 0.3, duration: 0.4}}>
+        {mode?(<SelfInputCalculator
+        id={id}
+        state={{
+          category: state.category ?? '',
+          separate: state.separate ?? '',
+          rawMaterial: state.rawMaterial ?? '',
+          quantity: state.quantity ?? '',
+          unit: state.unit ?? '',
+          kgCO2eq: state.kgCO2eq ?? ''
+        }}
+        onChangeState={handleStateChange}
+        onChangeTotal={onChangeTotal}
+        />)
+        
+
+        :(
+
         <ExcelCascadingSelector
           id={id}
           state={state}
           onChangeState={handleStateChange}
           onChangeTotal={onChangeTotal}
-        />
+        />)
+          }
       </motion.div>
 
       {/* ========================================================================

@@ -19,7 +19,7 @@ import {Card, CardContent} from '@/components/ui/card'
 import {Plus} from 'lucide-react'
 import {CalculatorItem} from './CalculatorItem'
 import {scope3CategoryList, Scope3CategoryKey} from './CategorySelector'
-import {SelectorState} from './ExcelCascadingSelector'
+import {SelectorState} from '@/lib/types'
 
 /**
  * 계산기 데이터 타입
@@ -37,6 +37,7 @@ interface CategoryDataInputProps {
   activeCategory: Scope3CategoryKey
   /** 현재 카테고리의 계산기 목록 */
   calculators: CalculatorData[]
+
   /** 카테고리별 배출량 총계 함수 */
   getTotalEmission: (category: Scope3CategoryKey) => number
   /** 계산기 추가 핸들러 */
@@ -51,6 +52,8 @@ interface CategoryDataInputProps {
   onComplete: () => void
   /** 목록으로 돌아가기 핸들러 */
   onBackToList: () => void
+  calculatorModes: { [id: number]: boolean }
+  onModeChange: (id: number, checked: boolean) => void
 }
 
 /**
@@ -60,13 +63,15 @@ interface CategoryDataInputProps {
 export function CategoryDataInput({
   activeCategory,
   calculators,
+  calculatorModes,
   getTotalEmission,
   onAddCalculator,
   onRemoveCalculator,
   onUpdateCalculatorState,
   onChangeTotal,
   onComplete,
-  onBackToList
+  onBackToList,
+  onModeChange
 }: CategoryDataInputProps) {
   const categoryTitle = scope3CategoryList[activeCategory]
   const categoryNumber = activeCategory.replace('list', '')
@@ -149,6 +154,8 @@ export function CategoryDataInput({
                 onChangeTotal={onChangeTotal}
                 onRemove={onRemoveCalculator}
                 animationDelay={index * 0.1}
+                mode={calculatorModes[calc.id] || false}
+                onModeChange={(checked) => onModeChange(calc.id, checked)}
               />
             ))
           ) : (
