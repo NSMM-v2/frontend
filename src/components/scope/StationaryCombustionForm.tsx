@@ -149,55 +149,6 @@ export default function StationaryCombustionForm({
           </div>
         </div>
 
-        {/* 시설 정보 입력 */}
-        <div className="grid grid-cols-1 gap-6 md:grid-cols-2">
-          <div className="space-y-2">
-            <Label
-              htmlFor="facilityName"
-              className="flex items-center gap-1 text-sm font-medium text-gray-700">
-              시설명
-              <span className="text-red-500">*</span>
-            </Label>
-            <Input
-              id="facilityName"
-              value={formData.stationaryCombustion?.facilityName || ''}
-              onChange={e =>
-                setFormData({
-                  ...formData,
-                  stationaryCombustion: {
-                    ...formData.stationaryCombustion!,
-                    facilityName: e.target.value
-                  }
-                })
-              }
-              placeholder="예: 보일러 #1"
-              className="border-gray-300 h-11 focus:border-blue-500 focus:ring-blue-500/20"
-            />
-          </div>
-          <div className="space-y-2">
-            <Label
-              htmlFor="facilityLocation"
-              className="text-sm font-medium text-gray-700">
-              시설 위치
-            </Label>
-            <Input
-              id="facilityLocation"
-              value={formData.stationaryCombustion?.facilityLocation || ''}
-              onChange={e =>
-                setFormData({
-                  ...formData,
-                  stationaryCombustion: {
-                    ...formData.stationaryCombustion!,
-                    facilityLocation: e.target.value
-                  }
-                })
-              }
-              placeholder="예: 공장 1동"
-              className="border-gray-300 h-11 focus:border-blue-500 focus:ring-blue-500/20"
-            />
-          </div>
-        </div>
-
         {/* 연료 및 사용량 입력 */}
         <div className="grid grid-cols-1 gap-6 md:grid-cols-2">
           <div className="space-y-2">
@@ -256,13 +207,6 @@ export default function StationaryCombustionForm({
             </div>
           </div>
         </div>
-
-        {/* 용도 구분 선택 */}
-        <PurposeSelector
-          selectedPurpose={formData.stationaryCombustion?.purposeCategory}
-          onPurposeChange={handlePurposeChange}
-          activityType="STATIONARY_COMBUSTION"
-        />
       </CardContent>
     </Card>
   )

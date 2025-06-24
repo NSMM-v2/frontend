@@ -50,55 +50,6 @@ export default function ElectricityForm({formData, setFormData}: ElectricityForm
   return (
     <Card className="overflow-hidden shadow-sm">
       <CardContent className="p-4 space-y-6">
-        {/* 시설 정보 입력 */}
-        <div className="grid grid-cols-1 gap-6 md:grid-cols-2">
-          <div className="space-y-2">
-            <Label
-              htmlFor="facilityName"
-              className="flex items-center gap-1 text-sm font-medium text-gray-700">
-              시설명
-              <span className="text-red-500">*</span>
-            </Label>
-            <Input
-              id="facilityName"
-              value={formData.electricity?.facilityName || ''}
-              onChange={e =>
-                setFormData({
-                  ...formData,
-                  electricity: {
-                    ...formData.electricity!,
-                    facilityName: e.target.value
-                  }
-                })
-              }
-              placeholder="예: 본사 사무동"
-              className="border-gray-300 h-11 focus:border-blue-500 focus:ring-blue-500/20"
-            />
-          </div>
-          <div className="space-y-2">
-            <Label
-              htmlFor="facilityLocation"
-              className="text-sm font-medium text-gray-700">
-              시설 위치
-            </Label>
-            <Input
-              id="facilityLocation"
-              value={formData.electricity?.facilityLocation || ''}
-              onChange={e =>
-                setFormData({
-                  ...formData,
-                  electricity: {
-                    ...formData.electricity!,
-                    facilityLocation: e.target.value
-                  }
-                })
-              }
-              placeholder="예: 본사 3층"
-              className="border-gray-300 h-11 focus:border-blue-500 focus:ring-blue-500/20"
-            />
-          </div>
-        </div>
-
         {/* 전력 사용량 및 재생에너지 여부 */}
         <div className="grid grid-cols-1 gap-6 md:grid-cols-2">
           <div className="space-y-2">
