@@ -2,6 +2,28 @@ import React from 'react'
 import {motion} from 'framer-motion'
 import {Card, CardHeader, CardTitle} from '@/components/ui/card'
 import {SelectorState} from '@/lib/types'
+
+export const scope1PotentialCategoryList = {
+  list1: '액체 연료',
+  list2: '가스 연료',
+  list3: '고체연료'
+} as const
+
+export const scope1KineticCategoryList = {
+  list1: '차량',
+  list2: '항공기',
+  list3: '선박'
+} as const
+
+export const scope2ElectricCategoryList = {
+  list1: '전력'
+} as const
+
+export const scope2SteamCategoryList = {
+  list1: '스팀'
+} as const
+
+
 export const scope3CategoryList = {
   list1: '구매한 상품 및 서비스',
   list2: '자본재',
@@ -20,25 +42,32 @@ export const scope3CategoryList = {
   list15: '투자'
 } as const
 
+export type Scope1PotentialCategoryKey = keyof typeof scope1PotentialCategoryList
+export type Scope1KineticCategoryKey = keyof typeof scope1KineticCategoryList
+export type Scope2ElectricCategoryKey = keyof typeof scope2ElectricCategoryList
+export type Scope2SteamCategoryKey = keyof typeof scope2SteamCategoryList
 export type Scope3CategoryKey = keyof typeof scope3CategoryList
 
-interface CategorySelectorProps {
-  getTotalEmission: (category: Scope3CategoryKey) => number
-  onCategorySelect: (category: Scope3CategoryKey) => void
+interface CategorySelectorProps<KeyType extends string> {
+  categoryList: Record<KeyType, string>
+  getTotalEmission?: (category: KeyType) => number
+  onCategorySelect: (category: KeyType) => void
   animationDelay?: number
 }
 
-export function CategorySelector({
+export function CategorySelector<KeyType extends string>({
+  categoryList,
   getTotalEmission,
   onCategorySelect,
   animationDelay = 0
-}: CategorySelectorProps) {
+}: CategorySelectorProps<KeyType>) {
   return (
     <motion.div
       initial={{opacity: 0, y: 20}}
       animate={{opacity: 1, y: 0}}
       transition={{delay: animationDelay, duration: 0.6}}
       className="grid grid-cols-1 gap-6 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
+
       {Object.entries(scope3CategoryList).map(([key, value], index) => {
         const emission = getTotalEmission(key as Scope3CategoryKey)
         const hasData = emission > 0
@@ -72,8 +101,9 @@ export function CategorySelector({
                     <CardTitle className="text-sm leading-tight text-gray-800 transition-colors hover:text-blue-700">
                       {value}
                     </CardTitle>
+
                   </div>
-                  <div className="ml-3 text-right">
+                  <div className="flex items-center justify-between pt-3 mt-3 border-t border-gray-200">
                     <div
                       className={`text-lg font-bold transition-colors ${
                         hasData ? 'text-blue-600' : 'text-gray-400'
@@ -102,12 +132,12 @@ export function CategorySelector({
                     }`}>
                     →
                   </div>
-                </div>
-              </CardHeader>
-            </Card>
-          </motion.div>
-        )
-      })}
+                </CardHeader>
+              </Card>
+            </motion.div>
+          )
+        }
+      )}
     </motion.div>
   )
 }
