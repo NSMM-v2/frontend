@@ -26,13 +26,14 @@ export interface Scope3EmissionRequest {
   reportingMonth: number // 보고월
   categoryNumber: number // 카테고리 번호 (1~15)
   categoryName: string // 카테고리명
+  isManualInput: boolean // 수동 입력 여부 (true: 수동, false: 자동)
 }
 
 /**
  * Scope3 배출량 응답 데이터 (백엔드에서 받는 형식)
  */
 export interface Scope3EmissionResponse {
-  emissionId: number // 배출량 데이터 ID
+  id: number // 배출량 데이터 ID (백엔드 entity.id와 매핑)
   companyUuid: string // 회사 UUID
   treePath: string // 계층 경로
   headquartersId: number // 본사 ID
@@ -47,6 +48,7 @@ export interface Scope3EmissionResponse {
   reportingMonth: number // 보고월
   categoryNumber: number // 카테고리 번호
   categoryName: string // 카테고리명
+  isManualInput: boolean // 수동 입력 여부 (true: 수동, false: 자동)
   createdAt: string // 생성일시
   updatedAt: string // 수정일시
   createdBy: string // 생성자
@@ -68,6 +70,7 @@ export interface Scope3EmissionUpdateRequest {
   reportingMonth?: number
   categoryNumber?: number
   categoryName?: string
+  isManualInput?: boolean // 수동 입력 여부 (true: 수동, false: 자동)
 }
 
 /**

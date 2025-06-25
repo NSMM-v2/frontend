@@ -62,7 +62,8 @@ import {SelectorState} from '@/lib/types'
 import {Scope3EmissionResponse, Scope3CategorySummary} from '@/lib/types'
 import {
   fetchScope3EmissionsByYearAndMonth,
-  fetchScope3CategorySummary
+  fetchScope3CategorySummary,
+  deleteScope3Emission
 } from '@/services/scopeService'
 
 // ============================================================================
@@ -70,14 +71,20 @@ import {
 // ============================================================================
 
 /**
- * 계산기 데이터 타입 (확장: 백엔드 데이터 포함)
+ * 계산기 데이터 구조 (Calculator Data Structure)
+ * 백엔드 Scope3Emission 엔티티와 연동되는 프론트엔드 계산기 상태
  */
 interface CalculatorData {
-  id: number
-  state: SelectorState
-  emissionId?: number // 백엔드에서 받은 배출량 데이터 ID (수정/삭제용)
-  savedData?: Scope3EmissionResponse // 백엔드에서 받은 전체 데이터
+  id: number // 식별자: emissionId(양수) 또는 임시ID(음수)
+  state: SelectorState // 사용자 입력 상태
+  savedData?: Scope3EmissionResponse // 백엔드에서 받은 전체 데이터 (저장된 경우에만)
 }
+
+/**
+ * ID 관리 규칙:
+ * - 저장된 데이터: id = emissionId (양수, 1, 2, 3...)
+ * - 미저장 데이터: id = 임시ID (음수, -1, -2, -3...)
+ */
 
 // ============================================================================
 // 메인 Scope3 폼 컴포넌트 (Main Scope3 Form Component)
@@ -91,9 +98,25 @@ export default function Scope3Form() {
   // ========================================================================
   // 기본 상태 관리 (Basic State Management)
   // ========================================================================
-  const [calculatorModes, setCalculatorModes] = useState<{
-    [key in Scope3CategoryKey]?: {[id: number]: boolean}
-  }>({})
+  const [calculatorModes, setCalculatorModes] = useState<
+    Record<Scope3CategoryKey, Record<number, boolean>>
+  >({
+    list1: {},
+    list2: {},
+    list3: {},
+    list4: {},
+    list5: {},
+    list6: {},
+    list7: {},
+    list8: {},
+    list9: {},
+    list10: {},
+    list11: {},
+    list12: {},
+    list13: {},
+    list14: {},
+    list15: {}
+  })
   const [selectedYear, setSelectedYear] = useState<number>(new Date().getFullYear()) // 선택된 연도
   const currentMonth = new Date().getMonth() + 1 // JavaScript의 월은 0부터 시작하므로 1을 더함
   const [selectedMonth, setSelectedMonth] = useState<number | null>(currentMonth) // 선택된 월 (null이면 전체)
@@ -101,14 +124,46 @@ export default function Scope3Form() {
   const [activeCategory, setActiveCategory] = useState<Scope3CategoryKey | null>(null) // 현재 선택된 카테고리
 
   // 카테고리별 계산기 목록 관리
-  const [categoryCalculators, setCategoryCalculators] = useState<{
-    [key in Scope3CategoryKey]?: CalculatorData[]
-  }>({})
+  const [categoryCalculators, setCategoryCalculators] = useState<
+    Record<Scope3CategoryKey, CalculatorData[]>
+  >({
+    list1: [],
+    list2: [],
+    list3: [],
+    list4: [],
+    list5: [],
+    list6: [],
+    list7: [],
+    list8: [],
+    list9: [],
+    list10: [],
+    list11: [],
+    list12: [],
+    list13: [],
+    list14: [],
+    list15: []
+  })
 
   // 카테고리별 배출량 총계 관리
-  const [categoryTotals, setCategoryTotals] = useState<{
-    [key in Scope3CategoryKey]?: {id: number; emission: number}[]
-  }>({})
+  const [categoryTotals, setCategoryTotals] = useState<
+    Record<Scope3CategoryKey, {id: number; emission: number}[]>
+  >({
+    list1: [],
+    list2: [],
+    list3: [],
+    list4: [],
+    list5: [],
+    list6: [],
+    list7: [],
+    list8: [],
+    list9: [],
+    list10: [],
+    list11: [],
+    list12: [],
+    list13: [],
+    list14: [],
+    list15: []
+  })
 
   // ========================================================================
   // 백엔드 연동 상태 관리 (Backend Integration State)
@@ -146,6 +201,41 @@ export default function Scope3Form() {
     (categoryTotals[category] || []).reduce((sum, t) => sum + t.emission, 0)
 
   // ========================================================================
+  // 유틸리티 함수 - ID 생성 (Utility Functions - ID Generation)
+  // ========================================================================
+
+  /**
+   * 새로운 임시 ID 생성 (음수 사용)
+   * 기존 ID들과 겹치지 않는 음수 ID 생성
+   */
+  const generateNewTemporaryId = (categoryKey: Scope3CategoryKey): number => {
+    const existingCalculators = categoryCalculators[categoryKey] || []
+    const existingIds = existingCalculators.map(c => c.id).filter(id => id < 0) // 임시 ID만 필터링
+
+    // 가장 작은 음수에서 -1을 뺀 값 반환
+    const minId = existingIds.length > 0 ? Math.min(...existingIds) : 0
+    const newId = minId - 1
+
+    console.log('새 임시 ID 생성:', {
+      카테고리: categoryKey,
+      기존임시ID목록: existingIds,
+      새임시ID: newId
+    })
+
+    return newId
+  }
+
+  /**
+   * ID가 임시 ID인지 확인 (음수면 임시 ID)
+   */
+  const isTemporaryId = (id: number): boolean => id < 0
+
+  /**
+   * ID가 저장된 데이터 ID인지 확인 (양수면 emissionId)
+   */
+  const isEmissionId = (id: number): boolean => id > 0
+
+  // ========================================================================
   // 이벤트 핸들러 (Event Handlers)
   // ========================================================================
   const handleModeChange = (id: number, checked: boolean) => {
@@ -166,51 +256,222 @@ export default function Scope3Form() {
   const updateTotal = (id: number, emission: number) => {
     if (!activeCategory) return
 
-    setCategoryTotals(prev => {
-      const old = prev[activeCategory] || []
-      const updated = old.some(t => t.id === id)
-        ? old.map(t => (t.id === id ? {id, emission} : t)) // 기존 항목 업데이트
-        : [...old, {id, emission}] // 새 항목 추가
-      return {...prev, [activeCategory]: updated}
-    })
+    setCategoryTotals(prev => ({
+      ...prev,
+      [activeCategory]: (prev[activeCategory] || [])
+        .map(t => (t.id === id ? {id, emission} : t))
+        .concat(
+          (prev[activeCategory] || []).find(t => t.id === id) ? [] : [{id, emission}]
+        )
+    }))
   }
 
   /**
    * 새로운 계산기 추가 핸들러
-   *
    */
   const addCalculator = () => {
     if (!activeCategory) return
 
-    const current = categoryCalculators[activeCategory] || []
-    const newId = current.length > 0 ? current[current.length - 1].id + 1 : 1
+    const newId = generateNewTemporaryId(activeCategory)
+    console.log(`새 계산기 추가 - 카테고리: ${activeCategory}, 임시ID: ${newId}`)
 
     setCategoryCalculators(prev => ({
       ...prev,
       [activeCategory]: [
-        ...current,
-        {id: newId, state: {category: '', separate: '', rawMaterial: '', quantity: ''}}
+        ...prev[activeCategory],
+        {
+          id: newId,
+          state: {category: '', separate: '', rawMaterial: '', quantity: ''}
+          // savedData는 없음 (아직 저장되지 않은 새 데이터)
+        }
       ]
     }))
   }
 
   /**
    * 계산기 삭제 핸들러
+   * - 여러 항목이 있는 경우: 선택된 항목만 완전 삭제
+   * - 단일 항목인 경우: 백엔드에서 삭제 후 빈 계산기로 초기화 (완전 제거하지 않음)
    */
-  const removeCalculator = (id: number) => {
-    if (!activeCategory) return
+  const removeCalculator = async (id: number) => {
+    if (!activeCategory) {
+      console.error('삭제 실패: activeCategory가 없습니다.')
+      return
+    }
 
-    // 계산기 목록에서 제거
-    setCategoryCalculators(prev => ({
-      ...prev,
-      [activeCategory]: (prev[activeCategory] || []).filter(c => c.id !== id)
-    }))
+    const currentCalculators = categoryCalculators[activeCategory] || []
+    const targetCalculator = currentCalculators.find(c => c.id === id)
+    const isLastItem = currentCalculators.length === 1
 
-    // 배출량 총계에서도 제거
-    setCategoryTotals(prev => ({
-      ...prev,
-      [activeCategory]: (prev[activeCategory] || []).filter(t => t.id !== id)
-    }))
+    console.log('===== 계산기 삭제 요청 시작 =====')
+    console.log('삭제 요청 상세 정보:', {
+      activeCategory,
+      삭제ID: id,
+      ID타입: isTemporaryId(id) ? '임시ID' : 'emissionId',
+      isLastItem,
+      currentCalculators: currentCalculators.map(c => ({
+        id: c.id,
+        ID타입: isTemporaryId(c.id) ? '임시ID' : 'emissionId',
+        저장여부: !!c.savedData,
+        state: c.state
+      })),
+      targetCalculator: targetCalculator
+        ? {
+            id: targetCalculator.id,
+            ID타입: isTemporaryId(targetCalculator.id) ? '임시ID' : 'emissionId',
+            저장여부: !!targetCalculator.savedData,
+            state: targetCalculator.state
+          }
+        : null
+    })
+
+    if (!targetCalculator) {
+      console.error('삭제 실패: 대상 계산기를 찾을 수 없습니다.', {
+        찾는ID: id,
+        현재계산기목록: currentCalculators.map(c => c.id)
+      })
+      alert('삭제할 항목을 찾을 수 없습니다.')
+      return
+    }
+
+    try {
+      // 백엔드에 저장된 데이터가 있으면 API 호출로 삭제
+      if (isEmissionId(targetCalculator.id)) {
+        console.log('백엔드 삭제 시작:', {
+          emissionId: targetCalculator.id,
+          저장여부: !!targetCalculator.savedData
+        })
+
+        const deleteSuccess = await deleteScope3Emission(targetCalculator.id)
+
+        console.log('백엔드 삭제 결과:', {
+          success: deleteSuccess,
+          emissionId: targetCalculator.id
+        })
+
+        if (!deleteSuccess) {
+          console.error('백엔드 삭제 실패 - API 호출 결과가 false')
+          alert('서버에서 데이터 삭제에 실패했습니다. 다시 시도해주세요.')
+          return
+        }
+
+        console.log('백엔드 삭제 성공')
+      } else {
+        console.log('백엔드 삭제 스킵:', {
+          이유: '임시ID (아직 저장되지 않은 데이터)',
+          id: targetCalculator.id
+        })
+      }
+
+      // 항목이 하나만 있는 경우: 값 초기화 (빈 계산기로 변경)
+      if (isLastItem) {
+        console.log('단일 항목 삭제 처리 시작:', {
+          id: id,
+          처리방식: '값 초기화 (빈 계산기로 변경)'
+        })
+
+        const newTemporaryId = generateNewTemporaryId(activeCategory)
+
+        setCategoryCalculators(prev => {
+          const updated = {
+            ...prev,
+            [activeCategory]: [
+              {
+                id: newTemporaryId, // 새로운 임시 ID로 교체
+                state: {
+                  category: '',
+                  separate: '',
+                  rawMaterial: '',
+                  quantity: '',
+                  unit: '',
+                  kgCO2eq: ''
+                }
+                // savedData는 없음 (새로운 빈 데이터)
+              }
+            ]
+          }
+          console.log('단일 항목 값 초기화 완료:', updated[activeCategory])
+          return updated
+        })
+
+        // 배출량 총계도 0으로 초기화
+        setCategoryTotals(prev => {
+          const updated = {
+            ...prev,
+            [activeCategory]: [
+              {
+                id: newTemporaryId,
+                emission: 0
+              }
+            ]
+          }
+          console.log('단일 항목 총계 초기화 완료:', updated[activeCategory])
+          return updated
+        })
+
+        // 수동 입력 모드도 초기화 (기본값: 자동 모드)
+        handleModeChange(newTemporaryId, false)
+
+        console.log('단일 항목 삭제 완료 - 빈 계산기로 초기화됨')
+      } else {
+        // 여러 항목이 있는 경우: 선택된 항목만 완전 삭제
+        console.log('다중 항목 중 하나 삭제 처리 시작:', {
+          id: id,
+          처리방식: '완전 제거',
+          남은항목수: currentCalculators.length - 1
+        })
+
+        setCategoryCalculators(prev => {
+          const updated = {
+            ...prev,
+            [activeCategory]: (prev[activeCategory] || []).filter(c => c.id !== id)
+          }
+          console.log('다중 항목 중 하나 삭제 완료:', updated[activeCategory])
+          return updated
+        })
+
+        // 배출량 총계에서도 제거
+        setCategoryTotals(prev => {
+          const updated = {
+            ...prev,
+            [activeCategory]: (prev[activeCategory] || []).filter(t => t.id !== id)
+          }
+          console.log('다중 항목 총계 업데이트:', updated[activeCategory])
+          return updated
+        })
+
+        // 수동 입력 모드에서도 제거
+        setCalculatorModes(prev => {
+          const categoryModes = prev[activeCategory] || {}
+          const {[id]: _, ...updatedModes} = categoryModes
+          return {
+            ...prev,
+            [activeCategory]: updatedModes
+          }
+        })
+
+        console.log('수동 입력 모드에서 제거 완료')
+        console.log('다중 항목 중 하나 삭제 완료')
+      }
+
+      // 백엔드 데이터가 있었던 경우 전체 데이터 새로고침
+      if (isEmissionId(targetCalculator.id)) {
+        console.log('백엔드 삭제 후 데이터 새로고침 시작...')
+        await refreshData()
+        console.log('데이터 새로고침 완료')
+      }
+
+      console.log('===== 계산기 삭제 요청 완료 =====')
+    } catch (error) {
+      console.error('===== 계산기 삭제 중 오류 발생 =====')
+      console.error('오류 상세 정보:', {
+        error,
+        errorMessage: error instanceof Error ? error.message : '알 수 없는 오류',
+        id: id,
+        activeCategory
+      })
+      alert('데이터 삭제 중 오류가 발생했습니다. 콘솔을 확인해주세요.')
+    }
   }
 
   /**
@@ -236,10 +497,19 @@ export default function Scope3Form() {
 
     // 해당 카테고리에 계산기가 없으면 기본 계산기 1개 생성
     if (!categoryCalculators[category] || categoryCalculators[category]!.length === 0) {
+      const newId = generateNewTemporaryId(category)
+      console.log(
+        `카테고리 선택 시 기본 계산기 생성 - 카테고리: ${category}, ID: ${newId}`
+      )
+
       setCategoryCalculators(prev => ({
         ...prev,
         [category]: [
-          {id: 1, state: {category: '', separate: '', rawMaterial: '', quantity: ''}}
+          {
+            id: newId,
+            state: {category: '', separate: '', rawMaterial: '', quantity: ''}
+            // savedData는 없음 (아직 저장되지 않은 새 데이터)
+          }
         ]
       }))
     }
@@ -328,10 +598,18 @@ export default function Scope3Form() {
       }
 
       // 백엔드 데이터를 계산기 형식으로 변환
+      // id가 유효하지 않으면 새 ID 생성
+      const calculatorId =
+        emission.id && emission.id > 0 ? emission.id : generateNewTemporaryId(categoryKey)
+
+      console.log('백엔드 데이터 변환:', {
+        id: calculatorId,
+        categoryKey,
+        isNewId: calculatorId !== emission.id
+      })
+
       const calculatorData: CalculatorData = {
-        id: emission.emissionId, // 백엔드 ID를 프론트엔드 ID로 사용
-        emissionId: emission.emissionId, // 수정/삭제용 원본 ID
-        savedData: emission, // 전체 백엔드 데이터 보관
+        id: calculatorId, // 유효한 ID 사용
         state: {
           category: emission.majorCategory,
           separate: emission.subcategory,
@@ -339,39 +617,45 @@ export default function Scope3Form() {
           unit: emission.unit,
           kgCO2eq: emission.emissionFactor.toString(),
           quantity: emission.activityAmount.toString()
-        }
+        },
+        savedData: emission // 전체 백엔드 데이터 보관
+      }
+
+      // 수동 입력 모드 상태도 함께 복원
+      if (emission.isManualInput !== undefined) {
+        setCalculatorModes(prev => ({
+          ...prev,
+          [categoryKey]: {
+            ...prev[categoryKey],
+            [calculatorId]: emission.isManualInput
+          }
+        }))
       }
 
       categorizedData[categoryKey].push(calculatorData)
     })
 
-    setCategoryCalculators(categorizedData)
-
-    // 배출량 총계도 함께 업데이트
-    updateCategoryTotalsFromData(data)
-  }
-
-  /**
-   * 백엔드 데이터를 기반으로 카테고리 총계 업데이트
-   */
-  const updateCategoryTotalsFromData = (data: Scope3EmissionResponse[]) => {
-    const totals: {[key in Scope3CategoryKey]?: {id: number; emission: number}[]} = {}
-
-    data.forEach(emission => {
-      const categoryKey = getCategoryKeyByNumber(emission.categoryNumber)
-      if (!categoryKey) return
-
-      if (!totals[categoryKey]) {
-        totals[categoryKey] = []
-      }
-
-      totals[categoryKey].push({
-        id: emission.emissionId,
-        emission: emission.totalEmission
+    // 실제 state 업데이트 수행
+    setCategoryCalculators(prevState => {
+      const newState = {...prevState}
+      Object.entries(categorizedData).forEach(([categoryKey, calculators]) => {
+        newState[categoryKey as Scope3CategoryKey] = calculators || []
       })
+      console.log('계산기 상태 업데이트 완료:', newState)
+      return newState
     })
 
-    setCategoryTotals(totals)
+    setCategoryTotals(prevState => {
+      const newState = {...prevState}
+      Object.entries(categorizedData).forEach(([categoryKey, calculators]) => {
+        newState[categoryKey as Scope3CategoryKey] = (calculators || []).map(calc => ({
+          id: calc.id,
+          emission: calc.savedData?.totalEmission || 0
+        }))
+      })
+      console.log('총계 상태 업데이트 완료:', newState)
+      return newState
+    })
   }
 
   /**
@@ -412,6 +696,60 @@ export default function Scope3Form() {
       loadScope3Data()
     }
   }, [selectedYear, selectedMonth, refreshTrigger]) // refreshTrigger로 CRUD 후 재조회
+
+  /**
+   * 컴포넌트 마운트 시 잘못된 ID 수정
+   */
+  useEffect(() => {
+    // 약간의 지연 후 ID 수정 실행 (데이터 로딩 완료 후)
+    const timer = setTimeout(() => {
+      fixInvalidCalculatorIds()
+    }, 1000)
+
+    return () => clearTimeout(timer)
+  }, []) // 마운트 시 한 번만 실행
+
+  /**
+   * 기존 계산기들의 잘못된 ID를 수정하는 함수
+   * undefined나 잘못된 ID를 가진 계산기들을 새로운 유효한 ID로 교체
+   */
+  const fixInvalidCalculatorIds = () => {
+    console.log('잘못된 계산기 ID 수정 시작')
+
+    setCategoryCalculators(prev => {
+      const updated = {...prev}
+      let hasChanges = false
+
+      Object.keys(updated).forEach(categoryKey => {
+        const calculators = updated[categoryKey as Scope3CategoryKey] || []
+        const fixedCalculators = calculators.map(calc => {
+          if (
+            calc.id === undefined ||
+            calc.id === null ||
+            isNaN(calc.id) ||
+            calc.id <= 0
+          ) {
+            const newId = generateNewTemporaryId(categoryKey as Scope3CategoryKey)
+            console.log(`ID 수정: ${calc.id} → ${newId} (카테고리: ${categoryKey})`)
+            hasChanges = true
+            return {...calc, id: newId}
+          }
+          return calc
+        })
+
+        if (hasChanges) {
+          updated[categoryKey as Scope3CategoryKey] = fixedCalculators
+        }
+      })
+
+      if (hasChanges) {
+        console.log('계산기 ID 수정 완료')
+        return updated
+      }
+
+      return prev
+    })
+  }
 
   /**
    * 데이터 새로고침 함수

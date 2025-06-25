@@ -20,14 +20,25 @@
  * @lastModified 2024-12-20
  */
 
-import React from 'react'
+import React, {useState} from 'react'
 import {motion} from 'framer-motion'
 import {Button} from '@/components/ui/button'
-import {Trash2, Database, Sparkles} from 'lucide-react'
+import {Trash2, Database, Sparkles, AlertTriangle} from 'lucide-react'
 import {ExcelCascadingSelector} from './ExcelCascadingSelector'
 import {Switch} from '@/components/ui/switch'
 import {SelfInputCalculator} from './SelfInputCaculator'
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle
+} from '@/components/ui/alert-dialog'
 import type {SelectorState} from '@/lib/types'
+import {showSuccess} from '@/util/toast'
 
 /**
  * CalculatorItem 컴포넌트 Props 타입
@@ -71,20 +82,20 @@ export function CalculatorItem({
   mode,
   onModeChange
 }: CalculatorItemProps) {
-  /**
-   * 계산기 삭제 핸들러
-   * 확인 대화상자를 통해 삭제 여부 확인
-   */
-  const handleRemove = () => {
-    const confirmed = window.confirm(
-      `${
-        mode ? '수동 입력' : '배출계수 선택'
-      } ${index}을(를) 삭제하시겠습니까?\n입력된 데이터가 모두 삭제됩니다.`
-    )
+  // ========================================================================
+  // 상태 관리 (State Management)
+  // ========================================================================
 
-    if (confirmed) {
-      onRemove(id)
-    }
+  const [showDeleteDialog, setShowDeleteDialog] = useState(false)
+
+  /**
+   * 삭제 확인 핸들러
+   * AlertDialog를 통한 세련된 삭제 확인
+   */
+  const handleDeleteConfirm = () => {
+    onRemove(id)
+    setShowDeleteDialog(false)
+    showSuccess(`${mode ? '수동 입력' : '배출계수 선택'} ${index}이(가) 삭제되었습니다.`)
   }
 
   /**
@@ -100,6 +111,21 @@ export function CalculatorItem({
     ? '직접 값을 입력하여 배출량을 계산하세요'
     : '배출계수를 단계별로 선택하여 자동 계산하세요'
   const IconComponent = mode ? Sparkles : Database
+
+  /**
+   * 입력된 데이터가 있는지 확인하는 함수
+   * 어떤 필드라도 값이 입력되어 있으면 true 반환
+   */
+  const hasInputData = () => {
+    return (
+      (state.category && state.category.trim() !== '') ||
+      (state.separate && state.separate.trim() !== '') ||
+      (state.rawMaterial && state.rawMaterial.trim() !== '') ||
+      (state.quantity && state.quantity.trim() !== '') ||
+      (state.unit && state.unit.trim() !== '') ||
+      (state.kgCO2eq && state.kgCO2eq.trim() !== '')
+    )
+  }
 
   return (
     <motion.div
@@ -177,8 +203,8 @@ export function CalculatorItem({
                 </span>
               </motion.div>
 
-              {/* 삭제 버튼 - 2개 이상일 때만 표시 */}
-              {totalCount > 1 && (
+              {/* 삭제 버튼 - 입력된 데이터가 있으면 상시 표시 */}
+              {hasInputData() && (
                 <motion.div
                   initial={{opacity: 0, scale: 0.8}}
                   animate={{opacity: 1, scale: 1}}
@@ -186,7 +212,7 @@ export function CalculatorItem({
                   <Button
                     variant="ghost"
                     size="sm"
-                    onClick={handleRemove}
+                    onClick={() => setShowDeleteDialog(true)}
                     className="px-4 py-2 text-red-500 bg-red-50 rounded-xl border border-red-200 transition-all duration-200 hover:text-red-700 hover:bg-red-100 hover:border-red-300 hover:scale-105">
                     <Trash2 className="mr-2 w-4 h-4" />
                     <span className="font-medium">삭제</span>
@@ -246,6 +272,49 @@ export function CalculatorItem({
           <div className="absolute top-1/2 left-1/2 w-3 h-3 bg-blue-500 rounded-full border-2 border-white transform -translate-x-1/2 -translate-y-1/2" />
         </motion.div>
       )}
+
+      {/* ============================================================================
+          삭제 확인 다이얼로그 (Delete Confirmation Dialog)
+          ============================================================================ */}
+      <AlertDialog open={showDeleteDialog} onOpenChange={setShowDeleteDialog}>
+        <AlertDialogContent className="max-w-md">
+          <AlertDialogHeader>
+            <div className="flex items-center mb-2 space-x-3">
+              <div className="flex justify-center items-center w-12 h-12 bg-red-100 rounded-full">
+                <AlertTriangle className="w-6 h-6 text-red-600" />
+              </div>
+              <div>
+                <AlertDialogTitle className="text-lg font-semibold text-gray-900">
+                  계산기 삭제 확인
+                </AlertDialogTitle>
+              </div>
+            </div>
+          </AlertDialogHeader>
+
+          <AlertDialogDescription className="space-y-3 leading-relaxed text-gray-600">
+            <span className="block">
+              <span className="font-medium text-gray-900">
+                {mode ? '수동 입력' : '배출계수 선택'} {index}
+              </span>
+              을(를) 삭제하시겠습니까?
+            </span>
+            <span className="block text-sm text-red-600">
+              입력된 모든 데이터가 완전히 삭제되며, 이 작업은 되돌릴 수 없습니다.
+            </span>
+          </AlertDialogDescription>
+
+          <AlertDialogFooter className="gap-3">
+            <AlertDialogCancel className="px-6 py-2 text-gray-700 bg-gray-100 rounded-lg border-0 transition-all hover:bg-gray-200">
+              취소
+            </AlertDialogCancel>
+            <AlertDialogAction
+              onClick={handleDeleteConfirm}
+              className="px-6 py-2 text-white bg-red-600 rounded-lg border-0 transition-all hover:bg-red-700">
+              삭제
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </motion.div>
   )
 }
