@@ -229,6 +229,7 @@ export function CategoryDataInput({
 
       // 저장 완료 후 데이터 새로고침 및 화면 전환
       onDataChange?.()
+
       onComplete()
     } catch (error) {
       console.error('데이터 저장 중 오류 발생:', error)
@@ -246,54 +247,56 @@ export function CategoryDataInput({
           헤더 섹션 (Header Section)
           - 카테고리 제목 및 목록으로 돌아가기 버튼
           ======================================================================== */}
-      <div className="flex flex-row justify-between items-center p-4 w-full bg-white rounded-lg shadow-sm">
-        <motion.div
-          initial={{opacity: 0, x: -20}}
-          animate={{opacity: 1, x: 0}}
-          transition={{delay: 0.1, duration: 0.5}}
-          onClick={handleBackToList}
-          className="flex flex-row items-center p-4 rounded-lg hover:cursor-pointer hover:bg-gray-100">
-          <div className="mr-4 text-2xl">←</div>
-          <div>
-            <h1 className="text-3xl font-bold text-customG-900">{categoryTitle}</h1>
-            {/* <p className="mt-2 text-customG-600">카테고리 {categoryNumber} 데이터 입력</p> */}
-            <div className="text-sm text-customG-500">
-              배출계수를 선택하고 활동량을 입력하여 배출량을 계산하세요
-            </div>
-          </div>
-        </motion.div>
-
-        {/* ========================================================================
-          현재 카테고리 소계 카드 (Category Summary Card)
-          - 현재 카테고리의 총 배출량 표시
-          ======================================================================== */}
-
-        <motion.div
-          initial={{opacity: 0, x: -20}}
-          animate={{opacity: 1, x: 0}}
-          transition={{delay: 0.1, duration: 0.5}}>
-          <Card className="bg-gradient-to-r from-blue-50 to-emerald-50 border-blue-200 min-w-md">
-            <CardContent className="flex justify-between items-center p-6">
+      <div className="overflow-hidden bg-white rounded-3xl border-0 shadow-sm">
+        <div className="p-6 bg-white">
+          <div className="flex flex-row justify-between items-center">
+            <motion.div
+              initial={{opacity: 0, x: -20}}
+              animate={{opacity: 1, x: 0}}
+              transition={{delay: 0.1, duration: 0.5}}
+              onClick={handleBackToList}
+              className="flex flex-row items-center p-4 rounded-xl transition-all duration-200 hover:cursor-pointer hover:bg-blue-50">
+              <div className="mr-4 text-2xl text-blue-500">←</div>
               <div>
-                <span className="text-lg font-medium text-customG-700">
-                  현재 카테고리 소계:
-                </span>
-                <div className="mt-1 text-xs text-customG-500">
-                  {calculators.length}개 항목 입력됨
+                <h1 className="text-3xl font-bold text-gray-900">{categoryTitle}</h1>
+                <div className="mt-1 text-sm text-gray-600">
+                  배출계수를 선택하고 활동량을 입력하여 배출량을 계산하세요
                 </div>
               </div>
-              <div className="text-right">
-                <span className="text-2xl font-bold text-blue-600">
-                  {totalEmission.toLocaleString(undefined, {
-                    maximumFractionDigits: 2,
-                    minimumFractionDigits: 2
-                  })}
-                </span>
-                <div className="text-sm text-customG-500">kgCO₂</div>
-              </div>
-            </CardContent>
-          </Card>
-        </motion.div>
+            </motion.div>
+
+            {/* ========================================================================
+              현재 카테고리 소계 카드 (Category Summary Card)
+              - 현재 카테고리의 총 배출량 표시
+              ======================================================================== */}
+            <motion.div
+              initial={{opacity: 0, x: 20}}
+              animate={{opacity: 1, x: 0}}
+              transition={{delay: 0.1, duration: 0.5}}>
+              <Card className="bg-white rounded-2xl border-2 border-blue-200 shadow-sm min-w-md">
+                <CardContent className="flex justify-between items-center p-6">
+                  <div>
+                    <span className="text-lg font-semibold text-gray-900">
+                      현재 카테고리 소계:
+                    </span>
+                    <div className="mt-1 text-xs text-gray-500">
+                      {calculators.length}개 항목 입력됨
+                    </div>
+                  </div>
+                  <div className="text-right">
+                    <span className="text-2xl font-bold text-blue-600">
+                      {totalEmission.toLocaleString(undefined, {
+                        maximumFractionDigits: 2,
+                        minimumFractionDigits: 2
+                      })}
+                    </span>
+                    <div className="text-sm text-gray-500">kgCO₂</div>
+                  </div>
+                </CardContent>
+              </Card>
+            </motion.div>
+          </div>
+        </div>
       </div>
       {/* ========================================================================
           계산기 목록 (Calculator List)
@@ -365,7 +368,7 @@ export function CategoryDataInput({
                     {/* 첫 번째 항목 추가 버튼 */}
                     <Button
                       onClick={handleAddCalculator}
-                      className="px-8 py-3 text-lg text-white bg-gradient-to-r from-blue-600 to-blue-700 shadow-md transition-all duration-200 hover:from-blue-700 hover:to-blue-800 hover:shadow-lg">
+                      className="px-8 py-3 text-lg font-semibold text-white bg-blue-500 rounded-xl shadow-sm transition-all duration-200 hover:bg-blue-600 hover:shadow-sm">
                       <Plus className="mr-2 w-5 h-5" />
                       항목 추가하기
                     </Button>
@@ -386,12 +389,12 @@ export function CategoryDataInput({
           initial={{opacity: 0, y: 20}}
           animate={{opacity: 1, y: 0}}
           transition={{delay: 0.7, duration: 0.5}}
-          className="flex gap-6 justify-center items-center pt-8 border-t border-customG-200">
+          className="flex gap-4 justify-center items-center pt-8 border-t border-gray-200">
           {/* 항목 추가 버튼 */}
           <Button
             onClick={handleAddCalculator}
             variant="outline"
-            className="px-8 py-3 text-lg transition-all duration-200 border-customG-300 hover:bg-customG-50 hover:border-customG-400">
+            className="px-8 py-3 text-base font-semibold text-blue-600 bg-white rounded-xl border-2 border-blue-500 transition-all duration-200 hover:bg-blue-50 hover:border-blue-600 hover:shadow-sm">
             <Plus className="mr-2 w-5 h-5" />
             항목 추가
           </Button>
@@ -399,7 +402,7 @@ export function CategoryDataInput({
           {/* 입력 완료 버튼 */}
           <Button
             onClick={handleCompleteAsync}
-            className="px-12 py-3 text-lg text-white bg-gradient-to-r from-blue-600 to-blue-700 shadow-md transition-all duration-200 hover:from-blue-700 hover:to-blue-800 hover:shadow-lg">
+            className="px-8 py-3 text-base font-semibold text-white bg-blue-500 rounded-xl shadow-sm transition-all duration-200 hover:bg-blue-600 hover:shadow-sm">
             입력 완료
           </Button>
         </motion.div>
