@@ -1,5 +1,5 @@
 'use client'
-import {useEffect, useState} from 'react'
+import {useEffect, useState, useMemo} from 'react'
 import {fetchFullSelfAssessmentResult} from '@/services/csdddService'
 import {Button} from '@/components/ui/button'
 import {Card} from '@/components/ui/card'
@@ -141,7 +141,7 @@ const improvementTemplates = {
   ]
 }
 
-const riskLevels = {
+const RISK_LEVEL_MAP = {
   A: {
     level: '매우 낮음',
     color: 'text-green-600',
@@ -180,6 +180,67 @@ export default function EvaluationForm({
     'overview'
   )
   const [selectedCategory, setSelectedCategory] = useState<string | null>(null)
+
+  // 주요 강점: strengths 우선, 없으면 categoryAnalysis에서 '우수'만 추출 (카테고리 누락 시 인덱스 기반 이름 대입)
+  const fullCategoryList = [
+    '인권 및 노동',
+    '산업안전·보건',
+    '환경경영',
+    '공급망 및 조달',
+    '윤리경영 및 정보보호'
+  ]
+
+  // 주요 강점 섹션 개선된 코드 (문자열/객체 모두 지원, 타입 안전성 향상)
+  const strengthsToShow = useMemo(() => {
+    const strengths = analysisData?.strengths
+
+    // Type guard: check if array is string[]
+    const isStringArray = (arr: any[]): arr is string[] =>
+      arr.length > 0 && typeof arr[0] === 'string'
+
+    // Type guard: check if array is object[]
+    const isObjectArray = (
+      arr: any[]
+    ): arr is {
+      category: string
+      score: number
+      status?: string
+      color?: string
+    }[] => arr.length > 0 && typeof arr[0] === 'object' && 'category' in arr[0]
+
+    if (Array.isArray(strengths)) {
+      if (isStringArray(strengths)) {
+        return strengths.map(category => ({
+          category,
+          score: undefined,
+          status: undefined,
+          color: 'green'
+        }))
+      } else if (isObjectArray(strengths)) {
+        return strengths
+      }
+    }
+
+    // fallback
+    if (analysisData?.categoryAnalysis && analysisData.categoryAnalysis.length > 0) {
+      return analysisData.categoryAnalysis
+        .filter(cat => cat.status === '우수' || cat.color === 'green')
+        .map((cat, idx) => ({
+          ...cat,
+          category: cat.category || fullCategoryList[idx] || '알 수 없는 카테고리'
+        }))
+    }
+
+    return []
+  }, [analysisData])
+
+  // 위험도 정보 개선
+  const riskInfo = useMemo(() => {
+    if (!analysisData?.finalGrade) return null
+
+    const grade = analysisData.finalGrade.toUpperCase().trim()
+    return RISK_LEVEL_MAP[grade as keyof typeof RISK_LEVEL_MAP] || null
+  }, [analysisData?.finalGrade])
 
   useEffect(() => {
     fetchFullSelfAssessmentResult(headquartersId, accountNumber)
@@ -240,38 +301,11 @@ export default function EvaluationForm({
     )
   }
 
-  const RISK_LEVEL_MAP = {
-    A: {
-      level: '매우 낮음',
-      color: 'text-green-600',
-      bgColor: 'bg-green-50',
-      borderColor: 'border-green-200'
-    },
-    B: {
-      level: '낮음',
-      color: 'text-blue-600',
-      bgColor: 'bg-blue-50',
-      borderColor: 'border-blue-200'
-    },
-    C: {
-      level: '보통',
-      color: 'text-yellow-600',
-      bgColor: 'bg-yellow-50',
-      borderColor: 'border-yellow-200'
-    },
-    D: {
-      level: '높음',
-      color: 'text-red-600',
-      bgColor: 'bg-red-50',
-      borderColor: 'border-red-200'
-    }
-  }
-  const riskInfo = analysisData?.finalGrade
-    ? RISK_LEVEL_MAP[analysisData.finalGrade as 'A' | 'B' | 'C' | 'D']
-    : undefined
+  // REMOVED duplicate riskInfo declaration
   // Use actionPlan from analysisData if available, fallback to []
   const actionPlans = analysisData?.actionPlan ?? []
 
+  // 렌더링 부분 개선
   return (
     <div className="w-full min-h-screen p-6">
       <div className="mx-auto max-w-7xl">
@@ -293,7 +327,7 @@ export default function EvaluationForm({
             ].map(({key, label, icon: Icon}) => (
               <button
                 key={key}
-                onClick={() => setActiveView(key as any)}
+                onClick={() => setActiveView(key as typeof activeView)}
                 className={`px-6 py-3 rounded-md text-sm font-medium transition-colors flex items-center gap-2 ${
                   activeView === key
                     ? 'bg-blue-600 text-white shadow-sm'
@@ -315,23 +349,54 @@ export default function EvaluationForm({
                 <h2 className="text-2xl font-bold text-gray-900">경영진 요약</h2>
                 <Button
                   onClick={exportDetailedReport}
-                  className="flex items-center gap-2">
+                  className="flex items-center gap-2"
+                  disabled={!analysisData}>
                   <Download className="w-4 h-4" />
                   상세 리포트 다운로드
                 </Button>
               </div>
 
-              {riskInfo && (
+              {/* 최종 등급 표시 */}
+              {riskInfo && analysisData?.finalGrade && (
                 <div className="grid grid-cols-1 gap-6 mb-8 lg:grid-cols-4">
                   <div
-                    className={`p-6 rounded-lg border-2 ${riskInfo?.bgColor ?? ''} ${
-                      riskInfo?.borderColor ?? ''
-                    }`}>
+                    className={`p-6 rounded-lg border-2 ${riskInfo.bgColor} ${riskInfo.borderColor}`}>
                     <div className="text-center">
-                      <div className="mb-2 text-4xl font-bold">
-                        {analysisData?.finalGrade ?? ''}
+                      <div className={`mb-2 text-4xl font-bold ${riskInfo.color}`}>
+                        {analysisData.finalGrade}
                       </div>
-                      <div className="text-sm font-semibold">최종 등급</div>
+                      <div className="text-sm font-semibold text-gray-700">최종 등급</div>
+                      <div className="mt-2 text-xs text-gray-600">
+                        위험도: {riskInfo.level}
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* 추가 정보 카드들 */}
+                  <div className="p-6 border border-blue-200 rounded-lg bg-blue-50">
+                    <div className="text-center">
+                      <div className="mb-2 text-2xl font-bold text-blue-600">
+                        {analysisData.baseScore || 0}%
+                      </div>
+                      <div className="text-sm font-semibold text-gray-700">달성률</div>
+                    </div>
+                  </div>
+
+                  <div className="p-6 border border-purple-200 rounded-lg bg-purple-50">
+                    <div className="text-center">
+                      <div className="mb-2 text-2xl font-bold text-purple-600">
+                        {analysisData.criticalViolations?.length || 0}
+                      </div>
+                      <div className="text-sm font-semibold text-gray-700">중대 위반</div>
+                    </div>
+                  </div>
+
+                  <div className="p-6 border border-green-200 rounded-lg bg-green-50">
+                    <div className="text-center">
+                      <div className="mb-2 text-2xl font-bold text-green-600">
+                        {strengthsToShow.length}
+                      </div>
+                      <div className="text-sm font-semibold text-gray-700">강점 영역</div>
                     </div>
                   </div>
                 </div>
@@ -343,41 +408,74 @@ export default function EvaluationForm({
                   <h3 className="mb-4 text-lg font-semibold text-gray-900">
                     위험도 평가
                   </h3>
-                  <div className="p-4 border border-gray-200 rounded-lg">
+                  <div className="p-4 border border-gray-200 rounded-lg bg-gray-50">
                     <div className="flex items-center gap-3 mb-3">
                       <div className="p-2 bg-gray-100 rounded-full">
                         <Shield className="w-5 h-5 text-gray-500" />
                       </div>
-                      <div>
+                      <div className="flex-1">
                         <div className="font-semibold text-gray-800">
-                          전체 위험도: {analysisData?.grade ?? ''}
+                          전체 위험도: {analysisData?.finalGrade || 'N/A'}
                         </div>
                         <div className="text-sm text-gray-600">
-                          {analysisData?.summary ?? ''}
+                          {analysisData?.summary || '평가 정보가 없습니다.'}
                         </div>
                       </div>
                     </div>
-                    <div className="text-sm text-gray-700">
-                      <strong>권장 조치:</strong> {analysisData?.recommendations ?? ''}
+                    <div className="pt-3 border-t border-gray-200">
+                      <div className="text-sm text-gray-700">
+                        <strong className="text-gray-800">권장 조치:</strong>{' '}
+                        {analysisData?.recommendations || '추가 분석이 필요합니다.'}
+                      </div>
                     </div>
                   </div>
                 </div>
 
+                {/* 주요 강점 개선된 섹션 */}
                 <div>
-                  <h3 className="mb-4 text-lg font-semibold text-gray-900">주요 강점</h3>
-                  <div className="space-y-2">
-                    {(analysisData?.strengths ?? []).slice(0, 3).map((cat, index) => (
-                      <div
-                        key={`${cat.category}-${index}`}
-                        className="flex items-center gap-3 p-3 border border-green-200 rounded-lg bg-green-50">
-                        <CheckCircle2 className="w-5 h-5 text-green-600" />
-                        <div className="flex-1">
-                          <div className="font-medium text-green-800">{cat.category}</div>
-                          <div className="text-sm text-green-600">{cat.score}점 달성</div>
+                  <h3 className="mb-4 text-lg font-semibold text-gray-900">
+                    주요 강점 ({strengthsToShow.length})
+                  </h3>
+                  {strengthsToShow.length > 0 ? (
+                    <div className="space-y-3">
+                      {strengthsToShow.map((strength: any, idx: number) => (
+                        <div
+                          key={`strength-${idx}`}
+                          className="flex items-center gap-3 p-3 transition-colors border border-green-200 rounded-lg bg-green-50 hover:bg-green-100">
+                          <div className="flex-shrink-0">
+                            <CheckCircle2 className="w-5 h-5 text-green-600" />
+                          </div>
+                          <div className="flex-1 min-w-0">
+                            <div className="font-medium text-green-800 truncate">
+                              {strength.category || '알 수 없는 카테고리'}
+                            </div>
+                            <div className="text-sm text-green-700">
+                              {strength.score !== undefined && (
+                                <span className="inline-block mr-2">
+                                  점수: {strength.score}%
+                                </span>
+                              )}
+                              {strength.status && (
+                                <span className="inline-block px-2 py-1 text-xs bg-green-200 rounded-full">
+                                  {strength.status}
+                                </span>
+                              )}
+                            </div>
+                          </div>
                         </div>
+                      ))}
+                    </div>
+                  ) : (
+                    <div className="p-4 text-center border border-gray-200 rounded-lg bg-gray-50">
+                      <div className="mb-2 text-gray-500">
+                        <Lightbulb className="w-8 h-8 mx-auto mb-2 text-gray-400" />
+                        현재 뚜렷한 강점 영역이 없습니다.
                       </div>
-                    ))}
-                  </div>
+                      <div className="text-sm text-gray-600">
+                        상세 분석을 통해 개선 가능한 영역을 확인해보세요.
+                      </div>
+                    </div>
+                  )}
                 </div>
               </div>
             </Card>

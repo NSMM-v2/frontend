@@ -528,10 +528,13 @@ export default function SelfAssessmentForm() {
       const accountNumber = userInfo.accountNumber
       const userType = userInfo.userType
       const headquartersId =
-        userType === 'PARTNER' ? userInfo.headquartersId?.toString() : undefined // ✅ JSON 속성 이름에 맞춰 수정
+        userType === 'PARTNER'
+          ? userInfo.headquartersId?.toString()
+          : userInfo.accountNumber // 본사인 경우 자신의 accountNumber를 headquartersId로 사용
       const partnerId = userType === 'PARTNER' ? userInfo.partnerId : undefined
 
       if (!accountNumber) throw new Error('accountNumber is missing')
+      if (!headquartersId) throw new Error('headquartersId is missing')
 
       const requestList: SelfAssessmentRequest[] =
         answerConverter.fromStringToEnumCompatible(answers, questions)
@@ -544,22 +547,17 @@ export default function SelfAssessmentForm() {
       await submitSelfAssessmentToBackend(
         requestList,
         userType,
-        headquartersId, // ✅ '' 보내지 말고 undefined 그대로 넘기기
+        headquartersId,
         accountNumber,
         partnerId
       )
 
-      console.log('✅ 제출 성공')
-    } catch (error: any) {
-      console.error('❌ 제출 실패:', error)
-      if (error.response) {
-        console.error('📛 서버 응답 상태:', error.response.status)
-        console.error('📩 서버 응답 내용:', error.response.data)
-      } else if (error.request) {
-        console.error('📡 요청은 전송됐으나 응답 없음:', error.request)
-      } else {
-        console.error('🚨 설정 중 에러 발생:', error.message)
-      }
+      console.log('✅ 자가진단 제출 완료')
+      // 성공 처리 로직 추가
+    } catch (error) {
+      console.error('❌ 자가진단 제출 실패:', error)
+      // 에러 처리 로직 추가
+      throw error
     }
   }
 
@@ -577,59 +575,54 @@ export default function SelfAssessmentForm() {
    * 컴포넌트 마운트 시 기존 답변을 불러오고, 없으면 모든 질문을 'yes'로 초기화
    */
   useEffect(() => {
-    // 폼 상태에 기존 답변을 넣어주는 함수 (향후 react-hook-form 사용 시 활용)
-    const setValueFromFetchedAnswers = (fetched: Record<string, string>) => {
-      // 여기에 react-hook-form 사용 시 form.setValue 호출
-      // 현재는 상태형이므로 setAnswers만 필요
-      // 예시: Object.entries(fetched).forEach(([q, v]) => form.setValue(q, v))
-      // 이 부분은 추후 react-hook-form 도입 시 활성화
-    }
     async function loadAnswers() {
       try {
-        const user = await authService.getCurrentUserByType()
-        if (user?.data?.accountNumber) {
-          const existingAnswers = await fetchSelfAssessmentAnswers(
-            user.data.accountNumber,
-            user.data.accountNumber // 본사/협력사 모두 동일 accountNumber 사용
-          )
-          setAnswers(existingAnswers)
-          setValueFromFetchedAnswers(existingAnswers) // 폼 상태에도 반영 (react-hook-form 사용 시)
+        const userInfoResponse = await authService.getCurrentUserByType()
+        const userInfo = userInfoResponse?.data
+
+        if (!userInfo) {
+          console.error('사용자 정보를 가져올 수 없습니다')
+          return
         }
-      } catch (error) {
-        console.error('답변 불러오기 실패:', error)
-      }
-    }
-    loadAnswers()
-  }, [])
 
-  useEffect(() => {
-    async function loadAnswers() {
-      try {
-        const user = await authService.getCurrentUserByType()
-        if (user?.data?.accountNumber) {
-          const existingAnswers = await fetchSelfAssessmentAnswers(
-            user.data.accountNumber,
-            user.data.accountNumber
-          )
+        const accountNumber = userInfo.accountNumber
+        const userType = userInfo.userType
+        const headquartersId =
+          userType === 'PARTNER'
+            ? userInfo.headquartersId?.toString()
+            : userInfo.accountNumber // 본사인 경우 자신의 accountNumber를 headquartersId로 사용
 
+        if (!accountNumber || !headquartersId) {
+          console.error('필수 정보가 누락되었습니다:', {accountNumber, headquartersId})
+          return
+        }
+
+        console.log('답변 불러오기 시도:', {accountNumber, headquartersId, userType})
+
+        const existingAnswers = await fetchSelfAssessmentAnswers(
+          headquartersId,
+          accountNumber
+        )
+
+        if (existingAnswers) {
           // 대문자를 소문자로 변환
-          if (existingAnswers) {
-            const normalizedAnswers = Object.entries(existingAnswers).reduce(
-              (acc, [key, value]) => {
-                acc[key] = typeof value === 'string' ? value.toLowerCase() : value
-                return acc
-              },
-              {} as Record<string, string>
-            )
+          const normalizedAnswers = Object.entries(existingAnswers).reduce(
+            (acc, [key, value]) => {
+              acc[key] = typeof value === 'string' ? value.toLowerCase() : value
+              return acc
+            },
+            {} as Record<string, string>
+          )
 
-            console.log('변환된 답변:', normalizedAnswers)
-            setAnswers(normalizedAnswers)
-          }
+          console.log('변환된 답변:', normalizedAnswers)
+          setAnswers(normalizedAnswers)
         }
       } catch (error) {
         console.error('답변 불러오기 실패:', error)
+        // 에러가 발생해도 앱이 계속 동작하도록 함
       }
     }
+
     loadAnswers()
   }, [])
 
