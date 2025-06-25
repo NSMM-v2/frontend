@@ -154,37 +154,86 @@ export function CategoryDataInput({
    * 저장 완료 후 onDataChange, onComplete 호출
    */
   const handleCompleteAsync = async () => {
+    // 데이터 검증 강화
+    if (calculators.length === 0) {
+      alert('입력된 데이터가 없습니다.')
+      return
+    }
+
     if (!selectedYear || !selectedMonth) {
       alert('보고년도와 보고월을 선택해주세요.')
       return
     }
-    for (const calc of calculators) {
-      const {emissionId, state, savedData} = calc
-      // 프론트엔드 상태를 백엔드 요청 형식으로 변환
-      const payload: Scope3EmissionRequest | Scope3EmissionUpdateRequest = {
-        majorCategory: state.category,
-        subcategory: state.separate,
-        rawMaterial: state.rawMaterial,
-        unit: state.unit || '',
-        emissionFactor: Number(state.kgCO2eq) || 0,
-        activityAmount: Number(state.quantity) || 0,
-        totalEmission: (Number(state.kgCO2eq) || 0) * (Number(state.quantity) || 0),
-        reportingYear: selectedYear,
-        reportingMonth: selectedMonth,
-        categoryNumber: Number(categoryNumber),
-        categoryName: categoryTitle
+
+    try {
+      for (const calc of calculators) {
+        const {emissionId, state} = calc
+
+        // 필수 필드 검증
+        if (!state.category || !state.separate || !state.rawMaterial) {
+          alert('대분류, 구분, 원료/에너지를 모두 선택해주세요.')
+          return
+        }
+
+        if (!state.unit || state.unit.trim() === '') {
+          alert('단위가 선택되지 않았습니다. 원료/에너지를 다시 선택해주세요.')
+          return
+        }
+
+        if (!state.kgCO2eq || Number(state.kgCO2eq) <= 0) {
+          alert('배출계수가 0 이하입니다. 원료/에너지를 다시 선택해주세요.')
+          return
+        }
+
+        if (!state.quantity || Number(state.quantity) <= 0) {
+          alert('수량을 0 이상의 값으로 입력해주세요.')
+          return
+        }
+
+        const emissionFactor = Number(state.kgCO2eq)
+        const activityAmount = Number(state.quantity)
+        const totalEmission = emissionFactor * activityAmount
+
+        // 프론트엔드 상태를 백엔드 요청 형식으로 변환
+        const payload: Scope3EmissionRequest | Scope3EmissionUpdateRequest = {
+          majorCategory: state.category,
+          subcategory: state.separate,
+          rawMaterial: state.rawMaterial,
+          unit: state.unit,
+          emissionFactor: emissionFactor,
+          activityAmount: activityAmount,
+          totalEmission: totalEmission,
+          reportingYear: selectedYear,
+          reportingMonth: selectedMonth,
+          categoryNumber: Number(categoryNumber) || 1,
+          categoryName: categoryTitle
+        }
+
+        // 디버깅을 위한 로그 추가
+        console.log('전송할 데이터:', payload)
+        console.log('유효성 검증:', {
+          hasUnit: payload.unit && payload.unit.trim() !== '',
+          hasEmissionFactor: emissionFactor > 0,
+          hasTotalEmission: totalEmission > 0,
+          hasActivityAmount: activityAmount > 0
+        })
+
+        if (!emissionId) {
+          // 신규 데이터 생성
+          await createScope3Emission(payload as Scope3EmissionRequest)
+        } else {
+          // 기존 데이터 수정
+          await updateScope3Emission(emissionId, payload as Scope3EmissionUpdateRequest)
+        }
       }
-      if (!emissionId) {
-        // 신규 데이터 생성
-        await createScope3Emission(payload as Scope3EmissionRequest)
-      } else {
-        // 기존 데이터 수정
-        await updateScope3Emission(emissionId, payload as Scope3EmissionUpdateRequest)
-      }
+
+      // 저장 완료 후 데이터 새로고침 및 화면 전환
+      onDataChange?.()
+      onComplete()
+    } catch (error) {
+      console.error('데이터 저장 중 오류 발생:', error)
+      alert('데이터 저장 중 오류가 발생했습니다. 입력값을 확인해주세요.')
     }
-    // 저장 완료 후 데이터 새로고침 및 화면 전환
-    onDataChange?.()
-    onComplete()
   }
 
   return (
