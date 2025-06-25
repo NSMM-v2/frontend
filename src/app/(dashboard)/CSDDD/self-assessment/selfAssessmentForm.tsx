@@ -492,6 +492,153 @@ const gradeThresholds = {
   D: 0 // 미흡 등급 (60점 미만)
 }
 
+const violationMap: Record<string, {penaltyInfo?: string; legalBasis?: string}> = {
+  '1.1': {
+    penaltyInfo: '연매출 5% 이하 벌금',
+    legalBasis: 'EU CSDDD Art.6, ILO 138'
+  },
+  '1.2': {
+    penaltyInfo: '최대 연매출 2% 또는 €8M',
+    legalBasis: 'LkSG §3, CSDDD Art.7'
+  },
+  '1.3': {
+    penaltyInfo: '징벌적 손해배상 가능',
+    legalBasis: 'CSDDD Art.6, EU 인권헌장'
+  },
+  '1.4': {
+    penaltyInfo: '징계/명단공개/배상',
+    legalBasis: 'ILO 190'
+  },
+  '1.5': {
+    penaltyInfo: '과태료 및 민사 배상',
+    legalBasis: '근로기준법 §17'
+  },
+  '1.6': {
+    penaltyInfo: '행정벌금 및 시정명령',
+    legalBasis: '근로기준법 §53~57'
+  },
+  '1.7': {
+    penaltyInfo: '민사책임/평가불이익',
+    legalBasis: 'ILO 87, 98'
+  },
+  '1.8': {
+    penaltyInfo: '5% 벌금 또는 소송',
+    legalBasis: 'CSDDD Art.6'
+  },
+  '1.9': {
+    penaltyInfo: '행정 권고/공시 의무',
+    legalBasis: 'UNGP Guiding Principle 31'
+  },
+  '2.1': {
+    penaltyInfo: '과태료/산재 시 가중',
+    legalBasis: '산안법 §31'
+  },
+  '2.7': {
+    penaltyInfo: '벌금/책임자 처벌',
+    legalBasis: '산안법 §28'
+  },
+  '2.8': {
+    penaltyInfo: '과태료 및 보고의무',
+    legalBasis: '산안법 §43, §45'
+  },
+  '2.9': {
+    penaltyInfo: '형사책임, 과태료',
+    legalBasis: '산안법 §31'
+  },
+  '3.1': {
+    penaltyInfo: '환경벌금 및 영업정지',
+    legalBasis: '환경정책기본법 §15'
+  },
+  '3.2': {
+    penaltyInfo: '과태료/처벌',
+    legalBasis: '폐기물관리법 §13'
+  },
+  '3.3': {
+    penaltyInfo: '민사책임/이미지 타격',
+    legalBasis: '환경범죄 단속법 §4'
+  },
+  '3.4': {
+    penaltyInfo: '형사처벌 및 벌금',
+    legalBasis: '환경정책기본법 §38'
+  },
+  '3.5': {
+    penaltyInfo: '이행강제금/사업정지',
+    legalBasis: '대기환경보전법 §19'
+  },
+  '3.6': {
+    penaltyInfo: '과태료/형사처벌',
+    legalBasis: '수질 및 수생태계 보전법 §12'
+  },
+  '3.7': {
+    penaltyInfo: '위반 시 환경부 공표',
+    legalBasis: '환경오염시설법 §9'
+  },
+  '4.1': {
+    penaltyInfo: '계약 해지 및 불이익',
+    legalBasis: '공정거래법 §23'
+  },
+  '4.2': {
+    penaltyInfo: '법적 제재/공정위 조치',
+    legalBasis: '공정거래법 §23'
+  },
+  '4.3': {
+    penaltyInfo: '법적 제재 및 손해배상',
+    legalBasis: '공정거래법 §23의2'
+  },
+  '4.4': {
+    penaltyInfo: '과징금/영업정지',
+    legalBasis: '하도급법 §12'
+  },
+  '4.5': {
+    penaltyInfo: '과징금 및 공정위 시정조치',
+    legalBasis: '대규모유통업법 §17'
+  },
+  '4.6': {
+    penaltyInfo: '공정위 제재/계약파기',
+    legalBasis: '전자상거래법 §21'
+  },
+  '4.7': {
+    penaltyInfo: '국제분쟁/계약해지',
+    legalBasis: 'OECD 공급망지침'
+  },
+  '4.8': {
+    penaltyInfo: '법적 책임 및 명단 공개',
+    legalBasis: '공정거래법 §23'
+  },
+  '5.1': {
+    penaltyInfo: '형사처벌 및 과징금',
+    legalBasis: '정보보호법 §28'
+  },
+  '5.2': {
+    penaltyInfo: '위반 시 신고 및 제재',
+    legalBasis: '부패방지법 §8'
+  },
+  '5.3': {
+    penaltyInfo: '위반 시 손해배상',
+    legalBasis: '부정청탁금지법 §5'
+  },
+  '5.4': {
+    penaltyInfo: '형사처벌 가능',
+    legalBasis: '개인정보보호법 §71'
+  },
+  '5.5': {
+    penaltyInfo: '내부고발 시 보호조치',
+    legalBasis: '공익신고자보호법 §12'
+  },
+  '5.6': {
+    penaltyInfo: '불이익 처분 및 과태료',
+    legalBasis: '청탁금지법 §23'
+  },
+  '5.7': {
+    penaltyInfo: '계약 파기 및 명단 공개',
+    legalBasis: '기업윤리헌장'
+  },
+  '5.8': {
+    penaltyInfo: '국제 제재 및 신뢰 하락',
+    legalBasis: 'UN Global Compact'
+  }
+}
+
 // ============================================================================
 // 메인 컴포넌트 정의 (Main Component Definition)
 // ============================================================================
@@ -544,13 +691,7 @@ export default function SelfAssessmentForm() {
       console.log('📌 partnerId:', partnerId)
       console.log('📦 requestList (제출 전):', requestList)
 
-      await submitSelfAssessmentToBackend(
-        requestList,
-        userType,
-        headquartersId,
-        accountNumber,
-        partnerId
-      )
+      await submitSelfAssessmentToBackend(requestList)
 
       console.log('✅ 자가진단 제출 완료')
       // 성공 처리 로직 추가
@@ -599,10 +740,7 @@ export default function SelfAssessmentForm() {
 
         console.log('답변 불러오기 시도:', {accountNumber, headquartersId, userType})
 
-        const existingAnswers = await fetchSelfAssessmentAnswers(
-          headquartersId,
-          accountNumber
-        )
+        const existingAnswers = await fetchSelfAssessmentAnswers()
 
         if (existingAnswers) {
           // 대문자를 소문자로 변환

@@ -35,3 +35,18 @@ export interface AnalysisData {
   actualScore: number // 실제 가중치 합 (예: 51)
   totalPossibleScore: number // 전체 가중치 합 (예: 53)
 }
+
+export interface ViolationItem {
+  questionId: string
+  questionText: string
+  answer: 'YES' | 'NO' | 'PARTIAL'
+  violationGrade: string
+  violationReason: string
+  penaltyInfo: string
+  legalBasis: string
+  category: string
+  criticalViolation: boolean
+  remarks?: string | null
+}
+
+export type SelfAssessmentAnswer = SelfAssessmentRequest
