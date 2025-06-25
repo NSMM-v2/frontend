@@ -1,7 +1,8 @@
 import React from 'react'
-import { motion } from 'framer-motion'
-import { Card, CardHeader, CardTitle } from '@/components/ui/card'
-import { SelectorState } from '@/lib/types'
+import {motion} from 'framer-motion'
+import {Card, CardHeader, CardTitle} from '@/components/ui/card'
+import {SelectorState} from '@/lib/types'
+
 export const scope3CategoryList = {
   list1: '구매한 상품 및 서비스',
   list2: '자본재',
@@ -35,11 +36,10 @@ export function CategorySelector({
 }: CategorySelectorProps) {
   return (
     <motion.div
-      initial={{ opacity: 0, y: 20 }}
-      animate={{ opacity: 1, y: 0 }}
-      transition={{ delay: animationDelay, duration: 0.6 }}
-      className="grid grid-cols-1 gap-6 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4"
-    >
+      initial={{opacity: 0, y: 20}}
+      animate={{opacity: 1, y: 0}}
+      transition={{delay: animationDelay, duration: 0.6}}
+      className="grid grid-cols-1 gap-6 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
       {Object.entries(scope3CategoryList).map(([key, value], index) => {
         const emission = getTotalEmission(key as Scope3CategoryKey)
         const hasData = emission > 0
@@ -47,15 +47,14 @@ export function CategorySelector({
         return (
           <motion.div
             key={key}
-            initial={{ opacity: 0, scale: 0.9 }}
-            animate={{ opacity: 1, scale: 1 }}
+            initial={{opacity: 0, scale: 0.9}}
+            animate={{opacity: 1, scale: 1}}
             transition={{
               delay: animationDelay + index * 0.05,
               duration: 0.4,
               type: 'spring',
               stiffness: 100
-            }}
-          >
+            }}>
             <Card
               className={`cursor-pointer transition-all duration-300 hover:shadow-lg hover:scale-105 ${
                 hasData
@@ -79,8 +78,7 @@ export function CategorySelector({
                     <div
                       className={`text-lg font-bold transition-colors ${
                         hasData ? 'text-blue-600' : 'text-gray-400'
-                      }`}
-                    >
+                      }`}>
                       {emission.toFixed(1)}
                     </div>
                     <div className="text-xs text-customG-500">kgCO₂</div>
@@ -91,8 +89,7 @@ export function CategorySelector({
                   <div
                     className={`flex items-center text-xs ${
                       hasData ? 'text-blue-600' : 'text-gray-500'
-                    }`}
-                  >
+                    }`}>
                     <div
                       className={`mr-2 w-2 h-2 rounded-full ${
                         hasData ? 'bg-blue-500' : 'bg-gray-300'
@@ -103,8 +100,7 @@ export function CategorySelector({
                   <div
                     className={`text-xs transition-colors ${
                       hasData ? 'text-blue-500' : 'text-gray-400'
-                    }`}
-                  >
+                    }`}>
                     →
                   </div>
                 </div>
