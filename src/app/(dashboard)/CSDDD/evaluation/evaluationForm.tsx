@@ -1,7 +1,25 @@
 'use client'
+
+// Helper for normalizing category names
+const normalizeCategory = (name: string) => name.replace('·', ' ').trim()
+
 import {useEffect, useState} from 'react'
+
+import {Home} from 'lucide-react'
+import {PageHeader} from '@/components/layout/PageHeader'
+import {
+  Breadcrumb,
+  BreadcrumbItem,
+  BreadcrumbLink,
+  BreadcrumbList,
+  BreadcrumbSeparator
+} from '@/components/ui/breadcrumb'
+import Link from 'next/link'
 import {fetchFullSelfAssessmentResult} from '@/services/csdddService'
+import {fetchViolationItems} from '@/services/csdddService'
 import {Button} from '@/components/ui/button'
+import type {ViolationItem} from '@/types/csdddType'
+import type {SelfAssessmentAnswer} from '@/types/csdddType'
 import {Card} from '@/components/ui/card'
 import {
   TrendingUp,
@@ -25,8 +43,42 @@ import {
   Building,
   Leaf,
   Gavel,
-  Globe
+  Globe,
+  ShieldCheck,
+  ThumbsUp,
+  AlertCircle,
+  HelpCircle,
+  ArrowLeft
 } from 'lucide-react'
+const getGradeColor = (grade: string) => {
+  switch (grade) {
+    case 'A':
+      return 'border-green-500 bg-green-50 text-green-700'
+    case 'B':
+      return 'border-yellow-500 bg-yellow-50 text-yellow-700'
+    case 'C':
+      return 'border-orange-400 bg-orange-50 text-orange-700'
+    case 'D':
+      return 'border-red-500 bg-red-50 text-red-700'
+    default:
+      return 'border-gray-300 bg-gray-50 text-gray-700'
+  }
+}
+
+const getGradeIcon = (grade: string) => {
+  switch (grade) {
+    case 'A':
+      return <ShieldCheck className="w-8 h-8 text-green-600" />
+    case 'B':
+      return <ThumbsUp className="w-8 h-8 text-yellow-600" />
+    case 'C':
+      return <AlertCircle className="w-8 h-8 text-orange-500" />
+    case 'D':
+      return <AlertTriangle className="w-8 h-8 text-red-600" />
+    default:
+      return <HelpCircle className="w-8 h-8 text-gray-500" />
+  }
+}
 
 interface Question {
   id: string
@@ -53,6 +105,9 @@ interface AnalysisData {
     questionText: string
     violationGrade: string
     violationReason: string
+    penaltyInfo: string
+    legalBasis: string
+    category: string
   }>
   // categoryScores is deprecated, replaced by categoryAnalysis
   categoryAnalysis?: Array<{
@@ -176,16 +231,54 @@ export default function EvaluationForm({
   accountNumber: string
 }) {
   const [analysisData, setAnalysisData] = useState<AnalysisData | null>(null)
-  const [activeView, setActiveView] = useState<'overview' | 'detailed' | 'improvement'>(
-    'overview'
-  )
+  const [violationItems, setViolationItems] = useState<ViolationItem[]>([])
+  const [activeView, setActiveView] = useState<'overview' | 'detailed'>('overview')
   const [selectedCategory, setSelectedCategory] = useState<string | null>(null)
-
+  // 기존 코드를 다음과 같이 수정
   useEffect(() => {
-    fetchFullSelfAssessmentResult(headquartersId, accountNumber)
+    // 전체 분석 결과 가져오기 + 위반 항목 병합
+    fetchFullSelfAssessmentResult()
       .then(data => {
-        console.log('📦 분석결과:', data)
-        setAnalysisData(data?.data) // 수정: 실제 결과는 data.data에 있음
+        fetchViolationItems()
+          .then(res => {
+            const enrichedViolations = (data.criticalViolations ?? []).map(
+              (v: SelfAssessmentAnswer): ViolationItem => {
+                const match = res.data.find(
+                  (item: ViolationItem) =>
+                    item.questionId?.trim() === v.questionId?.trim()
+                )
+
+                if (!match) {
+                  console.warn(`❌ 매칭 실패: item=${v.questionId}`)
+                }
+
+                return {
+                  ...v,
+                  answer: v.answer.toUpperCase() as 'YES' | 'NO' | 'PARTIAL',
+                  penaltyInfo: match?.penaltyInfo ?? '',
+                  legalBasis: match?.legalBasis ?? '',
+                  questionText: match?.questionText ?? `문항 ${v.questionId}`,
+                  violationGrade: v.criticalGrade ?? 'D',
+                  violationReason: match?.violationReason ?? '중대 위반 항목',
+                  criticalViolation: v.critical,
+                  category: v.category
+                }
+              }
+            )
+
+            console.log('Original criticalViolations:', data.criticalViolations)
+            console.log('Violation items from API:', res.data)
+            console.log('Enriched violations:', enrichedViolations)
+
+            setAnalysisData({
+              ...data,
+              criticalViolations: enrichedViolations
+            })
+          })
+          .catch(err => {
+            console.error('❌ 위반 항목 불러오기 실패:', err)
+            setAnalysisData(data)
+          })
       })
       .catch(err => {
         console.error('❌ 분석 결과 불러오기 실패:', err)
@@ -203,31 +296,6 @@ export default function EvaluationForm({
   }
 
   // Deprecated: generateActionPlan, use analysisData.actionPlan directly if available.
-
-  const exportDetailedReport = () => {
-    if (!analysisData) return
-
-    const report = {
-      ...analysisData,
-      analysisDate: new Date().toISOString(),
-      // Use actionPlan directly if available
-      actionPlan: analysisData.actionPlan,
-      recommendations: (analysisData?.categoryAnalysis ?? []).map(cat => ({
-        category: cat.category,
-        score: cat.score,
-        recommendations:
-          improvementTemplates[cat.category as keyof typeof improvementTemplates] || []
-      }))
-    }
-
-    const blob = new Blob([JSON.stringify(report, null, 2)], {type: 'application/json'})
-    const url = URL.createObjectURL(blob)
-    const a = document.createElement('a')
-    a.href = url
-    a.download = `ESG-evaluation-report-${new Date().toISOString().split('T')[0]}.json`
-    a.click()
-    URL.revokeObjectURL(url)
-  }
 
   if (!analysisData) {
     return (
@@ -275,12 +343,111 @@ export default function EvaluationForm({
   return (
     <div className="w-full min-h-screen p-6">
       <div className="mx-auto max-w-7xl">
+        {/* 상단 네비게이션 섹션 (Breadcrumb) */}
+        <div className="flex flex-row items-center p-2 px-2 mb-6 text-sm text-gray-500 bg-white rounded-lg shadow-sm">
+          <Breadcrumb>
+            <BreadcrumbList>
+              <BreadcrumbItem>
+                <Home className="w-4 h-4 mr-1" />
+                <BreadcrumbLink href="/dashboard">대시보드</BreadcrumbLink>
+              </BreadcrumbItem>
+              <BreadcrumbSeparator />
+              <BreadcrumbItem>
+                <BreadcrumbLink href="/CSDDD">CSDDD</BreadcrumbLink>
+              </BreadcrumbItem>
+              <BreadcrumbSeparator />
+              <BreadcrumbItem>
+                <span className="font-bold text-blue-500">자가진단 결과</span>
+              </BreadcrumbItem>
+            </BreadcrumbList>
+          </Breadcrumb>
+        </div>
+
+        {/* 헤더 섹션 */}
+        <div className="flex flex-row w-full h-24 mb-6">
+          <Link
+            href="/CSDDD"
+            className="flex flex-row items-center p-4 space-x-4 transition rounded-md cursor-pointer hover:bg-gray-200">
+            <ArrowLeft className="w-6 h-6 text-gray-500 group-hover:text-blue-600" />
+            <PageHeader
+              icon={<Shield className="w-6 h-6 text-blue-600" />}
+              title="공급망 실사 자가진단 결과"
+              description="ESG 관점에서 공급망의 리스크를 분석하고 개선점을 도출합니다"
+              module="CSDDD"
+              submodule="evaluation"
+            />
+          </Link>
+        </div>
+
         {/* Header */}
-        <div className="mb-8 text-center">
-          <h1 className="mb-4 text-4xl font-bold text-gray-900">ESG 종합분석 리포트</h1>
-          <p className="max-w-2xl mx-auto text-lg text-gray-600">
-            자가진단 결과를 바탕으로 한 심층 분석 및 개선 방안 제시
-          </p>
+        <div className="mb-8 border-b border-gray-200 bg-gradient-to-br from-slate-50 via-blue-50 to-green-50 rounded-xl">
+          <div className="px-6 py-12 mx-auto max-w-7xl">
+            {/* 상단 메타 정보 */}
+            <div className="flex items-center justify-between mb-8">
+              <div className="flex items-center space-x-3">
+                <div className="flex items-center px-3 py-1 space-x-2 bg-blue-100 rounded-full">
+                  <BarChart3 className="w-4 h-4 text-blue-600" />
+                  <span className="text-sm font-medium text-blue-700">종합분석</span>
+                </div>
+                <div className="w-px h-4 bg-gray-300"></div>
+                <span className="text-sm text-gray-500">
+                  생성일: {new Date().toLocaleDateString('ko-KR')}
+                </span>
+              </div>
+              <div className="flex items-center space-x-2 text-sm text-gray-500">
+                <span className="px-2 py-1 text-xs font-medium text-green-700 bg-green-100 rounded">
+                  실시간 분석
+                </span>
+              </div>
+            </div>
+
+            {/* 메인 타이틀 */}
+            <div className="mb-8 text-center">
+              <div className="flex items-center justify-center mb-4 space-x-3">
+                <div className="flex items-center space-x-2">
+                  <div className="w-2 h-2 bg-green-500 rounded-full"></div>
+                  <span className="text-sm font-medium tracking-wider text-green-600 uppercase">
+                    ESG COMPREHENSIVE
+                  </span>
+                  <div className="w-2 h-2 bg-green-500 rounded-full"></div>
+                </div>
+              </div>
+
+              <h1 className="mb-4 text-5xl font-bold tracking-tight text-gray-900">
+                ESG 종합분석 리포트
+              </h1>
+
+              <p className="max-w-3xl mx-auto text-xl leading-relaxed text-gray-600">
+                자가진단 결과를 바탕으로 한{' '}
+                <span className="font-semibold text-gray-800">심층 분석</span> 및
+                <span className="font-semibold text-gray-800"> 전략적 개선방안</span> 제시
+              </p>
+            </div>
+
+            {/* ESG 아이콘 섹션 */}
+            <div className="flex items-center justify-center mb-4 space-x-12">
+              <div className="flex flex-col items-center group">
+                <div className="flex items-center justify-center w-16 h-16 mb-3 transition-colors bg-green-100 rounded-2xl group-hover:bg-green-200">
+                  <Leaf className="w-8 h-8 text-green-600" />
+                </div>
+                <span className="text-sm font-medium text-gray-700">Environment</span>
+              </div>
+
+              <div className="flex flex-col items-center group">
+                <div className="flex items-center justify-center w-16 h-16 mb-3 transition-colors bg-blue-100 rounded-2xl group-hover:bg-blue-200">
+                  <TrendingUp className="w-8 h-8 text-blue-600" />
+                </div>
+                <span className="text-sm font-medium text-gray-700">Social</span>
+              </div>
+
+              <div className="flex flex-col items-center group">
+                <div className="flex items-center justify-center w-16 h-16 mb-3 transition-colors bg-purple-100 rounded-2xl group-hover:bg-purple-200">
+                  <Gavel className="w-8 h-8 text-purple-600" />
+                </div>
+                <span className="text-sm font-medium text-gray-700">Governance</span>
+              </div>
+            </div>
+          </div>
         </div>
 
         {/* Navigation */}
@@ -288,8 +455,7 @@ export default function EvaluationForm({
           <div className="flex p-1 bg-white border rounded-lg shadow-sm">
             {[
               {key: 'overview', label: '종합 개요', icon: PieChart},
-              {key: 'detailed', label: '상세 분석', icon: BarChart3},
-              {key: 'improvement', label: '개선 계획', icon: Target}
+              {key: 'detailed', label: '상세 분석', icon: BarChart3}
             ].map(({key, label, icon: Icon}) => (
               <button
                 key={key}
@@ -313,12 +479,6 @@ export default function EvaluationForm({
             <Card className="p-6 shadow-lg bg-white/80 backdrop-blur-sm">
               <div className="flex items-center justify-between mb-6">
                 <h2 className="text-2xl font-bold text-gray-900">경영진 요약</h2>
-                <Button
-                  onClick={exportDetailedReport}
-                  className="flex items-center gap-2">
-                  <Download className="w-4 h-4" />
-                  상세 리포트 다운로드
-                </Button>
               </div>
 
               {riskInfo && (
@@ -339,26 +499,32 @@ export default function EvaluationForm({
 
               {/* Risk Assessment */}
               <div className="grid grid-cols-1 gap-6 md:grid-cols-2">
-                <div>
-                  <h3 className="mb-4 text-lg font-semibold text-gray-900">
-                    위험도 평가
-                  </h3>
-                  <div className="p-4 border border-gray-200 rounded-lg">
-                    <div className="flex items-center gap-3 mb-3">
-                      <div className="p-2 bg-gray-100 rounded-full">
-                        <Shield className="w-5 h-5 text-gray-500" />
-                      </div>
-                      <div>
-                        <div className="font-semibold text-gray-800">
-                          전체 위험도: {analysisData?.grade ?? ''}
-                        </div>
-                        <div className="text-sm text-gray-600">
-                          {analysisData?.summary ?? ''}
-                        </div>
-                      </div>
+                <div className="flex items-start gap-6">
+                  {/* 등급 섹션 */}
+                  <div className="flex-shrink-0">
+                    <div
+                      className={`flex flex-col items-center p-6 rounded-lg border-2 ${getGradeColor(
+                        analysisData.grade
+                      )}`}>
+                      {getGradeIcon(analysisData.grade)}
+                      <div className="mt-2 text-3xl font-bold">{analysisData.grade}</div>
+                      <div className="mt-1 text-sm font-medium">등급</div>
                     </div>
-                    <div className="text-sm text-gray-700">
-                      <strong>권장 조치:</strong> {analysisData?.recommendations ?? ''}
+                  </div>
+
+                  {/* 세부 정보 섹션 */}
+                  <div className="flex-1 space-y-4">
+                    <div>
+                      <div className="mb-1 text-sm text-gray-600">평가 결과</div>
+                      <div className="text-gray-800">{analysisData.summary}</div>
+                    </div>
+                    <div>
+                      <div className="mb-1 text-sm font-medium text-gray-700">
+                        권장 조치
+                      </div>
+                      <div className="text-sm text-gray-700">
+                        {analysisData.recommendations}
+                      </div>
                     </div>
                   </div>
                 </div>
@@ -366,21 +532,77 @@ export default function EvaluationForm({
                 <div>
                   <h3 className="mb-4 text-lg font-semibold text-gray-900">주요 강점</h3>
                   <div className="space-y-2">
-                    {(analysisData?.strengths ?? []).slice(0, 3).map((cat, index) => (
-                      <div
-                        key={`${cat.category}-${index}`}
-                        className="flex items-center gap-3 p-3 border border-green-200 rounded-lg bg-green-50">
-                        <CheckCircle2 className="w-5 h-5 text-green-600" />
-                        <div className="flex-1">
-                          <div className="font-medium text-green-800">{cat.category}</div>
-                          <div className="text-sm text-green-600">{cat.score}점 달성</div>
+                    {(analysisData?.strengths ?? []).map((cat, index) => {
+                      const category =
+                        typeof cat === 'string'
+                          ? cat
+                          : cat.category ?? '알 수 없는 카테고리'
+                      const score = typeof cat === 'string' ? undefined : cat.score
+
+                      return (
+                        <div
+                          key={`${category}-${index}`}
+                          className="flex items-center gap-3 p-3 border border-green-200 rounded-lg bg-green-50">
+                          <CheckCircle2 className="w-5 h-5 text-green-600" />
+                          <div className="flex-1">
+                            <div className="font-medium text-green-800">{category}</div>
+                            {score !== undefined && (
+                              <div className="text-sm text-green-600">{score}점 달성</div>
+                            )}
+                          </div>
                         </div>
-                      </div>
-                    ))}
+                      )
+                    })}
                   </div>
                 </div>
               </div>
             </Card>
+
+            {/* 중대 위반 항목 상세 분석 */}
+            {analysisData?.criticalViolations &&
+              analysisData.criticalViolations.length > 0 && (
+                <div className="mt-10">
+                  <h3 className="mb-4 text-xl font-bold text-red-700">
+                    🚨 중대 위반 항목 상세 분석
+                  </h3>
+                  <div className="space-y-4">
+                    {analysisData.criticalViolations.map((violation, idx) => (
+                      <Card
+                        key={idx}
+                        className="p-4 bg-white border border-red-200 shadow-sm">
+                        <div className="mb-2">
+                          <h4 className="font-semibold text-red-800">
+                            문항 {violation.questionId} - {violation.questionText}
+                          </h4>
+                        </div>
+                        <ul className="pl-5 space-y-1 text-sm text-gray-800 list-disc">
+                          <li>
+                            <strong>위반 등급:</strong> {violation.violationGrade}
+                          </li>
+                          <li>
+                            <strong>위반 사유:</strong> {violation.violationReason}
+                          </li>
+                          {violation.penaltyInfo && (
+                            <li>
+                              <strong>벌금/패널티:</strong> {violation.penaltyInfo}
+                            </li>
+                          )}
+                          {violation.legalBasis && (
+                            <li>
+                              <strong>법적 근거:</strong> {violation.legalBasis}
+                            </li>
+                          )}
+                          {violation.category && (
+                            <li>
+                              <strong>카테고리:</strong> {violation.category}
+                            </li>
+                          )}
+                        </ul>
+                      </Card>
+                    ))}
+                  </div>
+                </div>
+              )}
 
             {/* Category Performance */}
             <Card className="p-6 shadow-lg bg-white/80 backdrop-blur-sm">
@@ -460,44 +682,6 @@ export default function EvaluationForm({
 
         {activeView === 'detailed' && (
           <div className="space-y-6">
-            {/* Critical Violations */}
-            {(analysisData?.criticalViolations?.length ?? 0) > 0 && (
-              <Card className="p-6 shadow-lg bg-white/80 backdrop-blur-sm">
-                <h2 className="flex items-center gap-2 mb-6 text-2xl font-bold text-red-800">
-                  <AlertTriangle className="w-6 h-6" />
-                  중대 위반 사항
-                </h2>
-                <div className="space-y-4">
-                  {(analysisData?.criticalViolations ?? []).map((violation, index) => (
-                    <div
-                      key={`${violation.questionId}-${index}`}
-                      className="p-4 border-2 border-red-200 rounded-lg bg-red-50">
-                      <div className="flex items-start gap-4">
-                        <div className="flex items-center justify-center flex-shrink-0 w-10 h-10 bg-red-100 rounded-full">
-                          <span className="text-sm font-bold text-red-700">
-                            {violation.questionId}
-                          </span>
-                        </div>
-                        <div className="flex-1">
-                          <h3 className="mb-2 font-semibold text-red-900">
-                            {violation.questionText}
-                          </h3>
-                          <div className="flex items-center gap-4 text-sm">
-                            <span className="px-2 py-1 font-medium text-red-800 bg-red-200 rounded">
-                              등급 영향: {violation.violationGrade}
-                            </span>
-                            <span className="text-red-700">
-                              {violation.violationReason}
-                            </span>
-                          </div>
-                        </div>
-                      </div>
-                    </div>
-                  ))}
-                </div>
-              </Card>
-            )}
-
             {/* Detailed Category Analysis */}
             <Card className="p-6 shadow-lg bg-white/80 backdrop-blur-sm">
               <h2 className="mb-6 text-2xl font-bold text-gray-900">영역별 상세 분석</h2>
@@ -572,6 +756,7 @@ export default function EvaluationForm({
                         </div>
 
                         <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
+                          {/* 왼쪽: 현황 분석 */}
                           <div>
                             <h4 className="mb-3 font-medium text-gray-800">현황 분석</h4>
                             <div className="space-y-2">
@@ -588,186 +773,75 @@ export default function EvaluationForm({
                             </div>
                           </div>
 
-                          <div>
-                            <h4 className="mb-3 font-medium text-gray-800">
-                              개선 권장사항
-                            </h4>
-                            <ul className="space-y-1 text-sm text-gray-600">
-                              {(recommendations ?? []).slice(0, 3).map((rec, idx) => (
-                                <li key={rec} className="flex items-center gap-2">
-                                  <ArrowRight className="w-3 h-3 text-blue-500" />
-                                  {rec}
-                                </li>
-                              ))}
-                            </ul>
+                          {/* 오른쪽: 벌금 및 법적 근거 분석 */}
+                          <div className="space-y-4">
+                            <h3 className="text-lg font-bold text-gray-800">
+                              벌금 및 법적 근거
+                            </h3>
+                            {(() => {
+                              const filteredViolations = (
+                                analysisData?.criticalViolations ?? []
+                              ).filter(violation => {
+                                console.log(
+                                  `Comparing: "${violation.category}" === "${cat.category}"`
+                                )
+                                return violation.category === cat.category
+                              })
+
+                              console.log(
+                                `Filtered violations for ${cat.category}:`,
+                                filteredViolations
+                              )
+
+                              if (filteredViolations.length === 0) {
+                                return (
+                                  <div className="p-4 text-center text-gray-500 rounded-lg bg-gray-50">
+                                    이 영역에서는 중대 위반 항목이 발견되지 않았습니다.
+                                    <br />
+                                    <small className="text-xs">
+                                      (카테고리: {cat.category})
+                                    </small>
+                                  </div>
+                                )
+                              }
+
+                              return filteredViolations.map((violation, index) => (
+                                <Card
+                                  key={index}
+                                  className="p-4 border border-gray-200 bg-gray-50">
+                                  <h4 className="mb-2 font-semibold text-gray-700">
+                                    {violation.questionText ||
+                                      `문항 ${violation.questionId}`}
+                                  </h4>
+                                  {violation.penaltyInfo &&
+                                    violation.penaltyInfo !== '' && (
+                                      <p className="mb-2 text-sm text-gray-800">
+                                        💸 <strong>벌금/패널티:</strong>{' '}
+                                        {violation.penaltyInfo}
+                                      </p>
+                                    )}
+                                  {violation.legalBasis &&
+                                    violation.legalBasis !== '' && (
+                                      <p className="mb-2 text-sm text-gray-800">
+                                        ⚖️ <strong>법적 근거:</strong>{' '}
+                                        {violation.legalBasis}
+                                      </p>
+                                    )}
+                                  {violation.violationReason && (
+                                    <p className="text-sm text-red-600">
+                                      ⚠️ <strong>위반 사유:</strong>{' '}
+                                      {violation.violationReason}
+                                    </p>
+                                  )}
+                                </Card>
+                              ))
+                            })()}
                           </div>
                         </div>
                       </div>
                     )
                   })
                 })()}
-              </div>
-            </Card>
-          </div>
-        )}
-
-        {activeView === 'improvement' && (
-          <div className="space-y-6">
-            {/* Action Plans */}
-            <Card className="p-6 shadow-lg bg-white/80 backdrop-blur-sm">
-              <h2 className="flex items-center gap-2 mb-6 text-2xl font-bold text-gray-900">
-                <Target className="w-6 h-6" />
-                개선 실행 계획
-              </h2>
-              <div className="space-y-6">
-                {actionPlans.map((plan, index) => (
-                  <div
-                    key={plan.title + plan.priority}
-                    className="p-6 border-2 rounded-lg">
-                    <div className="flex items-start justify-between mb-4">
-                      <div>
-                        <div className="flex items-center gap-3 mb-2">
-                          <span
-                            className={`px-3 py-1 text-sm font-medium rounded-full ${
-                              plan.priority === '긴급'
-                                ? 'bg-red-200 text-red-800'
-                                : plan.priority === '높음'
-                                ? 'bg-orange-200 text-orange-800'
-                                : 'bg-blue-200 text-blue-800'
-                            }`}>
-                            {plan.priority} 우선순위
-                          </span>
-                        </div>
-                        <h3 className="text-xl font-semibold text-gray-900">
-                          {plan.title}
-                        </h3>
-                        <p className="mt-1 text-gray-600">{plan.description}</p>
-                      </div>
-                      <Flag className="w-6 h-6 text-gray-400" />
-                    </div>
-                  </div>
-                ))}
-              </div>
-            </Card>
-
-            {/* Implementation Timeline */}
-            <Card className="p-6 shadow-lg bg-white/80 backdrop-blur-sm">
-              <h2 className="flex items-center gap-2 mb-6 text-2xl font-bold text-gray-900">
-                <Clock className="w-6 h-6" />
-                구현 타임라인
-              </h2>
-              <div className="space-y-4">
-                {[
-                  {
-                    period: '1개월 이내',
-                    tasks: ['중대 위반 사항 즉시 개선', '긴급 리스크 완화 조치'],
-                    color: 'bg-red-100 border-red-300'
-                  },
-                  {
-                    period: '3개월 이내',
-                    tasks: ['저성과 영역 집중 개선', '내부 프로세스 정비'],
-                    color: 'bg-orange-100 border-orange-300'
-                  },
-                  {
-                    period: '6개월 이내',
-                    tasks: ['ESG 관리 시스템 구축', '전사적 체계 정립'],
-                    color: 'bg-blue-100 border-blue-300'
-                  },
-                  {
-                    period: '12개월 이내',
-                    tasks: ['성과 모니터링 및 개선', '지속가능성 전략 수립'],
-                    color: 'bg-green-100 border-green-300'
-                  }
-                ].map((timeline, index) => (
-                  <div
-                    key={timeline.period}
-                    className={`p-4 border-2 rounded-lg ${timeline.color}`}>
-                    <div className="flex items-center gap-4 mb-3">
-                      <div className="flex items-center justify-center w-8 h-8 bg-white rounded-full">
-                        <span className="text-sm font-bold text-gray-700">
-                          {index + 1}
-                        </span>
-                      </div>
-                      <div>
-                        <h3 className="font-semibold text-gray-900">{timeline.period}</h3>
-                        <div className="flex flex-wrap gap-2 mt-1">
-                          {timeline.tasks.map(task => (
-                            <span
-                              key={task}
-                              className="px-2 py-1 text-xs bg-white rounded">
-                              {task}
-                            </span>
-                          ))}
-                        </div>
-                      </div>
-                    </div>
-                  </div>
-                ))}
-              </div>
-            </Card>
-
-            {/* Resource Requirements */}
-            <Card className="p-6 shadow-lg bg-white/80 backdrop-blur-sm">
-              <h2 className="flex items-center gap-2 mb-6 text-2xl font-bold text-gray-900">
-                <Lightbulb className="w-6 h-6" />
-                구현 가이드라인
-              </h2>
-              <div className="grid grid-cols-1 gap-6 md:grid-cols-2">
-                <div>
-                  <h3 className="mb-4 text-lg font-semibold text-gray-800">
-                    필요 리소스
-                  </h3>
-                  <div className="space-y-3">
-                    <div className="p-3 border rounded-lg bg-gray-50">
-                      <div className="font-medium text-gray-900">인력</div>
-                      <div className="text-sm text-gray-600">
-                        ESG 전담팀 구성, 외부 컨설팅 고려
-                      </div>
-                    </div>
-                    <div className="p-3 border rounded-lg bg-gray-50">
-                      <div className="font-medium text-gray-900">예산</div>
-                      <div className="text-sm text-gray-600">
-                        시스템 구축비, 교육비, 인증 취득비
-                      </div>
-                    </div>
-                    <div className="p-3 border rounded-lg bg-gray-50">
-                      <div className="font-medium text-gray-900">시스템</div>
-                      <div className="text-sm text-gray-600">
-                        모니터링 도구, 데이터 관리 시스템
-                      </div>
-                    </div>
-                  </div>
-                </div>
-
-                <div>
-                  <h3 className="mb-4 text-lg font-semibold text-gray-800">성공 요인</h3>
-                  <div className="space-y-3">
-                    <div className="flex items-center gap-3">
-                      <CheckCircle2 className="w-5 h-5 text-green-500" />
-                      <span className="text-sm text-gray-700">
-                        경영진의 강력한 의지와 지원
-                      </span>
-                    </div>
-                    <div className="flex items-center gap-3">
-                      <CheckCircle2 className="w-5 h-5 text-green-500" />
-                      <span className="text-sm text-gray-700">
-                        전 직원의 ESG 인식 제고
-                      </span>
-                    </div>
-                    <div className="flex items-center gap-3">
-                      <CheckCircle2 className="w-5 h-5 text-green-500" />
-                      <span className="text-sm text-gray-700">
-                        단계적 접근과 지속적 모니터링
-                      </span>
-                    </div>
-                    <div className="flex items-center gap-3">
-                      <CheckCircle2 className="w-5 h-5 text-green-500" />
-                      <span className="text-sm text-gray-700">
-                        이해관계자와의 적극적 소통
-                      </span>
-                    </div>
-                  </div>
-                </div>
               </div>
             </Card>
           </div>
@@ -780,18 +854,7 @@ export default function EvaluationForm({
             {new Date(analysisData?.timestamp ?? '').toLocaleDateString('ko-KR')} | ESG
             자가진단 시스템 v2.0
           </p>
-          <div className="mt-4">
-            <Button onClick={() => window.print()} variant="outline" className="mr-4">
-              <FileText className="w-4 h-4 mr-2" />
-              리포트 인쇄
-            </Button>
-            <Button
-              onClick={exportDetailedReport}
-              className="bg-blue-600 hover:bg-blue-700">
-              <Download className="w-4 h-4 mr-2" />
-              상세 데이터 내보내기
-            </Button>
-          </div>
+          <div className="mt-4"></div>
         </div>
       </div>
     </div>
