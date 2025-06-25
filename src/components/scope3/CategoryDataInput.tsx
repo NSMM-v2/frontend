@@ -20,17 +20,9 @@ import {Card, CardContent} from '@/components/ui/card'
 import {Plus} from 'lucide-react'
 import {CalculatorItem} from './CalculatorItem'
 import {scope3CategoryList, Scope3CategoryKey} from './CategorySelector'
-import {
-  SelectorState,
-  Scope3EmissionResponse,
-  Scope3EmissionRequest,
-  Scope3EmissionUpdateRequest
-} from '@/lib/types'
-import {
-  createScope3Emission,
-  updateScope3Emission,
-  deleteScope3Emission
-} from '@/services/scopeService'
+import {SelectorState, Scope3EmissionResponse} from '@/lib/types'
+import {createScope3Emission, updateScope3Emission} from '@/services/scopeService'
+import {showError, showSuccess} from '@/util/toast'
 
 /**
  * 계산기 데이터 타입 (확장: 백엔드 데이터 포함)
@@ -148,91 +140,222 @@ export function CategoryDataInput({
   }, [onDataChange])
 
   /**
-   * 입력완료 버튼 클릭 시 모든 계산기 데이터를 백엔드에 저장/수정
-   * - emissionId가 없으면 createScope3Emission(POST)
-   * - emissionId가 있으면 updateScope3Emission(PUT)
-   * 저장 완료 후 onDataChange, onComplete 호출
+   * 백엔드에 데이터 저장 (전체 계산기 목록)
+   *
+   * 각 계산기별로 개별 저장 처리:
+   * - 저장된 데이터(양수 ID): updateScope3Emission 호출
+   * - 미저장 데이터(음수 ID): createScope3Emission 호출
+   * - 개별 실패 시에도 다른 계산기 처리 계속 진행
    */
-  const handleCompleteAsync = async () => {
-    // 데이터 검증 강화
-    if (calculators.length === 0) {
-      alert('입력된 데이터가 없습니다.')
+  const saveAllCalculatorsToBackend = async (): Promise<void> => {
+    if (!calculators || calculators.length === 0) {
+      console.log('저장할 계산기가 없습니다.')
       return
     }
 
-    if (!selectedYear || !selectedMonth) {
-      alert('보고년도와 보고월을 선택해주세요.')
-      return
-    }
+    console.log('===== 백엔드 저장 프로세스 시작 =====')
+    console.log('저장 대상 계산기 목록:', {
+      총개수: calculators.length,
+      계산기목록: calculators.map(calc => ({
+        id: calc.id,
+        ID타입: calc.id > 0 ? 'emissionId (저장된 데이터)' : '임시ID (새 데이터)',
+        저장여부: !!calc.savedData,
+        state: calc.state
+      }))
+    })
 
-    try {
-      for (const calc of calculators) {
-        const {emissionId, state} = calc
+    const results = []
 
-        // 필수 필드 검증
-        if (!state.category || !state.separate || !state.rawMaterial) {
-          alert('대분류, 구분, 원료/에너지를 모두 선택해주세요.')
-          return
-        }
-
-        if (!state.unit || state.unit.trim() === '') {
-          alert('단위가 선택되지 않았습니다. 원료/에너지를 다시 선택해주세요.')
-          return
-        }
-
-        if (!state.kgCO2eq || Number(state.kgCO2eq) <= 0) {
-          alert('배출계수가 0 이하입니다. 원료/에너지를 다시 선택해주세요.')
-          return
-        }
-
-        if (!state.quantity || Number(state.quantity) <= 0) {
-          alert('수량을 0 이상의 값으로 입력해주세요.')
-          return
-        }
-
-        const emissionFactor = Number(state.kgCO2eq)
-        const activityAmount = Number(state.quantity)
-        const totalEmission = emissionFactor * activityAmount
-
-        // 프론트엔드 상태를 백엔드 요청 형식으로 변환
-        const payload: Scope3EmissionRequest | Scope3EmissionUpdateRequest = {
-          majorCategory: state.category,
-          subcategory: state.separate,
-          rawMaterial: state.rawMaterial,
-          unit: state.unit,
-          emissionFactor: emissionFactor,
-          activityAmount: activityAmount,
-          totalEmission: totalEmission,
-          reportingYear: selectedYear,
-          reportingMonth: selectedMonth,
-          categoryNumber: Number(categoryNumber) || 1,
-          categoryName: categoryTitle
-        }
-
-        // 디버깅을 위한 로그 추가
-        console.log('전송할 데이터:', payload)
-        console.log('유효성 검증:', {
-          hasUnit: payload.unit && payload.unit.trim() !== '',
-          hasEmissionFactor: emissionFactor > 0,
-          hasTotalEmission: totalEmission > 0,
-          hasActivityAmount: activityAmount > 0
+    for (const calc of calculators) {
+      try {
+        console.log(`\n----- 계산기 ${calc.id} 저장 시작 -----`)
+        console.log('계산기 상세 정보:', {
+          id: calc.id,
+          ID타입: calc.id > 0 ? 'emissionId (업데이트)' : '임시ID (신규 생성)',
+          저장여부: !!calc.savedData,
+          calculatorMode: calculatorModes[calc.id] || false,
+          state: calc.state
         })
 
-        if (!emissionId) {
-          // 신규 데이터 생성
-          await createScope3Emission(payload as Scope3EmissionRequest)
-        } else {
-          // 기존 데이터 수정
-          await updateScope3Emission(emissionId, payload as Scope3EmissionUpdateRequest)
+        // 필수 데이터 검증
+        const isManualInput = calculatorModes[calc.id] || false
+        const validationResult = validateCalculatorData(calc, isManualInput)
+
+        console.log('데이터 유효성 검증 결과:', validationResult)
+
+        if (!validationResult.isValid) {
+          console.warn(`계산기 ${calc.id} 유효성 검증 실패:`, validationResult.errors)
+          results.push({
+            calculatorId: calc.id,
+            success: false,
+            error: `유효성 검증 실패: ${validationResult.errors.join(', ')}`
+          })
+          continue
         }
+
+        // 요청 데이터 구성
+        const requestData = createRequestPayload(calc, isManualInput)
+        console.log('API 요청 데이터:', requestData)
+
+        let response
+
+        if (calc.id > 0) {
+          // 저장된 데이터 업데이트 (emissionId 사용)
+          console.log(`기존 데이터 업데이트 시작 (emissionId: ${calc.id})`)
+          response = await updateScope3Emission(calc.id, requestData)
+          console.log('updateScope3Emission 응답:', response)
+        } else {
+          // 새 데이터 생성 (임시ID는 무시하고 새로 생성)
+          console.log(`새 데이터 생성 시작 (임시ID: ${calc.id})`)
+          response = await createScope3Emission(requestData)
+          console.log('createScope3Emission 응답:', response)
+        }
+
+        if (response && response.id) {
+          console.log(`계산기 ${calc.id} 저장 성공`)
+          console.log('저장 성공 상세:', {
+            기존ID: calc.id,
+            새ID: response.id,
+            처리방식: calc.id > 0 ? '업데이트' : '신규 생성'
+          })
+
+          results.push({
+            calculatorId: calc.id,
+            success: true,
+            newEmissionId: response.id,
+            response: response
+          })
+        } else {
+          console.error(`❌ 계산기 ${calc.id} 저장 실패: 응답 데이터 없음`)
+          results.push({
+            calculatorId: calc.id,
+            success: false,
+            error: '응답 데이터 없음'
+          })
+        }
+      } catch (error) {
+        console.error(`❌ 계산기 ${calc.id} 저장 중 오류:`, error)
+        results.push({
+          calculatorId: calc.id,
+          success: false,
+          error: error instanceof Error ? error.message : '알 수 없는 오류'
+        })
       }
 
-      // 저장 완료 후 데이터 새로고침 및 화면 전환
-      onDataChange?.()
-      onComplete()
+      console.log(`----- 계산기 ${calc.id} 저장 완료 -----`)
+    }
+
+    // 전체 저장 결과 요약
+    const successCount = results.filter(r => r.success).length
+    const failCount = results.filter(r => !r.success).length
+
+    console.log('\n===== 백엔드 저장 프로세스 완료 =====')
+    console.log('저장 결과 요약:', {
+      전체개수: results.length,
+      성공개수: successCount,
+      실패개수: failCount,
+      상세결과: results
+    })
+
+    if (failCount > 0) {
+      const failedCalculators = results
+        .filter(r => !r.success)
+        .map(r => `계산기 ${r.calculatorId}: ${r.error}`)
+        .join('\n')
+
+      console.warn('저장 실패 항목들:', failedCalculators)
+      showError(`일부 데이터 저장에 실패했습니다:\n${failedCalculators}`)
+    } else {
+      console.log('모든 계산기 저장 성공')
+      showSuccess(`${successCount}개의 데이터가 성공적으로 저장되었습니다.`)
+    }
+
+    // 저장 완료 후 데이터 새로고침
+    if (successCount > 0) {
+      console.log('저장 성공한 항목이 있어 데이터 새로고침 진행...')
+      await handleDataChange()
+      console.log('데이터 새로고침 완료')
+    }
+  }
+
+  // ========================================================================
+  // 헬퍼 함수들 (Helper Functions)
+  // ========================================================================
+
+  /**
+   * 계산기 데이터 유효성 검증
+   */
+  const validateCalculatorData = (calc: any, isManualInput: boolean) => {
+    const errors: string[] = []
+    const state = calc.state
+
+    // 기본 필수 필드 검증
+    if (!state.unit || state.unit.trim() === '') {
+      errors.push('단위 필수')
+    }
+
+    if (isManualInput) {
+      // 수동 입력 모드: 직접 입력된 값 검증
+      const emissionFactor = parseFloat(state.kgCO2eq || '0')
+      const activityAmount = parseFloat(state.quantity || '0')
+
+      if (emissionFactor <= 0) {
+        errors.push('배출계수 필수 (수동 입력)')
+      }
+      if (activityAmount <= 0) {
+        errors.push('활동량 필수 (수동 입력)')
+      }
+    } else {
+      // 자동 계산 모드: 카테고리/세부분류/원재료 검증
+      if (!state.category || state.category.trim() === '') {
+        errors.push('카테고리 필수')
+      }
+      if (!state.rawMaterial || state.rawMaterial.trim() === '') {
+        errors.push('원재료 필수')
+      }
+    }
+
+    return {
+      isValid: errors.length === 0,
+      errors
+    }
+  }
+
+  /**
+   * API 요청 데이터 생성
+   */
+  const createRequestPayload = (calc: any, isManualInput: boolean) => {
+    const state = calc.state
+    const emissionFactor = parseFloat(state.kgCO2eq || '0')
+    const activityAmount = parseFloat(state.quantity || '0')
+    const totalEmission = emissionFactor * activityAmount
+
+    return {
+      majorCategory: state.category || '',
+      subcategory: state.separate || '',
+      rawMaterial: state.rawMaterial || '',
+      unit: state.unit || '',
+      emissionFactor: emissionFactor,
+      activityAmount: activityAmount,
+      totalEmission: totalEmission,
+      reportingYear: selectedYear || new Date().getFullYear(),
+      reportingMonth: selectedMonth || new Date().getMonth() + 1,
+      categoryNumber: Number(categoryNumber) || 1,
+      categoryName: categoryTitle,
+      isManualInput: isManualInput
+    }
+  }
+
+  /**
+   * 입력 완료 핸들러 (기존 로직 유지)
+   */
+  const handleCompleteAsync = async () => {
+    try {
+      await saveAllCalculatorsToBackend()
+      onComplete() // 화면 전환
     } catch (error) {
-      console.error('데이터 저장 중 오류 발생:', error)
-      alert('데이터 저장 중 오류가 발생했습니다. 입력값을 확인해주세요.')
+      console.error('입력 완료 처리 중 오류:', error)
+      showError('데이터 저장 중 오류가 발생했습니다.')
     }
   }
 
@@ -246,54 +369,56 @@ export function CategoryDataInput({
           헤더 섹션 (Header Section)
           - 카테고리 제목 및 목록으로 돌아가기 버튼
           ======================================================================== */}
-      <div className="flex flex-row justify-between items-center p-4 w-full bg-white rounded-lg shadow-sm">
-        <motion.div
-          initial={{opacity: 0, x: -20}}
-          animate={{opacity: 1, x: 0}}
-          transition={{delay: 0.1, duration: 0.5}}
-          onClick={handleBackToList}
-          className="flex flex-row items-center p-4 rounded-lg hover:cursor-pointer hover:bg-gray-100">
-          <div className="mr-4 text-2xl">←</div>
-          <div>
-            <h1 className="text-3xl font-bold text-customG-900">{categoryTitle}</h1>
-            {/* <p className="mt-2 text-customG-600">카테고리 {categoryNumber} 데이터 입력</p> */}
-            <div className="text-sm text-customG-500">
-              배출계수를 선택하고 활동량을 입력하여 배출량을 계산하세요
-            </div>
-          </div>
-        </motion.div>
-
-        {/* ========================================================================
-          현재 카테고리 소계 카드 (Category Summary Card)
-          - 현재 카테고리의 총 배출량 표시
-          ======================================================================== */}
-
-        <motion.div
-          initial={{opacity: 0, x: -20}}
-          animate={{opacity: 1, x: 0}}
-          transition={{delay: 0.1, duration: 0.5}}>
-          <Card className="bg-gradient-to-r from-blue-50 to-emerald-50 border-blue-200 min-w-md">
-            <CardContent className="flex justify-between items-center p-6">
+      <div className="overflow-hidden bg-white rounded-3xl border-0 shadow-sm">
+        <div className="p-6 bg-white">
+          <div className="flex flex-row justify-between items-center">
+            <motion.div
+              initial={{opacity: 0, x: -20}}
+              animate={{opacity: 1, x: 0}}
+              transition={{delay: 0.1, duration: 0.5}}
+              onClick={handleBackToList}
+              className="flex flex-row items-center p-4 rounded-xl transition-all duration-200 hover:cursor-pointer hover:bg-blue-50">
+              <div className="mr-4 text-2xl text-blue-500">←</div>
               <div>
-                <span className="text-lg font-medium text-customG-700">
-                  현재 카테고리 소계:
-                </span>
-                <div className="mt-1 text-xs text-customG-500">
-                  {calculators.length}개 항목 입력됨
+                <h1 className="text-3xl font-bold text-gray-900">{categoryTitle}</h1>
+                <div className="mt-1 text-sm text-gray-600">
+                  배출계수를 선택하고 활동량을 입력하여 배출량을 계산하세요
                 </div>
               </div>
-              <div className="text-right">
-                <span className="text-2xl font-bold text-blue-600">
-                  {totalEmission.toLocaleString(undefined, {
-                    maximumFractionDigits: 2,
-                    minimumFractionDigits: 2
-                  })}
-                </span>
-                <div className="text-sm text-customG-500">kgCO₂</div>
-              </div>
-            </CardContent>
-          </Card>
-        </motion.div>
+            </motion.div>
+
+            {/* ========================================================================
+              현재 카테고리 소계 카드 (Category Summary Card)
+              - 현재 카테고리의 총 배출량 표시
+              ======================================================================== */}
+            <motion.div
+              initial={{opacity: 0, x: 20}}
+              animate={{opacity: 1, x: 0}}
+              transition={{delay: 0.1, duration: 0.5}}>
+              <Card className="bg-white rounded-2xl border-2 border-blue-200 shadow-sm min-w-md">
+                <CardContent className="flex justify-between items-center p-6">
+                  <div>
+                    <span className="text-lg font-semibold text-gray-900">
+                      현재 카테고리 소계:
+                    </span>
+                    <div className="mt-1 text-xs text-gray-500">
+                      {calculators.length}개 항목 입력됨
+                    </div>
+                  </div>
+                  <div className="text-right">
+                    <span className="text-2xl font-bold text-blue-600">
+                      {totalEmission.toLocaleString(undefined, {
+                        maximumFractionDigits: 2,
+                        minimumFractionDigits: 2
+                      })}
+                    </span>
+                    <div className="text-sm text-gray-500">kgCO₂</div>
+                  </div>
+                </CardContent>
+              </Card>
+            </motion.div>
+          </div>
+        </div>
       </div>
       {/* ========================================================================
           계산기 목록 (Calculator List)
@@ -365,7 +490,7 @@ export function CategoryDataInput({
                     {/* 첫 번째 항목 추가 버튼 */}
                     <Button
                       onClick={handleAddCalculator}
-                      className="px-8 py-3 text-lg text-white bg-gradient-to-r from-blue-600 to-blue-700 shadow-md transition-all duration-200 hover:from-blue-700 hover:to-blue-800 hover:shadow-lg">
+                      className="px-8 py-3 text-lg font-semibold text-white bg-blue-500 rounded-xl shadow-sm transition-all duration-200 hover:bg-blue-600 hover:shadow-sm">
                       <Plus className="mr-2 w-5 h-5" />
                       항목 추가하기
                     </Button>
@@ -386,12 +511,12 @@ export function CategoryDataInput({
           initial={{opacity: 0, y: 20}}
           animate={{opacity: 1, y: 0}}
           transition={{delay: 0.7, duration: 0.5}}
-          className="flex gap-6 justify-center items-center pt-8 border-t border-customG-200">
+          className="flex gap-4 justify-center items-center pt-8 border-t border-gray-200">
           {/* 항목 추가 버튼 */}
           <Button
             onClick={handleAddCalculator}
             variant="outline"
-            className="px-8 py-3 text-lg transition-all duration-200 border-customG-300 hover:bg-customG-50 hover:border-customG-400">
+            className="px-8 py-3 text-base font-semibold text-blue-600 bg-white rounded-xl border-2 border-blue-500 transition-all duration-200 hover:bg-blue-50 hover:border-blue-600 hover:shadow-sm">
             <Plus className="mr-2 w-5 h-5" />
             항목 추가
           </Button>
@@ -399,7 +524,7 @@ export function CategoryDataInput({
           {/* 입력 완료 버튼 */}
           <Button
             onClick={handleCompleteAsync}
-            className="px-12 py-3 text-lg text-white bg-gradient-to-r from-blue-600 to-blue-700 shadow-md transition-all duration-200 hover:from-blue-700 hover:to-blue-800 hover:shadow-lg">
+            className="px-8 py-3 text-base font-semibold text-white bg-blue-500 rounded-xl shadow-sm transition-all duration-200 hover:bg-blue-600 hover:shadow-sm">
             입력 완료
           </Button>
         </motion.div>

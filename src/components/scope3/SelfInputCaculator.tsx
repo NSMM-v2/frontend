@@ -1,8 +1,39 @@
-import React, { useEffect, useRef } from 'react'
-import { Card, CardContent } from '@/components/ui/card'
-import { Input } from '../ui/input'
-import type { SelectorState } from '@/lib/types'
+/**
+ * 수동 입력 계산기 컴포넌트
+ *
+ * 주요 기능:
+ * - 사용자가 직접 ESG 데이터를 입력할 수 있는 폼
+ * - 실시간 배출량 계산 및 표시
+ * - 입력 필드별 유효성 검증
+ * - 아름다운 NSMM Toss 스타일 디자인
+ *
+ * 디자인 특징:
+ * - 그룹화된 입력 필드 레이아웃
+ * - 부드러운 애니메이션 효과
+ * - 직관적인 아이콘과 색상 체계
+ * - 반응형 디자인
+ *
+ * @author ESG Project Team
+ * @version 3.0
+ * @since 2024
+ * @lastModified 2024-12-20
+ */
 
+import React, {useEffect, useRef} from 'react'
+import {motion} from 'framer-motion'
+import {Card, CardContent, CardHeader, CardTitle} from '@/components/ui/card'
+import {Input} from '../ui/input'
+import {
+  Layers,
+  Tag,
+  Zap,
+  Ruler,
+  Calculator,
+  Hash,
+  Sparkles,
+  TrendingUp
+} from 'lucide-react'
+import type {SelectorState} from '@/lib/types'
 
 interface SelfInputCalculatorProps {
   id: number
@@ -17,80 +48,284 @@ export function SelfInputCalculator({
   onChangeState,
   onChangeTotal
 }: SelfInputCalculatorProps) {
-  // 배출량 계산 useEffect
-  const prevEmissionRef = useRef<number>(-1)  // 초기값 -1(없던 값)
+  // ========================================================================
+  // 상태 관리 및 배출량 계산 (State Management & Calculation)
+  // ========================================================================
+
+  const prevEmissionRef = useRef<number>(-1) // 이전 배출량 값 저장
 
   useEffect(() => {
     const qty = parseFloat(state.quantity)
     const factor = parseFloat(state.kgCO2eq || '')
-    const emission = !isNaN(qty) && qty >= 0 && !isNaN(factor) && factor >= 0 ? qty * factor : 0
+    const emission =
+      !isNaN(qty) && qty >= 0 && !isNaN(factor) && factor >= 0 ? qty * factor : 0
 
     if (prevEmissionRef.current !== emission) {
       onChangeTotal(id, emission)
       prevEmissionRef.current = emission
     }
   }, [state.quantity, state.kgCO2eq, id, onChangeTotal])
-  // 상태 업데이트 핸들러
-  const handleChange = (key: keyof SelectorState) => (e: React.ChangeEvent<HTMLInputElement>) => {
-    onChangeState({ ...state, [key]: e.target.value })
-  }
 
-  // 숫자 입력 필터 (음수 차단)
-  const handleNumberInput = (key: keyof SelectorState) => (e: React.ChangeEvent<HTMLInputElement>) => {
-    const val = e.target.value
-    if (val === '' || /^\d*\.?\d*$/.test(val)) {
-      onChangeState({ ...state, [key]: val })
+  // ========================================================================
+  // 이벤트 핸들러 (Event Handlers)
+  // ========================================================================
+
+  /**
+   * 일반 텍스트 입력 핸들러
+   */
+  const handleChange =
+    (key: keyof SelectorState) => (e: React.ChangeEvent<HTMLInputElement>) => {
+      onChangeState({...state, [key]: e.target.value})
     }
-  }
+
+  /**
+   * 숫자 입력 핸들러 (음수 차단)
+   */
+  const handleNumberInput =
+    (key: keyof SelectorState) => (e: React.ChangeEvent<HTMLInputElement>) => {
+      const val = e.target.value
+      if (val === '' || /^\d*\.?\d*$/.test(val)) {
+        onChangeState({...state, [key]: val})
+      }
+    }
+
+  // ========================================================================
+  // 입력 필드 설정 데이터 (Input Field Configuration)
+  // ========================================================================
+
+  /**
+   * 기본 정보 입력 필드 (카테고리, 구분, 원료)
+   */
+  const basicInfoFields = [
+    {
+      step: '1',
+      label: '대분류',
+      key: 'category' as keyof SelectorState,
+      type: 'text',
+      placeholder: '예: 구매한 상품 및 서비스',
+      icon: Layers,
+      description: 'Scope 3 배출 카테고리를 입력하세요'
+    },
+    {
+      step: '2',
+      label: '구분',
+      key: 'separate' as keyof SelectorState,
+      type: 'text',
+      placeholder: '예: 원료 및 에너지 생산',
+      icon: Tag,
+      description: '세부 구분을 입력하세요'
+    },
+    {
+      step: '3',
+      label: '원료/에너지',
+      key: 'rawMaterial' as keyof SelectorState,
+      type: 'text',
+      placeholder: '예: 에틸렌 프로필렌 디엔 고무',
+      icon: Zap,
+      description: '사용된 원료나 에너지 유형을 입력하세요'
+    }
+  ]
+
+  /**
+   * 계산 정보 입력 필드 (단위, 배출계수, 수량)
+   */
+  const calculationFields = [
+    {
+      step: '4',
+      label: '단위',
+      key: 'unit' as keyof SelectorState,
+      type: 'text',
+      placeholder: '예: kg, ton, kWh, m³',
+      icon: Ruler,
+      description: '수량의 단위를 입력하세요'
+    },
+    {
+      step: '5',
+      label: '배출계수',
+      key: 'kgCO2eq' as keyof SelectorState,
+      type: 'number',
+      placeholder: '0.000',
+      icon: Calculator,
+      description: 'kgCO₂ equivalent 값을 입력하세요'
+    },
+    {
+      step: '6',
+      label: '수량',
+      key: 'quantity' as keyof SelectorState,
+      type: 'number',
+      placeholder: '0',
+      icon: Hash,
+      description: '사용량이나 구매량을 입력하세요'
+    }
+  ]
+
+  /**
+   * 계산된 배출량 값
+   */
+  const calculatedEmission =
+    state.quantity &&
+    state.kgCO2eq &&
+    !isNaN(parseFloat(state.quantity)) &&
+    !isNaN(parseFloat(state.kgCO2eq))
+      ? parseFloat(state.quantity) * parseFloat(state.kgCO2eq)
+      : 0
 
   return (
-    <Card className="w-full max-w-2xl shadow-sm">
-      <CardContent className="p-6 space-y-4">
-        {([
-          ['1', '대분류', 'category', 'text'],
-          ['2', '구분', 'separate', 'text'],
-          ['3', '원료/에너지', 'rawMaterial', 'text'],
-          ['4', '단위', 'unit', 'text'],
-          ['5', '배출계수 (kgCO₂eq)', 'kgCO2eq', 'number'],
-          ['6', '수량', 'quantity', 'number']
-        ] as const).map(([step, label, key, type]) => (
-          <div key={key} className="space-y-2">
-            <label className="flex items-center text-sm font-semibold text-customG-700">
-              <span className="flex justify-center items-center mr-2 w-6 h-6 text-xs font-bold text-white bg-blue-500 rounded-full">
-                {step}
-              </span>
-              {label}
-            </label>
-            <Input
-              type={type}
-              inputMode={type === 'number' ? 'decimal' : undefined}
-              value={state[key]}
-              onChange={type === 'number' ? handleNumberInput(key) : handleChange(key)}
-              className="px-3 py-2 w-full text-sm rounded-lg border border-customG-300 transition-all duration-200 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 hover:border-customG-400"
-              placeholder={type === 'number' ? '0 또는 양수 입력' : undefined}
-            />
-          </div>
-        ))}
-
-        {/* 결과 출력 */}
-        <div className="flex justify-between items-center p-4 bg-white rounded-lg border border-blue-200 shadow-sm mt-6">
-          <span className="text-sm font-medium text-customG-600">계산된 배출량:</span>
-          <div className="text-right">
-            <div className="text-xl font-bold text-blue-600">
-              {state.quantity &&
-              state.kgCO2eq &&
-              !isNaN(parseFloat(state.quantity)) &&
-              !isNaN(parseFloat(state.kgCO2eq))
-                ? (parseFloat(state.quantity) * parseFloat(state.kgCO2eq)).toLocaleString(undefined, {
-                    maximumFractionDigits: 3,
-                    minimumFractionDigits: 3
-                  })
-                : '0.000'}
+    <motion.div
+      initial={{opacity: 0, scale: 0.95}}
+      animate={{opacity: 1, scale: 1}}
+      transition={{duration: 0.5, type: 'spring', stiffness: 100}}
+      className="mx-auto w-full max-w-4xl">
+      <Card className="overflow-hidden bg-white rounded-3xl border-0 shadow-sm">
+        <CardContent className="p-8 space-y-8">
+          {/* ====================================================================
+              기본 정보 섹션 (Basic Information Section)
+              ==================================================================== */}
+          <motion.div
+            initial={{opacity: 0, y: 20}}
+            animate={{opacity: 1, y: 0}}
+            transition={{delay: 0.1, duration: 0.4}}
+            className="space-y-6">
+            <div className="flex items-center pb-4 space-x-2 border-b border-gray-200">
+              <Layers className="w-5 h-5 text-blue-500" />
+              <h3 className="text-lg font-semibold text-gray-900">기본 정보</h3>
+              <span className="text-sm text-gray-500">ESG 데이터 분류 정보</span>
             </div>
-            <div className="text-xs text-customG-500">kgCO₂ equivalent</div>
-          </div>
-        </div>
-      </CardContent>
-    </Card>
+
+            <div className="grid grid-cols-1 gap-6 md:grid-cols-3">
+              {basicInfoFields.map((field, index) => (
+                <motion.div
+                  key={field.key}
+                  initial={{opacity: 0, y: 20}}
+                  animate={{opacity: 1, y: 0}}
+                  transition={{delay: 0.2 + index * 0.1, duration: 0.4}}
+                  className="space-y-3">
+                  {/* 필드 라벨 */}
+                  <div className="flex items-center space-x-2">
+                    <span className="flex justify-center items-center w-7 h-7 text-xs font-bold text-white bg-blue-500 rounded-full">
+                      {field.step}
+                    </span>
+                    <field.icon className="w-4 h-4 text-blue-500" />
+                    <label className="text-sm font-semibold text-gray-700">
+                      {field.label}
+                    </label>
+                  </div>
+
+                  {/* 입력 필드 */}
+                  <Input
+                    type={field.type}
+                    value={state[field.key]}
+                    onChange={handleChange(field.key)}
+                    className="px-4 py-3 text-sm rounded-xl border-2 border-gray-200 transition-all duration-200 focus:border-blue-500 focus:ring-4 focus:ring-blue-100 hover:border-gray-300"
+                    placeholder={field.placeholder}
+                  />
+
+                  {/* 설명 텍스트 */}
+                  <p className="text-xs text-gray-500">{field.description}</p>
+                </motion.div>
+              ))}
+            </div>
+          </motion.div>
+
+          {/* ====================================================================
+              계산 정보 섹션 (Calculation Information Section)
+              ==================================================================== */}
+          <motion.div
+            initial={{opacity: 0, y: 20}}
+            animate={{opacity: 1, y: 0}}
+            transition={{delay: 0.4, duration: 0.4}}
+            className="space-y-6">
+            <div className="flex items-center pb-4 space-x-2 border-b border-gray-200">
+              <Calculator className="w-5 h-5 text-blue-500" />
+              <h3 className="text-lg font-semibold text-gray-900">계산 정보</h3>
+              <span className="text-sm text-gray-500">배출량 계산을 위한 수치 정보</span>
+            </div>
+
+            <div className="grid grid-cols-1 gap-6 md:grid-cols-3">
+              {calculationFields.map((field, index) => (
+                <motion.div
+                  key={field.key}
+                  initial={{opacity: 0, y: 20}}
+                  animate={{opacity: 1, y: 0}}
+                  transition={{delay: 0.5 + index * 0.1, duration: 0.4}}
+                  className="space-y-3">
+                  {/* 필드 라벨 */}
+                  <div className="flex items-center space-x-2">
+                    <span className="flex justify-center items-center w-7 h-7 text-xs font-bold text-white bg-blue-500 rounded-full">
+                      {field.step}
+                    </span>
+                    <field.icon className="w-4 h-4 text-blue-500" />
+                    <label className="text-sm font-semibold text-gray-700">
+                      {field.label}
+                    </label>
+                  </div>
+
+                  {/* 입력 필드 */}
+                  <Input
+                    type={field.type}
+                    inputMode={field.type === 'number' ? 'decimal' : undefined}
+                    value={state[field.key]}
+                    onChange={
+                      field.type === 'number'
+                        ? handleNumberInput(field.key)
+                        : handleChange(field.key)
+                    }
+                    className="px-4 py-3 text-sm rounded-xl border-2 border-gray-200 transition-all duration-200 focus:border-blue-500 focus:ring-4 focus:ring-blue-100 hover:border-gray-300"
+                    placeholder={field.placeholder}
+                  />
+
+                  {/* 설명 텍스트 */}
+                  <p className="text-xs text-gray-500">{field.description}</p>
+                </motion.div>
+              ))}
+            </div>
+          </motion.div>
+
+          {/* ====================================================================
+              계산 결과 섹션 (Calculation Result Section)
+              ==================================================================== */}
+          <motion.div
+            initial={{opacity: 0, scale: 0.95}}
+            animate={{opacity: 1, scale: 1}}
+            transition={{delay: 0.8, duration: 0.5}}
+            className="relative">
+            <div className="overflow-hidden relative p-6 bg-gradient-to-br from-blue-50 via-blue-100 to-blue-200 rounded-2xl border-2 border-blue-200 shadow-sm">
+              {/* 배경 장식 */}
+              <div className="absolute top-2 right-2 w-16 h-16 bg-blue-300 rounded-full opacity-20 blur-xl" />
+              <div className="absolute bottom-2 left-2 w-12 h-12 bg-blue-400 rounded-lg transform rotate-12 opacity-15" />
+
+              <div className="flex relative justify-between items-center">
+                <div className="flex items-center space-x-3">
+                  <div className="flex justify-center items-center w-12 h-12 bg-blue-500 rounded-xl shadow-sm">
+                    <TrendingUp className="w-6 h-6 text-white" />
+                  </div>
+                  <div>
+                    <h4 className="text-lg font-bold text-gray-900">계산된 배출량</h4>
+                    <p className="text-sm text-gray-600">수량 × 배출계수 결과</p>
+                  </div>
+                </div>
+
+                <div className="text-right">
+                  <motion.div
+                    key={calculatedEmission}
+                    initial={{scale: 1.1, opacity: 0.8}}
+                    animate={{scale: 1, opacity: 1}}
+                    transition={{duration: 0.3}}
+                    className="text-3xl font-bold text-blue-600">
+                    {calculatedEmission.toLocaleString(undefined, {
+                      maximumFractionDigits: 3,
+                      minimumFractionDigits: 3
+                    })}
+                  </motion.div>
+                  <div className="text-sm font-medium text-blue-500">
+                    kgCO₂ equivalent
+                  </div>
+                </div>
+              </div>
+            </div>
+          </motion.div>
+        </CardContent>
+      </Card>
+    </motion.div>
   )
 }
