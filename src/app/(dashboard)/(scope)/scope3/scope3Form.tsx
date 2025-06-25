@@ -54,6 +54,7 @@ import {CategoryDataInput} from '@/components/scope3/CategoryDataInput'
 import {MonthSelector} from '@/components/scope/MonthSelector'
 import {Input} from '@/components/ui/input'
 import {Card, CardContent} from '@/components/ui/card'
+import {scope3CategoryList} from '@/components/scope3/CategorySelector'
 
 // ============================================================================
 // 타입 및 서비스 임포트 (Types & Services Imports)
@@ -524,6 +525,7 @@ export default function Scope3Form() {
 
           {/* 카테고리 선택 그리드 */}
           <CategorySelector
+            categoryList={scope3CategoryList}
             getTotalEmission={getTotalEmission}
             onCategorySelect={handleCategorySelect}
             animationDelay={0.2}

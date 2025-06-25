@@ -74,6 +74,19 @@ import {PartnerSelector} from '@/components/scope/PartnerSelector'
 import {DirectionButton} from '@/components/layout/direction'
 import {PageHeader} from '@/components/layout/PageHeader'
 import {MonthSelector} from '@/components/scope/MonthSelector'
+import {
+  CategorySelector,
+  scope2SteamCategoryList
+} from '@/components/scope3/CategorySelector'
+import {Scope2SteamCategoryKey} from '@/components/scope3/CategorySelector'
+import {Scope3EmissionResponse, SelectorState} from '@/lib/types'
+
+interface CalculatorData {
+  id: number
+  state: SelectorState
+  emissionId?: number // 백엔드에서 받은 배출량 데이터 ID (수정/삭제용)
+  savedData?: Scope3EmissionResponse // 백엔드에서 받은 전체 데이터
+}
 
 /**
  * Scope2Form 컴포넌트
@@ -273,6 +286,20 @@ export default function Scope2Form() {
     }
   }
 
+  const [activeCategory, setActiveCategory] = useState<Scope2SteamCategoryKey | null>(
+    null
+  ) // 현재 선택된 카테고리
+
+  // 카테고리별 배출량 총계 관리
+  const [categoryTotals, setCategoryTotals] = useState<{
+    [key in Scope2SteamCategoryKey]?: {id: number; emission: number}[]
+  }>({})
+
+  // 카테고리별 계산기 목록 관리
+  const [categoryCalculators, setCategoryCalculators] = useState<{
+    [key in Scope2SteamCategoryKey]?: CalculatorData[]
+  }>({})
+
   // 스팀 데이터 삭제
   const handleDeleteSteam = async (id: number) => {
     if (!confirm('정말로 이 데이터를 삭제하시겠습니까?')) return
@@ -282,6 +309,23 @@ export default function Scope2Form() {
       setSteamData(prev => prev.filter(item => item.id !== id))
     } catch (error) {
       console.error('삭제 실패:', error)
+    }
+  }
+
+  const getTotalEmission = (category: Scope2SteamCategoryKey): number =>
+    (categoryTotals[category] || []).reduce((sum, t) => sum + t.emission, 0)
+
+  const handleCategorySelect = (category: Scope2SteamCategoryKey) => {
+    setActiveCategory(category)
+
+    // 해당 카테고리에 계산기가 없으면 기본 계산기 1개 생성
+    if (!categoryCalculators[category] || categoryCalculators[category]!.length === 0) {
+      setCategoryCalculators(prev => ({
+        ...prev,
+        [category]: [
+          {id: 1, state: {category: '', separate: '', rawMaterial: '', quantity: ''}}
+        ]
+      }))
     }
   }
 
@@ -589,7 +633,15 @@ export default function Scope2Form() {
           {/* ================================================================
                 스팀 사용량 탭 (Steam Usage Tab)
                 ================================================================ */}
-          <TabsContent value="steam" className="mt-4"></TabsContent>
+          <TabsContent value="steam" className="mt-4">
+            {/* 카테고리 선택 그리드 */}
+            <CategorySelector
+              categoryList={scope2SteamCategoryList}
+              getTotalEmission={getTotalEmission}
+              onCategorySelect={handleCategorySelect}
+              animationDelay={0.2}
+            />
+          </TabsContent>
         </Tabs>
       </motion.div>
 
