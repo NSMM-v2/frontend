@@ -7,6 +7,7 @@
  * - CSV 데이터 기반 배출계수 적용
  * - 실시간 배출량 계산 및 집계
  * - scope2Form.tsx와 동일한 레이아웃 구조 적용
+ * - 백엔드 API 연동으로 데이터 영속화 지원
  *
  * @author ESG Project Team
  * @version 1.0
@@ -14,12 +15,16 @@
  */
 'use client'
 
-// React 및 애니메이션 라이브러리 임포트
-import React, {useState} from 'react'
+// ============================================================================
+// React 및 애니메이션 라이브러리 임포트 (React & Animation Imports)
+// ============================================================================
+import React, {useState, useEffect} from 'react'
 import {motion} from 'framer-motion'
 import Link from 'next/link'
 
-// UI 아이콘 임포트 (Lucide React)
+// ============================================================================
+// UI 아이콘 임포트 (UI Icon Imports)
+// ============================================================================
 import {
   Home, // 홈 아이콘
   ArrowLeft, // 왼쪽 화살표 (뒤로가기)
@@ -27,7 +32,9 @@ import {
   CalendarDays
 } from 'lucide-react'
 
-// 브레드크럼 네비게이션 컴포넌트 임포트
+// ============================================================================
+// 컴포넌트 임포트 (Component Imports)
+// ============================================================================
 import {
   Breadcrumb,
   BreadcrumbItem,
@@ -44,21 +51,32 @@ import {DirectionButton} from '@/components/layout/direction'
 import {CategorySummaryCard} from '@/components/scope3/CategorySummaryCard'
 import {CategorySelector, Scope3CategoryKey} from '@/components/scope3/CategorySelector'
 import {CategoryDataInput} from '@/components/scope3/CategoryDataInput'
-import {SelectorState} from '@/lib/types'
 import {MonthSelector} from '@/components/scope/MonthSelector'
 import {Input} from '@/components/ui/input'
 import {Card, CardContent} from '@/components/ui/card'
+
+// ============================================================================
+// 타입 및 서비스 임포트 (Types & Services Imports)
+// ============================================================================
+import {SelectorState} from '@/lib/types'
+import {Scope3EmissionResponse, Scope3CategorySummary} from '@/lib/types'
+import {
+  fetchScope3EmissionsByYearAndMonth,
+  fetchScope3CategorySummary
+} from '@/services/scopeService'
 
 // ============================================================================
 // 타입 정의 (Type Definitions)
 // ============================================================================
 
 /**
- * 계산기 데이터 타입
+ * 계산기 데이터 타입 (확장: 백엔드 데이터 포함)
  */
 interface CalculatorData {
   id: number
   state: SelectorState
+  emissionId?: number // 백엔드에서 받은 배출량 데이터 ID (수정/삭제용)
+  savedData?: Scope3EmissionResponse // 백엔드에서 받은 전체 데이터
 }
 
 // ============================================================================
@@ -71,10 +89,10 @@ interface CalculatorData {
  */
 export default function Scope3Form() {
   // ========================================================================
-  // 상태 관리 (State Management)
+  // 기본 상태 관리 (Basic State Management)
   // ========================================================================
   const [calculatorModes, setCalculatorModes] = useState<{
-    [key in Scope3CategoryKey]?: { [id: number]: boolean }
+    [key in Scope3CategoryKey]?: {[id: number]: boolean}
   }>({})
   const [selectedYear, setSelectedYear] = useState<number>(new Date().getFullYear()) // 선택된 연도
   const currentMonth = new Date().getMonth() + 1 // JavaScript의 월은 0부터 시작하므로 1을 더함
@@ -92,6 +110,21 @@ export default function Scope3Form() {
     [key in Scope3CategoryKey]?: {id: number; emission: number}[]
   }>({})
 
+  // ========================================================================
+  // 백엔드 연동 상태 관리 (Backend Integration State)
+  // ========================================================================
+
+  // 전체 Scope3 배출량 데이터 (년/월 기준)
+  const [scope3Data, setScope3Data] = useState<Scope3EmissionResponse[]>([])
+
+  // 카테고리별 요약 데이터 (CategorySummaryCard용)
+  const [categorySummary, setCategorySummary] = useState<Scope3CategorySummary>({})
+
+  // 로딩 상태 관리
+  const [isLoading, setIsLoading] = useState<boolean>(false)
+
+  // 데이터 새로고침 트리거 (CRUD 작업 후 데이터 다시 로드용)
+  const [refreshTrigger, setRefreshTrigger] = useState<number>(0)
 
   // ========================================================================
   // 유틸리티 함수 (Utility Functions)
@@ -111,7 +144,6 @@ export default function Scope3Form() {
    */
   const getTotalEmission = (category: Scope3CategoryKey): number =>
     (categoryTotals[category] || []).reduce((sum, t) => sum + t.emission, 0)
-  
 
   // ========================================================================
   // 이벤트 핸들러 (Event Handlers)
@@ -123,11 +155,10 @@ export default function Scope3Form() {
       ...prev,
       [activeCategory]: {
         ...prev[activeCategory],
-        [id]: checked,
+        [id]: checked
       }
     }))
   }
-
 
   /**
    * 계산기의 배출량 업데이트 핸들러
@@ -143,8 +174,6 @@ export default function Scope3Form() {
       return {...prev, [activeCategory]: updated}
     })
   }
-
-
 
   /**
    * 새로운 계산기 추가 핸들러
@@ -250,6 +279,149 @@ export default function Scope3Form() {
   }).reduce((sum, key) => sum + getTotalEmission(key as Scope3CategoryKey), 0)
 
   // ========================================================================
+  // 백엔드 데이터 로드 함수 (Backend Data Loading Functions)
+  // ========================================================================
+
+  /**
+   * 연도/월별 Scope3 데이터 전체 조회
+   * selectedYear, selectedMonth 변경 시 자동 호출
+   */
+  const loadScope3Data = async () => {
+    if (!selectedYear || !selectedMonth) return
+
+    setIsLoading(true)
+    try {
+      // 1. 전체 배출량 데이터 조회
+      const emissionsData = await fetchScope3EmissionsByYearAndMonth(
+        selectedYear,
+        selectedMonth
+      )
+      setScope3Data(emissionsData)
+
+      // 2. 카테고리별 요약 데이터 조회
+      const summaryData = await fetchScope3CategorySummary(selectedYear, selectedMonth)
+      setCategorySummary(summaryData)
+
+      // 3. 기존 데이터를 카테고리별 계산기로 변환
+      convertBackendDataToCalculators(emissionsData)
+    } catch (error) {
+      console.error('Scope3 데이터 로드 오류:', error)
+    } finally {
+      setIsLoading(false)
+    }
+  }
+
+  /**
+   * 백엔드 데이터를 프론트엔드 계산기 형식으로 변환
+   * 기존 저장된 데이터를 각 카테고리의 계산기 목록으로 변환하여 표시
+   */
+  const convertBackendDataToCalculators = (data: Scope3EmissionResponse[]) => {
+    const categorizedData: {[key in Scope3CategoryKey]?: CalculatorData[]} = {}
+
+    // 카테고리별로 데이터 그룹화
+    data.forEach(emission => {
+      const categoryKey = getCategoryKeyByNumber(emission.categoryNumber)
+      if (!categoryKey) return
+
+      if (!categorizedData[categoryKey]) {
+        categorizedData[categoryKey] = []
+      }
+
+      // 백엔드 데이터를 계산기 형식으로 변환
+      const calculatorData: CalculatorData = {
+        id: emission.emissionId, // 백엔드 ID를 프론트엔드 ID로 사용
+        emissionId: emission.emissionId, // 수정/삭제용 원본 ID
+        savedData: emission, // 전체 백엔드 데이터 보관
+        state: {
+          category: emission.majorCategory,
+          separate: emission.subcategory,
+          rawMaterial: emission.rawMaterial,
+          unit: emission.unit,
+          kgCO2eq: emission.emissionFactor.toString(),
+          quantity: emission.activityAmount.toString()
+        }
+      }
+
+      categorizedData[categoryKey].push(calculatorData)
+    })
+
+    setCategoryCalculators(categorizedData)
+
+    // 배출량 총계도 함께 업데이트
+    updateCategoryTotalsFromData(data)
+  }
+
+  /**
+   * 백엔드 데이터를 기반으로 카테고리 총계 업데이트
+   */
+  const updateCategoryTotalsFromData = (data: Scope3EmissionResponse[]) => {
+    const totals: {[key in Scope3CategoryKey]?: {id: number; emission: number}[]} = {}
+
+    data.forEach(emission => {
+      const categoryKey = getCategoryKeyByNumber(emission.categoryNumber)
+      if (!categoryKey) return
+
+      if (!totals[categoryKey]) {
+        totals[categoryKey] = []
+      }
+
+      totals[categoryKey].push({
+        id: emission.emissionId,
+        emission: emission.totalEmission
+      })
+    })
+
+    setCategoryTotals(totals)
+  }
+
+  /**
+   * 카테고리 번호를 카테고리 키로 변환
+   * 백엔드의 categoryNumber(1~15)를 프론트엔드의 list1~list15로 매핑
+   */
+  const getCategoryKeyByNumber = (categoryNumber: number): Scope3CategoryKey | null => {
+    const categoryMap: {[key: number]: Scope3CategoryKey} = {
+      1: 'list1',
+      2: 'list2',
+      3: 'list3',
+      4: 'list4',
+      5: 'list5',
+      6: 'list6',
+      7: 'list7',
+      8: 'list8',
+      9: 'list9',
+      10: 'list10',
+      11: 'list11',
+      12: 'list12',
+      13: 'list13',
+      14: 'list14',
+      15: 'list15'
+    }
+    return categoryMap[categoryNumber] || null
+  }
+
+  // ========================================================================
+  // useEffect 훅 (Lifecycle Effects)
+  // ========================================================================
+
+  /**
+   * 연도/월 변경 시 데이터 자동 로드
+   * 새로운 년도나 월을 선택하면 해당 기간의 기존 데이터를 불러와서 표시
+   */
+  useEffect(() => {
+    if (selectedYear && selectedMonth) {
+      loadScope3Data()
+    }
+  }, [selectedYear, selectedMonth, refreshTrigger]) // refreshTrigger로 CRUD 후 재조회
+
+  /**
+   * 데이터 새로고침 함수
+   * CategoryDataInput에서 CRUD 작업 완료 후 호출하여 최신 데이터 반영
+   */
+  const refreshData = () => {
+    setRefreshTrigger(prev => prev + 1)
+  }
+
+  // ========================================================================
   // 렌더링 (Rendering)
   // ========================================================================
 
@@ -309,7 +481,14 @@ export default function Scope3Form() {
           <Card className="mb-4 overflow-hidden shadow-sm">
             <CardContent className="p-4">
               <div className="grid items-center justify-center h-24 grid-cols-1 gap-8 md:grid-cols-3">
-                <CategorySummaryCard totalEmission={grandTotal} animationDelay={0.1} />
+                {/* 백엔드 데이터 기반 총 배출량 카드 */}
+                <CategorySummaryCard
+                  totalEmission={Object.values(categorySummary).reduce(
+                    (sum, emission) => sum + emission,
+                    0
+                  )}
+                  animationDelay={0.1}
+                />
 
                 {/* 보고연도 입력 필드 */}
                 <div className="space-y-3">
@@ -364,8 +543,11 @@ export default function Scope3Form() {
           onChangeTotal={updateTotal}
           onComplete={handleComplete}
           onBackToList={handleBackToList}
-          calculatorModes={calculatorModes[activeCategory] || {}} // ✅ 현재 카테고리만 전달
+          calculatorModes={calculatorModes[activeCategory] || {}} // 현재 카테고리만 전달
           onModeChange={handleModeChange}
+          selectedYear={selectedYear} // 백엔드 저장용 연도
+          selectedMonth={selectedMonth} // 백엔드 저장용 월
+          onDataChange={refreshData} // CRUD 작업 후 데이터 새로고침 콜백
         />
       )}
     </div>

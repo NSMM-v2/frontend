@@ -18,6 +18,13 @@ import type {
   PurposeCategory
 } from '@/types/scopeType'
 import {
+  Scope3EmissionRequest,
+  Scope3EmissionResponse,
+  Scope3EmissionUpdateRequest,
+  ApiResponse,
+  Scope3CategorySummary
+} from '@/lib/types'
+import {
   getFuelById,
   getAllFuels,
   getFuelsByActivityType,
@@ -931,4 +938,217 @@ export const validateScopeFormData = (formData: ScopeFormData): string[] => {
   }
 
   return errors
+}
+
+// =============================================================================
+// Scope3 배출량 관리 서비스 (Scope3 Emission Management Service)
+// =============================================================================
+
+/**
+ * 연도/월별 Scope3 배출량 데이터 조회
+ * 프론트엔드에서 보고년/보고월 선택 시 해당 데이터를 모두 가져옴
+ *
+ * @param year 보고년도
+ * @param month 보고월
+ * @returns Promise<Scope3EmissionResponse[]> 배출량 데이터 목록
+ */
+export const fetchScope3EmissionsByYearAndMonth = async (
+  year: number,
+  month: number
+): Promise<Scope3EmissionResponse[]> => {
+  try {
+    showLoading('Scope 3 배출량 데이터를 조회중입니다...')
+
+    const response = await api.get<ApiResponse<Scope3EmissionResponse[]>>(
+      `/api/v1/scope3/emissions/year/${year}/month/${month}`
+    )
+
+    dismissLoading()
+
+    if (response.data.success && response.data.data) {
+      return response.data.data
+    } else {
+      throw new Error(response.data.message || 'Scope 3 데이터 조회에 실패했습니다.')
+    }
+  } catch (error: any) {
+    dismissLoading()
+    console.error('Scope 3 배출량 조회 오류:', error)
+    showError(
+      error.response?.data?.message || 'Scope 3 배출량 조회 중 오류가 발생했습니다.'
+    )
+    return []
+  }
+}
+
+/**
+ * 카테고리별 배출량 요약 데이터 조회
+ * CategorySummaryCard에서 각 카테고리의 총 배출량 표시용
+ *
+ * @param year 보고년도
+ * @param month 보고월
+ * @returns Promise<Scope3CategorySummary> 카테고리별 총 배출량 Map
+ */
+export const fetchScope3CategorySummary = async (
+  year: number,
+  month: number
+): Promise<Scope3CategorySummary> => {
+  try {
+    const response = await api.get<ApiResponse<Scope3CategorySummary>>(
+      `/api/v1/scope3/emissions/summary/year/${year}/month/${month}`
+    )
+
+    if (response.data.success && response.data.data) {
+      return response.data.data
+    } else {
+      throw new Error(
+        response.data.message || '카테고리 요약 데이터 조회에 실패했습니다.'
+      )
+    }
+  } catch (error: any) {
+    console.error('카테고리 요약 데이터 조회 오류:', error)
+    showError(
+      error.response?.data?.message || '카테고리 요약 조회 중 오류가 발생했습니다.'
+    )
+    return {}
+  }
+}
+
+/**
+ * 새로운 Scope3 배출량 데이터 생성
+ * CategoryDataInput에서 새로운 계산기 항목 저장 시 사용
+ *
+ * @param data Scope3EmissionRequest 배출량 데이터
+ * @returns Promise<Scope3EmissionResponse> 생성된 배출량 데이터
+ */
+export const createScope3Emission = async (
+  data: Scope3EmissionRequest
+): Promise<Scope3EmissionResponse | null> => {
+  try {
+    showLoading('Scope 3 배출량 데이터를 저장중입니다...')
+
+    const response = await api.post<ApiResponse<Scope3EmissionResponse>>(
+      '/api/v1/scope3/emissions',
+      data
+    )
+
+    dismissLoading()
+
+    if (response.data.success && response.data.data) {
+      showSuccess('Scope 3 배출량 데이터가 저장되었습니다.')
+      return response.data.data
+    } else {
+      throw new Error(response.data.message || 'Scope 3 데이터 저장에 실패했습니다.')
+    }
+  } catch (error: any) {
+    dismissLoading()
+    console.error('Scope 3 배출량 생성 오류:', error)
+    showError(
+      error.response?.data?.message || 'Scope 3 배출량 저장 중 오류가 발생했습니다.'
+    )
+    return null
+  }
+}
+
+/**
+ * 기존 Scope3 배출량 데이터 수정
+ * CategoryDataInput에서 기존 계산기 항목 수정 시 사용
+ *
+ * @param id 배출량 데이터 ID
+ * @param data Scope3EmissionUpdateRequest 수정할 데이터
+ * @returns Promise<Scope3EmissionResponse> 수정된 배출량 데이터
+ */
+export const updateScope3Emission = async (
+  id: number,
+  data: Scope3EmissionUpdateRequest
+): Promise<Scope3EmissionResponse | null> => {
+  try {
+    showLoading('Scope 3 배출량 데이터를 수정중입니다...')
+
+    const response = await api.put<ApiResponse<Scope3EmissionResponse>>(
+      `/api/v1/scope3/emissions/${id}`,
+      data
+    )
+
+    dismissLoading()
+
+    if (response.data.success && response.data.data) {
+      showSuccess('Scope 3 배출량 데이터가 수정되었습니다.')
+      return response.data.data
+    } else {
+      throw new Error(response.data.message || 'Scope 3 데이터 수정에 실패했습니다.')
+    }
+  } catch (error: any) {
+    dismissLoading()
+    console.error('Scope 3 배출량 수정 오류:', error)
+    showError(
+      error.response?.data?.message || 'Scope 3 배출량 수정 중 오류가 발생했습니다.'
+    )
+    return null
+  }
+}
+
+/**
+ * Scope3 배출량 데이터 삭제
+ * CategoryDataInput에서 계산기 항목 삭제 시 사용
+ *
+ * @param id 배출량 데이터 ID
+ * @returns Promise<boolean> 삭제 성공 여부
+ */
+export const deleteScope3Emission = async (id: number): Promise<boolean> => {
+  try {
+    showLoading('Scope 3 배출량 데이터를 삭제중입니다...')
+
+    const response = await api.delete<ApiResponse<string>>(
+      `/api/v1/scope3/emissions/${id}`
+    )
+
+    dismissLoading()
+
+    if (response.data.success) {
+      showSuccess('Scope 3 배출량 데이터가 삭제되었습니다.')
+      return true
+    } else {
+      throw new Error(response.data.message || 'Scope 3 데이터 삭제에 실패했습니다.')
+    }
+  } catch (error: any) {
+    dismissLoading()
+    console.error('Scope 3 배출량 삭제 오류:', error)
+    showError(
+      error.response?.data?.message || 'Scope 3 배출량 삭제 중 오류가 발생했습니다.'
+    )
+    return false
+  }
+}
+
+/**
+ * 특정 카테고리의 연도/월별 배출량 데이터 조회
+ * 카테고리 선택 시 해당 카테고리의 데이터만 필터링하여 조회
+ *
+ * @param year 보고년도
+ * @param month 보고월
+ * @param categoryNumber 카테고리 번호 (1~15)
+ * @returns Promise<Scope3EmissionResponse[]> 특정 카테고리의 배출량 데이터
+ */
+export const fetchScope3EmissionsByCategory = async (
+  year: number,
+  month: number,
+  categoryNumber: number
+): Promise<Scope3EmissionResponse[]> => {
+  try {
+    const response = await api.get<ApiResponse<Scope3EmissionResponse[]>>(
+      `/api/v1/scope3/emissions/year/${year}/month/${month}/category/${categoryNumber}`
+    )
+
+    if (response.data.success && response.data.data) {
+      return response.data.data
+    } else {
+      throw new Error(response.data.message || '카테고리별 배출량 조회에 실패했습니다.')
+    }
+  } catch (error: any) {
+    console.error('카테고리별 배출량 조회 오류:', error)
+    showError(
+      error.response?.data?.message || '카테고리별 배출량 조회 중 오류가 발생했습니다.'
+    )
+    return []
+  }
 }
