@@ -1,7 +1,7 @@
-import React, { useState, useEffect, useRef } from 'react'
+import React, {useState, useEffect, useRef} from 'react'
 import Papa from 'papaparse'
-import { Card, CardContent } from '@/components/ui/card'
-import type { SelectorState } from '@/lib/types'
+import {Card, CardContent} from '@/components/ui/card'
+import type {SelectorState} from '@/lib/types'
 export interface CO2Data {
   category: string
   separate: string
@@ -35,7 +35,7 @@ export function ExcelCascadingSelector({
         const response = await fetch('/co2.csv')
         const csvText = await response.text()
 
-        const results = Papa.parse(csvText, { header: true })
+        const results = Papa.parse(csvText, {header: true})
         const parsed = (results.data as any[])
           .filter(row => row['대분류'] && row['구분'] && row['원료/에너지'])
           .map(row => ({
@@ -60,46 +60,77 @@ export function ExcelCascadingSelector({
   const unique = (arr: string[]) => [...new Set(arr.filter(Boolean))]
 
   const categoryList = unique(data.map(d => d.category))
-  const separateList = unique(data.filter(d => d.category === state.category).map(d => d.separate))
+  const separateList = unique(
+    data.filter(d => d.category === state.category).map(d => d.separate)
+  )
   const rawMaterialList = unique(
-    data.filter(d => d.category === state.category && d.separate === state.separate).map(d => d.RawMaterial)
+    data
+      .filter(d => d.category === state.category && d.separate === state.separate)
+      .map(d => d.RawMaterial)
   )
 
- useEffect(() => {
-  // selectedItem은 state.category, state.separate, state.rawMaterial 변화에 따라 변함
-  // 따라서 useEffect 의 의존성에 selectedItem이 아닌 해당 state들만 넣는 게 낫다.
+  useEffect(() => {
+    // selectedItem은 state.category, state.separate, state.rawMaterial 변화에 따라 변함
+    // 따라서 useEffect 의 의존성에 selectedItem이 아닌 해당 state들만 넣는 게 낫다.
 
-  const selected =
-    data.find(
-      d =>
-        d.category === state.category &&
-        d.separate === state.separate &&
-        d.RawMaterial === state.rawMaterial
-    ) || null
+    const selected =
+      data.find(
+        d =>
+          d.category === state.category &&
+          d.separate === state.separate &&
+          d.RawMaterial === state.rawMaterial
+      ) || null
 
-  setSelectedItem(selected)
+    setSelectedItem(selected)
 
-  const quantity = parseFloat(state.quantity)
+    // 선택된 아이템이 있을 때만 unit과 kgCO2eq 업데이트 (변경된 경우에만)
+    if (
+      selected &&
+      (state.unit !== selected.unit || state.kgCO2eq !== selected.kgCO2eq.toString())
+    ) {
+      onChangeState({
+        ...state,
+        unit: selected.unit,
+        kgCO2eq: selected.kgCO2eq.toString()
+      })
+    } else if (!selected && (state.unit !== '' || state.kgCO2eq !== '')) {
+      // 선택된 아이템이 없으면 빈 값으로 초기화 (변경된 경우에만)
+      onChangeState({
+        ...state,
+        unit: '',
+        kgCO2eq: ''
+      })
+    }
 
-  // 이전 selectedItem과 비교해 실제로 변경된 경우에만 onChangeTotal 호출
-  if (
-    selected &&
-    prevSelectedItemRef.current !== selected &&
-    !isNaN(quantity) &&
-    quantity > 0
-  ) {
-    const emission = quantity * selected.kgCO2eq
-    onChangeTotal(id, emission)
-    prevSelectedItemRef.current = selected // 이 위치로 이동 (중복 호출 방지)
-  } else if (
-    (!selected || quantity <= 0 || isNaN(quantity)) &&
-    prevSelectedItemRef.current !== selected
-  ) {
-    onChangeTotal(id, 0)
-    prevSelectedItemRef.current = selected
-  }
-}, [state.category, state.separate, state.rawMaterial, state.quantity, data, id, onChangeTotal])
+    const quantity = parseFloat(state.quantity)
 
+    // 이전 selectedItem과 비교해 실제로 변경된 경우에만 onChangeTotal 호출
+    if (
+      selected &&
+      prevSelectedItemRef.current !== selected &&
+      !isNaN(quantity) &&
+      quantity > 0
+    ) {
+      const emission = quantity * selected.kgCO2eq
+      onChangeTotal(id, emission)
+      prevSelectedItemRef.current = selected // 이 위치로 이동 (중복 호출 방지)
+    } else if (
+      (!selected || quantity <= 0 || isNaN(quantity)) &&
+      prevSelectedItemRef.current !== selected
+    ) {
+      onChangeTotal(id, 0)
+      prevSelectedItemRef.current = selected
+    }
+  }, [
+    state.category,
+    state.separate,
+    state.rawMaterial,
+    state.quantity,
+    data,
+    id,
+    onChangeTotal,
+    onChangeState
+  ])
 
   const handleSelect = (value: string, type: 'category' | 'separate' | 'raw') => {
     if (type === 'category') {
@@ -280,10 +311,13 @@ export function ExcelCascadingSelector({
               selectedItem &&
               !isNaN(parseFloat(state.quantity)) &&
               parseFloat(state.quantity) > 0
-                ? (parseFloat(state.quantity) * selectedItem.kgCO2eq).toLocaleString(undefined, {
-                    maximumFractionDigits: 3,
-                    minimumFractionDigits: 3
-                  })
+                ? (parseFloat(state.quantity) * selectedItem.kgCO2eq).toLocaleString(
+                    undefined,
+                    {
+                      maximumFractionDigits: 3,
+                      minimumFractionDigits: 3
+                    }
+                  )
                 : '0.000'}
             </div>
             <div className="text-xs text-customG-500">kgCO₂ equivalent</div>
