@@ -9,7 +9,7 @@ import {
   PartnerCompanyResponseRaw,
   SearchCorpParams,
   mapPartnerCompanies
-} from '@/types/IFRS/partnerCompany'
+} from '@/types/partnerCompanyType'
 
 /**
  * 파트너사 목록을 조회합니다. (페이지네이션 지원)

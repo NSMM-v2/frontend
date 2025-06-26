@@ -14,7 +14,7 @@ import {
   AlertDialogHeader,
   AlertDialogTitle
 } from '@/components/ui/alert-dialog'
-import {PartnerCompany} from '@/types/IFRS/partnerCompany'
+import {PartnerCompany} from '@/types/partnerCompanyType'
 
 interface PartnerDeleteDialogProps {
   isOpen: boolean
