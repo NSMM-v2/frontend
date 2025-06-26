@@ -1,35 +1,3 @@
-/**
- * CSDDD 자가진단 폼 컴포넌트 - 공급망 실사 자가진단 시스템
- *
- * 기업의 지속가능성 실사 지침(CSDDD) 기준에 따른 자가진단을 수행하는 컴포넌트
- * 5개 주요 카테고리(인권/노동, 산업안전/보건, 환경경영, 공급망/조달, 윤리경영/정보보호)에
- * 걸쳐 총 26개 질문을 통해 ESG 리스크를 평가하고 등급을 산출
- *
- * 주요 기능:
- * - 카테고리별 질문 응답 및 실시간 점수 계산
- * - 중대위반 항목 자동 감지 및 등급 조정
- * - 결과 요약 및 개선 권장사항 제시
- * - PDF 보고서 다운로드 기능 (별도 컴포넌트)
- *
- * 사용된 기술:
- * - Next.js 14 App Router
- * - React 18 상태 관리
- * - Tailwind CSS (스타일링)
- * - Lucide React (아이콘)
- * - Shadcn/ui 컴포넌트 시스템
- *
- * @author ESG Project Team
- * @version 1.0
- * @since 2024
- * @lastModified 2024-12-21
- */
-
-// ============================================================================
-// 외부 서비스 함수 임포트 (예: 제출 API)
-// ============================================================================
-// ============================================================================
-// 외부 서비스 함수 임포트 (예: 제출 API)
-// ============================================================================
 'use client'
 
 import {
@@ -47,8 +15,6 @@ import authService from '@/services/authService'
 // ============================================================================
 
 import {useEffect, useState} from 'react' // React 상태 관리 및 생명주기 훅
-import {showSuccess, showError} from '@/util/toast'
-import {Button} from '@/components/ui/button' // 커스텀 버튼 컴포넌트
 import {Card} from '@/components/ui/card' // 카드 레이아웃 컴포넌트
 import Link from 'next/link' // Next.js 내부 링크 컴포넌트
 
@@ -59,8 +25,6 @@ import Link from 'next/link' // Next.js 내부 링크 컴포넌트
 import {
   Check, // 체크 아이콘 - 긍정적 답변 표시
   AlertCircle, // 경고 원형 아이콘 - 부정적 답변 표시
-  Info, // 정보 아이콘 - 중대위반 정보 표시
-  BarChart3, // 막대그래프 아이콘 - 결과 보기 버튼
   AlertTriangle, // 삼각형 경고 아이콘 - 중대위반 항목 강조
   Shield, // 방패 아이콘 - 보안/안전 관련 표시
   Home, // 홈 아이콘 - 브레드크럼 홈 링크
@@ -686,17 +650,20 @@ export default function SelfAssessmentForm() {
       const requestList: SelfAssessmentRequest[] =
         answerConverter.fromStringToEnumCompatible(answers, questions)
 
-      console.log('📌 userInfo:', userInfo)
-      console.log('📌 headquartersId:', headquartersId)
-      console.log('📌 partnerId:', partnerId)
-      console.log('📦 requestList (제출 전):', requestList)
+      console.log('userInfo:', userInfo)
+      console.log('headquartersId:', headquartersId)
+      console.log('partnerId:', partnerId)
+      console.log('requestList (제출 전):', requestList)
 
-      await submitSelfAssessmentToBackend(requestList)
+      await submitSelfAssessmentToBackend({
+        companyName: userInfo.companyName ?? '미입력 회사명',
+        answers: requestList
+      })
 
-      console.log('✅ 자가진단 제출 완료')
+      console.log('자가진단 제출 완료')
       // 성공 처리 로직 추가
     } catch (error) {
-      console.error('❌ 자가진단 제출 실패:', error)
+      console.error('자가진단 제출 실패:', error)
       // 에러 처리 로직 추가
       throw error
     }
@@ -917,7 +884,7 @@ export default function SelfAssessmentForm() {
         answer: 'no',
         category: q.category,
         weight: q.weight,
-        critical: true, // 👈 반드시 true
+        critical: true,
         criticalGrade: q.criticalViolation?.grade // "B/C", "D" 등
       }))
   }

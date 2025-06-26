@@ -1,27 +1,3 @@
-/**
- * CSDDD (Corporate Sustainability Due Diligence Directive) 자가진단 시스템 메인 페이지
- *
- * 유럽연합 공급망 실사 지침에 따른 기업의 ESG 리스크 평가 및 준수율 분석을 위한 종합 평가 시스템
- *
- * 주요 기능:
- * - 40개 핵심 항목 기반 자가진단 시스템
- * - 5개 영역별 세부 평가 (인권·노동, 산업안전·보건, 환경경영, 공급망·조달, 윤리경영·정보보호)
- * - 실시간 위험도 분석 및 등급 산정
- * - 가중치 기반 정밀 평가 및 개선방안 제시
- * - scope3Form.tsx와 동일한 레이아웃 구조 적용
- *
- * 사용된 기술:
- * - Next.js 14 App Router
- * - Framer Motion (애니메이션)
- * - Tailwind CSS (스타일링)
- * - Lucide React (아이콘)
- * - Shadcn/ui 컴포넌트 시스템
- *
- * @author ESG Project Team
- * @version 2.0
- * @since 2024
- * @lastModified 2024-12-20
- */
 'use client'
 
 // ============================================================================
@@ -30,6 +6,7 @@
 
 import Link from 'next/link' // Next.js 라우팅을 위한 Link 컴포넌트
 import {useState, useEffect} from 'react' // React 상태 관리 및 생명주기 훅
+import {fetchPartnerResults, fetchPartnerResult} from '@/services/csdddService'
 import {motion} from 'framer-motion' // 애니메이션 효과를 위한 Framer Motion
 
 // ============================================================================
@@ -38,7 +15,6 @@ import {motion} from 'framer-motion' // 애니메이션 효과를 위한 Framer 
 
 import {
   Home, // 홈 아이콘 - 브레드크럼 네비게이션
-  BookOpen, // 책 아이콘 - 가이드라인 버튼
   ArrowLeft, // 왼쪽 화살표 - 뒤로가기 버튼
   Check, // 체크 아이콘 - 평가 특징 섹션
   Database, // 데이터베이스 아이콘 - 사전 준비 단계
@@ -200,7 +176,7 @@ function renderAssessmentStat(stat: (typeof ASSESSMENT_STATS)[number], index: nu
   return (
     <Card
       key={index}
-      className="justify-center h-24 bg-gradient-to-br from-blue-50 to-white border-blue-100">
+      className="justify-center h-24 border-blue-100 bg-gradient-to-br from-blue-50 to-white">
       <CardContent className="flex items-center p-4">
         {/* 아이콘 컨테이너 - 원형 배경 */}
         <div className={`p-2 mr-3 rounded-full ${stat.color}`}>
@@ -275,7 +251,7 @@ function DiagnosisProcedure() {
             {' '}
             {/* 수평 배치 */}
             {/* 단계 아이콘 - 원형 배경 */}
-            <div className="flex justify-center items-center w-12 h-12 text-sm font-bold text-white bg-blue-500 rounded-2xl">
+            <div className="flex items-center justify-center w-12 h-12 text-sm font-bold text-white bg-blue-500 rounded-2xl">
               <Icon className="w-5 h-5" />
             </div>
             {/* 단계 설명 텍스트 */}
@@ -313,9 +289,9 @@ function ComplianceAreaCard({
   const Icon = area.icon // 동적 아이콘 컴포넌트 할당
 
   return (
-    <div className="p-8 bg-white rounded-2xl border border-gray-100 shadow-sm transition-all duration-500 hover:shadow-lg hover:transform hover:scale-105">
+    <div className="p-8 transition-all duration-500 bg-white border border-gray-100 shadow-sm rounded-2xl hover:shadow-lg hover:transform hover:scale-105">
       {/* 카드 헤더 - 아이콘과 항목 수 */}
-      <div className="flex justify-between items-center mb-6">
+      <div className="flex items-center justify-between mb-6">
         {/* 영역 아이콘 컨테이너 */}
         <div
           className={`w-14 h-14 rounded-2xl flex items-center justify-center ${area.bgColor}`}>
@@ -397,6 +373,11 @@ export function CSDDDLayout() {
    */
   const [isVisible, setIsVisible] = useState(false)
 
+  // 협력사 자가진단 결과 조회 관련 상태
+  const [partnerList, setPartnerList] = useState<{id: number; name: string}[]>([])
+  const [selectedPartnerId, setSelectedPartnerId] = useState<number | ''>('')
+  const [partnerResult, setPartnerResult] = useState<any>(null)
+
   // ========================================================================
   // 생명주기 관리 (Lifecycle Management)
   // ========================================================================
@@ -406,15 +387,107 @@ export function CSDDDLayout() {
    * 페이지 로드 후 부드러운 진입 효과 제공
    */
   useEffect(() => {
-    setIsVisible(true)
+    const loadPartnerList = async () => {
+      try {
+        const res = await fetchPartnerResults()
+        console.log('✅ 백엔드 응답:', JSON.stringify(res.data, null, 2))
+
+        // 데이터 유효성 검사
+        if (!res.data || !Array.isArray(res.data)) {
+          console.warn('⚠️ 잘못된 데이터 형식:', res.data)
+          setPartnerList([])
+          return
+        }
+
+        // 중복 제거 및 데이터 정규화
+        const uniqueMap = new Map<number, string>()
+
+        res.data.forEach((item: any, index: number) => {
+          // 각 아이템의 상세 정보 로깅
+          console.log(`📋 Item ${index}:`, {
+            memberId: item.memberId,
+            companyName: item.companyName,
+            // 다른 가능한 회사명 필드들 확인
+            company_name: item.company_name,
+            name: item.name,
+            corporationName: item.corporationName,
+            businessName: item.businessName,
+            partnerName: item.partnerName,
+            // 전체 필드 확인
+            allKeys: Object.keys(item),
+            // 전체 객체 출력
+            fullObject: item
+          })
+
+          // 필수 필드 검증
+          if (!item?.memberId || typeof item.memberId !== 'number') {
+            console.warn('⚠️ 잘못된 memberId:', item)
+            return
+          }
+
+          const id = item.memberId
+
+          // 여러 가능한 회사명 필드 시도
+          const possibleNames = [
+            item.companyName,
+            item.company_name,
+            item.name,
+            item.corporationName,
+            item.businessName,
+            item.partnerName
+          ].filter(name => name && typeof name === 'string' && name.trim() !== '')
+
+          const companyName = possibleNames[0]?.trim()
+
+          console.log(`🔍 ID ${id} 회사명 후보들:`, {
+            possibleNames,
+            selectedName: companyName,
+            isValid: !!companyName
+          })
+
+          const name = companyName || `ID ${id}`
+
+          // 중복 체크 - 더 좋은 이름이 있으면 업데이트
+          if (
+            !uniqueMap.has(id) ||
+            (companyName && uniqueMap.get(id)?.startsWith('ID '))
+          ) {
+            uniqueMap.set(id, name)
+          }
+        })
+
+        const uniqueList = Array.from(uniqueMap.entries()).map(([id, name]) => ({
+          id,
+          name
+        }))
+
+        console.log('🎯 최종 목록:', uniqueList)
+        setPartnerList(uniqueList)
+      } catch (err) {
+        console.error('❌ 협력사 목록 로딩 실패:', err)
+        setPartnerList([])
+      }
+    }
+
+    loadPartnerList()
   }, [])
+
+  const handleFetchPartnerResult = async () => {
+    if (!selectedPartnerId) return
+    try {
+      const res = await fetchPartnerResult(selectedPartnerId)
+      setPartnerResult(res.data)
+    } catch (err) {
+      setPartnerResult(null)
+    }
+  }
 
   // ========================================================================
   // 렌더링 (Rendering)
   // ========================================================================
 
   return (
-    <div className="flex flex-col p-4 w-full h-full">
+    <div className="flex flex-col w-full h-full p-4">
       {' '}
       {/* scope3과 동일한 컨테이너 구조 */}
       {/* ========================================================================
@@ -426,7 +499,7 @@ export function CSDDDLayout() {
         <Breadcrumb>
           <BreadcrumbList>
             <BreadcrumbItem>
-              <Home className="mr-1 w-4 h-4" /> {/* 홈 아이콘 */}
+              <Home className="w-4 h-4 mr-1" /> {/* 홈 아이콘 */}
               <BreadcrumbLink href="/dashboard">대시보드</BreadcrumbLink>
             </BreadcrumbItem>
             <BreadcrumbSeparator /> {/* 구분자 (>) */}
@@ -443,10 +516,10 @@ export function CSDDDLayout() {
           - 페이지 제목 및 설명 (PageHeader 컴포넌트)
           - 호버 효과 포함 (배경색 변경)
           ======================================================================== */}
-      <div className="flex flex-row mb-6 w-full h-24">
+      <div className="flex flex-row w-full h-24 mb-6">
         <Link
           href="/dashboard" // 대시보드로 이동
-          className="flex flex-row items-center p-4 space-x-4 rounded-md transition cursor-pointer hover:bg-gray-200">
+          className="flex flex-row items-center p-4 space-x-4 transition rounded-md cursor-pointer hover:bg-gray-200">
           {/* 뒤로가기 화살표 아이콘 */}
           <ArrowLeft className="w-6 h-6 text-gray-500 group-hover:text-blue-600" />
 
@@ -473,6 +546,42 @@ export function CSDDDLayout() {
         className="space-y-6">
         {' '}
         {/* 모든 자식 요소 간 24px 간격 */}
+        {/* 협력사 자가진단 결과 조회 섹션 */}
+        <div className="p-6 space-y-4 bg-white border border-gray-200 shadow-sm rounded-xl">
+          <h3 className="text-2xl font-bold text-gray-900">협력사 자가진단 결과 조회</h3>
+          <div className="flex flex-col gap-4 sm:flex-row sm:items-center">
+            <select
+              className="w-full px-4 py-2 border rounded-lg sm:w-1/2"
+              value={selectedPartnerId}
+              onChange={e => setSelectedPartnerId(Number(e.target.value))}>
+              <option value="">협력사를 선택하세요</option>
+              {partnerList.map(partner => (
+                <option key={partner.id} value={partner.id}>
+                  {partner.name}
+                </option>
+              ))}
+            </select>
+            <button
+              onClick={handleFetchPartnerResult}
+              className="px-6 py-2 text-white bg-blue-500 rounded-lg hover:bg-blue-600">
+              결과 조회
+            </button>
+          </div>
+
+          {partnerResult && (
+            <div className="p-4 mt-4 border border-gray-200 rounded-lg bg-gray-50">
+              <p className="text-lg font-semibold text-gray-800">
+                선택한 협력사 등급: {partnerResult.grade}
+              </p>
+              <p className="text-sm text-gray-600">
+                점수: {partnerResult.actualScore} / {partnerResult.totalPossibleScore}
+              </p>
+              <p className="text-sm text-gray-600">
+                중대 위반 수: {partnerResult.criticalViolationCount}
+              </p>
+            </div>
+          )}
+        </div>
         {/* ====================================================================
             통계 개요 섹션 (Statistics Overview Section)
             - 4개 주요 통계 카드 (평가항목, 소요시간, 완료율, 인증등급)
@@ -489,10 +598,10 @@ export function CSDDDLayout() {
             - 좌측: 평가 특징 설명, 우측: 진단 절차 안내
             - 하단: 3개 액션 버튼 (시작, 결과보기, 가이드라인)
             ==================================================================== */}
-        <div className="bg-white rounded-2xl border border-gray-100 shadow-sm">
+        <div className="bg-white border border-gray-100 shadow-sm rounded-2xl">
           {/* 카드 헤더 - 블루 배경 영역 */}
           <div className="px-8 py-12 bg-blue-400 rounded-t-2xl">
-            <div className="flex justify-between items-center">
+            <div className="flex items-center justify-between">
               <div>
                 {/* 메인 제목 */}
                 <h2 className="mb-4 text-4xl font-bold text-white">
@@ -506,7 +615,7 @@ export function CSDDDLayout() {
 
               {/* 우측 장식 아이콘 (데스크탑에서만 표시) */}
               <div className="hidden md:block">
-                <div className="flex justify-center items-center w-24 h-24 bg-white bg-opacity-20 rounded-full">
+                <div className="flex items-center justify-center w-24 h-24 bg-white rounded-full bg-opacity-20">
                   <BarChart3 className="w-12 h-12 text-blue-500" />
                 </div>
               </div>
@@ -519,7 +628,7 @@ export function CSDDDLayout() {
             <div className="grid grid-cols-1 gap-8 lg:grid-cols-2">
               {/* 좌측 컬럼: 평가 특징 */}
               <div>
-                <h3 className="flex gap-3 items-center mb-6 text-2xl font-bold text-gray-900">
+                <h3 className="flex items-center gap-3 mb-6 text-2xl font-bold text-gray-900">
                   <Check className="w-6 h-6 text-green-600" /> {/* 체크 아이콘 */}
                   평가 특징
                 </h3>
@@ -560,7 +669,7 @@ export function CSDDDLayout() {
 
               {/* 우측 컬럼: 진단 절차 */}
               <div>
-                <h3 className="flex gap-3 items-center mb-6 text-2xl font-bold text-gray-900">
+                <h3 className="flex items-center gap-3 mb-6 text-2xl font-bold text-gray-900">
                   <Play className="w-6 h-6 text-blue-600" /> {/* 재생 아이콘 */}
                   진단 절차
                 </h3>
@@ -575,24 +684,24 @@ export function CSDDDLayout() {
               {/* 자가진단 시작 버튼 (Primary) */}
               <Link
                 href="/CSDDD/self-assessment" // 자가진단 페이지로 이동
-                className="flex justify-center items-center px-8 py-4 text-lg font-semibold text-white bg-blue-500 rounded-xl shadow-lg transition-all duration-300 transform hover:bg-blue-600 hover:scale-105 hover:shadow-xl">
-                <Play className="mr-3 w-5 h-5" />
+                className="flex items-center justify-center px-8 py-4 text-lg font-semibold text-white transition-all duration-300 transform bg-blue-500 shadow-lg rounded-xl hover:bg-blue-600 hover:scale-105 hover:shadow-xl">
+                <Play className="w-5 h-5 mr-3" />
                 자가진단 시작하기
               </Link>
 
               {/* 결과 보기 버튼 (Secondary) */}
               <Link
                 href="/CSDDD/evaluation" // 평가 결과 페이지로 이동
-                className="flex justify-center items-center px-8 py-4 text-lg font-semibold text-white bg-green-500 rounded-xl shadow-lg transition-all duration-300 transform hover:bg-green-600 hover:scale-105 hover:shadow-xl">
-                <BarChart3 className="mr-3 w-5 h-5" />
+                className="flex items-center justify-center px-8 py-4 text-lg font-semibold text-white transition-all duration-300 transform bg-green-500 shadow-lg rounded-xl hover:bg-green-600 hover:scale-105 hover:shadow-xl">
+                <BarChart3 className="w-5 h-5 mr-3" />
                 결과 보기
               </Link>
 
               {/* 가이드라인 다운로드 버튼 (Ghost) */}
               <button
-                className="flex justify-center items-center px-8 py-4 text-lg font-semibold text-gray-700 bg-gray-100 rounded-xl transition-all duration-300 hover:bg-gray-200"
+                className="flex items-center justify-center px-8 py-4 text-lg font-semibold text-gray-700 transition-all duration-300 bg-gray-100 rounded-xl hover:bg-gray-200"
                 type="button">
-                <Download className="mr-3 w-5 h-5" />
+                <Download className="w-5 h-5 mr-3" />
                 가이드라인
               </button>
             </div>
@@ -611,10 +720,10 @@ export function CSDDDLayout() {
             - 블루 배경의 강조 영역
             - 경고 아이콘과 함께 4개 주요 안내사항 표시
             ==================================================================== */}
-        <div className="p-8 bg-blue-50 rounded-2xl border border-blue-100">
+        <div className="p-8 border border-blue-100 bg-blue-50 rounded-2xl">
           <div className="flex items-start space-x-6">
             {/* 경고 아이콘 */}
-            <div className="flex justify-center items-center w-16 h-16 bg-blue-500 rounded-2xl">
+            <div className="flex items-center justify-center w-16 h-16 bg-blue-500 rounded-2xl">
               <AlertTriangle className="w-8 h-8 text-white" />
             </div>
 
@@ -632,9 +741,9 @@ export function CSDDDLayout() {
                 ].map((notice, index) => (
                   <div
                     key={index}
-                    className="flex items-start p-3 space-x-3 bg-white rounded-lg border border-blue-200">
+                    className="flex items-start p-3 space-x-3 bg-white border border-blue-200 rounded-lg">
                     {/* 불릿 포인트 */}
-                    <div className="flex-shrink-0 mt-2 w-2 h-2 bg-blue-500 rounded-full" />
+                    <div className="flex-shrink-0 w-2 h-2 mt-2 bg-blue-500 rounded-full" />
                     <p className="leading-relaxed">{notice}</p>
                   </div>
                 ))}
