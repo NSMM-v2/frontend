@@ -59,8 +59,12 @@ export default function NavigationBar() {
     <div className="fixed top-0 left-0 z-50 p-4 w-full h-20 bg-white shadow-sm">
       <div className="flex flex-row justify-between items-center w-full h-full">
         <Link href="/" className="flex flex-row gap-2 items-center w-full">
-          <EarthLock className="w-10 h-10 text-blue-400" />
-          <span className="text-2xl font-bold text-blue-400">NSMM</span>
+          {/* <EarthLock className="w-10 h-10 text-blue-400" />
+          <span className="text-2xl font-bold text-blue-400">NSMM</span> */}
+          <div className="flex justify-center items-center w-8 h-8 bg-blue-500 rounded-lg">
+            <span className="text-sm font-bold text-white">N</span>
+          </div>
+          <span className="text-xl font-bold text-gray-900">NSMM</span>
         </Link>
 
         <div className="flex flex-row flex-shrink-0 gap-4 items-center">
@@ -91,20 +95,7 @@ export default function NavigationBar() {
                 <span className="hidden sm:inline">로그아웃</span>
               </button>
             </>
-          ) : (
-            <div className="flex flex-row flex-shrink-0 gap-2">
-              <Link
-                href="/login"
-                className="px-4 py-2 text-sm font-medium text-blue-600 whitespace-nowrap bg-blue-50 rounded-lg transition-colors duration-200 hover:bg-blue-100">
-                로그인
-              </Link>
-              <Link
-                href="/signup"
-                className="px-4 py-2 text-sm font-medium text-white whitespace-nowrap bg-blue-600 rounded-lg transition-colors duration-200 hover:bg-blue-700">
-                회원가입
-              </Link>
-            </div>
-          )}
+          ) : null}
         </div>
       </div>
     </div>

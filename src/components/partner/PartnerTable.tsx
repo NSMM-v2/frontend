@@ -18,7 +18,7 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger
 } from '@/components/ui/dropdown-menu'
-import {PartnerCompany} from '@/types/IFRS/partnerCompany'
+import {PartnerCompany} from '@/types/partnerCompanyType'
 import {cn} from '@/lib/utils'
 
 interface PartnerTableProps {

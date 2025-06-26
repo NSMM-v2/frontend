@@ -1,7 +1,7 @@
 'use client'
 
 import {useState, useEffect} from 'react'
-import {Home, FileText, Users, ChevronRight} from 'lucide-react'
+import {Home, FileText, Users, ChevronRight, Shield} from 'lucide-react'
 import Link from 'next/link'
 import {usePathname} from 'next/navigation'
 import {motion} from 'framer-motion'
@@ -70,7 +70,6 @@ export default function SideBar() {
         setOpenParent(true)
         setOpenScopeChild(true)
       } else if (
-        pathname.startsWith('/CSDDD') ||
         pathname.startsWith('/financialRisk') ||
         pathname.startsWith('/managePartner')
       ) {
@@ -87,9 +86,8 @@ export default function SideBar() {
     pathname.startsWith('/scope2') ||
     pathname.startsWith('/scope3')
   const isPartnerActive =
-    pathname.startsWith('/financialRisk') ||
-    pathname.startsWith('/managePartner') ||
-    pathname.startsWith('/CSDDD')
+    pathname.startsWith('/financialRisk') || pathname.startsWith('/managePartner')
+  const isCSDDDActive = pathname.startsWith('/CSDDD')
 
   /**
    * 사이드바에 마우스가 들어왔을 때 실행되는 이벤트 핸들러
@@ -169,11 +167,11 @@ export default function SideBar() {
             }
           : undefined
       }>
-      <div className="flex items-center gap-4">
+      <div className="flex gap-4 items-center">
         {/* 메뉴 아이콘 */}
         <div
           className={cn(
-            'flex items-center justify-center h-7 w-7',
+            'flex justify-center items-center w-7 h-7',
             isActive ? 'text-blue-500' : 'text-gray-500'
           )}>
           <Icon size={20} />
@@ -206,7 +204,7 @@ export default function SideBar() {
 
       {/* 활성화된 메뉴 표시를 위한 왼쪽 세로 바 */}
       {isActive && (
-        <div className="absolute left-0 w-1 h-6 transform -translate-y-1/2 bg-blue-500 rounded-r-full top-1/2" />
+        <div className="absolute left-0 top-1/2 w-1 h-6 bg-blue-500 rounded-r-full transform -translate-y-1/2" />
       )}
     </Link>
   )
@@ -220,9 +218,9 @@ export default function SideBar() {
     <Link
       href={href}
       className={cn(
-        'flex items-center py-2 px-4 rounded-md group transition-colors duration-200 ml-11',
+        'flex items-center px-4 py-2 ml-11 rounded-md transition-colors duration-200 group',
         isActive
-          ? 'text-blue-500 bg-blue-200 font-medium'
+          ? 'font-medium text-blue-500 bg-blue-200'
           : 'text-gray-500 hover:text-blue-500 hover:bg-blue-200'
       )}>
       <span className="relative text-sm">
@@ -240,7 +238,7 @@ export default function SideBar() {
       onMouseEnter={handleMouseEnter}
       onMouseLeave={handleMouseLeave}
       className={cn(
-        'fixed left-0 z-40 w-full h-full bg-white shadow-sm top-20 border-r border-gray-200 transition-all duration-300',
+        'fixed left-0 top-20 z-40 w-full h-full bg-white border-r border-gray-200 shadow-sm transition-all duration-300',
         hovered ? 'w-60' : 'w-[76px]'
       )}>
       <div className="flex flex-col h-full">
@@ -254,78 +252,80 @@ export default function SideBar() {
             isActive={isDashboardActive}
           />
 
-          {/* ESG 관리 섹션 */}
+          {/* 협력사 관리 메뉴 */}
           <div className="my-2">
-            {/* Scope 메뉴 - 하위메뉴 포함 */}
             <MenuItem
               href="#"
-              icon={FileText}
-              text="SCOPE"
-              isActive={isScopeActive}
+              icon={Users}
+              text="협력사"
+              isActive={isPartnerActive}
               hasSubmenu={true}
-              isSubmenuOpen={openParent}
-              onClick={() => setOpenParent(!openParent)}
+              isSubmenuOpen={openPartnerChild}
+              onClick={() => setOpenPartnerChild(!openPartnerChild)}
             />
-            {/* Scope 하위 메뉴 컨테이너 수정 */}
+            {/* 협력사 하위 메뉴 */}
             <motion.div
               initial={false}
-              animate={openParent && hovered ? 'visible' : 'hidden'}
+              animate={openPartnerChild && hovered ? 'visible' : 'hidden'}
               variants={menuVariants}
               className="overflow-hidden">
               <div className="mt-1 space-y-1 whitespace-nowrap">
                 <SubMenuItem
-                  href="/scope1"
-                  text="Scope 1"
-                  isActive={pathname === '/scope1'}
+                  href="/managePartner"
+                  text="협력사 추가"
+                  isActive={pathname === '/managePartner'}
                 />
                 <SubMenuItem
-                  href="/scope2"
-                  text="Scope 2"
-                  isActive={pathname === '/scope2'}
-                />
-                <SubMenuItem
-                  href="/scope3"
-                  text="Scope 3"
-                  isActive={pathname === '/scope3'}
+                  href="/financialRisk"
+                  text="재무제표 리스크 관리"
+                  isActive={pathname === '/financialRisk'}
                 />
               </div>
             </motion.div>
           </div>
 
-          {/* 협력사 관리 메뉴 */}
+          {/* Scope 관리 섹션 */}
           <MenuItem
             href="#"
-            icon={Users}
-            text="공급망 관리"
-            isActive={isPartnerActive}
+            icon={FileText}
+            text="SCOPE"
+            isActive={isScopeActive}
             hasSubmenu={true}
-            isSubmenuOpen={openPartnerChild}
-            onClick={() => setOpenPartnerChild(!openPartnerChild)}
+            isSubmenuOpen={openParent}
+            onClick={() => setOpenParent(!openParent)}
           />
-          {/* 협력사 관리 하위 메뉴도 같은 방식으로 수정 */}
+          {/* Scope 하위 메뉴 컨테이너 */}
           <motion.div
             initial={false}
-            animate={openPartnerChild && hovered ? 'visible' : 'hidden'}
+            animate={openParent && hovered ? 'visible' : 'hidden'}
             variants={menuVariants}
             className="overflow-hidden">
             <div className="mt-1 space-y-1 whitespace-nowrap">
               <SubMenuItem
-                href="/CSDDD"
-                text="공급망 실사"
-                isActive={pathname === '/CSDDD'}
+                href="/scope1"
+                text="Scope 1"
+                isActive={pathname === '/scope1'}
               />
               <SubMenuItem
-                href="/managePartner"
-                text="파트너사 관리"
-                isActive={pathname === '/managePartner'}
+                href="/scope2"
+                text="Scope 2"
+                isActive={pathname === '/scope2'}
               />
               <SubMenuItem
-                href="/financialRisk"
-                text="재무제표 리스크 관리"
-                isActive={pathname === '/financialRisk'}
+                href="/scope3"
+                text="Scope 3"
+                isActive={pathname === '/scope3'}
               />
             </div>
           </motion.div>
+
+          {/* 공급망 실사 메뉴 - 별도 메뉴로 분리 */}
+          <MenuItem
+            href="/CSDDD"
+            icon={Shield}
+            text="공급망 실사"
+            isActive={isCSDDDActive}
+          />
         </nav>
       </div>
     </aside>

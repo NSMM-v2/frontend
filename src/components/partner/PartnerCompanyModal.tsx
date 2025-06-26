@@ -16,7 +16,7 @@ import {Button} from '@/components/ui/button'
 import {Input} from '@/components/ui/input'
 import {Label} from '@/components/ui/label'
 
-import {DartCorpInfo} from '@/types/IFRS/partnerCompany'
+import {DartCorpInfo} from '@/types/partnerCompanyType'
 
 interface AddPartnerModalProps {
   /** 모달 열림 상태 */

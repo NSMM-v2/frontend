@@ -49,7 +49,7 @@ import {
   fetchUniquePartnerCompanyNames,
   fetchFinancialRiskAssessment,
   fetchPartnerCompanies
-} from '@/services/partnerCompany'
+} from '@/services/partnerCompanyService'
 import {
   Breadcrumb,
   BreadcrumbItem,
@@ -59,7 +59,7 @@ import {
 } from '@/components/ui/breadcrumb'
 import {DirectionButton} from '@/components/layout/direction'
 import {motion} from 'framer-motion'
-import {FinancialRiskAssessment} from '@/types/IFRS/partnerCompany'
+import {FinancialRiskAssessment} from '@/types/partnerCompanyType'
 import {useSearchParams} from 'next/navigation' // 추가
 
 // API 응답 타입 정의
