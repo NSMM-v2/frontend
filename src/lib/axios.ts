@@ -67,12 +67,15 @@ api.interceptors.response.use(
     const status = error.response?.status
     const url = error.config?.url
 
-    // 인증 관련 에러(401/403)는 로그 최소화
-    if (status === 401 || status === 403) {
-      console.log(`인증 필요: ${status} ${url}`)
+    // 클라이언트 에러(4xx)는 간단한 로그만 (토스트에서 처리됨)
+    if (status >= 400 && status < 500) {
+      console.log(`클라이언트 요청 오류: ${status} ${url}`)
+    } else if (status >= 500) {
+      // 서버 오류(5xx)만 상세 로그
+      console.error(`서버 오류: ${status} ${url}`, error.response?.data)
     } else {
-      // 서버 오류나 기타 에러만 상세 로그
-      console.error(`API 응답 실패: ${status} ${url}`, error.response?.data)
+      // 네트워크 오류 등
+      console.log(`요청 실패: ${url}`)
     }
 
     return Promise.reject(error)

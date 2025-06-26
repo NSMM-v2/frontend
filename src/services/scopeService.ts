@@ -1,5 +1,11 @@
 import api from '@/lib/axios'
-import {showError, showSuccess, showLoading, dismissLoading} from '@/util/toast'
+import {
+  showError,
+  showSuccess,
+  showLoading,
+  showWarning,
+  dismissLoading
+} from '@/util/toast'
 import type {
   StationaryCombustion,
   MobileCombustion,
@@ -1012,7 +1018,7 @@ export const fetchScope3CategorySummary = async (
 }
 
 /**
- * Scope3 배출량 데이터 생성
+ * 개선된 Scope3 배출량 데이터 생성 (상세한 에러 처리)
  * 프론트엔드에서 입력된 배출량 데이터를 백엔드에 저장
  *
  * @param data 배출량 생성 요청 데이터
@@ -1040,8 +1046,141 @@ export const createScope3Emission = async (
   } catch (error: any) {
     dismissLoading()
 
-    if (error?.response?.data?.message) {
+    // 400 에러 상세 처리 (유효성 검증 실패)
+    if (error?.response?.status === 400) {
+      const errorMessage =
+        error.response?.data?.message || '입력 데이터가 올바르지 않습니다.'
+
+      // 백엔드 유효성 검증 에러 메시지를 사용자 친화적으로 변환
+      let userFriendlyMessage = errorMessage
+
+      // 복잡한 검증 에러 메시지를 간단하게 변환
+      if (errorMessage.includes('입력 데이터 검증 실패')) {
+        // 백엔드에서 오는 복잡한 메시지를 간단한 경고로 변환
+        if (
+          errorMessage.includes('activityAmount') &&
+          errorMessage.includes('totalEmission')
+        ) {
+          userFriendlyMessage =
+            '⚠️ 입력값이 너무 큽니다\n\n📍 수정 방법:\n• 수량: 최대 12자리, 소수점 3자리까지\n• 결과값이 너무 클 경우 수량을 줄여주세요'
+        } else if (errorMessage.includes('activityAmount')) {
+          userFriendlyMessage =
+            '⚠️ 수량 입력값이 범위를 초과했습니다\n\n📍 수정 방법:\n• 최대 12자리, 소수점 3자리까지 입력 가능\n• 예: 999,999,999,999.999'
+        } else if (errorMessage.includes('totalEmission')) {
+          userFriendlyMessage =
+            '⚠️ 계산 결과가 너무 큽니다\n\n📍 수정 방법:\n• 수량 또는 배출계수를 줄여주세요\n• 계산 결과는 최대 15자리까지 가능'
+        } else if (errorMessage.includes('emissionFactor')) {
+          userFriendlyMessage =
+            '⚠️ 배출계수 입력값이 범위를 초과했습니다\n\n📍 수정 방법:\n• 최대 9자리, 소수점 6자리까지 입력 가능\n• 예: 999,999,999.999999'
+        } else {
+          userFriendlyMessage =
+            '⚠️ 입력값이 허용 범위를 초과했습니다\n\n📍 수정 방법:\n• 숫자 크기를 확인해주세요\n• 소수점 자릿수를 줄여주세요'
+        }
+      } else if (errorMessage.includes('Digits')) {
+        if (errorMessage.includes('activityAmount')) {
+          userFriendlyMessage =
+            '⚠️ 수량 입력 오류\n\n📍 올바른 입력:\n• 최대 12자리, 소수점 3자리까지\n• 예: 999,999,999,999.999'
+        } else if (errorMessage.includes('emissionFactor')) {
+          userFriendlyMessage =
+            '⚠️ 배출계수 입력 오류\n\n📍 올바른 입력:\n• 최대 9자리, 소수점 6자리까지\n• 예: 999,999,999.999999'
+        } else if (errorMessage.includes('totalEmission')) {
+          userFriendlyMessage =
+            '⚠️ 계산 결과 오류\n\n📍 해결 방법:\n• 수량 또는 배출계수를 줄여주세요\n• 계산 결과가 너무 큽니다'
+        } else {
+          userFriendlyMessage =
+            '⚠️ 숫자 입력 오류\n\n📍 확인사항:\n• 숫자 크기가 너무 큽니다\n• 소수점 자릿수를 확인해주세요'
+        }
+      } else if (errorMessage.includes('DecimalMin')) {
+        if (errorMessage.includes('activityAmount')) {
+          userFriendlyMessage =
+            '⚠️ 수량이 너무 작습니다\n\n📍 수정 방법:\n• 0.001 이상의 값을 입력해주세요'
+        } else if (errorMessage.includes('emissionFactor')) {
+          userFriendlyMessage =
+            '⚠️ 배출계수가 너무 작습니다\n\n📍 수정 방법:\n• 0.000001 이상의 값을 입력해주세요'
+        } else if (errorMessage.includes('totalEmission')) {
+          userFriendlyMessage =
+            '⚠️ 계산 결과가 너무 작습니다\n\n📍 확인사항:\n• 수량과 배출계수를 확인해주세요'
+        } else {
+          userFriendlyMessage =
+            '⚠️ 입력값이 너무 작습니다\n\n📍 수정 방법:\n• 0보다 큰 값을 입력해주세요'
+        }
+      } else if (errorMessage.includes('NotNull')) {
+        userFriendlyMessage =
+          '⚠️ 필수 항목 누락\n\n📍 확인사항:\n• 모든 필수 필드를 입력해주세요\n• 빈 값이 있는지 확인해주세요'
+      } else if (errorMessage.includes('NotBlank')) {
+        if (errorMessage.includes('majorCategory')) {
+          userFriendlyMessage =
+            '⚠️ 대분류 입력 필요\n\n📍 입력 위치:\n• 기본 정보 → 대분류 필드'
+        } else if (errorMessage.includes('subcategory')) {
+          userFriendlyMessage =
+            '⚠️ 구분 입력 필요\n\n📍 입력 위치:\n• 기본 정보 → 구분 필드'
+        } else if (errorMessage.includes('rawMaterial')) {
+          userFriendlyMessage =
+            '⚠️ 원료/에너지 입력 필요\n\n📍 입력 위치:\n• 기본 정보 → 원료/에너지 필드'
+        } else if (errorMessage.includes('unit')) {
+          userFriendlyMessage =
+            '⚠️ 단위 입력 필요\n\n📍 입력 위치:\n• 계산 정보 → 단위 필드'
+        } else {
+          userFriendlyMessage =
+            '⚠️ 필수 텍스트 입력 필요\n\n📍 확인사항:\n• 모든 텍스트 필드를 입력해주세요'
+        }
+      } else if (errorMessage.includes('Size')) {
+        if (errorMessage.includes('majorCategory')) {
+          userFriendlyMessage =
+            '⚠️ 대분류 글자 수 초과\n\n📍 수정 방법:\n• 100자 이하로 입력해주세요'
+        } else if (errorMessage.includes('subcategory')) {
+          userFriendlyMessage =
+            '⚠️ 구분 글자 수 초과\n\n📍 수정 방법:\n• 100자 이하로 입력해주세요'
+        } else if (errorMessage.includes('rawMaterial')) {
+          userFriendlyMessage =
+            '⚠️ 원료/에너지 글자 수 초과\n\n📍 수정 방법:\n• 100자 이하로 입력해주세요'
+        } else if (errorMessage.includes('unit')) {
+          userFriendlyMessage =
+            '⚠️ 단위 글자 수 초과\n\n📍 수정 방법:\n• 20자 이하로 입력해주세요'
+        } else {
+          userFriendlyMessage =
+            '⚠️ 입력 글자 수 초과\n\n📍 수정 방법:\n• 텍스트 길이를 줄여주세요'
+        }
+      } else if (
+        errorMessage.includes('Min') &&
+        errorMessage.includes('categoryNumber')
+      ) {
+        userFriendlyMessage =
+          '⚠️ 카테고리 번호 오류\n\n📍 올바른 범위:\n• 1~15 사이의 값을 선택해주세요'
+      } else if (
+        errorMessage.includes('Max') &&
+        errorMessage.includes('categoryNumber')
+      ) {
+        userFriendlyMessage =
+          '⚠️ 카테고리 번호 오류\n\n📍 올바른 범위:\n• 1~15 사이의 값을 선택해주세요'
+      } else if (
+        errorMessage.includes('Min') &&
+        errorMessage.includes('reportingMonth')
+      ) {
+        userFriendlyMessage =
+          '⚠️ 보고월 오류\n\n📍 올바른 범위:\n• 1~12 사이의 값을 선택해주세요'
+      } else if (
+        errorMessage.includes('Max') &&
+        errorMessage.includes('reportingMonth')
+      ) {
+        userFriendlyMessage =
+          '⚠️ 보고월 오류\n\n📍 올바른 범위:\n• 1~12 사이의 값을 선택해주세요'
+      }
+
+      showWarning(userFriendlyMessage) // 400 에러는 검증 실패이므로 경고로 표시
+    } else if (error?.response?.status === 500) {
+      showError('서버에서 오류가 발생했습니다. 잠시 후 다시 시도해주세요.')
+    } else if (error?.response?.status === 401) {
+      showError('로그인이 필요합니다. 다시 로그인해주세요.')
+    } else if (error?.response?.status === 403) {
+      showError('이 작업을 수행할 권한이 없습니다.')
+    } else if (error?.response?.data?.message) {
       showError(error.response.data.message)
+    } else if (
+      error?.code === 'NETWORK_ERROR' ||
+      error?.message?.includes('Network Error')
+    ) {
+      showError('네트워크 연결을 확인해주세요.')
     } else {
       showError('Scope 3 배출량 저장 중 오류가 발생했습니다.')
     }
@@ -1051,7 +1190,7 @@ export const createScope3Emission = async (
 }
 
 /**
- * Scope3 배출량 데이터 수정
+ * 개선된 Scope3 배출량 데이터 수정 (상세한 에러 처리)
  * 기존 배출량 데이터를 새로운 값으로 업데이트
  *
  * @param id 수정할 배출량 데이터 ID
@@ -1081,8 +1220,143 @@ export const updateScope3Emission = async (
   } catch (error: any) {
     dismissLoading()
 
-    if (error?.response?.data?.message) {
+    // 400 에러 상세 처리 (유효성 검증 실패)
+    if (error?.response?.status === 400) {
+      const errorMessage =
+        error.response?.data?.message || '입력 데이터가 올바르지 않습니다.'
+
+      // 백엔드 유효성 검증 에러 메시지를 사용자 친화적으로 변환
+      let userFriendlyMessage = errorMessage
+
+      // 복잡한 검증 에러 메시지를 간단하게 변환
+      if (errorMessage.includes('입력 데이터 검증 실패')) {
+        // 백엔드에서 오는 복잡한 메시지를 간단한 경고로 변환
+        if (
+          errorMessage.includes('activityAmount') &&
+          errorMessage.includes('totalEmission')
+        ) {
+          userFriendlyMessage =
+            '⚠️ 입력값이 너무 큽니다\n\n📍 수정 방법:\n• 수량: 최대 12자리, 소수점 3자리까지\n• 결과값이 너무 클 경우 수량을 줄여주세요'
+        } else if (errorMessage.includes('activityAmount')) {
+          userFriendlyMessage =
+            '⚠️ 수량 입력값이 범위를 초과했습니다\n\n📍 수정 방법:\n• 최대 12자리, 소수점 3자리까지 입력 가능\n• 예: 999,999,999,999.999'
+        } else if (errorMessage.includes('totalEmission')) {
+          userFriendlyMessage =
+            '⚠️ 계산 결과가 너무 큽니다\n\n📍 수정 방법:\n• 수량 또는 배출계수를 줄여주세요\n• 계산 결과는 최대 15자리까지 가능'
+        } else if (errorMessage.includes('emissionFactor')) {
+          userFriendlyMessage =
+            '⚠️ 배출계수 입력값이 범위를 초과했습니다\n\n📍 수정 방법:\n• 최대 9자리, 소수점 6자리까지 입력 가능\n• 예: 999,999,999.999999'
+        } else {
+          userFriendlyMessage =
+            '⚠️ 입력값이 허용 범위를 초과했습니다\n\n📍 수정 방법:\n• 숫자 크기를 확인해주세요\n• 소수점 자릿수를 줄여주세요'
+        }
+      } else if (errorMessage.includes('Digits')) {
+        if (errorMessage.includes('activityAmount')) {
+          userFriendlyMessage =
+            '⚠️ 수량 입력 오류\n\n📍 올바른 입력:\n• 최대 12자리, 소수점 3자리까지\n• 예: 999,999,999,999.999'
+        } else if (errorMessage.includes('emissionFactor')) {
+          userFriendlyMessage =
+            '⚠️ 배출계수 입력 오류\n\n📍 올바른 입력:\n• 최대 9자리, 소수점 6자리까지\n• 예: 999,999,999.999999'
+        } else if (errorMessage.includes('totalEmission')) {
+          userFriendlyMessage =
+            '⚠️ 계산 결과 오류\n\n📍 해결 방법:\n• 수량 또는 배출계수를 줄여주세요\n• 계산 결과가 너무 큽니다'
+        } else {
+          userFriendlyMessage =
+            '⚠️ 숫자 입력 오류\n\n📍 확인사항:\n• 숫자 크기가 너무 큽니다\n• 소수점 자릿수를 확인해주세요'
+        }
+      } else if (errorMessage.includes('DecimalMin')) {
+        if (errorMessage.includes('activityAmount')) {
+          userFriendlyMessage =
+            '⚠️ 수량이 너무 작습니다\n\n📍 수정 방법:\n• 0.001 이상의 값을 입력해주세요'
+        } else if (errorMessage.includes('emissionFactor')) {
+          userFriendlyMessage =
+            '⚠️ 배출계수가 너무 작습니다\n\n📍 수정 방법:\n• 0.000001 이상의 값을 입력해주세요'
+        } else if (errorMessage.includes('totalEmission')) {
+          userFriendlyMessage =
+            '⚠️ 계산 결과가 너무 작습니다\n\n📍 확인사항:\n• 수량과 배출계수를 확인해주세요'
+        } else {
+          userFriendlyMessage =
+            '⚠️ 입력값이 너무 작습니다\n\n📍 수정 방법:\n• 0보다 큰 값을 입력해주세요'
+        }
+      } else if (errorMessage.includes('NotNull')) {
+        userFriendlyMessage =
+          '⚠️ 필수 항목 누락\n\n📍 확인사항:\n• 모든 필수 필드를 입력해주세요\n• 빈 값이 있는지 확인해주세요'
+      } else if (errorMessage.includes('NotBlank')) {
+        if (errorMessage.includes('majorCategory')) {
+          userFriendlyMessage =
+            '⚠️ 대분류 입력 필요\n\n📍 입력 위치:\n• 기본 정보 → 대분류 필드'
+        } else if (errorMessage.includes('subcategory')) {
+          userFriendlyMessage =
+            '⚠️ 구분 입력 필요\n\n📍 입력 위치:\n• 기본 정보 → 구분 필드'
+        } else if (errorMessage.includes('rawMaterial')) {
+          userFriendlyMessage =
+            '⚠️ 원료/에너지 입력 필요\n\n📍 입력 위치:\n• 기본 정보 → 원료/에너지 필드'
+        } else if (errorMessage.includes('unit')) {
+          userFriendlyMessage =
+            '⚠️ 단위 입력 필요\n\n📍 입력 위치:\n• 계산 정보 → 단위 필드'
+        } else {
+          userFriendlyMessage =
+            '⚠️ 필수 텍스트 입력 필요\n\n📍 확인사항:\n• 모든 텍스트 필드를 입력해주세요'
+        }
+      } else if (errorMessage.includes('Size')) {
+        if (errorMessage.includes('majorCategory')) {
+          userFriendlyMessage =
+            '⚠️ 대분류 글자 수 초과\n\n📍 수정 방법:\n• 100자 이하로 입력해주세요'
+        } else if (errorMessage.includes('subcategory')) {
+          userFriendlyMessage =
+            '⚠️ 구분 글자 수 초과\n\n📍 수정 방법:\n• 100자 이하로 입력해주세요'
+        } else if (errorMessage.includes('rawMaterial')) {
+          userFriendlyMessage =
+            '⚠️ 원료/에너지 글자 수 초과\n\n📍 수정 방법:\n• 100자 이하로 입력해주세요'
+        } else if (errorMessage.includes('unit')) {
+          userFriendlyMessage =
+            '⚠️ 단위 글자 수 초과\n\n📍 수정 방법:\n• 20자 이하로 입력해주세요'
+        } else {
+          userFriendlyMessage =
+            '⚠️ 입력 글자 수 초과\n\n📍 수정 방법:\n• 텍스트 길이를 줄여주세요'
+        }
+      } else if (
+        errorMessage.includes('Min') &&
+        errorMessage.includes('categoryNumber')
+      ) {
+        userFriendlyMessage =
+          '⚠️ 카테고리 번호 오류\n\n📍 올바른 범위:\n• 1~15 사이의 값을 선택해주세요'
+      } else if (
+        errorMessage.includes('Max') &&
+        errorMessage.includes('categoryNumber')
+      ) {
+        userFriendlyMessage =
+          '⚠️ 카테고리 번호 오류\n\n📍 올바른 범위:\n• 1~15 사이의 값을 선택해주세요'
+      } else if (
+        errorMessage.includes('Min') &&
+        errorMessage.includes('reportingMonth')
+      ) {
+        userFriendlyMessage =
+          '⚠️ 보고월 오류\n\n📍 올바른 범위:\n• 1~12 사이의 값을 선택해주세요'
+      } else if (
+        errorMessage.includes('Max') &&
+        errorMessage.includes('reportingMonth')
+      ) {
+        userFriendlyMessage =
+          '⚠️ 보고월 오류\n\n📍 올바른 범위:\n• 1~12 사이의 값을 선택해주세요'
+      }
+
+      showWarning(userFriendlyMessage) // 400 에러는 검증 실패이므로 경고로 표시
+    } else if (error?.response?.status === 404) {
+      showError('수정하려는 데이터를 찾을 수 없습니다.')
+    } else if (error?.response?.status === 500) {
+      showError('서버에서 오류가 발생했습니다. 잠시 후 다시 시도해주세요.')
+    } else if (error?.response?.status === 401) {
+      showError('로그인이 필요합니다. 다시 로그인해주세요.')
+    } else if (error?.response?.status === 403) {
+      showError('이 작업을 수행할 권한이 없습니다.')
+    } else if (error?.response?.data?.message) {
       showError(error.response.data.message)
+    } else if (
+      error?.code === 'NETWORK_ERROR' ||
+      error?.message?.includes('Network Error')
+    ) {
+      showError('네트워크 연결을 확인해주세요.')
     } else {
       showError('Scope 3 배출량 수정 중 오류가 발생했습니다.')
     }

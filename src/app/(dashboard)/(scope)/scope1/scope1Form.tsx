@@ -14,7 +14,7 @@
 'use client'
 
 // React 및 애니메이션 라이브러리 임포트
-import React, {useState, useEffect} from 'react'
+import React, {useState} from 'react'
 import {motion} from 'framer-motion'
 
 // UI 아이콘 임포트 (Lucide React)
@@ -73,7 +73,6 @@ import {
   BreadcrumbList,
   BreadcrumbSeparator
 } from '@/components/ui/breadcrumb'
-import {DirectionButton} from '@/components/layout/direction'
 import {PageHeader} from '@/components/layout/PageHeader'
 
 /**

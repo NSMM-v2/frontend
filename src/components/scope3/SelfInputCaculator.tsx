@@ -34,6 +34,7 @@ import {
   TrendingUp
 } from 'lucide-react'
 import type {SelectorState} from '@/lib/types'
+import {showWarning} from '@/util/toast'
 
 interface SelfInputCalculatorProps {
   id: number
@@ -54,11 +55,31 @@ export function SelfInputCalculator({
 
   const prevEmissionRef = useRef<number>(-1) // 이전 배출량 값 저장
 
+  /**
+   * 안전한 배출량 계산 함수 (정밀도 손실 방지 및 최대값 검증)
+   */
+  const calculateSafeEmission = () => {
+    const qty = parseFloat(state.quantity || '0')
+    const factor = parseFloat(state.kgCO2eq || '0')
+
+    if (isNaN(qty) || isNaN(factor) || qty < 0 || factor < 0) {
+      return 0
+    }
+
+    const emission = qty * factor
+
+    // totalEmission 최대값 검증 (정수 15자리, 소수점 6자리)
+    const maxTotalEmission = 999999999999999.999999
+    if (emission > maxTotalEmission) {
+      return 0 // 계산 결과가 너무 크면 0 반환
+    }
+
+    // 소수점 6자리로 반올림하여 정밀도 손실 방지
+    return Math.round(emission * 1000000) / 1000000
+  }
+
   useEffect(() => {
-    const qty = parseFloat(state.quantity)
-    const factor = parseFloat(state.kgCO2eq || '')
-    const emission =
-      !isNaN(qty) && qty >= 0 && !isNaN(factor) && factor >= 0 ? qty * factor : 0
+    const emission = calculateSafeEmission()
 
     if (prevEmissionRef.current !== emission) {
       onChangeTotal(id, emission)
@@ -79,14 +100,59 @@ export function SelfInputCalculator({
     }
 
   /**
-   * 숫자 입력 핸들러 (음수 차단)
+   * 개선된 숫자 입력 핸들러 (실시간 검증 포함)
    */
   const handleNumberInput =
     (key: keyof SelectorState) => (e: React.ChangeEvent<HTMLInputElement>) => {
       const val = e.target.value
-      if (val === '' || /^\d*\.?\d*$/.test(val)) {
+
+      // 빈 값 허용
+      if (val === '') {
         onChangeState({...state, [key]: val})
+        return
       }
+
+      // 숫자 형식 검증 (음수 차단, 소수점 허용)
+      if (!/^\d*\.?\d*$/.test(val)) {
+        return
+      }
+
+      // 백엔드 DTO 제한사항에 맞는 실시간 검증
+      const numVal = parseFloat(val)
+
+      if (key === 'quantity') {
+        // activityAmount: 정수 12자리, 소수점 3자리
+        const maxValue = 999999999999.999 // 12자리.3자리
+        if (numVal > maxValue) {
+          showWarning('수량은 최대 999,999,999,999.999까지 입력 가능합니다.')
+          return
+        }
+
+        // 소수점 자릿수 검증
+        const decimalPart = val.split('.')[1]
+        if (decimalPart && decimalPart.length > 3) {
+          showWarning('수량은 소수점 3자리까지만 입력 가능합니다.')
+          return
+        }
+      }
+
+      if (key === 'kgCO2eq') {
+        // emissionFactor: 정수 9자리, 소수점 6자리
+        const maxValue = 999999999.999999 // 9자리.6자리
+        if (numVal > maxValue) {
+          showWarning('배출계수는 최대 999,999,999.999999까지 입력 가능합니다.')
+          return
+        }
+
+        // 소수점 자릿수 검증
+        const decimalPart = val.split('.')[1]
+        if (decimalPart && decimalPart.length > 6) {
+          showWarning('배출계수는 소수점 6자리까지만 입력 가능합니다.')
+          return
+        }
+      }
+
+      onChangeState({...state, [key]: val})
     }
 
   // ========================================================================
@@ -127,7 +193,7 @@ export function SelfInputCalculator({
   ]
 
   /**
-   * 계산 정보 입력 필드 (단위, 배출계수, 수량)
+   * 계산 정보 입력 필드 (단위, 배출계수, 수량) - 제한사항 안내 추가
    */
   const calculationFields = [
     {
@@ -144,31 +210,27 @@ export function SelfInputCalculator({
       label: '배출계수',
       key: 'kgCO2eq' as keyof SelectorState,
       type: 'number',
-      placeholder: '0.000',
+      placeholder: '0.000000',
       icon: Calculator,
-      description: 'kgCO₂ equivalent 값을 입력하세요'
+      description: 'kgCO₂ equivalent 값 (최대 9자리.소수점6자리)',
+      maxInfo: '최대: 999,999,999.999999'
     },
     {
       step: '6',
       label: '수량',
       key: 'quantity' as keyof SelectorState,
       type: 'number',
-      placeholder: '0',
+      placeholder: '0.000',
       icon: Hash,
-      description: '사용량이나 구매량을 입력하세요'
+      description: '사용량이나 구매량 (최대 12자리.소수점3자리)',
+      maxInfo: '최대: 999,999,999,999.999'
     }
   ]
 
   /**
-   * 계산된 배출량 값
+   * 계산된 배출량 값 (안전한 계산)
    */
-  const calculatedEmission =
-    state.quantity &&
-    state.kgCO2eq &&
-    !isNaN(parseFloat(state.quantity)) &&
-    !isNaN(parseFloat(state.kgCO2eq))
-      ? parseFloat(state.quantity) * parseFloat(state.kgCO2eq)
-      : 0
+  const calculatedEmission = calculateSafeEmission()
 
   return (
     <motion.div
@@ -274,8 +336,15 @@ export function SelfInputCalculator({
                     placeholder={field.placeholder}
                   />
 
-                  {/* 설명 텍스트 */}
-                  <p className="text-xs text-gray-500">{field.description}</p>
+                  {/* 설명 텍스트 및 제한사항 안내 */}
+                  <div className="space-y-1">
+                    <p className="text-xs text-gray-500">{field.description}</p>
+                    {field.maxInfo && (
+                      <p className="text-xs font-medium text-orange-600">
+                        {field.maxInfo}
+                      </p>
+                    )}
+                  </div>
                 </motion.div>
               ))}
             </div>
@@ -285,43 +354,55 @@ export function SelfInputCalculator({
               계산 결과 섹션 (Calculation Result Section)
               ==================================================================== */}
           <motion.div
-            initial={{opacity: 0, scale: 0.95}}
-            animate={{opacity: 1, scale: 1}}
-            transition={{delay: 0.8, duration: 0.5}}
-            className="relative">
-            <div className="overflow-hidden relative p-6 bg-gradient-to-br from-blue-50 via-blue-100 to-blue-200 rounded-2xl border-2 border-blue-200 shadow-sm">
-              {/* 배경 장식 */}
-              <div className="absolute top-2 right-2 w-16 h-16 bg-blue-300 rounded-full opacity-20 blur-xl" />
-              <div className="absolute bottom-2 left-2 w-12 h-12 bg-blue-400 rounded-lg transform rotate-12 opacity-15" />
+            initial={{opacity: 0, y: 20}}
+            animate={{opacity: 1, y: 0}}
+            transition={{delay: 0.8, duration: 0.4}}
+            className="space-y-6">
+            <div className="flex items-center pb-4 space-x-2 border-b border-gray-200">
+              <TrendingUp className="w-5 h-5 text-blue-500" />
+              <h3 className="text-lg font-semibold text-gray-900">계산 결과</h3>
+              <span className="text-sm text-gray-500">실시간 배출량 계산</span>
+            </div>
 
-              <div className="flex relative justify-between items-center">
+            {/* 계산 결과 카드 */}
+            <div className="p-6 bg-gradient-to-br from-blue-50 to-blue-50 rounded-2xl border border-blue-200">
+              <div className="flex justify-between items-center">
                 <div className="flex items-center space-x-3">
-                  <div className="flex justify-center items-center w-12 h-12 bg-blue-500 rounded-xl shadow-sm">
-                    <TrendingUp className="w-6 h-6 text-white" />
+                  <div className="flex justify-center items-center w-12 h-12 bg-blue-100 rounded-2xl">
+                    <Sparkles className="w-6 h-6 text-blue-400" />
                   </div>
                   <div>
-                    <h4 className="text-lg font-bold text-gray-900">계산된 배출량</h4>
-                    <p className="text-sm text-gray-600">수량 × 배출계수 결과</p>
+                    <h4 className="text-lg font-semibold text-gray-900">총 배출량</h4>
+                    <p className="text-sm text-gray-600">
+                      {state.quantity && state.kgCO2eq
+                        ? '수량 × 배출계수'
+                        : '수량과 배출계수를 입력하세요'}
+                    </p>
                   </div>
                 </div>
 
                 <div className="text-right">
-                  <motion.div
-                    key={calculatedEmission}
-                    initial={{scale: 1.1, opacity: 0.8}}
-                    animate={{scale: 1, opacity: 1}}
-                    transition={{duration: 0.3}}
-                    className="text-3xl font-bold text-blue-600">
+                  <div className="text-3xl font-bold text-blue-400">
                     {calculatedEmission.toLocaleString(undefined, {
-                      maximumFractionDigits: 3,
-                      minimumFractionDigits: 3
+                      maximumFractionDigits: 6,
+                      minimumFractionDigits: 0
                     })}
-                  </motion.div>
-                  <div className="text-sm font-medium text-blue-500">
-                    kgCO₂ equivalent
                   </div>
+                  <div className="text-sm text-gray-500">kgCO₂ eq</div>
                 </div>
               </div>
+
+              {/* 계산 공식 표시 */}
+              {state.quantity && state.kgCO2eq && (
+                <div className="pt-4 mt-4 border-t border-green-200">
+                  <p className="text-sm text-gray-600">
+                    <span className="font-medium">계산 공식:</span>{' '}
+                    {parseFloat(state.quantity).toLocaleString()} ×{' '}
+                    {parseFloat(state.kgCO2eq).toLocaleString()} ={' '}
+                    {calculatedEmission.toLocaleString()} kgCO₂
+                  </p>
+                </div>
+              )}
             </div>
           </motion.div>
         </CardContent>

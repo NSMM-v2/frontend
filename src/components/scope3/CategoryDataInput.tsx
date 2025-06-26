@@ -22,7 +22,7 @@ import {CalculatorItem} from './CalculatorItem'
 import {scope3CategoryList, Scope3CategoryKey} from './CategorySelector'
 import {SelectorState, Scope3EmissionResponse} from '@/lib/types'
 import {createScope3Emission, updateScope3Emission} from '@/services/scopeService'
-import {showError, showSuccess} from '@/util/toast'
+import {showError, showSuccess, showWarning} from '@/util/toast'
 
 /**
  * 계산기 데이터 타입 (확장: 백엔드 데이터 포함)
@@ -139,18 +139,19 @@ export function CategoryDataInput({
     onDataChange?.()
   }, [onDataChange])
 
+  // ========================================================================
+  // 데이터 저장 및 완료 처리 (Data Saving & Completion)
+  // ========================================================================
+
   /**
-   * 백엔드에 데이터 저장 (전체 계산기 목록)
-   *
-   * 각 계산기별로 개별 저장 처리:
-   * - 저장된 데이터(양수 ID): updateScope3Emission 호출
-   * - 미저장 데이터(음수 ID): createScope3Emission 호출
-   * - 개별 실패 시에도 다른 계산기 처리 계속 진행
+   * 모든 계산기의 데이터를 백엔드에 저장하는 함수
+   * 각 계산기의 유효성 검증 후 API 호출하여 저장 처리
    */
-  const saveAllCalculatorsToBackend = async (): Promise<void> => {
+  const saveAllCalculatorsToBackend = async (): Promise<boolean> => {
     if (!calculators || calculators.length === 0) {
       console.log('저장할 계산기가 없습니다.')
-      return
+      showError('저장할 데이터가 없습니다.')
+      return false
     }
 
     console.log('===== 백엔드 저장 프로세스 시작 =====')
@@ -163,6 +164,36 @@ export function CategoryDataInput({
         state: calc.state
       }))
     })
+
+    // 전체 검증 먼저 실행
+    const allValidationResults = calculators.map(calc => {
+      const isManualInput = calculatorModes[calc.id] || false
+      return {
+        calculatorId: calc.id,
+        validation: validateCalculatorData(calc, isManualInput),
+        isManualInput
+      }
+    })
+
+    // 검증 실패한 항목이 있는지 확인
+    const failedValidations = allValidationResults.filter(
+      result => !result.validation.isValid
+    )
+
+    if (failedValidations.length > 0) {
+      console.warn('검증 실패한 계산기들:', failedValidations)
+
+      // 검증 실패 메시지들을 합쳐서 표시
+      const errorMessages = failedValidations
+        .map(
+          failed =>
+            `계산기 ${failed.calculatorId}: ${failed.validation.errors.join(', ')}`
+        )
+        .join('\n')
+
+      showWarning(`입력 데이터를 확인해주세요:\n\n${errorMessages}`)
+      return false // 검증 실패 시 저장 중단
+    }
 
     const results = []
 
@@ -177,21 +208,7 @@ export function CategoryDataInput({
           state: calc.state
         })
 
-        // 필수 데이터 검증
         const isManualInput = calculatorModes[calc.id] || false
-        const validationResult = validateCalculatorData(calc, isManualInput)
-
-        console.log('데이터 유효성 검증 결과:', validationResult)
-
-        if (!validationResult.isValid) {
-          console.warn(`계산기 ${calc.id} 유효성 검증 실패:`, validationResult.errors)
-          results.push({
-            calculatorId: calc.id,
-            success: false,
-            error: `유효성 검증 실패: ${validationResult.errors.join(', ')}`
-          })
-          continue
-        }
 
         // 요청 데이터 구성
         const requestData = createRequestPayload(calc, isManualInput)
@@ -226,7 +243,7 @@ export function CategoryDataInput({
             response: response
           })
         } else {
-          console.error(`❌ 계산기 ${calc.id} 저장 실패: 응답 데이터 없음`)
+          // 응답 데이터 없음 (저장 실패로 간주)
           results.push({
             calculatorId: calc.id,
             success: false,
@@ -234,7 +251,7 @@ export function CategoryDataInput({
           })
         }
       } catch (error) {
-        console.error(`❌ 계산기 ${calc.id} 저장 중 오류:`, error)
+        // 저장 실패 (scopeService에서 이미 토스트 메시지 표시됨)
         results.push({
           calculatorId: calc.id,
           success: false,
@@ -242,29 +259,23 @@ export function CategoryDataInput({
         })
       }
 
-      console.log(`----- 계산기 ${calc.id} 저장 완료 -----`)
+      console.log(`계산기 ${calc.id} 저장 처리 완료`)
     }
 
     // 전체 저장 결과 요약
     const successCount = results.filter(r => r.success).length
     const failCount = results.filter(r => !r.success).length
 
-    console.log('\n===== 백엔드 저장 프로세스 완료 =====')
+    console.log('백엔드 저장 프로세스 완료')
     console.log('저장 결과 요약:', {
       전체개수: results.length,
       성공개수: successCount,
-      실패개수: failCount,
-      상세결과: results
+      실패개수: failCount
     })
 
     if (failCount > 0) {
-      const failedCalculators = results
-        .filter(r => !r.success)
-        .map(r => `계산기 ${r.calculatorId}: ${r.error}`)
-        .join('\n')
-
-      console.warn('저장 실패 항목들:', failedCalculators)
-      showError(`일부 데이터 저장에 실패했습니다:\n${failedCalculators}`)
+      // scopeService에서 이미 상세한 토스트 메시지가 표시되므로 여기서는 추가 메시지 없음
+      return false // 저장 실패가 있으면 false 반환
     } else {
       console.log('모든 계산기 저장 성공')
       showSuccess(`${successCount}개의 데이터가 성공적으로 저장되었습니다.`)
@@ -272,10 +283,12 @@ export function CategoryDataInput({
 
     // 저장 완료 후 데이터 새로고침
     if (successCount > 0) {
-      console.log('저장 성공한 항목이 있어 데이터 새로고침 진행...')
+      console.log('저장 성공한 항목이 있어 데이터 새로고침 진행')
       await handleDataChange()
       console.log('데이터 새로고침 완료')
     }
+
+    return successCount > 0 // 성공한 항목이 하나라도 있으면 true 반환
   }
 
   // ========================================================================
@@ -283,7 +296,7 @@ export function CategoryDataInput({
   // ========================================================================
 
   /**
-   * 계산기 데이터 유효성 검증
+   * 강화된 계산기 데이터 유효성 검증
    */
   const validateCalculatorData = (calc: any, isManualInput: boolean) => {
     const errors: string[] = []
@@ -291,7 +304,7 @@ export function CategoryDataInput({
 
     // 기본 필수 필드 검증
     if (!state.unit || state.unit.trim() === '') {
-      errors.push('단위 필수')
+      errors.push('단위는 필수입니다')
     }
 
     if (isManualInput) {
@@ -300,18 +313,45 @@ export function CategoryDataInput({
       const activityAmount = parseFloat(state.quantity || '0')
 
       if (emissionFactor <= 0) {
-        errors.push('배출계수 필수 (수동 입력)')
+        errors.push('배출계수는 0보다 큰 값이어야 합니다')
       }
       if (activityAmount <= 0) {
-        errors.push('활동량 필수 (수동 입력)')
+        errors.push('활동량은 0보다 큰 값이어야 합니다')
+      }
+
+      // 백엔드 DTO 제한사항 검증
+      if (emissionFactor > 999999999.999999) {
+        errors.push('배출계수는 최대 999,999,999.999999까지 입력 가능합니다')
+      }
+      if (activityAmount > 999999999999.999) {
+        errors.push('활동량은 최대 999,999,999,999.999까지 입력 가능합니다')
+      }
+
+      // 계산된 배출량 검증
+      const totalEmission = emissionFactor * activityAmount
+      if (totalEmission > 999999999999999.999999) {
+        errors.push(
+          '계산된 배출량이 최대값을 초과합니다. 수량 또는 배출계수를 줄여주세요'
+        )
+      }
+
+      // 소수점 자릿수 검증
+      const factorDecimal = (state.kgCO2eq || '').split('.')[1]
+      if (factorDecimal && factorDecimal.length > 6) {
+        errors.push('배출계수는 소수점 6자리까지만 입력 가능합니다')
+      }
+
+      const quantityDecimal = (state.quantity || '').split('.')[1]
+      if (quantityDecimal && quantityDecimal.length > 3) {
+        errors.push('활동량은 소수점 3자리까지만 입력 가능합니다')
       }
     } else {
       // 자동 계산 모드: 카테고리/세부분류/원재료 검증
       if (!state.category || state.category.trim() === '') {
-        errors.push('카테고리 필수')
+        errors.push('카테고리는 필수입니다')
       }
       if (!state.rawMaterial || state.rawMaterial.trim() === '') {
-        errors.push('원재료 필수')
+        errors.push('원재료는 필수입니다')
       }
     }
 
@@ -322,13 +362,16 @@ export function CategoryDataInput({
   }
 
   /**
-   * API 요청 데이터 생성
+   * 개선된 API 요청 데이터 생성 (안전한 소수점 처리)
    */
   const createRequestPayload = (calc: any, isManualInput: boolean) => {
     const state = calc.state
-    const emissionFactor = parseFloat(state.kgCO2eq || '0')
-    const activityAmount = parseFloat(state.quantity || '0')
-    const totalEmission = emissionFactor * activityAmount
+
+    // 안전한 숫자 변환 및 정밀도 제한
+    const emissionFactor =
+      Math.round(parseFloat(state.kgCO2eq || '0') * 1000000) / 1000000 // 소수점 6자리
+    const activityAmount = Math.round(parseFloat(state.quantity || '0') * 1000) / 1000 // 소수점 3자리
+    const totalEmission = Math.round(emissionFactor * activityAmount * 1000000) / 1000000 // 소수점 6자리
 
     return {
       majorCategory: state.category || '',
@@ -347,15 +390,25 @@ export function CategoryDataInput({
   }
 
   /**
-   * 입력 완료 핸들러 (기존 로직 유지)
+   * 개선된 입력 완료 핸들러 (검증 실패 시 화면 이동 방지)
    */
   const handleCompleteAsync = async () => {
     try {
-      await saveAllCalculatorsToBackend()
-      onComplete() // 화면 전환
+      console.log('입력 완료 버튼 클릭 - 저장 프로세스 시작')
+
+      // 저장 및 검증 실행
+      const saveSuccess = await saveAllCalculatorsToBackend()
+
+      if (saveSuccess) {
+        console.log('저장 성공 - 화면 전환 진행')
+        onComplete() // 저장 성공 시에만 화면 전환
+      } else {
+        console.log('저장 실패 또는 검증 실패 - 현재 화면 유지')
+        // 저장/검증 실패 시 화면 이동하지 않음 (토스트 메시지만 표시됨)
+      }
     } catch (error) {
-      console.error('입력 완료 처리 중 오류:', error)
-      showError('데이터 저장 중 오류가 발생했습니다.')
+      console.log('입력 완료 처리 중 오류 발생')
+      // 오류 발생 시에도 화면 이동하지 않음 (scopeService에서 토스트 메시지 표시됨)
     }
   }
 
