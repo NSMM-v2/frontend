@@ -353,10 +353,10 @@ export function EditPartnerModal({
 }: EditPartnerModalProps) {
   return (
     <Dialog open={isOpen} onOpenChange={open => !open && onClose()}>
-      <DialogContent className="bg-white border-0 shadow-2xl sm:max-w-2xl rounded-2xl">
+      <DialogContent className="bg-white rounded-2xl border-0 shadow-2xl sm:max-w-2xl">
         <DialogHeader className="pb-6 border-b border-slate-100">
-          <DialogTitle className="flex items-center gap-3 text-2xl font-bold text-slate-800">
-            <div className="p-2 rounded-lg bg-gradient-to-br from-blue-500 to-blue-600">
+          <DialogTitle className="flex gap-3 items-center text-2xl font-bold text-slate-800">
+            <div className="p-2 bg-gradient-to-br from-blue-500 to-blue-600 rounded-lg">
               <Building2 className="w-6 h-6 text-white" />
             </div>
             파트너사 정보 수정
@@ -365,7 +365,7 @@ export function EditPartnerModal({
 
         <div className="py-6 space-y-6">
           {/* 파트너사 상세 정보 수정 섹션 */}
-          <div className="p-6 space-y-6 border bg-slate-50 rounded-xl border-slate-200">
+          <div className="p-6 space-y-6 rounded-xl border bg-slate-50 border-slate-200">
             <h4 className="mb-4 text-lg font-semibold text-slate-800">파트너사 정보</h4>
 
             <div className="grid grid-cols-1 gap-6 md:grid-cols-2">
@@ -416,7 +416,7 @@ export function EditPartnerModal({
                 type="date"
                 value={formData.contractStartDate || ''}
                 onChange={e => onFormDataChange({contractStartDate: e.target.value})}
-                className="transition-all duration-200 bg-white border-2 rounded-lg h-11 border-slate-200 focus:border-blue-500 focus:ring-blue-500/20"
+                className="h-11 bg-white rounded-lg border-2 transition-all duration-200 border-slate-200 focus:border-blue-500 focus:ring-blue-500/20"
                 disabled={isSubmitting}
               />
               <p className="text-xs text-slate-500">계약 시작일을 선택해주세요.</p>
@@ -431,7 +431,7 @@ export function EditPartnerModal({
               variant="outline"
               onClick={onClose}
               disabled={isSubmitting}
-              className="px-6 transition-all duration-200 border-2 rounded-lg h-11 border-slate-200 hover:border-slate-300">
+              className="px-6 h-11 rounded-lg border-2 transition-all duration-200 border-slate-200 hover:border-slate-300">
               취소
             </Button>
           </DialogClose>
@@ -439,14 +439,14 @@ export function EditPartnerModal({
             type="button"
             onClick={onSubmit}
             disabled={isSubmitting || !formData.contractStartDate}
-            className="px-8 font-semibold text-white transition-all duration-200 transform rounded-lg shadow-lg h-11 bg-gradient-to-r from-blue-500 to-blue-600 hover:from-blue-600 hover:to-blue-700 hover:shadow-xl hover:scale-105 disabled:opacity-50 disabled:transform-none">
+            className="px-8 h-11 font-semibold text-white bg-gradient-to-r from-blue-500 to-blue-600 rounded-lg shadow-lg transition-all duration-200 transform hover:from-blue-600 hover:to-blue-700 hover:shadow-xl hover:scale-105 disabled:opacity-50 disabled:transform-none">
             {isSubmitting ? (
               <>
-                <Loader2 className="w-5 h-5 mr-2 animate-spin" /> 처리 중...
+                <Loader2 className="mr-2 w-5 h-5 animate-spin" /> 처리 중...
               </>
             ) : (
               <>
-                <Edit3 className="w-4 h-4 mr-2" />
+                <Edit3 className="mr-2 w-4 h-4" />
                 정보 저장
               </>
             )}
@@ -482,7 +482,7 @@ export function PartnerDeleteDialog({
       <AlertDialogContent>
         <AlertDialogHeader>
           <AlertDialogTitle className="flex items-center text-red-600">
-            <AlertCircle className="w-5 h-5 mr-2" />
+            <AlertCircle className="mr-2 w-5 h-5" />
             파트너사 삭제 확인
           </AlertDialogTitle>
           <AlertDialogDescription>
@@ -504,7 +504,7 @@ export function PartnerDeleteDialog({
             disabled={isSubmitting}>
             {isSubmitting ? (
               <>
-                <Loader2 className="w-4 h-4 mr-1 animate-spin" />
+                <Loader2 className="mr-1 w-4 h-4 animate-spin" />
                 삭제 중...
               </>
             ) : (
