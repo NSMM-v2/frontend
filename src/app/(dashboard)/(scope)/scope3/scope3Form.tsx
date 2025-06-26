@@ -45,7 +45,6 @@ import {
 
 // 레이아웃 컴포넌트 임포트
 import {PageHeader} from '@/components/layout/PageHeader'
-import {DirectionButton} from '@/components/layout/direction'
 
 // 분리된 Scope3 컴포넌트들 임포트
 import {CategorySummaryCard} from '@/components/scope3/CategorySummaryCard'

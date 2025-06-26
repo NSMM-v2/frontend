@@ -311,7 +311,7 @@ export function ExcelCascadingSelector({
       animate={{opacity: 1, scale: 1}}
       transition={{duration: 0.5, type: 'spring', stiffness: 100}}
       className="mx-auto w-full max-w-4xl">
-      <Card className="overflow-hidden bg-white rounded-3xl border-0 shadow-lg">
+      <Card className="overflow-hidden bg-white rounded-3xl border-0 shadow-sm">
         {/* ======================================================================
             카드 헤더 (Card Header)
             ====================================================================== */}
@@ -422,50 +422,57 @@ export function ExcelCascadingSelector({
           {/* ====================================================================
               수량 입력 섹션 (Quantity Input Section)
               ==================================================================== */}
-          {state.rawMaterial && (
+          <motion.div
+            initial={{opacity: 0, y: 20}}
+            animate={{opacity: 1, y: 0}}
+            transition={{delay: 0.8, duration: 0.4}}
+            className="space-y-6">
+            <div className="flex items-center pb-4 space-x-2 border-b border-gray-200">
+              <Hash className="w-5 h-5 text-blue-500" />
+              <h3 className="text-lg font-semibold text-gray-900">수량 입력</h3>
+              <span className="text-sm text-gray-500">사용량 또는 구매량 입력</span>
+            </div>
+
             <motion.div
               initial={{opacity: 0, y: 20}}
               animate={{opacity: 1, y: 0}}
-              transition={{delay: 0.8, duration: 0.4}}
-              className="space-y-6">
-              <div className="flex items-center pb-4 space-x-2 border-b border-gray-200">
-                <Hash className="w-5 h-5 text-blue-500" />
-                <h3 className="text-lg font-semibold text-gray-900">수량 입력</h3>
-                <span className="text-sm text-gray-500">사용량 또는 구매량 입력</span>
+              transition={{delay: 0.9, duration: 0.4}}
+              className="space-y-3">
+              {/* 필드 라벨 */}
+              <div className="flex items-center space-x-2">
+                <span className="flex justify-center items-center w-7 h-7 text-xs font-bold text-white bg-blue-500 rounded-full">
+                  6
+                </span>
+                <Hash className="w-4 h-4 text-blue-500" />
+                <label className="text-sm font-semibold text-gray-700">수량</label>
               </div>
 
-              <motion.div
-                initial={{opacity: 0, y: 20}}
-                animate={{opacity: 1, y: 0}}
-                transition={{delay: 0.9, duration: 0.4}}
-                className="space-y-3">
-                {/* 필드 라벨 */}
-                <div className="flex items-center space-x-2">
-                  <span className="flex justify-center items-center w-7 h-7 text-xs font-bold text-white bg-blue-500 rounded-full">
-                    6
-                  </span>
-                  <Hash className="w-4 h-4 text-blue-500" />
-                  <label className="text-sm font-semibold text-gray-700">수량</label>
-                </div>
+              {/* 수량 입력 필드 */}
+              <input
+                type="number"
+                min="0"
+                step="any"
+                value={state.quantity}
+                onChange={e => handleQuantityChange(e.target.value)}
+                disabled={!state.rawMaterial}
+                className={`px-4 py-3 w-full text-sm rounded-xl border-2 transition-all duration-200 focus:ring-4 focus:ring-blue-100 ${
+                  !state.rawMaterial
+                    ? 'border-gray-200 bg-gray-100 cursor-not-allowed text-gray-500'
+                    : 'border-gray-200 hover:border-gray-300 focus:border-blue-500'
+                }`}
+                placeholder={
+                  state.rawMaterial ? '수량을 입력하세요' : '먼저 원료를 선택하세요'
+                }
+              />
 
-                {/* 수량 입력 필드 */}
-                <input
-                  type="number"
-                  min="0"
-                  step="any"
-                  value={state.quantity}
-                  onChange={e => handleQuantityChange(e.target.value)}
-                  className="px-4 py-3 w-full text-sm rounded-xl border-2 border-gray-200 transition-all duration-200 focus:border-blue-500 focus:ring-4 focus:ring-blue-100 hover:border-gray-300"
-                  placeholder="수량을 입력하세요"
-                />
-
-                {/* 설명 텍스트 */}
-                <p className="text-xs text-gray-500">
-                  사용량이나 구매량을 입력하세요 (단위: {selectedItem?.unit || '-'})
-                </p>
-              </motion.div>
+              {/* 설명 텍스트 */}
+              <p className="text-xs text-gray-500">
+                {state.rawMaterial
+                  ? `사용량이나 구매량을 입력하세요 (단위: ${selectedItem?.unit || '-'})`
+                  : '원료를 선택하면 수량을 입력할 수 있습니다'}
+              </p>
             </motion.div>
-          )}
+          </motion.div>
 
           {/* ====================================================================
               계산 결과 섹션 (Calculation Result Section)
