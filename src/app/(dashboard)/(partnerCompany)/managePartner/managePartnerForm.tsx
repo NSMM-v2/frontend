@@ -39,21 +39,21 @@ import {
 import {PageHeader} from '@/components/layout/PageHeader'
 import {DirectionButton} from '@/components/layout/direction'
 
-// 파트너사 관련 컴포넌트
-import {PartnerCompanyModal} from '@/components/partner/PartnerCompanyModal'
-import {EditPartnerModal} from '@/components/partner/EditPartnerModal'
-import {PartnerSearchSection} from '@/components/partner/PartnerSearchSection'
-import {PartnerTable} from '@/components/partner/PartnerTable'
+// 파트너사 관련 컴포넌트 (통합 완료)
 import {
+  PartnerCompanyModal,
+  EditPartnerModal,
+  PartnerDeleteDialog
+} from '@/components/partner/PartnerModals'
+import {
+  PartnerSearchSection,
+  PartnerPagination,
   EmptyPartnerState,
-  SearchEmptyState
-} from '@/components/partner/PartnerEmptyStates'
-import {PartnerPagination} from '@/components/partner/PartnerPagination'
-import {
+  SearchEmptyState,
   PartnerLoadingState,
   PageLoadingState
-} from '@/components/partner/PartnerLoadingStates'
-import {PartnerDeleteDialog} from '@/components/partner/PartnerDeleteDialog'
+} from '@/components/partner/PartnerComponents'
+import {PartnerTable} from '@/components/partner/PartnerTable'
 
 // UI 컴포넌트
 import {
@@ -532,7 +532,7 @@ export default function ManagePartnerForm() {
       {/* ======================================================================
           상단 네비게이션 섹션 (Top Navigation Section)
           ====================================================================== */}
-      <div className="flex flex-row items-center p-2 px-2 mb-6 text-sm text-gray-500 bg-white rounded-lg shadow-sm">
+      <div className="flex flex-row items-center p-2 px-2 mb-4 text-sm text-gray-500 bg-white rounded-lg shadow-sm">
         <Breadcrumb>
           <BreadcrumbList>
             <BreadcrumbItem>
@@ -550,10 +550,10 @@ export default function ManagePartnerForm() {
       {/* ======================================================================
           헤더 섹션 (Header Section)
           ====================================================================== */}
-      <div className="flex flex-row mb-6 w-full h-full">
+      <div className="flex flex-row mb-4 w-full">
         <Link
           href="/dashboard"
-          className="flex flex-row items-center p-4 space-x-4 rounded-md transition cursor-pointer hover:bg-gray-200">
+          className="flex flex-row items-center p-3 space-x-4 rounded-md transition cursor-pointer hover:bg-gray-200">
           <ArrowLeft className="w-6 h-6 text-gray-500 group-hover:text-blue-600" />
           <PageHeader
             icon={<Users className="w-6 h-6 text-blue-600" />}
@@ -572,7 +572,7 @@ export default function ManagePartnerForm() {
         initial={{opacity: 0, scale: 0.95}}
         animate={{opacity: 1, scale: 1}}
         transition={{delay: 0.6, duration: 0.5}}
-        className="space-y-6">
+        className="space-y-4">
         {/* 페이지 로딩 상태 표시 */}
         {isPageLoading ? (
           <PageLoadingState />

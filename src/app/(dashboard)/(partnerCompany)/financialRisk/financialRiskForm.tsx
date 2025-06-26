@@ -121,8 +121,8 @@ function PartnerCombobox({options, value, onChange}: PartnerComboboxProps) {
           variant="outline"
           role="combobox"
           aria-expanded={open}
-          className="justify-between w-full font-medium transition-all duration-200 border-2 h-11 bg-slate-50 border-slate-200 hover:border-customG hover:bg-white rounded-xl">
-          <div className="flex items-center gap-2">
+          className="justify-between w-full h-11 font-medium rounded-xl border-2 transition-all duration-200 bg-slate-50 border-slate-200 hover:border-blue-500 hover:bg-white">
+          <div className="flex gap-2 items-center">
             <Building2 className="w-4 h-4 text-slate-400" />
             {selectedOption ? (
               <span className="text-slate-800">{selectedOption.name}</span>
@@ -130,20 +130,20 @@ function PartnerCombobox({options, value, onChange}: PartnerComboboxProps) {
               <span className="text-slate-400">협력사를 선택해주세요...</span>
             )}
           </div>
-          <ChevronsUpDown className="w-4 h-4 ml-2 text-slate-400 shrink-0" />
+          <ChevronsUpDown className="ml-2 w-4 h-4 text-slate-400 shrink-0" />
         </Button>
       </PopoverTrigger>
       <PopoverContent
-        className="w-full p-0 bg-white border-2 shadow-sm border-slate-200 rounded-xl"
+        className="p-0 w-full bg-white rounded-xl border-2 shadow-sm border-slate-200"
         style={{minWidth: 'var(--radix-popover-trigger-width)'}}>
         <Command className="rounded-xl">
           <CommandInput
             placeholder="협력사 검색..."
-            className="h-12 border-0 border-b border-slate-100 rounded-t-xl"
+            className="h-12 rounded-t-xl border-0 border-b border-slate-100"
           />
           <CommandList className="max-h-64">
             <CommandEmpty className="py-8 text-center text-slate-500">
-              <Building2 className="w-8 h-8 mx-auto mb-2 text-slate-300" />
+              <Building2 className="mx-auto mb-2 w-8 h-8 text-slate-300" />
               해당하는 협력사가 없습니다.
             </CommandEmpty>
             <CommandGroup>
@@ -158,21 +158,21 @@ function PartnerCombobox({options, value, onChange}: PartnerComboboxProps) {
                   className={cn(
                     'flex items-center justify-between px-4 py-3 mx-2 my-1 transition-all duration-300 rounded-lg cursor-pointer',
                     value === option.code
-                      ? 'bg-customG/5 border border-customG/20 shadow-sm'
-                      : 'hover:bg-customG/5'
+                      ? 'bg-blue-50 border border-blue-200 shadow-sm'
+                      : 'hover:bg-blue-50'
                   )}>
-                  <div className="flex items-center gap-3">
+                  <div className="flex gap-3 items-center">
                     <div
                       className={cn(
                         'flex items-center justify-center w-8 h-8 transition-all duration-300 rounded-full',
                         value === option.code
-                          ? 'bg-customG/10 ring-1 ring-customG/30'
+                          ? 'bg-blue-100 ring-1 ring-blue-300'
                           : 'bg-slate-50 ring-1 ring-slate-200/80'
                       )}>
                       <Building2
                         className={cn(
                           'w-4 h-4 shrink-0',
-                          value === option.code ? 'text-customG' : 'text-slate-400'
+                          value === option.code ? 'text-blue-600' : 'text-slate-400'
                         )}
                       />
                     </div>
@@ -181,7 +181,7 @@ function PartnerCombobox({options, value, onChange}: PartnerComboboxProps) {
                         className={cn(
                           'font-medium',
                           value === option.code
-                            ? 'text-customG text-[15px]'
+                            ? 'text-blue-600 text-[15px]'
                             : 'text-slate-800'
                         )}>
                         {option.name}
@@ -189,14 +189,14 @@ function PartnerCombobox({options, value, onChange}: PartnerComboboxProps) {
                       <span
                         className={cn(
                           'font-mono text-xs',
-                          value === option.code ? 'text-customG/70' : 'text-slate-500'
+                          value === option.code ? 'text-blue-500' : 'text-slate-500'
                         )}>
                         코드: {option.code}
                       </span>
                     </div>
                   </div>
                   {value === option.code && (
-                    <Check className="w-4 h-4 text-customG shrink-0" />
+                    <Check className="w-4 h-4 text-blue-600 shrink-0" />
                   )}
                 </CommandItem>
               ))}
@@ -360,30 +360,30 @@ export default function FinancialRiskForm() {
   const statusInfo = getStatusLabel(atRiskCount)
 
   return (
-    <div className="flex flex-col w-full p-4">
+    <div className="flex flex-col p-4 w-full">
       {/* Breadcrumb */}
       <div className="flex flex-row items-center p-2 px-2 mb-6 text-sm text-gray-500 bg-white rounded-lg shadow-sm">
         <Breadcrumb>
           <BreadcrumbList>
             <BreadcrumbItem>
-              <Home className="w-4 h-4 mr-1" />
+              <Home className="mr-1 w-4 h-4" />
               <BreadcrumbLink href="/home">대시보드</BreadcrumbLink>
             </BreadcrumbItem>
             <BreadcrumbSeparator />
             <BreadcrumbItem>
-              <span className="font-bold text-customG">재무 리스크</span>
+              <span className="font-bold text-blue-600">재무 리스크</span>
             </BreadcrumbItem>
           </BreadcrumbList>
         </Breadcrumb>
       </div>
 
-      <div className="flex flex-row w-full h-full mb-6">
+      <div className="flex flex-row mb-4 w-full">
         <Link
           href="/dashboard"
-          className="flex flex-row items-center p-4 space-x-4 transition rounded-md cursor-pointer hover:bg-gray-200">
+          className="flex flex-row items-center p-4 space-x-4 rounded-md transition cursor-pointer hover:bg-gray-200">
           <ArrowLeft className="w-6 h-6 text-gray-500 group-hover:text-blue-600" />
           <PageHeader
-            icon={<FileSearch className="w-6 h-6 text-customG-600" />}
+            icon={<FileSearch className="w-6 h-6 text-blue-600" />}
             title="재무 리스크"
             description="협력사의 재무 리스크를 분석하고 관리합니다"
             module="PARTNERCOMPANY"
@@ -393,12 +393,12 @@ export default function FinancialRiskForm() {
       </div>
 
       {/* 분석할 파트너사 선택 카드 */}
-      <Card className="overflow-hidden transition-all duration-300 bg-white border-2 shadow-sm border-slate-200 rounded-xl">
+      <Card className="overflow-hidden bg-white rounded-xl border-2 shadow-sm transition-all duration-300 border-slate-200">
         <CardContent className="p-6">
-          <div className="flex items-center justify-between">
-            <div className="flex items-center gap-4">
-              <div className="flex items-center justify-center w-12 h-12 transition-all duration-300 bg-white border shadow-sm rounded-xl border-slate-200">
-                <FileSearch className="w-6 h-6 text-customG" />
+          <div className="flex justify-between items-center">
+            <div className="flex gap-4 items-center">
+              <div className="flex justify-center items-center w-12 h-12 bg-white rounded-xl border shadow-sm transition-all duration-300 border-slate-200">
+                <FileSearch className="w-6 h-6 text-blue-600" />
               </div>
               <div className="flex flex-col">
                 <h3 className="text-lg font-bold text-slate-800">분석할 파트너사 선택</h3>
@@ -414,7 +414,7 @@ export default function FinancialRiskForm() {
                 loadPartnerOptions().finally(() => setIsLoading(false))
               }}
               disabled={isLoading}
-              className="px-6 font-medium transition-all duration-200 bg-white border-2 h-11 border-slate-200 hover:border-customG hover:bg-customG/5 rounded-xl">
+              className="px-6 h-11 font-medium bg-white rounded-xl border-2 transition-all duration-200 border-slate-200 hover:border-blue-500 hover:bg-blue-50">
               <RefreshCcw className={`w-4 h-4 mr-2 ${isLoading ? 'animate-spin' : ''}`} />
               데이터 새로고침
             </Button>
@@ -435,18 +435,18 @@ export default function FinancialRiskForm() {
             {/* 상단 3개 요약 카드 */}
             <div className="flex flex-row gap-4 mb-2">
               {/* Partner Company Info Card */}
-              <Card className="flex-1 border-2 border-blue-100 shadow-sm bg-gradient-to-br from-blue-50 to-white rounded-xl">
+              <Card className="flex-1 bg-gradient-to-br from-blue-50 to-white rounded-xl border-2 border-blue-100 shadow-sm">
                 <CardContent className="flex items-center p-4">
                   <div className="p-2 mr-3 bg-blue-100 rounded-full">
                     <Building2 className="w-5 h-5 text-blue-600" />
                   </div>
                   <div>
                     <p className="mb-1 text-sm font-medium text-gray-500">파트너사</p>
-                    <div className="flex items-center gap-3">
+                    <div className="flex gap-3 items-center">
                       <h3 className="text-2xl font-bold text-slate-800">
                         {riskData.partnerCompanyName}
                       </h3>
-                      <p className="px-3 py-1 font-mono text-xs font-medium text-slate-600 ">
+                      <p className="px-3 py-1 font-mono text-xs font-medium text-slate-600">
                         DART CODE: {riskData.partnerCompanyId}
                       </p>
                     </div>
@@ -455,14 +455,14 @@ export default function FinancialRiskForm() {
               </Card>
 
               {/* Assessment Info Card */}
-              <Card className="flex-1 border-2 shadow-sm border-emerald-100 bg-gradient-to-br from-emerald-50 to-white rounded-xl">
+              <Card className="flex-1 bg-gradient-to-br from-emerald-50 to-white rounded-xl border-2 border-emerald-100 shadow-sm">
                 <CardContent className="flex items-center p-4">
-                  <div className="p-2 mr-3 rounded-full bg-emerald-100">
+                  <div className="p-2 mr-3 bg-emerald-100 rounded-full">
                     <FileSearch className="w-5 h-5 text-emerald-600" />
                   </div>
                   <div>
                     <p className="text-sm font-medium text-gray-500">분석 기준</p>
-                    <div className="flex items-center gap-3">
+                    <div className="flex gap-3 items-center">
                       <h3 className="text-2xl font-bold text-slate-800">
                         {riskData.assessmentYear}년도
                       </h3>
@@ -507,11 +507,11 @@ export default function FinancialRiskForm() {
                   </div>
                   <div>
                     <p className="text-sm font-medium text-gray-500">위험 상태</p>
-                    <div className="flex items-center gap-3">
+                    <div className="flex gap-3 items-center">
                       <h3 className={`text-2xl font-bold ${statusInfo.color}`}>
                         {statusInfo.label}
                       </h3>
-                      <p className="px-3 py-1 mt-1 text-xs font-medium text-slate-600 ">
+                      <p className="px-3 py-1 mt-1 text-xs font-medium text-slate-600">
                         위험 항목: {atRiskCount} / {riskData.riskItems.length}
                       </p>
                     </div>
@@ -523,9 +523,9 @@ export default function FinancialRiskForm() {
             {/* 세부 위험 분석 카드 */}
             <Card className="overflow-hidden shadow-sm">
               <CardHeader className="p-4 bg-white border-b">
-                <div className="flex items-center justify-between">
-                  <div className="flex items-center gap-4">
-                    <div className="flex items-center justify-center w-12 h-12 transition-all duration-300 bg-white border shadow-sm rounded-xl border-slate-200">
+                <div className="flex justify-between items-center">
+                  <div className="flex gap-4 items-center">
+                    <div className="flex justify-center items-center w-12 h-12 bg-white rounded-xl border shadow-sm transition-all duration-300 border-slate-200">
                       <AlertTriangle className="w-6 h-6 text-amber-500" />
                     </div>
                     <div className="flex flex-col">
@@ -543,14 +543,14 @@ export default function FinancialRiskForm() {
                     <Button
                       variant="outline"
                       onClick={() => toggleAllExpanded(true)}
-                      className="px-4 text-sm font-medium transition-all duration-200 bg-white border-2 h-9 border-slate-200 hover:border-customG hover:bg-customG/5 rounded-xl">
+                      className="px-4 h-9 text-sm font-medium bg-white rounded-xl border-2 transition-all duration-200 border-slate-200 hover:border-blue-500 hover:bg-blue-50">
                       <ChevronsDown className="w-3.5 h-3.5 mr-1.5" />
                       모두 펼치기
                     </Button>
                     <Button
                       variant="outline"
                       onClick={() => toggleAllExpanded(false)}
-                      className="px-4 text-sm font-medium transition-all duration-200 bg-white border-2 h-9 border-slate-200 hover:border-customG hover:bg-customG/5 rounded-xl">
+                      className="px-4 h-9 text-sm font-medium bg-white rounded-xl border-2 transition-all duration-200 border-slate-200 hover:border-blue-500 hover:bg-blue-50">
                       <ChevronsUp className="w-3.5 h-3.5 mr-1.5" />
                       모두 접기
                     </Button>
@@ -569,13 +569,13 @@ export default function FinancialRiskForm() {
                       <AccordionItem
                         key={item.itemNumber}
                         value={`item-${item.itemNumber}`}
-                        className="mb-3 overflow-hidden border rounded-md shadow-sm">
+                        className="overflow-hidden mb-3 rounded-md border shadow-sm">
                         <AccordionTrigger
                           className={cn(
                             'px-4 py-3 hover:no-underline',
                             item.atRisk ? 'bg-red-50/50' : 'bg-slate-50/50'
                           )}>
-                          <div className="flex items-center w-full gap-4">
+                          <div className="flex gap-4 items-center w-full">
                             <div
                               className={cn(
                                 'inline-flex items-center justify-center w-8 h-8 text-base font-bold rounded-xl',
@@ -585,12 +585,12 @@ export default function FinancialRiskForm() {
                               )}>
                               {item.itemNumber}
                             </div>
-                            <div className="flex items-center flex-1 gap-2">
+                            <div className="flex flex-1 gap-2 items-center">
                               <span className="font-medium text-left text-slate-700">
                                 {item.description}
                               </span>
                               {item.atRisk && (
-                                <span className="px-3 py-1 text-xs font-semibold text-red-600 border border-red-100 bg-red-50 rounded-xl">
+                                <span className="px-3 py-1 text-xs font-semibold text-red-600 bg-red-50 rounded-xl border border-red-100">
                                   위험
                                 </span>
                               )}
@@ -600,7 +600,7 @@ export default function FinancialRiskForm() {
 
                         <AccordionContent className="p-4 bg-white border-t">
                           <div className="grid grid-cols-1 gap-4 mb-4 md:grid-cols-2">
-                            <div className="flex items-center gap-3 p-3 bg-white border rounded-lg border-slate-200">
+                            <div className="flex gap-3 items-center p-3 bg-white rounded-lg border border-slate-200">
                               <span className="font-semibold text-slate-600">
                                 실제값:
                               </span>
@@ -614,18 +614,18 @@ export default function FinancialRiskForm() {
                                 {item.actualValue}
                               </div>
                             </div>
-                            <div className="flex items-center gap-3 p-3 bg-white border rounded-lg border-slate-200">
+                            <div className="flex gap-3 items-center p-3 bg-white rounded-lg border border-slate-200">
                               <span className="font-semibold text-slate-600">
                                 기준값:
                               </span>
-                              <div className="px-4 py-2 font-mono text-sm border rounded-lg bg-slate-50 border-slate-200 text-slate-800">
+                              <div className="px-4 py-2 font-mono text-sm rounded-lg border bg-slate-50 border-slate-200 text-slate-800">
                                 {item.threshold}
                               </div>
                             </div>
                           </div>
                           {item.notes && (
-                            <div className="p-4 border rounded-lg bg-slate-50 border-slate-200">
-                              <div className="flex items-center gap-3 mb-3">
+                            <div className="p-4 rounded-lg border bg-slate-50 border-slate-200">
+                              <div className="flex gap-3 items-center mb-3">
                                 <FileSearch className="w-5 h-5 text-slate-400" />
                                 <span className="font-medium text-slate-700">
                                   추가 설명
