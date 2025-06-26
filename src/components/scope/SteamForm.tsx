@@ -48,7 +48,7 @@ export default function SteamForm({formData, setFormData}: SteamFormProps) {
       <CardContent className="p-4 space-y-6">
         {/* 스팀 타입 선택 */}
         <div>
-          <Label className="flex items-center gap-1 mb-3 text-sm font-medium text-gray-700">
+          <Label className="flex gap-1 items-center mb-3 text-sm font-medium text-gray-700">
             스팀 타입
             <span className="text-red-500">*</span>
           </Label>
@@ -110,7 +110,7 @@ export default function SteamForm({formData, setFormData}: SteamFormProps) {
         <div className="space-y-2">
           <Label
             htmlFor="steamUsage"
-            className="flex items-center gap-1 text-sm font-medium text-gray-700">
+            className="flex gap-1 items-center text-sm font-medium text-gray-700">
             스팀 사용량
             <span className="text-red-500">*</span>
           </Label>
@@ -130,7 +130,7 @@ export default function SteamForm({formData, setFormData}: SteamFormProps) {
                 })
               }
               placeholder="0.000"
-              className="border-gray-300 h-11 focus:border-blue-500 focus:ring-blue-500/20"
+              className="h-11 border-gray-300 focus:border-blue-500 focus:ring-blue-500/20"
             />
             <div className="flex items-center justify-center px-4 text-sm font-medium text-gray-700 border border-gray-200 rounded-md bg-gray-50 min-w-[80px]">
               GJ

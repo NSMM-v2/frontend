@@ -2,7 +2,7 @@
  * Scope 1 배출량 관리 폼 컴포넌트
  *
  * 주요 기능:
- * - 협력사별 고정연소/이동연소 배출량 데이터 관리
+ * - 고정연소/이동연소 배출량 데이터 관리
  * - 월별/연도별 데이터 필터링 및 조회
  * - 배출량 통계 현황 대시보드
  * - 데이터 CRUD 작업 (생성, 조회, 수정, 삭제)
@@ -19,14 +19,12 @@ import {motion} from 'framer-motion'
 
 // UI 아이콘 임포트 (Lucide React)
 import {
-  Building, // 건물 아이콘 (협력사)
   Car, // 자동차 아이콘 (이동연소)
   Factory, // 공장 아이콘 (고정연소)
   Plus, // 플러스 아이콘 (데이터 추가)
   TrendingUp, // 상승 트렌드 아이콘 (총 배출량)
   Edit, // 편집 아이콘
   Trash2, // 삭제 아이콘
-  BarChart, // 차트 아이콘 (통계)
   CalendarDays, // 달력 아이콘 (날짜 선택)
   ArrowLeft, // 왼쪽 화살표 (뒤로가기)
   Home // 홈 아이콘
@@ -51,24 +49,21 @@ import {Badge} from '@/components/ui/badge'
 // 커스텀 컴포넌트 임포트
 import ScopeModal from '@/components/scope/ScopeModal' // Scope 데이터 입력 모달
 import {MonthSelector} from '@/components/scope/MonthSelector' // 월 선택기
-import {PartnerSelector} from '@/components/scope/PartnerSelector' // Scope용 협력사 선택기 (UUID 지원)
 
 // 타입 정의 임포트
 import type {
-  PartnerCompanyForScope, // 협력사 정보 타입 (Scope용)
   StationaryCombustion, // 고정연소 배출량 타입
   MobileCombustion, // 이동연소 배출량 타입
   ScopeFormData // Scope 폼 데이터 타입
 } from '@/types/scopeType'
 
-// API 서비스 함수 임포트
-import {
-  fetchStationaryCombustionByPartnerAndYear, // 고정연소 데이터 조회
-  fetchMobileCombustionByPartnerAndYear, // 이동연소 데이터 조회
-  deleteStationaryCombustion, // 고정연소 데이터 삭제
-  deleteMobileCombustion // 이동연소 데이터 삭제
-} from '@/services/scopeService' // Scope 관련 API 서비스 함수
-import {fetchPartnerCompaniesForScope} from '@/services/partnerCompany' // 실제 협력사 API 추가
+// API 서비스 함수 임포트 - 백엔드 통신 제거
+// import {
+//   fetchStationaryCombustionList, // 고정연소 데이터 조회
+//   fetchMobileCombustionList, // 이동연소 데이터 조회
+//   deleteStationaryCombustion, // 고정연소 데이터 삭제
+//   deleteMobileCombustion // 이동연소 데이터 삭제
+// } from '@/services/scopeService' // Scope 관련 API 서비스 함수
 
 // 브레드크럼 네비게이션 컴포넌트 임포트
 import {
@@ -85,7 +80,7 @@ import {PageHeader} from '@/components/layout/PageHeader'
  * Scope 1 배출량 관리 메인 컴포넌트
  *
  * 기능:
- * - 협력사 선택 및 연도/월 필터링
+ * - 연도/월 필터링
  * - 고정연소/이동연소 배출량 데이터 조회 및 관리
  * - 배출량 통계 대시보드 제공
  * - 데이터 추가/편집/삭제 기능
@@ -96,7 +91,6 @@ export default function Scope1Form() {
   // ============================================================================
 
   // 필터 관련 상태
-  const [selectedPartnerId, setSelectedPartnerId] = useState<string | null>(null) // 선택된 협력사 ID (UUID)
   const [selectedYear, setSelectedYear] = useState<number>(new Date().getFullYear()) // 선택된 연도
   const currentMonth = new Date().getMonth() + 1 // JavaScript의 월은 0부터 시작하므로 1을 더함
   const [selectedMonth, setSelectedMonth] = useState<number | null>(currentMonth) // 선택된 월 (null이면 전체)
@@ -104,115 +98,10 @@ export default function Scope1Form() {
   // 데이터 관련 상태
   const [stationaryData, setStationaryData] = useState<StationaryCombustion[]>([]) // 고정연소 배출량 데이터
   const [mobileData, setMobileData] = useState<MobileCombustion[]>([]) // 이동연소 배출량 데이터
-  const [realPartnerCompanies, setRealPartnerCompanies] = useState<any[]>([]) // 실제 협력사 데이터
 
   // UI 관련 상태
   const [isModalOpen, setIsModalOpen] = useState(false) // 데이터 입력 모달 표시 여부
   const [searchTerm, setSearchTerm] = useState('') // 검색어 (현재 미사용)
-
-  // ============================================================================
-  // 실제 협력사 데이터 로딩 (Real Partner Data Loading)
-  // ============================================================================
-
-  /**
-   * 실제 API에서 협력사 목록을 가져옵니다
-   */
-  const loadPartnerCompanies = async () => {
-    try {
-      const response = await fetchPartnerCompaniesForScope(1, 100, '', false)
-      const partners = response.data || response.content || []
-      setRealPartnerCompanies(partners)
-    } catch (error) {
-      console.error('협력사 데이터 로딩 실패:', error)
-      setRealPartnerCompanies([])
-    }
-  }
-
-  // 컴포넌트 마운트 시 협력사 데이터 로드
-  useEffect(() => {
-    loadPartnerCompanies()
-  }, [])
-
-  // ============================================================================
-  // 데이터 로딩 함수 (Data Loading Functions)
-  // ============================================================================
-
-  /**
-   * 선택된 협력사와 연도에 따른 배출량 데이터를 로드합니다.
-   * 고정연소와 이동연소 데이터를 병렬로 조회하여 상태를 업데이트합니다.
-   */
-  const loadData = async () => {
-    // 협력사가 선택되지 않은 경우 데이터 로딩 중단
-    if (!selectedPartnerId) return
-
-    try {
-      // 고정연소와 이동연소 데이터를 병렬로 조회
-      const [stationaryResponse, mobileResponse] = await Promise.all([
-        fetchStationaryCombustionByPartnerAndYear(selectedPartnerId, selectedYear),
-        fetchMobileCombustionByPartnerAndYear(selectedPartnerId, selectedYear)
-      ])
-
-      // 조회된 데이터를 상태에 저장
-      setStationaryData(stationaryResponse)
-      setMobileData(mobileResponse)
-    } catch (error) {
-      console.error('데이터 로딩 실패:', error)
-    }
-  }
-
-  // 협력사 또는 연도가 변경될 때마다 데이터 다시 로드
-  useEffect(() => {
-    loadData()
-  }, [selectedPartnerId, selectedYear])
-
-  // ============================================================================
-  // 데이터 삭제 함수 (Data Deletion Functions)
-  // ============================================================================
-
-  /**
-   * 고정연소 배출량 데이터를 삭제합니다.
-   * 사용자 확인 후 API 호출하여 데이터 삭제 및 목록 새로고침
-   *
-   * @param id - 삭제할 고정연소 데이터의 ID
-   */
-  const handleDeleteStationary = async (id: number) => {
-    // 사용자에게 삭제 확인 요청
-    if (!confirm('정말로 삭제하시겠습니까?')) return
-
-    try {
-      // API 호출하여 고정연소 데이터 삭제
-      await deleteStationaryCombustion(id)
-      // 삭제 후 데이터 목록 새로고침
-      loadData()
-    } catch (error) {
-      console.error('삭제 실패:', error)
-    }
-  }
-
-  /**
-   * 이동연소 배출량 데이터를 삭제합니다.
-   * 사용자 확인 후 API 호출하여 데이터 삭제 및 목록 새로고침
-   *
-   * @param id - 삭제할 이동연소 데이터의 ID
-   */
-  const handleDeleteMobile = async (id: number) => {
-    // 사용자에게 삭제 확인 요청
-    if (!confirm('정말로 삭제하시겠습니까?')) return
-
-    try {
-      // API 호출하여 이동연소 데이터 삭제
-      await deleteMobileCombustion(id)
-      // 삭제 후 데이터 목록 새로고침
-      loadData()
-    } catch (error) {
-      console.error('삭제 실패:', error)
-    }
-  }
-
-  // ============================================================================
-  // 폼 제출 처리 함수 (Form Submission Handler)
-  // ============================================================================
-
   /**
    * 모달에서 새로운 배출량 데이터가 제출되었을 때 처리합니다.
    * 데이터 저장 후 목록을 새로고침합니다.
@@ -221,7 +110,7 @@ export default function Scope1Form() {
    */
   const handleFormSubmit = (data: ScopeFormData) => {
     console.log('폼 데이터:', data)
-    loadData() // 데이터 새로고침
+    // loadData() // 데이터 새로고침
   }
 
   // ============================================================================
@@ -271,7 +160,6 @@ export default function Scope1Form() {
   )
 
   // Scope 1 총 배출량 계산 (고정연소 + 이동연소)
-  // Scope 1 총 배출량 계산 (고정연소 + 이동연소)
   const totalScope1Emission = totalStationaryEmission + totalMobileEmission
 
   // ============================================================================
@@ -279,7 +167,7 @@ export default function Scope1Form() {
   // ============================================================================
 
   return (
-    <div className="flex flex-col w-full p-4">
+    <div className="flex flex-col p-4 w-full">
       {/* ========================================================================
           상단 네비게이션 (Top Navigation)
           - 브레드크럼을 통한 현재 위치 표시
@@ -288,7 +176,7 @@ export default function Scope1Form() {
         <Breadcrumb>
           <BreadcrumbList>
             <BreadcrumbItem>
-              <Home className="w-4 h-4 mr-1" />
+              <Home className="mr-1 w-4 h-4" />
               <BreadcrumbLink href="/dashboard">대시보드</BreadcrumbLink>
             </BreadcrumbItem>
             <BreadcrumbSeparator />
@@ -302,10 +190,10 @@ export default function Scope1Form() {
           헤더 섹션 (Header Section)
           - 뒤로가기 버튼과 페이지 제목/설명
           ======================================================================== */}
-      <div className="flex flex-row w-full h-24 mb-6">
+      <div className="flex flex-row mb-6 w-full h-24">
         <Link
           href="/dashboard"
-          className="flex flex-row items-center p-4 space-x-4 transition rounded-md cursor-pointer hover:bg-gray-200">
+          className="flex flex-row items-center p-4 space-x-4 rounded-md transition cursor-pointer hover:bg-gray-200">
           <ArrowLeft className="w-6 h-6 text-gray-500 group-hover:text-blue-600" />
           <PageHeader
             icon={<Factory className="w-6 h-6 text-customG-600" />}
@@ -316,27 +204,25 @@ export default function Scope1Form() {
           />
         </Link>
       </div>
-      {/* /* ====================================================================== 데이터
-      관리 메인 영역 (Main Data Management Area) - 통계 카드, 데이터 테이블 포함
-      ====================================================================== */}
+      {/* 데이터 관리 메인 영역 (Main Data Management Area) - 통계 카드, 데이터 테이블 포함 */}
       <motion.div
         className="space-y-4"
         initial={{opacity: 0, y: 20}}
         animate={{opacity: 1, y: 0}}
         transition={{delay: 0.7, duration: 0.6}}>
         {/* ========================================================================
-          협력사 및 연도 선택 섹션 (Partner & Year Selection)
+          연도 선택 섹션 (Year Selection)
           - 데이터 조회를 위한 필터 조건 설정
           ======================================================================== */}
         <motion.div
           initial={{opacity: 0}}
           animate={{opacity: 1}}
           transition={{duration: 0.4, delay: 0.1}}>
-          <Card className="mb-4 overflow-hidden shadow-sm">
+          <Card className="overflow-hidden mb-4 shadow-sm">
             <CardContent className="p-4">
-              <div className="grid items-center justify-center h-24 grid-cols-1 gap-8 md:grid-cols-3">
+              <div className="grid grid-cols-1 gap-8 justify-center items-center h-24 md:grid-cols-3">
                 {/* 총 Scope 1 배출량 카드 */}
-                <Card className="justify-center h-24 border-blue-100 bg-gradient-to-br from-blue-50 to-white">
+                <Card className="justify-center h-24 bg-gradient-to-br from-blue-50 to-white border-blue-100">
                   <CardContent className="flex items-center p-4">
                     <div className="p-2 mr-3 bg-blue-100 rounded-full">
                       <TrendingUp className="w-5 h-5 text-blue-600" />
@@ -357,7 +243,7 @@ export default function Scope1Form() {
 
                 {/* 보고연도 입력 필드 */}
                 <div className="space-y-3">
-                  <label className="flex items-center gap-2 text-sm font-semibold text-customG-700">
+                  <label className="flex gap-2 items-center text-sm font-semibold text-customG-700">
                     <CalendarDays className="w-4 h-4" />
                     보고연도
                   </label>
@@ -367,13 +253,13 @@ export default function Scope1Form() {
                     onChange={e => setSelectedYear(parseInt(e.target.value))}
                     min="1900"
                     max="2200"
-                    className="w-full px-3 py-2 text-sm h-9 backdrop-blur-sm border-customG-200 focus:border-customG-400 focus:ring-customG-100 bg-white/80"
+                    className="px-3 py-2 w-full h-9 text-sm backdrop-blur-sm border-customG-200 focus:border-customG-400 focus:ring-customG-100 bg-white/80"
                   />
                 </div>
 
                 {/* 보고월 선택 드롭다운 (선택사항) */}
                 <div className="space-y-3">
-                  <label className="flex items-center gap-2 text-sm font-semibold text-customG-700">
+                  <label className="flex gap-2 items-center text-sm font-semibold text-customG-700">
                     <CalendarDays className="w-4 h-4" />
                     보고월 (선택사항)
                   </label>
@@ -394,17 +280,15 @@ export default function Scope1Form() {
               ================================================================== */}
         <Tabs defaultValue="stationary" className="w-full">
           {/* 탭 헤더 - 고정연소/이동연소 전환 */}
-          <TabsList className="grid w-full grid-cols-2 p-1 bg-gray-100 rounded-lg">
+          <TabsList className="grid grid-cols-2 p-1 w-full bg-gray-100 rounded-lg">
             <TabsTrigger
               value="stationary"
               className="flex items-center gap-2 data-[state=active]:bg-white data-[state=active]:shadow-sm rounded-md font-medium">
-              {/* 여기 팩토리 아이콘 삭제 */}
               고정연소 ({filteredStationaryData.length})
             </TabsTrigger>
             <TabsTrigger
               value="mobile"
               className="flex items-center gap-2 data-[state=active]:bg-white data-[state=active]:shadow-sm rounded-md font-medium">
-              {/* 여기 자동차 아이콘 삭제 */}
               이동연소 ({filteredMobileData.length})
             </TabsTrigger>
           </TabsList>
@@ -420,10 +304,9 @@ export default function Scope1Form() {
               transition={{duration: 0.5}}>
               <Card className="overflow-hidden shadow-sm">
                 {/* 고정연소 섹션 헤더 - 제목과 데이터 추가 버튼 */}
-                <CardHeader className="border-b bg-gradient-to-r to-emerald-50 border-customG-100/50 from-customG-50">
-                  <CardTitle className="flex items-center justify-between text-customG-800">
-                    <div className="flex items-center gap-3">
-                      {/* 이부분도 아이콘 삭제 */}
+                <CardHeader className="bg-gradient-to-r to-emerald-50 border-b border-customG-100/50 from-customG-50">
+                  <CardTitle className="flex justify-between items-center text-customG-800">
+                    <div className="flex gap-3 items-center">
                       <div>
                         <h3 className="text-lg font-bold">고정연소 배출량 데이터</h3>
                         <p className="text-sm font-normal text-customG-600">
@@ -434,8 +317,8 @@ export default function Scope1Form() {
                     {/* 데이터 추가 버튼 */}
                     <Button
                       onClick={() => setIsModalOpen(true)}
-                      className="px-4 py-2 text-sm font-medium text-white transition-colors duration-200 bg-black rounded-lg hover:bg-gray-800">
-                      <Plus className="w-4 h-4 mr-2" />
+                      className="px-4 py-2 text-sm font-medium text-white bg-black rounded-lg transition-colors duration-200 hover:bg-gray-800">
+                      <Plus className="mr-2 w-4 h-4" />
                       데이터 추가
                     </Button>
                   </CardTitle>
@@ -447,7 +330,7 @@ export default function Scope1Form() {
                     <Table>
                       {/* 테이블 헤더 */}
                       <TableHeader>
-                        <TableRow className="border-b bg-gradient-to-r to-emerald-50 from-customG-50 border-customG-200/50">
+                        <TableRow className="bg-gradient-to-r to-emerald-50 border-b from-customG-50 border-customG-200/50">
                           <TableHead className="font-semibold text-customG-700">
                             시설명
                           </TableHead>
@@ -477,88 +360,12 @@ export default function Scope1Form() {
 
                       {/* 테이블 바디 - 고정연소 데이터 목록 */}
                       <TableBody>
-                        {filteredStationaryData.map((item, index) => (
-                          <motion.tr
-                            key={item.id}
-                            initial={{opacity: 0, x: -20}}
-                            animate={{opacity: 1, x: 0}}
-                            transition={{delay: index * 0.1, duration: 0.3}}
-                            className="transition-all duration-200 border-b border-customG-100/50 hover:bg-gradient-to-r hover:from-customG-25 hover:to-emerald-25">
-                            {/* 시설명 */}
-                            <TableCell className="font-medium text-customG-800">
-                              {item.facilityName}
-                            </TableCell>
-                            {/* 연소 타입 배지 */}
-                            <TableCell>
-                              <Badge
-                                variant="outline"
-                                className={`border-customG-300 font-medium ${
-                                  item.combustionType === 'LIQUID'
-                                    ? 'bg-blue-50 text-blue-700 border-blue-300'
-                                    : item.combustionType === 'SOLID'
-                                    ? 'bg-amber-50 text-amber-700 border-amber-300'
-                                    : 'bg-emerald-50 text-emerald-700 border-emerald-300'
-                                }`}>
-                                {item.combustionType === 'LIQUID'
-                                  ? '액체연료'
-                                  : item.combustionType === 'SOLID'
-                                  ? '고체연료'
-                                  : '가스연료'}
-                              </Badge>
-                            </TableCell>
-                            {/* 연료명 */}
-                            <TableCell className="text-customG-700">
-                              {item.fuelName}
-                            </TableCell>
-                            {/* 연료 사용량 */}
-                            <TableCell className="font-medium text-customG-700">
-                              {item.fuelUsage.toLocaleString()}
-                            </TableCell>
-                            {/* 사용량 단위 */}
-                            <TableCell className="text-customG-600">
-                              {item.unit}
-                            </TableCell>
-                            {/* CO₂ 배출량 */}
-                            <TableCell className="font-bold text-customG-800">
-                              {item.totalCo2Equivalent?.toFixed(3)} tCO₂eq
-                            </TableCell>
-                            {/* 보고월 */}
-                            <TableCell className="text-customG-700">
-                              {item.reportingMonth}월
-                            </TableCell>
-                            {/* 작업 버튼 (편집/삭제) */}
-                            <TableCell>
-                              <div className="flex space-x-1">
-                                {/* 편집 버튼 */}
-                                <Button
-                                  variant="ghost"
-                                  size="sm"
-                                  onClick={() => {
-                                    console.log('편집:', item.id)
-                                  }}
-                                  className="hover:bg-customG-100 text-customG-600 hover:text-customG-800">
-                                  <Edit className="w-4 h-4" />
-                                </Button>
-                                {/* 삭제 버튼 */}
-                                <Button
-                                  variant="ghost"
-                                  size="sm"
-                                  onClick={() => handleDeleteStationary(item.id!)}
-                                  className="text-red-500 hover:text-red-700 hover:bg-red-50">
-                                  <Trash2 className="w-4 h-4" />
-                                </Button>
-                              </div>
-                            </TableCell>
-                          </motion.tr>
-                        ))}
                         {/* 데이터가 없을 때 표시되는 빈 상태 */}
                         {filteredStationaryData.length === 0 && (
                           <TableRow>
                             <TableCell colSpan={8} className="py-16 text-center">
-                              <div className="flex flex-col items-center justify-center space-y-4">
-                                {/* 여기도 팩토리 아이콘 삭제 */}
+                              <div className="flex flex-col justify-center items-center space-y-4">
                                 <div>
-                                  {/* 팩토리 아이콘 삭제 */}
                                   <h3 className="mb-2 text-lg font-semibold text-customG-700">
                                     데이터가 없습니다
                                   </h3>
@@ -589,10 +396,9 @@ export default function Scope1Form() {
               transition={{duration: 0.5}}>
               <Card className="overflow-hidden shadow-sm">
                 {/* 이동연소 섹션 헤더 */}
-                <CardHeader className="border-b bg-gradient-to-r to-emerald-50 border-customG-100/50 from-customG-50">
-                  <CardTitle className="flex items-center justify-between text-customG-800">
-                    <div className="flex items-center gap-3">
-                      {/* 자동차 아이콘 삭제 */}
+                <CardHeader className="bg-gradient-to-r to-emerald-50 border-b border-customG-100/50 from-customG-50">
+                  <CardTitle className="flex justify-between items-center text-customG-800">
+                    <div className="flex gap-3 items-center">
                       <div>
                         <h3 className="text-lg font-bold">이동연소 배출량 데이터</h3>
                         <p className="text-sm font-normal text-customG-600">
@@ -603,8 +409,8 @@ export default function Scope1Form() {
                     {/* 데이터 추가 버튼 */}
                     <Button
                       onClick={() => setIsModalOpen(true)}
-                      className="px-4 py-2 text-sm font-medium text-white transition-colors duration-200 bg-black rounded-lg hover:bg-gray-800">
-                      <Plus className="w-4 h-4 mr-2" />
+                      className="px-4 py-2 text-sm font-medium text-white bg-black rounded-lg transition-colors duration-200 hover:bg-gray-800">
+                      <Plus className="mr-2 w-4 h-4" />
                       데이터 추가
                     </Button>
                   </CardTitle>
@@ -616,7 +422,7 @@ export default function Scope1Form() {
                     <Table>
                       {/* 테이블 헤더 */}
                       <TableHeader>
-                        <TableRow className="border-b bg-gradient-to-r to-emerald-50 from-customG-50 border-customG-200/50">
+                        <TableRow className="bg-gradient-to-r to-emerald-50 border-b from-customG-50 border-customG-200/50">
                           <TableHead className="font-semibold text-customG-700">
                             차량/장비명
                           </TableHead>
@@ -649,94 +455,11 @@ export default function Scope1Form() {
 
                       {/* 테이블 바디 - 이동연소 데이터 목록 */}
                       <TableBody>
-                        {filteredMobileData.map((item, index) => (
-                          <motion.tr
-                            key={item.id}
-                            initial={{opacity: 0, x: -20}}
-                            animate={{opacity: 1, x: 0}}
-                            transition={{delay: index * 0.1, duration: 0.3}}
-                            className="transition-all duration-200 border-b border-customG-100/50 hover:bg-gradient-to-r hover:from-customG-25 hover:to-emerald-25">
-                            {/* 차량/장비명 */}
-                            <TableCell className="font-medium text-customG-800">
-                              {item.vehicleType}
-                            </TableCell>
-                            {/* 교통수단 타입 배지 */}
-                            <TableCell>
-                              <Badge
-                                variant="outline"
-                                className={`border-customG-300 font-medium ${
-                                  item.transportType === 'ROAD'
-                                    ? 'bg-green-50 text-green-700 border-green-300'
-                                    : item.transportType === 'AVIATION'
-                                    ? 'bg-blue-50 text-blue-700 border-blue-300'
-                                    : item.transportType === 'RAILWAY'
-                                    ? 'bg-purple-50 text-purple-700 border-purple-300'
-                                    : 'bg-cyan-50 text-cyan-700 border-cyan-300'
-                                }`}>
-                                {item.transportType === 'ROAD'
-                                  ? '도로교통'
-                                  : item.transportType === 'AVIATION'
-                                  ? '항공'
-                                  : item.transportType === 'RAILWAY'
-                                  ? '철도'
-                                  : '선박'}
-                              </Badge>
-                            </TableCell>
-                            {/* 연료명 */}
-                            <TableCell className="text-customG-700">
-                              {item.fuelName}
-                            </TableCell>
-                            {/* 연료 사용량 */}
-                            <TableCell className="font-medium text-customG-700">
-                              {item.fuelUsage.toLocaleString()}
-                            </TableCell>
-                            {/* 사용량 단위 */}
-                            <TableCell className="text-customG-600">
-                              {item.unit}
-                            </TableCell>
-                            {/* 이동거리 */}
-                            <TableCell className="text-customG-700">
-                              {item.distance ? `${item.distance} km` : '-'}
-                            </TableCell>
-                            {/* CO₂ 배출량 */}
-                            <TableCell className="font-bold text-customG-800">
-                              {item.totalCo2Equivalent?.toFixed(3)} tCO₂eq
-                            </TableCell>
-                            {/* 보고월 */}
-                            <TableCell className="text-customG-700">
-                              {item.reportingMonth}월
-                            </TableCell>
-                            {/* 작업 버튼 (편집/삭제) */}
-                            <TableCell>
-                              <div className="flex space-x-1">
-                                {/* 편집 버튼 */}
-                                <Button
-                                  variant="ghost"
-                                  size="sm"
-                                  onClick={() => {
-                                    console.log('편집:', item.id)
-                                  }}
-                                  className="hover:bg-customG-100 text-customG-600 hover:text-customG-800">
-                                  <Edit className="w-4 h-4" />
-                                </Button>
-                                {/* 삭제 버튼 */}
-                                <Button
-                                  variant="ghost"
-                                  size="sm"
-                                  onClick={() => handleDeleteMobile(item.id!)}
-                                  className="text-red-500 hover:text-red-700 hover:bg-red-50">
-                                  <Trash2 className="w-4 h-4" />
-                                </Button>
-                              </div>
-                            </TableCell>
-                          </motion.tr>
-                        ))}
                         {/* 데이터가 없을 때 표시되는 빈 상태 */}
                         {filteredMobileData.length === 0 && (
                           <TableRow>
                             <TableCell colSpan={9} className="py-16 text-center">
-                              <div className="flex flex-col items-center justify-center space-y-4">
-                                {/* 여기도 아이콘 삭제 */}
+                              <div className="flex flex-col justify-center items-center space-y-4">
                                 <div>
                                   <h3 className="mb-2 text-lg font-semibold text-customG-700">
                                     데이터가 없습니다
@@ -766,8 +489,7 @@ export default function Scope1Form() {
         isOpen={isModalOpen}
         onClose={() => setIsModalOpen(false)}
         onSubmit={handleFormSubmit}
-        partnerCompanies={realPartnerCompanies}
-        defaultPartnerId={selectedPartnerId || undefined}
+        partnerCompanies={[]}
         defaultYear={selectedYear}
         defaultMonth={selectedMonth || new Date().getMonth() + 1}
         scope="SCOPE1"
