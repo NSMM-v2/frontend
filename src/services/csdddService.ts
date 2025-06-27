@@ -1,107 +1,52 @@
 import api from '@/lib/axios'
-import type {SelfAssessmentRequest} from '@/types/csdddType'
+import type {
+  SelfAssessmentSubmissionRequest,
+  SelfAssessmentResponse,
+  PaginatedSelfAssessmentResponse
+} from '@/types/csdddType'
 
 /**
- * 자가진단 결과 제출 (본사)
+ * 자가진단 결과 제출
  */
-export const submitSelfAssessmentToBackend = (requestList: SelfAssessmentRequest[]) => {
-  return api.post('/api/v1/csddd/submit', requestList)
+export const submitSelfAssessmentToBackend = (
+  request: SelfAssessmentSubmissionRequest
+) => {
+  return api.post('/api/v1/csddd/submit', request)
 }
 
 /**
- * 자가진단 결과 수정 (본사)
+ * 자가진단 결과 단건 조회
  */
-export async function updateSelfAssessmentToBackend(
-  requestList: SelfAssessmentRequest[]
-) {
-  return api.put('/api/v1/csddd/update', requestList)
+export const getSelfAssessmentResult = async (
+  resultId: number
+): Promise<SelfAssessmentResponse> => {
+  const response = await api.get(`/api/v1/csddd/${resultId}`)
+  return response.data.data // ApiResponse<SelfAssessmentResponse> 구조 고려
 }
 
 /**
- * 결과 간단 조회
+ * 자가진단 결과 목록 조회 (페이징)
  */
-export async function fetchSelfAssessmentResult() {
-  return api.get('/api/v1/csddd/result')
-}
-
-/**
- * 전체 문항 포함한 상세 결과 조회
- */
-export const fetchFullSelfAssessmentResult = async () => {
-  const res = await api.get('/api/v1/csddd/result/full')
-  return res.data
-}
-
-/**
- * 위반 항목만 조회
- */
-export async function fetchViolationItems() {
-  return api.get('/api/v1/csddd/result/violations')
-}
-
-/**
- * 협력사 결과 리스트 조회 (본사용)
- */
-export async function fetchPartnerResults() {
-  return api.get('/api/v1/csddd/partners/results')
-}
-
-/**
- * 하위 협력사 결과 리스트 조회 (1차 협력사용)
- */
-export async function fetchSubPartnerResults() {
-  return api.get('/api/v1/csddd/sub-partners/results')
-}
-
-/**
- * 특정 협력사 결과 조회 (본사용)
- */
-export async function fetchPartnerResult() {
-  return api.get(`/api/v1/csddd/partner/result`)
-}
-
-/**
- * 특정 2차 협력사 결과 조회 (1차 협력사용)
- */
-export async function fetchSubPartnerResult() {
-  return api.get(`/api/v1/csddd/sub-partner/result`)
-}
-
-/**
- * 협력사 자가진단 제출 (1차 협력사)
- */
-export async function submitPartnerSelfAssessment(requestList: SelfAssessmentRequest[]) {
-  return api.post('/api/v1/csddd/submit', requestList)
-}
-
-/**
- * 2차 협력사 자가진단 제출
- */
-export async function submitSecondTierPartnerSelfAssessment(
-  requestList: SelfAssessmentRequest[]
-) {
-  return api.post('/api/v1/csddd/submit', requestList)
-}
-
-/**
- * 1차 협력사 자가진단 결과 조회
- */
-export async function fetchFirstTierPartnerResult() {
-  return api.get('/api/v1/csddd/result')
-}
-
-/**
- * 2차 협력사 자가진단 결과 조회
- */
-export async function fetchSecondTierPartnerResult() {
-  return api.get('/api/v1/csddd/result')
+export const getSelfAssessmentResults = async (params?: {
+  companyName?: string
+  category?: string
+  startDate?: string
+  endDate?: string
+  page?: number
+  size?: number
+}): Promise<PaginatedSelfAssessmentResponse> => {
+  const response = await api.get('/api/v1/csddd/results', {params})
+  return response.data.data // ApiResponse<Page<SelfAssessmentResponse>> 구조 고려
 }
 
 /**
  * 자가진단 응답만 추출 (프론트엔드용)
+ * 특정 결과 ID의 응답을 추출
  */
-export const fetchSelfAssessmentAnswers = async (): Promise<Record<string, string>> => {
-  const response = await fetchFullSelfAssessmentResult()
+export const fetchSelfAssessmentAnswers = async (
+  resultId: number
+): Promise<Record<string, string>> => {
+  const response = await getSelfAssessmentResult(resultId)
   const answersArray = response.answers ?? []
   const answerMap: Record<string, string> = {}
   answersArray.forEach((item: {questionId: string; answer: string}) => {

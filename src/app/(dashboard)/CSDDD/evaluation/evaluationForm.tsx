@@ -1,11 +1,10 @@
 'use client'
 
-// Helper for normalizing category names
 const normalizeCategory = (name: string) => name.replace('·', ' ').trim()
 
 import {useEffect, useState} from 'react'
 
-import {Home} from 'lucide-react'
+import {DollarSign, FileText, Home, Scale} from 'lucide-react'
 import {PageHeader} from '@/components/layout/PageHeader'
 import {
   Breadcrumb,
@@ -17,7 +16,6 @@ import {
 import Link from 'next/link'
 import {fetchFullSelfAssessmentResult} from '@/services/csdddService'
 import {fetchViolationItems} from '@/services/csdddService'
-import {Button} from '@/components/ui/button'
 import type {ViolationItem} from '@/types/csdddType'
 import type {SelfAssessmentAnswer} from '@/types/csdddType'
 import {Card} from '@/components/ui/card'
@@ -26,24 +24,14 @@ import {
   TrendingDown,
   AlertTriangle,
   Shield,
-  Target,
-  Calendar,
-  FileText,
-  Download,
   BarChart3,
   PieChart,
   Activity,
   CheckCircle2,
-  XCircle,
-  Clock,
-  ArrowRight,
-  Lightbulb,
-  Flag,
   Users,
   Building,
   Leaf,
   Gavel,
-  Globe,
   ShieldCheck,
   ThumbsUp,
   AlertCircle,
@@ -103,6 +91,8 @@ interface AnalysisData {
   criticalViolations?: Array<{
     questionId: string
     questionText: string
+    answer: 'YES' | 'NO' | 'PARTIAL'
+    criticalViolation: boolean
     violationGrade: string
     violationReason: string
     penaltyInfo: string
@@ -249,7 +239,7 @@ export default function EvaluationForm({
                 )
 
                 if (!match) {
-                  console.warn(`❌ 매칭 실패: item=${v.questionId}`)
+                  console.warn(` 매칭 실패: item=${v.questionId}`)
                 }
 
                 return {
@@ -266,22 +256,18 @@ export default function EvaluationForm({
               }
             )
 
-            console.log('Original criticalViolations:', data.criticalViolations)
-            console.log('Violation items from API:', res.data)
-            console.log('Enriched violations:', enrichedViolations)
-
             setAnalysisData({
               ...data,
               criticalViolations: enrichedViolations
             })
           })
           .catch(err => {
-            console.error('❌ 위반 항목 불러오기 실패:', err)
+            console.error(' 위반 항목 불러오기 실패:', err)
             setAnalysisData(data)
           })
       })
       .catch(err => {
-        console.error('❌ 분석 결과 불러오기 실패:', err)
+        console.error(' 분석 결과 불러오기 실패:', err)
       })
   }, [])
 
@@ -558,52 +544,6 @@ export default function EvaluationForm({
               </div>
             </Card>
 
-            {/* 중대 위반 항목 상세 분석 */}
-            {analysisData?.criticalViolations &&
-              analysisData.criticalViolations.length > 0 && (
-                <div className="mt-10">
-                  <h3 className="mb-4 text-xl font-bold text-red-700">
-                    🚨 중대 위반 항목 상세 분석
-                  </h3>
-                  <div className="space-y-4">
-                    {analysisData.criticalViolations.map((violation, idx) => (
-                      <Card
-                        key={idx}
-                        className="p-4 bg-white border border-red-200 shadow-sm">
-                        <div className="mb-2">
-                          <h4 className="font-semibold text-red-800">
-                            문항 {violation.questionId} - {violation.questionText}
-                          </h4>
-                        </div>
-                        <ul className="pl-5 space-y-1 text-sm text-gray-800 list-disc">
-                          <li>
-                            <strong>위반 등급:</strong> {violation.violationGrade}
-                          </li>
-                          <li>
-                            <strong>위반 사유:</strong> {violation.violationReason}
-                          </li>
-                          {violation.penaltyInfo && (
-                            <li>
-                              <strong>벌금/패널티:</strong> {violation.penaltyInfo}
-                            </li>
-                          )}
-                          {violation.legalBasis && (
-                            <li>
-                              <strong>법적 근거:</strong> {violation.legalBasis}
-                            </li>
-                          )}
-                          {violation.category && (
-                            <li>
-                              <strong>카테고리:</strong> {violation.category}
-                            </li>
-                          )}
-                        </ul>
-                      </Card>
-                    ))}
-                  </div>
-                </div>
-              )}
-
             {/* Category Performance */}
             <Card className="p-6 shadow-lg bg-white/80 backdrop-blur-sm">
               <h2 className="mb-6 text-2xl font-bold text-gray-900">영역별 성과</h2>
@@ -774,68 +714,142 @@ export default function EvaluationForm({
                           </div>
 
                           {/* 오른쪽: 벌금 및 법적 근거 분석 */}
-                          <div className="space-y-4">
-                            <h3 className="text-lg font-bold text-gray-800">
-                              벌금 및 법적 근거
-                            </h3>
-                            {(() => {
-                              const filteredViolations = (
-                                analysisData?.criticalViolations ?? []
-                              ).filter(violation => {
-                                console.log(
-                                  `Comparing: "${violation.category}" === "${cat.category}"`
-                                )
-                                return violation.category === cat.category
-                              })
+                          <div className="bg-white border border-gray-200 rounded-lg shadow-sm">
+                            <div className="px-6 py-4 border-b border-gray-100 bg-gradient-to-r from-red-50 to-orange-50">
+                              <div className="flex items-center gap-3">
+                                <div className="flex items-center justify-center w-10 h-10 bg-red-100 rounded-lg">
+                                  <AlertTriangle className="w-5 h-5 text-red-600" />
+                                </div>
+                                <div>
+                                  <h3 className="text-lg font-bold text-gray-900">
+                                    벌금 및 패널티
+                                  </h3>
+                                  <p className="text-sm text-gray-600">
+                                    중대 위반사항에 대한 법적 제재 현황
+                                  </p>
+                                </div>
+                              </div>
+                            </div>
 
-                              console.log(
-                                `Filtered violations for ${cat.category}:`,
-                                filteredViolations
-                              )
+                            <div className="p-6">
+                              {(() => {
+                                const filteredViolations = (
+                                  analysisData?.criticalViolations ?? []
+                                ).filter(violation => {
+                                  return violation.category === cat.category
+                                })
 
-                              if (filteredViolations.length === 0) {
+                                if (filteredViolations.length === 0) {
+                                  return (
+                                    <div className="flex flex-col items-center justify-center py-12 text-center border-2 border-green-200 border-dashed rounded-lg bg-green-50">
+                                      <div className="flex items-center justify-center w-16 h-16 mb-4 bg-green-100 rounded-full">
+                                        <FileText className="w-8 h-8 text-green-600" />
+                                      </div>
+                                      <h4 className="mb-2 text-lg font-semibold text-green-800">
+                                        위반사항 없음
+                                      </h4>
+                                      <p className="text-green-700">
+                                        이 영역에서는 중대 위반 항목이 발견되지
+                                        않았습니다.
+                                      </p>
+                                      <div className="px-3 py-1 mt-3 text-xs font-medium text-green-700 bg-green-100 rounded-full">
+                                        카테고리: {cat.category}
+                                      </div>
+                                    </div>
+                                  )
+                                }
+
                                 return (
-                                  <div className="p-4 text-center text-gray-500 rounded-lg bg-gray-50">
-                                    이 영역에서는 중대 위반 항목이 발견되지 않았습니다.
-                                    <br />
-                                    <small className="text-xs">
-                                      (카테고리: {cat.category})
-                                    </small>
+                                  <div className="space-y-4">
+                                    <div className="flex items-center justify-between mb-4">
+                                      <div className="flex items-center gap-2">
+                                        <span className="text-sm font-medium text-gray-700">
+                                          총 위반사항
+                                        </span>
+                                        <span className="px-2 py-1 text-xs font-bold text-red-700 bg-red-100 rounded-full">
+                                          {filteredViolations.length}건
+                                        </span>
+                                      </div>
+                                      <div className="text-xs text-gray-500">
+                                        카테고리: {cat.category}
+                                      </div>
+                                    </div>
+
+                                    {filteredViolations.map((violation, index) => (
+                                      <div
+                                        key={index}
+                                        className="relative overflow-hidden transition-shadow bg-white border border-red-200 rounded-lg shadow-sm hover:shadow-md">
+                                        <div className="absolute top-0 left-0 w-1 h-full bg-red-500"></div>
+
+                                        <div className="p-5 pl-6">
+                                          <div className="flex items-start justify-between mb-3">
+                                            <div className="flex items-center gap-2">
+                                              <span className="px-2 py-1 text-xs font-semibold text-red-700 bg-red-100 rounded">
+                                                위반 #{violation.questionId}
+                                              </span>
+                                              <span className="text-xs text-gray-500">
+                                                중대위반
+                                              </span>
+                                            </div>
+                                          </div>
+
+                                          <h4 className="mb-4 text-base font-bold leading-tight text-gray-900">
+                                            {violation.questionText ||
+                                              `문항 ${violation.questionId}`}
+                                          </h4>
+
+                                          <div className="space-y-3">
+                                            {violation.penaltyInfo &&
+                                              violation.penaltyInfo !== '' && (
+                                                <div className="flex items-start gap-3 p-3 border border-red-100 rounded-lg bg-red-50">
+                                                  <DollarSign className="w-4 h-4 text-red-600 mt-0.5 flex-shrink-0" />
+                                                  <div>
+                                                    <span className="text-sm font-semibold text-red-800">
+                                                      벌금/패널티
+                                                    </span>
+                                                    <p className="mt-1 text-sm text-red-700">
+                                                      {violation.penaltyInfo}
+                                                    </p>
+                                                  </div>
+                                                </div>
+                                              )}
+
+                                            {violation.legalBasis &&
+                                              violation.legalBasis !== '' && (
+                                                <div className="flex items-start gap-3 p-3 border border-blue-100 rounded-lg bg-blue-50">
+                                                  <Scale className="w-4 h-4 text-blue-600 mt-0.5 flex-shrink-0" />
+                                                  <div>
+                                                    <span className="text-sm font-semibold text-blue-800">
+                                                      법적 근거
+                                                    </span>
+                                                    <p className="mt-1 text-sm text-blue-700">
+                                                      {violation.legalBasis}
+                                                    </p>
+                                                  </div>
+                                                </div>
+                                              )}
+
+                                            {violation.violationReason && (
+                                              <div className="flex items-start gap-3 p-3 border border-orange-100 rounded-lg bg-orange-50">
+                                                <AlertTriangle className="w-4 h-4 text-orange-600 mt-0.5 flex-shrink-0" />
+                                                <div>
+                                                  <span className="text-sm font-semibold text-orange-800">
+                                                    위반 사유
+                                                  </span>
+                                                  <p className="mt-1 text-sm text-orange-700">
+                                                    {violation.violationReason}
+                                                  </p>
+                                                </div>
+                                              </div>
+                                            )}
+                                          </div>
+                                        </div>
+                                      </div>
+                                    ))}
                                   </div>
                                 )
-                              }
-
-                              return filteredViolations.map((violation, index) => (
-                                <Card
-                                  key={index}
-                                  className="p-4 border border-gray-200 bg-gray-50">
-                                  <h4 className="mb-2 font-semibold text-gray-700">
-                                    {violation.questionText ||
-                                      `문항 ${violation.questionId}`}
-                                  </h4>
-                                  {violation.penaltyInfo &&
-                                    violation.penaltyInfo !== '' && (
-                                      <p className="mb-2 text-sm text-gray-800">
-                                        💸 <strong>벌금/패널티:</strong>{' '}
-                                        {violation.penaltyInfo}
-                                      </p>
-                                    )}
-                                  {violation.legalBasis &&
-                                    violation.legalBasis !== '' && (
-                                      <p className="mb-2 text-sm text-gray-800">
-                                        ⚖️ <strong>법적 근거:</strong>{' '}
-                                        {violation.legalBasis}
-                                      </p>
-                                    )}
-                                  {violation.violationReason && (
-                                    <p className="text-sm text-red-600">
-                                      ⚠️ <strong>위반 사유:</strong>{' '}
-                                      {violation.violationReason}
-                                    </p>
-                                  )}
-                                </Card>
-                              ))
-                            })()}
+                              })()}
+                            </div>
                           </div>
                         </div>
                       </div>
