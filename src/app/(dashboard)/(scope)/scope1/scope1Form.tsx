@@ -74,7 +74,21 @@ import {
   BreadcrumbSeparator
 } from '@/components/ui/breadcrumb'
 import {PageHeader} from '@/components/layout/PageHeader'
+import {
+  CategorySelector,
+  Scope1KineticCategoryKey,
+  scope1KineticCategoryList,
+  Scope1PotentialCategoryKey,
+  scope1PotentialCategoryList
+} from '@/components/scope3/CategorySelector'
+import {Scope3EmissionResponse, SelectorState} from '@/lib/types'
 
+interface CalculatorData {
+  id: number
+  state: SelectorState
+  emissionId?: number // 백엔드에서 받은 배출량 데이터 ID (수정/삭제용)
+  savedData?: Scope3EmissionResponse // 백엔드에서 받은 전체 데이터
+}
 /**
  * Scope 1 배출량 관리 메인 컴포넌트
  *
@@ -158,6 +172,70 @@ export default function Scope1Form() {
     0
   )
 
+  // =============================================================================================
+  const [categoryPotentialCalculators, setCategoryPotentialCalculators] = useState<{
+    [key in Scope1PotentialCategoryKey]?: CalculatorData[]
+  }>({})
+
+  const [categoryKineticCalculators, setCategoryKineticCalculators] = useState<{
+    [key in Scope1KineticCategoryKey]?: CalculatorData[]
+  }>({})
+
+  // 전력 카테고리별 배출량 총계 관리
+  const [potentialCategoryTotals, setPotentialCategoryTotals] = useState<{
+    [key in Scope1PotentialCategoryKey]?: {id: number; emission: number}[]
+  }>({})
+
+  const [kineticCategoryTotals, setKineticCategoryTotals] = useState<{
+    [key in Scope1KineticCategoryKey]?: {id: number; emission: number}[]
+  }>({})
+
+  const [activePotentialCategory, setActivePotentialCategory] =
+    useState<Scope1PotentialCategoryKey | null>(null) // 현재 선택된 스팀 카테고리
+
+  const [activeKineticCategory, setActiveKineticCategory] =
+    useState<Scope1KineticCategoryKey | null>(null) // 현재 선택된 스팀 카테고리
+
+  const getPotentialTotalEmission = (category: Scope1PotentialCategoryKey): number =>
+    (potentialCategoryTotals[category] || []).reduce((sum, t) => sum + t.emission, 0)
+
+  const getKineticTotalEmission = (category: Scope1KineticCategoryKey): number =>
+    (kineticCategoryTotals[category] || []).reduce((sum, t) => sum + t.emission, 0)
+
+  const handlePotentialCategorySelect = (category: Scope1PotentialCategoryKey) => {
+    setActivePotentialCategory(category)
+
+    // 해당 카테고리에 계산기가 없으면 기본 계산기 1개 생성
+    if (
+      !categoryPotentialCalculators[category] ||
+      categoryPotentialCalculators[category]!.length === 0
+    ) {
+      setCategoryPotentialCalculators(prev => ({
+        ...prev,
+        [category]: [
+          {id: 1, state: {category: '', separate: '', rawMaterial: '', quantity: ''}}
+        ]
+      }))
+    }
+  }
+
+  const handleKineticCategorySelect = (category: Scope1KineticCategoryKey) => {
+    setActiveKineticCategory(category)
+
+    // 해당 카테고리에 계산기가 없으면 기본 계산기 1개 생성
+    if (
+      !categoryKineticCalculators[category] ||
+      categoryKineticCalculators[category]!.length === 0
+    ) {
+      setCategoryKineticCalculators(prev => ({
+        ...prev,
+        [category]: [
+          {id: 1, state: {category: '', separate: '', rawMaterial: '', quantity: ''}}
+        ]
+      }))
+    }
+  }
+
   // Scope 1 총 배출량 계산 (고정연소 + 이동연소)
   const totalScope1Emission = totalStationaryEmission + totalMobileEmission
 
@@ -166,16 +244,16 @@ export default function Scope1Form() {
   // ============================================================================
 
   return (
-    <div className="flex flex-col p-4 w-full">
+    <div className="flex flex-col w-full p-4">
       {/* ========================================================================
           상단 네비게이션 (Top Navigation)
           - 브레드크럼을 통한 현재 위치 표시
           ======================================================================== */}
-      <div className="flex flex-row items-center p-2 px-2 mb-6 text-sm text-gray-500 bg-white rounded-lg shadow-sm">
+      <div className="flex flex-row items-center p-2 px-2 mb-4 text-sm text-gray-500 bg-white rounded-lg shadow-sm">
         <Breadcrumb>
           <BreadcrumbList>
             <BreadcrumbItem>
-              <Home className="mr-1 w-4 h-4" />
+              <Home className="w-4 h-4 mr-1" />
               <BreadcrumbLink href="/dashboard">대시보드</BreadcrumbLink>
             </BreadcrumbItem>
             <BreadcrumbSeparator />
@@ -189,11 +267,8 @@ export default function Scope1Form() {
           헤더 섹션 (Header Section)
           - 뒤로가기 버튼과 페이지 제목/설명
           ======================================================================== */}
-      <div className="flex flex-row mb-6 w-full h-24">
-        <Link
-          href="/dashboard"
-          className="flex flex-row items-center p-4 space-x-4 rounded-md transition cursor-pointer hover:bg-gray-200">
-          <ArrowLeft className="w-6 h-6 text-gray-500 group-hover:text-blue-600" />
+      <div className="flex flex-row w-full h-24 mb-4">
+        <div className="flex flex-row items-center p-4">
           <PageHeader
             icon={<Factory className="w-6 h-6 text-customG-600" />}
             title="Scope 1 배출량 관리"
@@ -201,7 +276,7 @@ export default function Scope1Form() {
             module="SCOPE"
             submodule="scope1"
           />
-        </Link>
+        </div>
       </div>
       {/* 데이터 관리 메인 영역 (Main Data Management Area) - 통계 카드, 데이터 테이블 포함 */}
       <motion.div
@@ -217,11 +292,11 @@ export default function Scope1Form() {
           initial={{opacity: 0}}
           animate={{opacity: 1}}
           transition={{duration: 0.4, delay: 0.1}}>
-          <Card className="overflow-hidden mb-4 shadow-sm">
+          <Card className="mb-4 overflow-hidden shadow-sm">
             <CardContent className="p-4">
-              <div className="grid grid-cols-1 gap-8 justify-center items-center h-24 md:grid-cols-3">
+              <div className="grid items-center justify-center h-24 grid-cols-1 gap-8 md:grid-cols-3">
                 {/* 총 Scope 1 배출량 카드 */}
-                <Card className="justify-center h-24 bg-gradient-to-br from-blue-50 to-white border-blue-100">
+                <Card className="justify-center h-24 border-blue-100 bg-gradient-to-br from-blue-50 to-white">
                   <CardContent className="flex items-center p-4">
                     <div className="p-2 mr-3 bg-blue-100 rounded-full">
                       <TrendingUp className="w-5 h-5 text-blue-600" />
@@ -242,7 +317,7 @@ export default function Scope1Form() {
 
                 {/* 보고연도 입력 필드 */}
                 <div className="space-y-3">
-                  <label className="flex gap-2 items-center text-sm font-semibold text-customG-700">
+                  <label className="flex items-center gap-2 text-sm font-semibold text-customG-700">
                     <CalendarDays className="w-4 h-4" />
                     보고연도
                   </label>
@@ -252,13 +327,13 @@ export default function Scope1Form() {
                     onChange={e => setSelectedYear(parseInt(e.target.value))}
                     min="1900"
                     max="2200"
-                    className="px-3 py-2 w-full h-9 text-sm backdrop-blur-sm border-customG-200 focus:border-customG-400 focus:ring-customG-100 bg-white/80"
+                    className="w-full px-3 py-2 text-sm h-9 backdrop-blur-sm border-customG-200 focus:border-customG-400 focus:ring-customG-100 bg-white/80"
                   />
                 </div>
 
                 {/* 보고월 선택 드롭다운 (선택사항) */}
                 <div className="space-y-3">
-                  <label className="flex gap-2 items-center text-sm font-semibold text-customG-700">
+                  <label className="flex items-center gap-2 text-sm font-semibold text-customG-700">
                     <CalendarDays className="w-4 h-4" />
                     보고월 (선택사항)
                   </label>
@@ -277,209 +352,53 @@ export default function Scope1Form() {
               데이터 테이블 섹션 (Data Table Section)
               - 탭으로 구분된 고정연소/이동연소 데이터 표시
               ================================================================== */}
-        <Tabs defaultValue="stationary" className="w-full">
-          {/* 탭 헤더 - 고정연소/이동연소 전환 */}
-          <TabsList className="grid grid-cols-2 p-1 w-full bg-gray-100 rounded-lg">
-            <TabsTrigger
-              value="stationary"
-              className="flex items-center gap-2 data-[state=active]:bg-white data-[state=active]:shadow-sm rounded-md font-medium">
-              고정연소 ({filteredStationaryData.length})
-            </TabsTrigger>
-            <TabsTrigger
-              value="mobile"
-              className="flex items-center gap-2 data-[state=active]:bg-white data-[state=active]:shadow-sm rounded-md font-medium">
-              이동연소 ({filteredMobileData.length})
-            </TabsTrigger>
-          </TabsList>
+        <div className="space-y-8">
+          {/* ================================================================
+                        전력 카테고리 섹션 (Electricity Category Section)
+                        ================================================================ */}
+          <motion.div
+            initial={{opacity: 0, y: 20}}
+            animate={{opacity: 1, y: 0}}
+            transition={{duration: 0.5, delay: 0.2}}>
+            <div className="mb-6">
+              <h2 className="mb-2 text-xl font-bold text-customG-800">
+                고정 연소 사용량
+              </h2>
+              <p className="text-sm text-customG-600">===</p>
+            </div>
+            {/* 전력 카테고리 선택 그리드 */}
+            <CategorySelector
+              categoryList={scope1PotentialCategoryList}
+              getTotalEmission={getPotentialTotalEmission}
+              onCategorySelect={handlePotentialCategorySelect}
+              animationDelay={0.1}
+            />
+          </motion.div>
 
           {/* ================================================================
-                고정연소 데이터 탭 (Stationary Combustion Tab)
-                - 고정연소 배출량 데이터 목록 및 관리 기능
-                ================================================================ */}
-          <TabsContent value="stationary" className="mt-4">
-            <motion.div
-              initial={{opacity: 0, y: 20}}
-              animate={{opacity: 1, y: 0}}
-              transition={{duration: 0.5}}>
-              <Card className="overflow-hidden shadow-sm">
-                {/* 고정연소 섹션 헤더 - 제목과 데이터 추가 버튼 */}
-                <CardHeader className="bg-gradient-to-r to-emerald-50 border-b border-customG-100/50 from-customG-50">
-                  <CardTitle className="flex justify-between items-center text-customG-800">
-                    <div className="flex gap-3 items-center">
-                      <div>
-                        <h3 className="text-lg font-bold">고정연소 배출량 데이터</h3>
-                        <p className="text-sm font-normal text-customG-600">
-                          시설 및 설비의 연료 연소로 발생하는 직접 배출량
-                        </p>
-                      </div>
-                    </div>
-                    {/* 데이터 추가 버튼 */}
-                    <Button
-                      onClick={() => setIsModalOpen(true)}
-                      className="px-4 py-2 text-sm font-medium text-white bg-black rounded-lg transition-colors duration-200 hover:bg-gray-800">
-                      <Plus className="mr-2 w-4 h-4" />
-                      데이터 추가
-                    </Button>
-                  </CardTitle>
-                </CardHeader>
-
-                {/* 고정연소 데이터 테이블 */}
-                <CardContent className="p-0">
-                  <div className="overflow-x-auto">
-                    <Table>
-                      {/* 테이블 헤더 */}
-                      <TableHeader>
-                        <TableRow className="bg-gradient-to-r to-emerald-50 border-b from-customG-50 border-customG-200/50">
-                          <TableHead className="font-semibold text-customG-700">
-                            시설명
-                          </TableHead>
-                          <TableHead className="font-semibold text-customG-700">
-                            연소 타입
-                          </TableHead>
-                          <TableHead className="font-semibold text-customG-700">
-                            연료명
-                          </TableHead>
-                          <TableHead className="font-semibold text-customG-700">
-                            사용량
-                          </TableHead>
-                          <TableHead className="font-semibold text-customG-700">
-                            단위
-                          </TableHead>
-                          <TableHead className="font-semibold text-customG-700">
-                            CO₂ 배출량
-                          </TableHead>
-                          <TableHead className="font-semibold text-customG-700">
-                            보고월
-                          </TableHead>
-                          <TableHead className="font-semibold text-customG-700">
-                            작업
-                          </TableHead>
-                        </TableRow>
-                      </TableHeader>
-
-                      {/* 테이블 바디 - 고정연소 데이터 목록 */}
-                      <TableBody>
-                        {/* 데이터가 없을 때 표시되는 빈 상태 */}
-                        {filteredStationaryData.length === 0 && (
-                          <TableRow>
-                            <TableCell colSpan={8} className="py-16 text-center">
-                              <div className="flex flex-col justify-center items-center space-y-4">
-                                <div>
-                                  <h3 className="mb-2 text-lg font-semibold text-customG-700">
-                                    데이터가 없습니다
-                                  </h3>
-                                  <p className="text-customG-500">
-                                    새로운 고정연소 배출량 데이터를 추가해보세요
-                                  </p>
-                                </div>
-                              </div>
-                            </TableCell>
-                          </TableRow>
-                        )}
-                      </TableBody>
-                    </Table>
-                  </div>
-                </CardContent>
-              </Card>
-            </motion.div>
-          </TabsContent>
-
-          {/* ================================================================
-                이동연소 데이터 탭 (Mobile Combustion Tab)
-                - 이동연소 배출량 데이터 목록 및 관리 기능
-                ================================================================ */}
-          <TabsContent value="mobile" className="mt-4">
-            <motion.div
-              initial={{opacity: 0, y: 20}}
-              animate={{opacity: 1, y: 0}}
-              transition={{duration: 0.5}}>
-              <Card className="overflow-hidden shadow-sm">
-                {/* 이동연소 섹션 헤더 */}
-                <CardHeader className="bg-gradient-to-r to-emerald-50 border-b border-customG-100/50 from-customG-50">
-                  <CardTitle className="flex justify-between items-center text-customG-800">
-                    <div className="flex gap-3 items-center">
-                      <div>
-                        <h3 className="text-lg font-bold">이동연소 배출량 데이터</h3>
-                        <p className="text-sm font-normal text-customG-600">
-                          차량 및 이동장비의 연료 연소로 발생하는 직접 배출량
-                        </p>
-                      </div>
-                    </div>
-                    {/* 데이터 추가 버튼 */}
-                    <Button
-                      onClick={() => setIsModalOpen(true)}
-                      className="px-4 py-2 text-sm font-medium text-white bg-black rounded-lg transition-colors duration-200 hover:bg-gray-800">
-                      <Plus className="mr-2 w-4 h-4" />
-                      데이터 추가
-                    </Button>
-                  </CardTitle>
-                </CardHeader>
-
-                {/* 이동연소 데이터 테이블 */}
-                <CardContent className="p-0">
-                  <div className="overflow-x-auto">
-                    <Table>
-                      {/* 테이블 헤더 */}
-                      <TableHeader>
-                        <TableRow className="bg-gradient-to-r to-emerald-50 border-b from-customG-50 border-customG-200/50">
-                          <TableHead className="font-semibold text-customG-700">
-                            차량/장비명
-                          </TableHead>
-                          <TableHead className="font-semibold text-customG-700">
-                            교통수단 타입
-                          </TableHead>
-                          <TableHead className="font-semibold text-customG-700">
-                            연료명
-                          </TableHead>
-                          <TableHead className="font-semibold text-customG-700">
-                            사용량
-                          </TableHead>
-                          <TableHead className="font-semibold text-customG-700">
-                            단위
-                          </TableHead>
-                          <TableHead className="font-semibold text-customG-700">
-                            이동거리
-                          </TableHead>
-                          <TableHead className="font-semibold text-customG-700">
-                            CO₂ 배출량
-                          </TableHead>
-                          <TableHead className="font-semibold text-customG-700">
-                            보고월
-                          </TableHead>
-                          <TableHead className="font-semibold text-customG-700">
-                            작업
-                          </TableHead>
-                        </TableRow>
-                      </TableHeader>
-
-                      {/* 테이블 바디 - 이동연소 데이터 목록 */}
-                      <TableBody>
-                        {/* 데이터가 없을 때 표시되는 빈 상태 */}
-                        {filteredMobileData.length === 0 && (
-                          <TableRow>
-                            <TableCell colSpan={9} className="py-16 text-center">
-                              <div className="flex flex-col justify-center items-center space-y-4">
-                                <div>
-                                  <h3 className="mb-2 text-lg font-semibold text-customG-700">
-                                    데이터가 없습니다
-                                  </h3>
-                                  <p className="text-customG-500">
-                                    새로운 이동연소 배출량 데이터를 추가해보세요
-                                  </p>
-                                </div>
-                              </div>
-                            </TableCell>
-                          </TableRow>
-                        )}
-                      </TableBody>
-                    </Table>
-                  </div>
-                </CardContent>
-              </Card>
-            </motion.div>
-          </TabsContent>
-        </Tabs>
+                        스팀 카테고리 섹션 (Steam Category Section)
+                        ================================================================ */}
+          <motion.div
+            initial={{opacity: 0, y: 20}}
+            animate={{opacity: 1, y: 0}}
+            transition={{duration: 0.5, delay: 0.4}}>
+            <div className="mb-6">
+              <h2 className="mb-2 text-xl font-bold text-customG-800">
+                이동 연소 사용량
+              </h2>
+              <p className="text-sm text-customG-600">===</p>
+            </div>
+            {/* 스팀 카테고리 선택 그리드 */}
+            <CategorySelector
+              categoryList={scope1KineticCategoryList}
+              getTotalEmission={getKineticTotalEmission}
+              onCategorySelect={handleKineticCategorySelect}
+              animationDelay={0.2}
+            />
+          </motion.div>
+        </div>
       </motion.div>
+
       {/* ========================================================================
           Scope 데이터 입력 모달 (Scope Data Input Modal)
           - 새로운 배출량 데이터 추가를 위한 모달 폼

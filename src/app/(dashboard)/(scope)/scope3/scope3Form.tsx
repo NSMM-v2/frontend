@@ -764,21 +764,21 @@ export default function Scope3Form() {
   // ========================================================================
 
   return (
-    <div className="flex flex-col p-4 w-full h-full">
+    <div className="flex flex-col w-full h-full p-4">
       {/* ========================================================================
           상단 네비게이션 (Top Navigation)
           - 브레드크럼을 통한 현재 위치 표시
           ======================================================================== */}
-      <div className="flex flex-row items-center p-2 px-2 mb-6 text-sm text-gray-500 bg-white rounded-lg shadow-sm">
+      <div className="flex flex-row items-center p-2 px-2 mb-4 text-sm text-gray-500 bg-white rounded-lg shadow-sm">
         <Breadcrumb>
           <BreadcrumbList>
             <BreadcrumbItem>
-              <Home className="mr-1 w-4 h-4" />
+              <Home className="w-4 h-4 mr-1" />
               <BreadcrumbLink href="/dashboard">대시보드</BreadcrumbLink>
             </BreadcrumbItem>
             <BreadcrumbSeparator />
             <BreadcrumbItem>
-              <span className="font-bold text-customG">Scope3</span>
+              <span className="font-bold text-blue-600">Scope3</span>
             </BreadcrumbItem>
           </BreadcrumbList>
         </Breadcrumb>
@@ -788,19 +788,16 @@ export default function Scope3Form() {
           헤더 섹션 (Header Section)
           - 뒤로가기 버튼과 페이지 제목/설명
           ======================================================================== */}
-      <div className="flex flex-row justify-between mb-6 w-full h-24">
-        <Link
-          href="/dashboard"
-          className="flex flex-row items-center p-4 space-x-4 rounded-md transition cursor-pointer hover:bg-gray-200">
-          <ArrowLeft className="w-6 h-6 text-gray-500 group-hover:text-blue-600" />
+      <div className="flex flex-row justify-between w-full h-24 mb-4">
+        <div className="flex flex-row items-center p-4">
           <PageHeader
-            icon={<Factory className="w-6 h-6 text-customG-600" />}
+            icon={<Factory className="w-6 h-6 text-blue-600" />}
             title="Scope 3 배출량 관리"
             description="15개 카테고리별 간접 배출량 데이터를 관리하고 추적합니다"
             module="SCOPE"
             submodule="scope3"
           />
-        </Link>
+        </div>
       </div>
 
       {/* ========================================================================
@@ -816,9 +813,9 @@ export default function Scope3Form() {
           initial={{opacity: 0}}
           animate={{opacity: 1}}
           transition={{duration: 0.4, delay: 0.1}}>
-          <Card className="overflow-hidden mb-4 shadow-sm">
+          <Card className="mb-4 overflow-hidden shadow-sm">
             <CardContent className="p-4">
-              <div className="grid grid-cols-1 gap-8 justify-center items-center h-24 md:grid-cols-3">
+              <div className="grid items-center justify-center h-24 grid-cols-1 gap-8 md:grid-cols-3">
                 {/* 백엔드 데이터 기반 총 배출량 카드 */}
                 <CategorySummaryCard
                   totalEmission={Object.values(categorySummary).reduce(
@@ -830,7 +827,7 @@ export default function Scope3Form() {
 
                 {/* 보고연도 입력 필드 */}
                 <div className="space-y-3">
-                  <label className="flex gap-2 items-center text-sm font-semibold text-customG-700">
+                  <label className="flex items-center gap-2 text-sm font-semibold text-customG-700">
                     <CalendarDays className="w-4 h-4" />
                     보고연도
                   </label>
@@ -840,13 +837,13 @@ export default function Scope3Form() {
                     onChange={e => setSelectedYear(parseInt(e.target.value))}
                     min="1900"
                     max="2200"
-                    className="px-3 py-2 w-full h-9 text-sm backdrop-blur-sm border-customG-200 focus:border-customG-400 focus:ring-customG-100 bg-white/80"
+                    className="w-full px-3 py-2 text-sm h-9 backdrop-blur-sm border-customG-200 focus:border-customG-400 focus:ring-customG-100 bg-white/80"
                   />
                 </div>
 
                 {/* 보고월 선택 드롭다운 (선택사항) */}
                 <div className="space-y-3">
-                  <label className="flex gap-2 items-center text-sm font-semibold text-customG-700">
+                  <label className="flex items-center gap-2 text-sm font-semibold text-customG-700">
                     <CalendarDays className="w-4 h-4" />
                     보고월 (선택사항)
                   </label>
