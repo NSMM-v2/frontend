@@ -997,23 +997,14 @@ export const fetchScope3CategorySummary = async (
   year: number,
   month: number
 ): Promise<Scope3CategorySummary> => {
-  try {
-    const response = await api.get<ApiResponse<Scope3CategorySummary>>(
-      `/api/v1/scope3/emissions/summary/year/${year}/month/${month}`
-    )
+  const response = await api.get<ApiResponse<Scope3CategorySummary>>(
+    `/api/v1/scope3/emissions/summary/year/${year}/month/${month}`
+  )
 
-    if (response.data.success && response.data.data) {
-      return response.data.data
-    } else {
-      throw new Error(
-        response.data.message || '카테고리 요약 데이터 조회에 실패했습니다.'
-      )
-    }
-  } catch (error: any) {
-    showError(
-      error.response?.data?.message || '카테고리 요약 조회 중 오류가 발생했습니다.'
-    )
-    return {}
+  if (response.data.success && response.data.data) {
+    return response.data.data
+  } else {
+    throw new Error(response.data.message || '카테고리 요약 데이터 조회에 실패했습니다.')
   }
 }
 
