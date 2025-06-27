@@ -147,12 +147,12 @@ export function CalculatorItem({
           scale: 1.01,
           transition: {duration: 0.2}
         }}
-        className="relative overflow-hidden transition-all duration-300 bg-white border-0 shadow-lg rounded-3xl hover:shadow-xl">
+        className="overflow-hidden relative bg-white rounded-3xl border-0 shadow-lg transition-all duration-300 hover:shadow-xl">
         {/* ========================================================================
             계산기 헤더 (Calculator Header)
             ======================================================================== */}
         <div className="p-6 bg-gradient-to-r from-blue-50 to-blue-100">
-          <div className="relative flex items-center">
+          <div className="flex relative items-center">
             {/* 계산기 번호 배지 */}
             <motion.div
               initial={{scale: 0}}
@@ -161,7 +161,7 @@ export function CalculatorItem({
                 delay: animationDelay + 0.1,
                 duration: 0.3
               }}
-              className="flex items-center justify-center mr-5 bg-blue-500 shadow-md w-14 h-14 rounded-2xl">
+              className="flex justify-center items-center mr-5 w-14 h-14 bg-blue-500 rounded-2xl shadow-md">
               <span className="text-lg font-bold text-white">{index}</span>
             </motion.div>
 
@@ -186,7 +186,7 @@ export function CalculatorItem({
                 initial={{opacity: 0, scale: 0.8}}
                 animate={{opacity: 1, scale: 1}}
                 transition={{delay: animationDelay + 0.3, duration: 0.3}}
-                className="flex items-center px-4 py-2 space-x-3 transition-all bg-white border border-blue-200 shadow-sm rounded-xl hover:bg-blue-50">
+                className="flex items-center px-4 py-2 space-x-3 bg-white rounded-xl border border-blue-200 shadow-sm transition-all hover:bg-blue-50">
                 {/* 토글 스위치 */}
                 <Switch
                   checked={mode}
@@ -213,8 +213,8 @@ export function CalculatorItem({
                     variant="ghost"
                     size="sm"
                     onClick={() => setShowDeleteDialog(true)}
-                    className="px-4 py-2 text-red-500 transition-all duration-200 border border-red-200 bg-red-50 rounded-xl hover:text-red-700 hover:bg-red-100 hover:border-red-300 hover:scale-105">
-                    <Trash2 className="w-4 h-4 mr-2" />
+                    className="px-4 py-2 text-red-500 bg-red-50 rounded-xl border border-red-200 transition-all duration-200 hover:text-red-700 hover:bg-red-100 hover:border-red-300 hover:scale-105">
+                    <Trash2 className="mr-2 w-4 h-4" />
                     <span className="font-medium">삭제</span>
                   </Button>
                 </motion.div>
@@ -269,7 +269,7 @@ export function CalculatorItem({
           <div className="h-px bg-blue-200" />
 
           {/* 중앙 포인트 */}
-          <div className="absolute w-3 h-3 transform -translate-x-1/2 -translate-y-1/2 bg-blue-500 border-2 border-white rounded-full top-1/2 left-1/2" />
+          <div className="absolute top-1/2 left-1/2 w-3 h-3 bg-blue-500 rounded-full border-2 border-white transform -translate-x-1/2 -translate-y-1/2" />
         </motion.div>
       )}
 
@@ -280,7 +280,7 @@ export function CalculatorItem({
         <AlertDialogContent className="max-w-md">
           <AlertDialogHeader>
             <div className="flex items-center mb-2 space-x-3">
-              <div className="flex items-center justify-center w-12 h-12 bg-red-100 rounded-full">
+              <div className="flex justify-center items-center w-12 h-12 bg-red-100 rounded-full">
                 <AlertTriangle className="w-6 h-6 text-red-600" />
               </div>
               <div>
@@ -304,12 +304,12 @@ export function CalculatorItem({
           </AlertDialogDescription>
 
           <AlertDialogFooter className="gap-3">
-            <AlertDialogCancel className="px-6 py-2 text-gray-700 transition-all bg-gray-100 border-0 rounded-lg hover:bg-gray-200">
+            <AlertDialogCancel className="px-6 py-2 text-gray-700 bg-gray-100 rounded-lg border-0 transition-all hover:bg-gray-200">
               취소
             </AlertDialogCancel>
             <AlertDialogAction
               onClick={handleDeleteConfirm}
-              className="px-6 py-2 text-white transition-all bg-red-600 border-0 rounded-lg hover:bg-red-700">
+              className="px-6 py-2 text-white bg-red-600 rounded-lg border-0 transition-all hover:bg-red-700">
               삭제
             </AlertDialogAction>
           </AlertDialogFooter>
