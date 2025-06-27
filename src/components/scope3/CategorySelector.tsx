@@ -165,14 +165,14 @@ export function CategorySelector<KeyType extends string>({
               className={`cursor-pointer transition-all duration-300 hover:shadow-sm hover:scale-105 ${
                 hasData
                   ? // 데이터가 있는 경우: 파란색 그라데이션 배경과 테두리
-                    'bg-gradient-to-br from-blue-50 to-blue-100 border-blue-200 shadow-sm'
+                    'bg-gradient-to-br from-blue-50 to-blue-100 border-blue-200 shadow-sm w-full'
                   : // 데이터가 없는 경우: 흰색 배경, 호버 시 파란색 효과
-                    'bg-white hover:border-blue-300 hover:bg-gradient-to-br hover:from-blue-25 hover:to-blue-50'
+                    'bg-white hover:border-blue-300 hover:bg-gradient-to-br hover:from-blue-25 hover:to-blue-50 w-full'
               }`}
               onClick={() => onCategorySelect(key as KeyType)}>
               <CardHeader className="p-4">
                 {/* 카테고리 정보 컨테이너 */}
-                <div className="flex justify-between items-start">
+                <div className="flex items-start justify-between">
                   {/* 카테고리 메인 정보 */}
                   <div className="flex-1">
                     {/* 카테고리 번호 라벨 */}
@@ -188,7 +188,7 @@ export function CategorySelector<KeyType extends string>({
                 </div>
 
                 {/* 배출량 표시 섹션 */}
-                <div className="flex justify-between items-center pt-3 mt-3 border-t border-gray-200">
+                <div className="flex items-center justify-between pt-3 mt-3 border-t border-gray-200">
                   {/* 배출량 수치 */}
                   <div
                     className={`text-lg font-bold transition-colors ${
@@ -202,7 +202,7 @@ export function CategorySelector<KeyType extends string>({
                 </div>
 
                 {/* 데이터 상태 표시 섹션 */}
-                <div className="flex justify-between items-center pt-3 mt-3 border-t border-gray-200">
+                <div className="flex items-center justify-between pt-3 mt-3 border-t border-gray-200">
                   {/* 데이터 상태 인디케이터 */}
                   <div
                     className={`flex items-center text-xs ${

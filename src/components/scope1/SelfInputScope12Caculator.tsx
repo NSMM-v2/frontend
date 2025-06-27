@@ -21,18 +21,9 @@
 
 import React, {useEffect, useRef} from 'react'
 import {motion} from 'framer-motion'
-import {Card, CardContent, CardHeader, CardTitle} from '@/components/ui/card'
+import {Card, CardContent} from '@/components/ui/card'
 import {Input} from '../ui/input'
-import {
-  Layers,
-  Tag,
-  Zap,
-  Ruler,
-  Calculator,
-  Hash,
-  Sparkles,
-  TrendingUp
-} from 'lucide-react'
+import {Layers, Tag, Zap, Ruler, Calculator, Hash, TrendingUp} from 'lucide-react'
 import type {SelectorState} from '@/lib/types'
 import {showWarning} from '@/util/toast'
 
@@ -43,7 +34,7 @@ interface SelfInputCalculatorProps {
   onChangeTotal: (id: number, emission: number) => void
 }
 
-export function SelfInputCalculator({
+export function SelfInputScope12Calculator({
   id,
   state,
   onChangeState,
@@ -165,15 +156,6 @@ export function SelfInputCalculator({
   const basicInfoFields = [
     {
       step: '1',
-      label: '대분류',
-      key: 'category' as keyof SelectorState,
-      type: 'text',
-      placeholder: '예: 구매한 상품 및 서비스',
-      icon: Layers,
-      description: 'Scope 3 배출 카테고리를 입력하세요'
-    },
-    {
-      step: '2',
       label: '구분',
       key: 'separate' as keyof SelectorState,
       type: 'text',
@@ -182,7 +164,7 @@ export function SelfInputCalculator({
       description: '세부 구분을 입력하세요'
     },
     {
-      step: '3',
+      step: '2',
       label: '원료/에너지',
       key: 'rawMaterial' as keyof SelectorState,
       type: 'text',

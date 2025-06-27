@@ -38,27 +38,22 @@ export function PageHeader({
   gradient
 }: PageHeaderProps) {
   const moduleColors = {
-    GRI: {base: 'from-customG/10 border-customG/20'},
-    CSDDD: {base: 'from-customG/10 border-customG/20'},
-    TCFD: {base: 'from-customG/10 border-customG/20'},
-    PARTNERCOMPANY: {base: 'from-customG/10 border-customG/20'},
-    SCOPE: {base: 'from-customG/10 border-customG/20'}
+    CSDDD: {base: 'from-blue-600/10 border-blue-600/20'},
+    PARTNERCOMPANY: {base: 'from-blue-600/10 border-blue-600/20'},
+    SCOPE: {base: 'from-blue-600/10 border-blue-600/20'}
   }
 
   const subModuleColors: Record<string, string> = {
-    governance: 'from-customG/10 border-customG/20',
-    strategy: 'from-customG/10 border-customG/20',
-    goal: 'from-customG/10 border-customG/20',
-    eudd: 'from-customG/10 border-customG/20',
-    hrdd: 'from-customG/10 border-customG/20',
-    edd: 'from-customG/10 border-customG/20',
-    managePartner: 'from-customG/10 border-customG/20',
-    financialRisk: 'from-customG/10 border-customG/20',
-    scope1: 'from-customG/10 border-customG/20',
-    scope2: 'from-customG/10 border-customG/20',
-    euddResult: 'from-customG/10 border-customG/20',
-    hrddResult: 'from-customG/10 border-customG/20',
-    eddResult: 'from-customG/10 border-customG/20'
+    eudd: 'from-blue-600/10 border-blue-600/20',
+    hrdd: 'from-blue-600/10 border-blue-600/20',
+    edd: 'from-blue-600/10 border-blue-600/20',
+    managePartner: 'from-blue-600/10 border-blue-600/20',
+    financialRisk: 'from-blue-600/10 border-blue-600/20',
+    scope1: 'from-blue-600/10 border-blue-600/20',
+    scope2: 'from-blue-600/10 border-blue-600/20',
+    euddResult: 'from-blue-600/10 border-blue-600/20',
+    hrddResult: 'from-blue-600/10 border-blue-600/20',
+    eddResult: 'from-blue-600/10 border-blue-600/20'
   }
 
   const getModuleStyle = () => {
@@ -82,7 +77,7 @@ export function PageHeader({
             'border-[1.5px] rounded-xl',
             getModuleStyle()
           )}>
-          <div className="text-customG">{icon}</div>
+          <div className="text-blue-600">{icon}</div>
         </div>
         <div className="ml-4">
           <h1 className="text-xl font-bold text-slate-800">{title}</h1>
