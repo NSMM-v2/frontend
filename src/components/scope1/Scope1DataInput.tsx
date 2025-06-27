@@ -47,7 +47,7 @@ import {
   Scope1KineticCategoryKey,
   scope1PotentialCategoryList,
   scope1KineticCategoryList
-} from '@/components/totalScope/CategorySelector'
+} from '@/components/scopeTotal/CategorySelector'
 import {SelfInputScope12Calculator} from '@/components/scope1/SelfInputScope12Caculator'
 import {ExcelCascadingSelector} from '@/components/scope1/ExcelCascadingSelector'
 

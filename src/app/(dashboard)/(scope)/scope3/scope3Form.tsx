@@ -51,12 +51,12 @@ import {PageHeader} from '@/components/layout/PageHeader'
 import {
   CategorySelector,
   Scope3CategoryKey
-} from '@/components/totalScope/CategorySelector'
+} from '@/components/scopeTotal/CategorySelector'
 import {CategoryDataInput} from '@/components/scope3/CategoryDataInput'
-import {MonthSelector} from '@/components/totalScope/MonthSelector'
+import {MonthSelector} from '@/components/scopeTotal/MonthSelector'
 import {Input} from '@/components/ui/input'
 import {Card, CardContent} from '@/components/ui/card'
-import {scope3CategoryList} from '@/components/totalScope/CategorySelector'
+import {scope3CategoryList} from '@/components/scopeTotal/CategorySelector'
 
 // ============================================================================
 // 타입 및 서비스 임포트 (Types & Services Imports)

@@ -26,7 +26,7 @@ import {Button} from '@/components/ui/button'
 import {Trash2, Database, Sparkles, AlertTriangle} from 'lucide-react'
 import {ExcelCascadingSelector} from './ExcelCascadingSelector'
 import {Switch} from '@/components/ui/switch'
-import {SelfInputCalculator} from './SelfInputCaculator'
+import {SelfInputCalculator} from './SelfInputScope3Caculator'
 import {
   AlertDialog,
   AlertDialogAction,

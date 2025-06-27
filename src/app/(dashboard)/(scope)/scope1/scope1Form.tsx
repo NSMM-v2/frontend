@@ -51,9 +51,9 @@ import {
   Scope1KineticCategoryKey,
   scope1PotentialCategoryList,
   scope1KineticCategoryList
-} from '@/components/totalScope/CategorySelector'
+} from '@/components/scopeTotal/CategorySelector'
 import {Scope1DataInput} from '@/components/scope1/Scope1DataInput'
-import {MonthSelector} from '@/components/totalScope/MonthSelector'
+import {MonthSelector} from '@/components/scopeTotal/MonthSelector'
 import {Input} from '@/components/ui/input'
 import {Card, CardContent} from '@/components/ui/card'
 

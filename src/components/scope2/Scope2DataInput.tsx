@@ -46,7 +46,7 @@ import {
   Scope2SteamCategoryKey,
   scope2ElectricCategoryList,
   scope2SteamCategoryList
-} from '@/components/totalScope/CategorySelector'
+} from '@/components/scopeTotal/CategorySelector'
 import {SelfInputScope12Calculator} from '@/components/scope1/SelfInputScope12Caculator'
 import {ExcelCascadingSelector} from '@/components/scope1/ExcelCascadingSelector'
 
