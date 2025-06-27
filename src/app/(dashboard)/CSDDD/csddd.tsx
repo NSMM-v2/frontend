@@ -6,7 +6,7 @@
 
 import Link from 'next/link' // Next.js 라우팅을 위한 Link 컴포넌트
 import {useState, useEffect} from 'react' // React 상태 관리 및 생명주기 훅
-import {fetchPartnerResults, fetchPartnerResult} from '@/services/csdddService'
+import {getSelfAssessmentResults} from '@/services/csdddService'
 import {motion} from 'framer-motion' // 애니메이션 효과를 위한 Framer Motion
 
 // ============================================================================
@@ -389,45 +389,37 @@ export function CSDDDLayout() {
   useEffect(() => {
     const loadPartnerList = async () => {
       try {
-        const res = await fetchPartnerResults()
-        console.log('✅ 백엔드 응답:', JSON.stringify(res.data, null, 2))
+        const response = await getSelfAssessmentResults()
+        console.log('✅ 백엔드 응답:', JSON.stringify(response, null, 2))
 
+        const rows = response
         // 데이터 유효성 검사
-        if (!res.data || !Array.isArray(res.data)) {
-          console.warn('⚠️ 잘못된 데이터 형식:', res.data)
+        if (!rows || !Array.isArray(rows)) {
+          console.warn('⚠️ 잘못된 데이터 형식:', rows)
           setPartnerList([])
           return
         }
 
         // 중복 제거 및 데이터 정규화
         const uniqueMap = new Map<number, string>()
-
-        res.data.forEach((item: any, index: number) => {
+        rows.forEach((item: any, index: number) => {
           // 각 아이템의 상세 정보 로깅
           console.log(`📋 Item ${index}:`, {
             memberId: item.memberId,
             companyName: item.companyName,
-            // 다른 가능한 회사명 필드들 확인
             company_name: item.company_name,
             name: item.name,
             corporationName: item.corporationName,
             businessName: item.businessName,
             partnerName: item.partnerName,
-            // 전체 필드 확인
             allKeys: Object.keys(item),
-            // 전체 객체 출력
             fullObject: item
           })
-
-          // 필수 필드 검증
           if (!item?.memberId || typeof item.memberId !== 'number') {
             console.warn('⚠️ 잘못된 memberId:', item)
             return
           }
-
           const id = item.memberId
-
-          // 여러 가능한 회사명 필드 시도
           const possibleNames = [
             item.companyName,
             item.company_name,
@@ -436,18 +428,13 @@ export function CSDDDLayout() {
             item.businessName,
             item.partnerName
           ].filter(name => name && typeof name === 'string' && name.trim() !== '')
-
           const companyName = possibleNames[0]?.trim()
-
           console.log(`🔍 ID ${id} 회사명 후보들:`, {
             possibleNames,
             selectedName: companyName,
             isValid: !!companyName
           })
-
           const name = companyName || `ID ${id}`
-
-          // 중복 체크 - 더 좋은 이름이 있으면 업데이트
           if (
             !uniqueMap.has(id) ||
             (companyName && uniqueMap.get(id)?.startsWith('ID '))
@@ -455,12 +442,10 @@ export function CSDDDLayout() {
             uniqueMap.set(id, name)
           }
         })
-
         const uniqueList = Array.from(uniqueMap.entries()).map(([id, name]) => ({
           id,
           name
         }))
-
         console.log('🎯 최종 목록:', uniqueList)
         setPartnerList(uniqueList)
       } catch (err) {
@@ -468,15 +453,21 @@ export function CSDDDLayout() {
         setPartnerList([])
       }
     }
-
     loadPartnerList()
   }, [])
 
   const handleFetchPartnerResult = async () => {
     if (!selectedPartnerId) return
     try {
-      const res = await fetchPartnerResult(selectedPartnerId)
-      setPartnerResult(res.data)
+      // getSelfAssessmentResults()는 전체 목록, 단일 결과 조회 함수가 별도 필요할 수 있음
+      // 임시로 getSelfAssessmentResults()에서 선택된 협력사 결과를 찾음
+      const response = await getSelfAssessmentResults()
+      // response는 배열이라고 가정
+      const rows = response
+      const found = Array.isArray(rows)
+        ? rows.find((item: any) => item.memberId === selectedPartnerId)
+        : null
+      setPartnerResult(found?.content)
     } catch (err) {
       setPartnerResult(null)
     }

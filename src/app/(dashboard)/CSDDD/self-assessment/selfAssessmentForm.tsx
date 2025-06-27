@@ -1,98 +1,42 @@
 'use client'
-
+import {useState, useEffect} from 'react'
 import {
-  submitSelfAssessmentToBackend,
-  fetchSelfAssessmentAnswers
-} from '@/services/csdddService'
-
-import type {SelfAssessmentRequest} from '@/types/csdddType'
-import {answerConverter} from '@/util/answerConverter'
+  ChevronDown,
+  ChevronUp,
+  CheckCircle,
+  AlertTriangle,
+  Building,
+  Send
+} from 'lucide-react'
 
 import authService from '@/services/authService'
 
-// ============================================================================
-// 외부 라이브러리 임포트 (External Library Imports)
-// ============================================================================
-
-import {useEffect, useState} from 'react' // React 상태 관리 및 생명주기 훅
-import {Card} from '@/components/ui/card' // 카드 레이아웃 컴포넌트
-import Link from 'next/link' // Next.js 내부 링크 컴포넌트
-
-// ============================================================================
-// 아이콘 라이브러리 임포트 (Icon Library Imports)
-// ============================================================================
-
-import {
-  Check, // 체크 아이콘 - 긍정적 답변 표시
-  AlertCircle, // 경고 원형 아이콘 - 부정적 답변 표시
-  AlertTriangle, // 삼각형 경고 아이콘 - 중대위반 항목 강조
-  Shield, // 방패 아이콘 - 보안/안전 관련 표시
-  Home, // 홈 아이콘 - 브레드크럼 홈 링크
-  ArrowLeft // 왼쪽 화살표 - 뒤로가기 버튼
-} from 'lucide-react'
-
-import {
-  Tooltip,
-  TooltipTrigger,
-  TooltipContent,
-  TooltipProvider
-} from '@/components/ui/tooltip'
-
-// ============================================================================
-// 내부 컴포넌트 임포트 (Internal Component Imports)
-// ============================================================================
-
-import {
-  Breadcrumb, // 브레드크럼 컨테이너
-  BreadcrumbItem, // 브레드크럼 개별 항목
-  BreadcrumbLink, // 브레드크럼 링크
-  BreadcrumbList, // 브레드크럼 리스트
-  BreadcrumbSeparator // 브레드크럼 구분자 (>)
-} from '@/components/ui/breadcrumb'
-import {PageHeader} from '@/components/layout/PageHeader' // 페이지 헤더 컴포넌트
-
-// ============================================================================
-// 타입 정의 (Type Definitions)
-// ============================================================================
-
-/**
- * 자가진단 질문 인터페이스
- *
- * CSDDD(기업 지속가능성 실사 지침) 자가진단을 위한 개별 질문 구조
- * 각 질문은 고유 ID, 카테고리, 가중치를 가지며 중대위반 여부를 포함할 수 있음
- */
+import {submitSelfAssessmentToBackend} from '@/services/csdddService'
+// 질문 데이터 타입 정의
 interface Question {
-  id: string // 질문 고유 식별자 (예: "1.1", "2.3")
-  category: string // 질문이 속한 카테고리 (5개 주요 영역 중 하나)
-  text: string // 질문 내용 (한국어)
-  weight: number // 질문의 가중치 (점수 계산 시 사용)
+  id: string
+  category: string
+  text: string
+  weight: number
   criticalViolation?: {
-    // 선택적 중대위반 정보
-    grade: 'D' | 'C' | 'B' | 'B/C' // 위반 시 강제 등급
-    reason: string // 위반 사유 설명
+    grade: string
+    reason: string
   }
 }
 
-// ============================================================================
-// 평가 카테고리 정의 (Assessment Categories)
-// ============================================================================
+// 답변 상태 타입
+interface Answer {
+  questionId: string
+  answer: 'yes' | 'no' | ''
+  remarks?: string
+}
 
-/**
- * CSDDD 자가진단 5개 주요 평가 카테고리
- *
- * 유럽연합 CSDDD 지침에 따른 핵심 평가 영역들:
- * 1. 인권 및 노동 - ILO 핵심 협약 기반 (9개 질문)
- * 2. 산업안전·보건 - 산업안전보건법 기반 (6개 질문)
- * 3. 환경경영 - ISO 14001 기반 (8개 질문)
- * 4. 공급망 및 조달 - 공급망 실사 핵심 (9개 질문)
- * 5. 윤리경영 및 정보보호 - 내부통제 시스템 (8개 질문)
- */
 const categories = [
-  '인권 및 노동', // Human Rights & Labor
-  '산업안전·보건', // Occupational Health & Safety
-  '환경경영', // Environmental Management
-  '공급망 및 조달', // Supply Chain & Procurement
-  '윤리경영 및 정보보호' // Ethics & Information Security
+  '인권 및 노동',
+  '산업안전·보건',
+  '환경경영',
+  '공급망 및 조달',
+  '윤리경영 및 정보보호'
 ]
 
 const questions: Question[] = [
@@ -171,7 +115,7 @@ const questions: Question[] = [
     text: '근로자 고충처리 메커니즘을 갖추고 있습니까?',
     weight: 1.0,
     criticalViolation: {
-      grade: 'B/C',
+      grade: 'C',
       reason: '시스템 미비 → B, 고의 누락 → C'
     }
   },
@@ -303,7 +247,7 @@ const questions: Question[] = [
     text: '공급망의 추적 가능성을 확보하고 있습니까?',
     weight: 1.5,
     criticalViolation: {
-      grade: 'B/C',
+      grade: 'C',
       reason: 'OECD Due Diligence 위반'
     }
   },
@@ -427,739 +371,354 @@ const questions: Question[] = [
   }
 ]
 
-// ============================================================================
-// 점수 계산 및 등급 기준 (Scoring and Grading Standards)
-// ============================================================================
+export default function CSAssessmentPage() {
+  const [companyName, setCompanyName] = useState('')
+  const [answers, setAnswers] = useState<Record<string, Answer>>({})
+  const [expandedCategories, setExpandedCategories] = useState<Record<string, boolean>>(
+    {}
+  )
+  const [isSubmitting, setIsSubmitting] = useState(false)
 
-/**
- * 전체 질문의 총 가중치 합계
- * 모든 질문의 가중치를 합산하여 100점 만점 기준으로 환산하는데 사용
- * 현재 총 가중치: 52.5점 (26개 질문의 가중치 합)
- */
-const TOTAL_WEIGHT = questions.reduce((sum, q) => sum + q.weight, 0) // 52.5
-
-/**
- * CSDDD 자가진단 등급 기준 (100점 만점)
- *
- * 등급 체계:
- * - A등급 (90점 이상): 리스크 거의 없음, 계약 가능/실사 면제 가능
- * - B등급 (75-89점): 관리 가능 수준, 개선 개별 수준
- * - C등급 (60-74점): 중위험 구간, 세부 정밀 실사 필요
- * - D등급 (60점 미만): 고위험 구간, 계약 중단/블랙리스트 가능성
- *
- * 중대위반 항목이 있을 경우 해당 위반의 등급으로 자동 강등
- */
-const gradeThresholds = {
-  A: 90, // 우수 등급 (90점 이상)
-  B: 75, // 양호 등급 (75-89점)
-  C: 60, // 보통 등급 (60-74점)
-  D: 0 // 미흡 등급 (60점 미만)
-}
-
-const violationMap: Record<string, {penaltyInfo?: string; legalBasis?: string}> = {
-  '1.1': {
-    penaltyInfo: '연매출 5% 이하 벌금',
-    legalBasis: 'EU CSDDD Art.6, ILO 138'
-  },
-  '1.2': {
-    penaltyInfo: '최대 연매출 2% 또는 €8M',
-    legalBasis: 'LkSG §3, CSDDD Art.7'
-  },
-  '1.3': {
-    penaltyInfo: '징벌적 손해배상 가능',
-    legalBasis: 'CSDDD Art.6, EU 인권헌장'
-  },
-  '1.4': {
-    penaltyInfo: '징계/명단공개/배상',
-    legalBasis: 'ILO 190'
-  },
-  '1.5': {
-    penaltyInfo: '과태료 및 민사 배상',
-    legalBasis: '근로기준법 §17'
-  },
-  '1.6': {
-    penaltyInfo: '행정벌금 및 시정명령',
-    legalBasis: '근로기준법 §53~57'
-  },
-  '1.7': {
-    penaltyInfo: '민사책임/평가불이익',
-    legalBasis: 'ILO 87, 98'
-  },
-  '1.8': {
-    penaltyInfo: '5% 벌금 또는 소송',
-    legalBasis: 'CSDDD Art.6'
-  },
-  '1.9': {
-    penaltyInfo: '행정 권고/공시 의무',
-    legalBasis: 'UNGP Guiding Principle 31'
-  },
-  '2.1': {
-    penaltyInfo: '과태료/산재 시 가중',
-    legalBasis: '산안법 §31'
-  },
-  '2.7': {
-    penaltyInfo: '벌금/책임자 처벌',
-    legalBasis: '산안법 §28'
-  },
-  '2.8': {
-    penaltyInfo: '과태료 및 보고의무',
-    legalBasis: '산안법 §43, §45'
-  },
-  '2.9': {
-    penaltyInfo: '형사책임, 과태료',
-    legalBasis: '산안법 §31'
-  },
-  '3.1': {
-    penaltyInfo: '환경벌금 및 영업정지',
-    legalBasis: '환경정책기본법 §15'
-  },
-  '3.2': {
-    penaltyInfo: '과태료/처벌',
-    legalBasis: '폐기물관리법 §13'
-  },
-  '3.3': {
-    penaltyInfo: '민사책임/이미지 타격',
-    legalBasis: '환경범죄 단속법 §4'
-  },
-  '3.4': {
-    penaltyInfo: '형사처벌 및 벌금',
-    legalBasis: '환경정책기본법 §38'
-  },
-  '3.5': {
-    penaltyInfo: '이행강제금/사업정지',
-    legalBasis: '대기환경보전법 §19'
-  },
-  '3.6': {
-    penaltyInfo: '과태료/형사처벌',
-    legalBasis: '수질 및 수생태계 보전법 §12'
-  },
-  '3.7': {
-    penaltyInfo: '위반 시 환경부 공표',
-    legalBasis: '환경오염시설법 §9'
-  },
-  '4.1': {
-    penaltyInfo: '계약 해지 및 불이익',
-    legalBasis: '공정거래법 §23'
-  },
-  '4.2': {
-    penaltyInfo: '법적 제재/공정위 조치',
-    legalBasis: '공정거래법 §23'
-  },
-  '4.3': {
-    penaltyInfo: '법적 제재 및 손해배상',
-    legalBasis: '공정거래법 §23의2'
-  },
-  '4.4': {
-    penaltyInfo: '과징금/영업정지',
-    legalBasis: '하도급법 §12'
-  },
-  '4.5': {
-    penaltyInfo: '과징금 및 공정위 시정조치',
-    legalBasis: '대규모유통업법 §17'
-  },
-  '4.6': {
-    penaltyInfo: '공정위 제재/계약파기',
-    legalBasis: '전자상거래법 §21'
-  },
-  '4.7': {
-    penaltyInfo: '국제분쟁/계약해지',
-    legalBasis: 'OECD 공급망지침'
-  },
-  '4.8': {
-    penaltyInfo: '법적 책임 및 명단 공개',
-    legalBasis: '공정거래법 §23'
-  },
-  '5.1': {
-    penaltyInfo: '형사처벌 및 과징금',
-    legalBasis: '정보보호법 §28'
-  },
-  '5.2': {
-    penaltyInfo: '위반 시 신고 및 제재',
-    legalBasis: '부패방지법 §8'
-  },
-  '5.3': {
-    penaltyInfo: '위반 시 손해배상',
-    legalBasis: '부정청탁금지법 §5'
-  },
-  '5.4': {
-    penaltyInfo: '형사처벌 가능',
-    legalBasis: '개인정보보호법 §71'
-  },
-  '5.5': {
-    penaltyInfo: '내부고발 시 보호조치',
-    legalBasis: '공익신고자보호법 §12'
-  },
-  '5.6': {
-    penaltyInfo: '불이익 처분 및 과태료',
-    legalBasis: '청탁금지법 §23'
-  },
-  '5.7': {
-    penaltyInfo: '계약 파기 및 명단 공개',
-    legalBasis: '기업윤리헌장'
-  },
-  '5.8': {
-    penaltyInfo: '국제 제재 및 신뢰 하락',
-    legalBasis: 'UN Global Compact'
-  }
-}
-
-// ============================================================================
-// 메인 컴포넌트 정의 (Main Component Definition)
-// ============================================================================
-
-/**
- * CSDDD 자가진단 폼 메인 컴포넌트
- *
- * 사용자 인터랙션을 관리하고 질문 응답, 점수 계산, 결과 표시 등의
- * 핵심 기능을 제공하는 메인 컴포넌트
- */
-export default function SelfAssessmentForm() {
-  // ========================================================================
-  // 상태 관리 (State Management)
-  // ========================================================================
-
-  /**
-   * 사용자 응답 상태 관리
-   * 각 질문 ID를 키로 하고 'yes' 또는 'no' 값을 저장
-   */
-  const [answers, setAnswers] = useState<Record<string, string>>({})
-  const [submitted, setSubmitted] = useState(false)
-  // zustand auth store에서 정보 가져오기
-
-  // ========================================================================
-  // 자가진단 제출 핸들러 (Self-Assessment Submission)
-  // ========================================================================
-  const handleSubmit = async () => {
-    try {
-      const userInfoResponse = await authService.getCurrentUserByType()
-      const userInfo = userInfoResponse?.data
-
-      if (!userInfo) throw new Error('User info not found')
-
-      const accountNumber = userInfo.accountNumber
-      const userType = userInfo.userType
-      const headquartersId =
-        userType === 'PARTNER'
-          ? userInfo.headquartersId?.toString()
-          : userInfo.accountNumber // 본사인 경우 자신의 accountNumber를 headquartersId로 사용
-      const partnerId = userType === 'PARTNER' ? userInfo.partnerId : undefined
-
-      if (!accountNumber) throw new Error('accountNumber is missing')
-      if (!headquartersId) throw new Error('headquartersId is missing')
-
-      const requestList: SelfAssessmentRequest[] =
-        answerConverter.fromStringToEnumCompatible(answers, questions)
-
-      console.log('userInfo:', userInfo)
-      console.log('headquartersId:', headquartersId)
-      console.log('partnerId:', partnerId)
-      console.log('requestList (제출 전):', requestList)
-
-      await submitSelfAssessmentToBackend({
-        companyName: userInfo.companyName ?? '미입력 회사명',
-        answers: requestList
-      })
-
-      console.log('자가진단 제출 완료')
-      // 성공 처리 로직 추가
-    } catch (error) {
-      console.error('자가진단 제출 실패:', error)
-      // 에러 처리 로직 추가
-      throw error
-    }
-  }
-
-  /**
-   * 현재 활성화된 카테고리 탭
-   * 기본값은 첫 번째 카테고리인 '인권 및 노동'
-   */
-  const [activeTab, setActiveTab] = useState('인권 및 노동')
-
-  // ========================================================================
-  // 초기화 및 생명주기 관리 (Initialization & Lifecycle)
-  // ========================================================================
-
-  /**
-   * 컴포넌트 마운트 시 기존 답변을 불러오고, 없으면 모든 질문을 'yes'로 초기화
-   */
   useEffect(() => {
-    async function loadAnswers() {
-      try {
-        const userInfoResponse = await authService.getCurrentUserByType()
-        const userInfo = userInfoResponse?.data
-
-        if (!userInfo) {
-          console.error('사용자 정보를 가져올 수 없습니다')
-          return
+    authService
+      .getCurrentUserByType()
+      .then(res => {
+        if (res?.data?.companyName) {
+          setCompanyName(res.data.companyName)
         }
-
-        const accountNumber = userInfo.accountNumber
-        const userType = userInfo.userType
-        const headquartersId =
-          userType === 'PARTNER'
-            ? userInfo.headquartersId?.toString()
-            : userInfo.accountNumber // 본사인 경우 자신의 accountNumber를 headquartersId로 사용
-
-        if (!accountNumber || !headquartersId) {
-          console.error('필수 정보가 누락되었습니다:', {accountNumber, headquartersId})
-          return
-        }
-
-        console.log('답변 불러오기 시도:', {accountNumber, headquartersId, userType})
-
-        const existingAnswers = await fetchSelfAssessmentAnswers()
-
-        if (existingAnswers) {
-          // 대문자를 소문자로 변환
-          const normalizedAnswers = Object.entries(existingAnswers).reduce(
-            (acc, [key, value]) => {
-              acc[key] = typeof value === 'string' ? value.toLowerCase() : value
-              return acc
-            },
-            {} as Record<string, string>
-          )
-
-          console.log('변환된 답변:', normalizedAnswers)
-          setAnswers(normalizedAnswers)
-        }
-      } catch (error) {
-        console.error('답변 불러오기 실패:', error)
-        // 에러가 발생해도 앱이 계속 동작하도록 함
-      }
-    }
-
-    loadAnswers()
+      })
+      .catch(err => console.error('회사명 로드 실패:', err))
   }, [])
 
-  // ========================================================================
-  // 이벤트 핸들러 (Event Handlers)
-  // ========================================================================
-
-  /**
-   * 질문 응답 변경 핸들러
-   * 사용자가 라디오 버튼을 선택했을 때 응답 상태를 업데이트
-   *
-   * @param questionId 질문 고유 식별자
-   * @param value 선택된 값 ('yes' 또는 'no')
-   */
-  const handleAnswerChange = (questionId: string, value: string) => {
+  // 답변 변경 핸들러
+  const handleAnswerChange = (
+    questionId: string,
+    answer: 'yes' | 'no',
+    category: string,
+    weight: number,
+    critical: boolean,
+    criticalGrade?: string
+  ) => {
     setAnswers(prev => ({
       ...prev,
-      [questionId]: value
+      [questionId]: {
+        questionId,
+        answer,
+        remarks: prev[questionId]?.remarks || ''
+      }
     }))
   }
 
-  // ========================================================================
-  // 점수 계산 로직 (Score Calculation Logic)
-  // ========================================================================
-
-  /**
-   * 전체 점수 계산 함수
-   *
-   * 모든 질문의 응답을 기반으로 100점 만점 기준의 점수를 계산
-   * 'yes' 응답인 질문들의 가중치 합계를 총 가중치로 나누어 백분율로 환산
-   *
-   * @returns 100점 만점 기준 점수 (정수)
-   */
-  const calculateScore = () => {
-    let totalScore = 0
-    questions.forEach(q => {
-      if (answers[q.id] === 'yes') {
-        totalScore += q.weight // 긍정 응답인 질문의 가중치만 합산
+  // 비고 변경 핸들러
+  const handleRemarksChange = (questionId: string, remarks: string) => {
+    setAnswers(prev => ({
+      ...prev,
+      [questionId]: {
+        ...prev[questionId],
+        questionId,
+        answer: prev[questionId]?.answer || '',
+        remarks
       }
-    })
-    return Math.round((totalScore / TOTAL_WEIGHT) * 100) // 백분율로 환산 후 반올림
+    }))
   }
 
-  /**
-   * 카테고리별 점수 계산 함수
-   *
-   * 특정 카테고리에 속한 질문들만을 대상으로 점수를 계산
-   * 해당 카테고리 내에서의 상대적 성과를 백분율로 표시
-   *
-   * @param category 점수를 계산할 카테고리명
-   * @returns 해당 카테고리의 100점 만점 기준 점수 (정수)
-   */
-  const calculateCategoryScore = (category: string) => {
-    const categoryQuestions = questions.filter(q => q.category === category)
-    let totalScore = 0 // 실제 획득 점수
-    let maxScore = 0 // 해당 카테고리 최대 점수
-
-    categoryQuestions.forEach(q => {
-      if (answers[q.id] === 'yes') {
-        totalScore += q.weight
-      }
-      maxScore += q.weight // 카테고리 내 모든 질문의 가중치 합
-    })
-
-    return maxScore ? Math.round((totalScore / maxScore) * 100) : 0
+  // 카테고리 토글
+  const toggleCategory = (category: string) => {
+    setExpandedCategories(prev => ({
+      ...prev,
+      [category]: !prev[category]
+    }))
   }
 
-  // ========================================================================
-  // 등급 계산 및 평가 로직 (Grade Calculation & Assessment Logic)
-  // ========================================================================
+  // 진행률 계산
+  const calculateProgress = () => {
+    const totalQuestions = questions.length
+    const answeredQuestions = Object.values(answers).filter(
+      answer => answer.answer !== ''
+    ).length
+    return Math.round((answeredQuestions / totalQuestions) * 100)
+  }
 
-  /**
-   * 최종 등급 계산 함수
-   *
-   * 기본 점수와 중대위반 항목을 종합적으로 고려하여 최종 등급을 결정
-   * 중대위반이 있는 경우 해당 위반의 등급으로 자동 강등
-   *
-   * 계산 과정:
-   * 1. 기본 점수 계산 (가중치 기반)
-   * 2. 중대위반 항목 검사
-   * 3. 중대위반이 없으면 점수 기준 등급 적용
-   * 4. 중대위반이 있으면 가장 낮은 위반 등급으로 강등
-   *
-   * @returns 최종 등급 ('A', 'B', 'C', 'D' 중 하나)
-   */
-  const getFinalGrade = () => {
-    const baseScore = calculateScore() // 기본 점수 계산
+  // 카테고리별 질문 그룹화
+  const questionsByCategory = questions.reduce((acc, question) => {
+    if (!acc[question.category]) {
+      acc[question.category] = []
+    }
+    acc[question.category].push(question)
+    return acc
+  }, {} as Record<string, Question[]>)
 
-    // 중대위반 항목 검사 - 'no' 응답이면서 중대위반 속성이 있는 질문들
-    const criticalViolations = questions
-      .filter(q => q.criticalViolation && answers[q.id] === 'no')
-      .map(q => q.criticalViolation!)
+  // 카테고리 전체 선택 핸들러
+  const handleSelectAllInCategory = (category: string, answer: 'yes' | 'no') => {
+    const updatedAnswers = {...answers}
+    const categoryQuestions = questionsByCategory[category] || []
 
-    if (criticalViolations.length === 0) {
-      // 중대위반이 없는 경우 일반 등급 기준 적용
-      if (baseScore >= gradeThresholds.A) return 'A'
-      if (baseScore >= gradeThresholds.B) return 'B'
-      if (baseScore >= gradeThresholds.C) return 'C'
-      return 'D'
+    categoryQuestions.forEach(question => {
+      updatedAnswers[question.id] = {
+        questionId: question.id,
+        answer,
+        remarks: answers[question.id]?.remarks || ''
+      }
+    })
+
+    setAnswers(updatedAnswers)
+  }
+
+  // 제출 핸들러
+  const handleSubmit = async () => {
+    const unansweredQuestions = questions.filter(
+      q => !answers[q.id] || answers[q.id].answer === ''
+    )
+    if (unansweredQuestions.length > 0) {
+      alert(`모든 질문에 답변해주세요. (미답변: ${unansweredQuestions.length}개)`)
+      return
     }
 
-    // 중대위반이 있는 경우 가장 낮은 등급으로 강등
-    const worstGrade = criticalViolations.reduce((worst, violation) => {
-      const grades = ['A', 'B', 'C', 'D'] // 등급 순서 (좋은 것부터)
-      const currentWorst = grades.indexOf(worst)
-      const violationGrade = violation.grade === 'B/C' ? 'C' : violation.grade // B/C는 C로 처리
-      const violationWorst = grades.indexOf(violationGrade)
-      return violationWorst > currentWorst ? violationGrade : worst // 더 나쁜 등급 선택
-    }, 'A')
+    setIsSubmitting(true)
 
-    return worstGrade
-  }
+    try {
+      // TypeScript 인터페이스에 맞는 데이터 구조로 변환
+      const submissionData = {
+        companyName,
+        answers: questions
+          .map(question => {
+            const answerValue = answers[question.id]?.answer
+            if (answerValue !== 'yes' && answerValue !== 'no') return null
 
-  const getGradeInfo = (grade: string) => {
-    switch (grade) {
-      case 'A':
-        return {
-          color: 'text-green-700 bg-green-50 border-green-200',
-          description: '리스크 거의 없음',
-          action: '계약 가능, 실사 면제 가능'
-        }
-      case 'B':
-        return {
-          color: 'text-blue-700 bg-blue-50 border-blue-200',
-          description: '관리 가능 수준',
-          action: '개선 개별 수준'
-        }
-      case 'C':
-        return {
-          color: 'text-yellow-700 bg-yellow-50 border-yellow-200',
-          description: '중위험 구간',
-          action: '세부 정밀 실사'
-        }
-      case 'D':
-        return {
-          color: 'text-red-700 bg-red-50 border-red-200',
-          description: '고위험 구간',
-          action: '계약 중단, 블랙리스트 가능성'
-        }
-      default:
-        return {
-          color: 'text-gray-700 bg-gray-50 border-gray-200',
-          description: '평가 미완료',
-          action: '진단을 완료해주세요'
-        }
+            return {
+              questionId: question.id,
+              answer: answerValue as 'yes' | 'no',
+              category: question.category,
+              weight: question.weight,
+              critical: !!question.criticalViolation,
+              criticalGrade: question.criticalViolation?.grade,
+              remarks: answers[question.id].remarks || undefined
+            }
+          })
+          .filter((item): item is NonNullable<typeof item> => item !== null) // 타입 가드 사용
+      }
+
+      console.log('📦 제출 데이터:', submissionData)
+
+      // 실제 API 호출
+      await submitSelfAssessmentToBackend(submissionData)
+
+      alert('자가진단이 성공적으로 제출되었습니다!')
+    } catch (error) {
+      console.error('제출 중 오류 발생:', error)
+      alert('제출 중 오류가 발생했습니다. 다시 시도해주세요.')
+    } finally {
+      setIsSubmitting(false)
     }
   }
 
-  const getCriticalViolations = (): SelfAssessmentRequest[] => {
-    return questions
-      .filter(q => q.criticalViolation && answers[q.id] === 'no')
-      .map(q => ({
-        questionId: q.id,
-        answer: 'no',
-        category: q.category,
-        weight: q.weight,
-        critical: true,
-        criticalGrade: q.criticalViolation?.grade // "B/C", "D" 등
-      }))
-  }
-
-  // ========================================================================
-  // PDF 보고서 생성 (PDF Report Generation)
-  // ========================================================================
-
-  /**
-   * PDF 보고서 생성 및 다운로드 함수
-   *
-   * CSDDD 자가진단 결과를 전문적인 한국어 PDF 보고서로 생성
-   * 회사 정보, 평가 결과, 카테고리별 점수, 중대위반 사항, 개선권고를 포함
-   *
-   * 포함 내용:
-   * - 보고서 표지 (제목, 생성일시, 회사정보)
-   * - 종합 평가 결과 (최종등급, 기본점수, 권장조치)
-   * - 카테고리별 세부 점수표
-   * - 중대위반 항목 상세 (발견 시)
-   * - 개선 권장사항 목록
-   * - 보고서 생성 정보 (날짜, 플랫폼)
-   */
+  const progress = calculateProgress()
 
   return (
-    <div className="flex flex-col w-full h-full p-4">
-      {/* ========================================================================
-          상단 네비게이션 섹션 (Top Navigation Section)
-          ======================================================================== */}
-      <div className="flex flex-row items-center p-2 px-2 mb-6 text-sm text-gray-500 bg-white rounded-lg shadow-sm">
-        <Breadcrumb>
-          <BreadcrumbList>
-            <BreadcrumbItem>
-              <Home className="w-4 h-4 mr-1" />
-              <BreadcrumbLink href="/dashboard">대시보드</BreadcrumbLink>
-            </BreadcrumbItem>
-            <BreadcrumbSeparator />
-            <BreadcrumbItem>
-              <BreadcrumbLink href="/CSDDD">CSDDD</BreadcrumbLink>
-            </BreadcrumbItem>
-            <BreadcrumbSeparator />
-            <BreadcrumbItem>
-              <span className="font-bold text-blue-500">자가진단</span>
-            </BreadcrumbItem>
-          </BreadcrumbList>
-        </Breadcrumb>
-      </div>
-
-      {/* ========================================================================
-          헤더 섹션 (Header Section)
-          - 뒤로가기 버튼과 페이지 제목/설명 (csddd.tsx와 동일한 구조)
-          ======================================================================== */}
-      <div className="flex flex-row w-full h-24 mb-6">
-        <Link
-          href="/CSDDD"
-          className="flex flex-row items-center p-4 space-x-4 transition rounded-md cursor-pointer hover:bg-gray-200">
-          <ArrowLeft className="w-6 h-6 text-gray-500 group-hover:text-blue-600" />
-          <PageHeader
-            icon={<Shield className="w-6 h-6 text-blue-600" />}
-            title="공급망 실사 자가진단"
-            description="ESG 관점에서 공급망의 리스크를 평가하고 개선점을 파악합니다"
-            module="CSDDD"
-            submodule="self-assessment"
-          />
-        </Link>
-      </div>
-
-      {/* ========================================================================
-          메인 콘텐츠 영역 (Main Content Area)
-          ======================================================================== */}
-      <div className="space-y-8">
-        <div className="space-y-6">
-          {/* Tab Navigation */}
-          <div className="flex flex-wrap justify-center gap-3 p-4 border shadow-lg bg-gradient-to-r from-slate-50 to-blue-50 border-slate-200 rounded-2xl backdrop-blur-sm">
-            {categories.map(category => (
-              <button
-                key={category}
-                onClick={() => setActiveTab(category)}
-                className={`
-        group relative h-14 px-6 py-3 rounded-2xl text-sm font-semibold 
-        transition-all duration-300 ease-in-out transform hover:scale-105
-        border-2 flex items-center justify-center min-w-[120px]
-        ${
-          activeTab === category
-            ? 'bg-gradient-to-r from-blue-600 to-indigo-600 text-white shadow-lg border-blue-500 shadow-blue-500/25'
-            : 'bg-white/80 text-slate-700 hover:text-blue-600 hover:bg-white hover:border-blue-300 border-slate-200 hover:shadow-md'
-        }
-      `}>
-                <span className="flex flex-col items-center justify-center w-full leading-tight">
-                  <span className="text-base font-bold tracking-wide">{category}</span>
-                  <span
-                    className={`
-          text-xs mt-1 px-2 py-0.5 rounded-full font-medium
-          ${
-            activeTab === category
-              ? 'bg-white/20 text-white/90'
-              : 'bg-slate-100 text-slate-500 group-hover:bg-blue-100 group-hover:text-blue-600'
-          }
-        `}>
-                    {questions.filter(q => q.category === category).length}개
-                  </span>
-                </span>
-                {activeTab === category && (
-                  <div className="absolute w-2 h-2 transform -translate-x-1/2 bg-white rounded-full shadow-lg -bottom-1 left-1/2 animate-pulse"></div>
-                )}
-                <div className="absolute inset-0 transition-opacity duration-300 opacity-0 rounded-2xl bg-gradient-to-r from-transparent via-white/10 to-transparent group-hover:opacity-100"></div>
-              </button>
-            ))}
+    <div className="min-h-screen py-8 bg-gray-50">
+      <div className="max-w-4xl px-4 mx-auto">
+        {/* 헤더 */}
+        <div className="p-6 mb-6 bg-white rounded-lg shadow-sm">
+          <div className="flex items-center gap-3 mb-4">
+            <Building className="w-6 h-6 text-blue-600" />
+            <h1 className="text-2xl font-bold text-gray-900">CSDDD 자가진단</h1>
           </div>
-          {/* Questions for Active Tab */}
-          <Card className="p-6 bg-white shadow-lg">
-            <h3 className="mb-6 text-xl font-semibold text-gray-900">{activeTab}</h3>
-            <div className="space-y-4">
-              {questions
-                .filter(q => q.category === activeTab)
-                .map(question => {
-                  const isAnswered = answers[question.id]
-                  const isCritical =
-                    question.criticalViolation && answers[question.id] === 'no'
-                  return (
-                    <div
-                      key={question.id}
-                      className={`p-4 border rounded-lg transition-all ${
-                        isCritical
-                          ? 'bg-red-50 border-red-300'
-                          : 'bg-white border-gray-200 hover:shadow-sm'
-                      }`}>
-                      <div className="flex items-start gap-4">
-                        <div className="flex items-center justify-center flex-shrink-0 w-12 h-12 bg-blue-100 rounded-full">
-                          <span className="text-sm font-medium text-blue-700">
+
+          {/* 진행률 표시 */}
+          <div className="mb-4">
+            <div className="flex justify-between mb-1 text-sm text-gray-600">
+              <span>진행률</span>
+              <span>{progress}%</span>
+            </div>
+            <div className="w-full h-2 bg-gray-200 rounded-full">
+              <div
+                className="h-2 transition-all duration-300 bg-blue-600 rounded-full"
+                style={{width: `${progress}%`}}
+              />
+            </div>
+          </div>
+
+          <p className="text-sm text-gray-600">
+            총 {questions.length}개 질문에 답변해주세요.
+            <span className="ml-1 text-red-600">*</span> 표시는 중요 위반사항입니다.
+          </p>
+        </div>
+
+        {/* 질문 카테고리별 섹션 */}
+        {categories.map(category => {
+          const categoryQuestions = questionsByCategory[category] || []
+          const isExpanded = expandedCategories[category]
+          const answeredInCategory = categoryQuestions.filter(
+            q => answers[q.id]?.answer
+          ).length
+
+          return (
+            <div key={category} className="mb-4 bg-white rounded-lg shadow-sm">
+              <button
+                onClick={() => toggleCategory(category)}
+                className="flex items-center justify-between w-full px-6 py-4 transition-colors hover:bg-gray-50">
+                <div className="flex items-center gap-3">
+                  <h2 className="text-lg font-semibold text-gray-900">{category}</h2>
+                  <span className="text-sm text-gray-500">
+                    ({answeredInCategory}/{categoryQuestions.length})
+                  </span>
+                </div>
+                {isExpanded ? (
+                  <ChevronUp className="w-5 h-5" />
+                ) : (
+                  <ChevronDown className="w-5 h-5" />
+                )}
+              </button>
+
+              {isExpanded && (
+                <div className="border-t border-gray-200">
+                  <div className="flex justify-end gap-2 px-6 py-2">
+                    <button
+                      onClick={() => handleSelectAllInCategory(category, 'yes')}
+                      className="text-sm text-green-600 hover:underline">
+                      전체 예
+                    </button>
+                    <button
+                      onClick={() => handleSelectAllInCategory(category, 'no')}
+                      className="text-sm text-red-600 hover:underline">
+                      전체 아니오
+                    </button>
+                  </div>
+                  {categoryQuestions.map((question, index) => {
+                    const answer = answers[question.id]
+                    const isCritical = !!question.criticalViolation
+
+                    return (
+                      <div
+                        key={question.id}
+                        className="p-6 border-b border-gray-100 last:border-b-0">
+                        <div className="flex items-start gap-3 mb-4">
+                          <span className="text-sm font-medium text-gray-500 min-w-[3rem]">
                             {question.id}
                           </span>
-                        </div>
-                        <div className="flex-1">
-                          <div className="flex items-start justify-between mb-3">
-                            <h4 className="text-base font-medium leading-relaxed text-gray-900">
-                              {question.text}
-                            </h4>
-                            <div className="flex items-center gap-2 ml-4">
-                              {question.criticalViolation && (
-                                <TooltipProvider>
-                                  <Tooltip>
-                                    <TooltipTrigger asChild>
-                                      <span className="group relative flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold text-red-700 bg-gradient-to-r from-red-100 to-red-50 rounded-full cursor-help border border-red-200 hover:border-red-300 transition-all duration-200 hover:shadow-md hover:shadow-red-200/50 hover:scale-105">
-                                        <AlertTriangle className="w-3.5 h-3.5 animate-pulse" />
-                                        <span className="tracking-wide">중대위반</span>
-                                        <div className="absolute w-2 h-2 bg-red-500 rounded-full -top-1 -right-1 animate-pulse"></div>
-                                        <div className="absolute inset-0 transition-opacity duration-300 rounded-full opacity-0 bg-gradient-to-r from-red-200/0 via-red-200/20 to-red-200/0 group-hover:opacity-100"></div>
-                                      </span>
-                                    </TooltipTrigger>
-                                    <TooltipContent className="relative max-w-xs p-0 overflow-hidden bg-white border-0 shadow-2xl rounded-xl">
-                                      <div className="px-4 py-3 text-white bg-gradient-to-r from-red-600 to-red-700">
-                                        <div className="flex items-center gap-2">
-                                          <div className="flex items-center justify-center w-6 h-6 rounded-full bg-white/20">
-                                            <AlertTriangle className="w-4 h-4" />
-                                          </div>
-                                          <span className="text-sm font-bold">
-                                            중대위반 항목
-                                          </span>
-                                        </div>
-                                      </div>
-                                      <div className="p-4 space-y-3">
-                                        <div className="flex items-center justify-between">
-                                          <span className="text-xs font-medium text-gray-600">
-                                            위반 시 등급
-                                          </span>
-                                          <span className="px-2 py-1 text-xs font-bold text-red-700 bg-red-100 border border-red-200 rounded-full">
-                                            {question.criticalViolation.grade}
-                                          </span>
-                                        </div>
-                                        <div className="h-px bg-gradient-to-r from-transparent via-red-200 to-transparent"></div>
-                                        <div className="space-y-1">
-                                          <span className="text-xs font-medium text-gray-600">
-                                            위반 사유
-                                          </span>
-                                          <p className="p-2 text-sm leading-relaxed text-gray-800 border border-gray-100 rounded-lg bg-gray-50">
-                                            {question.criticalViolation.reason}
-                                          </p>
-                                        </div>
-                                      </div>
-                                      <div className="h-1 bg-gradient-to-r from-red-500 to-red-600"></div>
-                                    </TooltipContent>
-                                  </Tooltip>
-                                </TooltipProvider>
+                          <div className="flex-1">
+                            <div className="flex items-center gap-2 mb-2">
+                              <p className="font-medium text-gray-900">{question.text}</p>
+                              {isCritical && (
+                                <AlertTriangle className="w-4 h-4 text-red-500" />
                               )}
-                              <span className="inline-flex items-center justify-center gap-1 px-2.5 py-1 text-xs font-medium text-blue-700 bg-blue-50 rounded-lg border border-blue-200 hover:bg-blue-100 transition-colors duration-200 min-w-[80px]">
-                                가중치{' '}
-                                <span className="font-bold">{question.weight}</span>
-                              </span>
                             </div>
-                          </div>
-                          <div className="flex gap-3">
-                            <label
-                              className={`
-    flex items-center gap-2 px-3 py-2 rounded-lg cursor-pointer transition-all duration-200 hover:scale-105
-    ${
-      answers[question.id] === 'yes'
-        ? 'bg-green-100 text-green-800 border-2 border-green-300'
-        : 'bg-gray-50 text-gray-700 border-2 border-gray-200 hover:border-green-200 hover:bg-green-50'
-    }
-  `}>
-                              <div
-                                className={`
-      relative w-4 h-4 rounded-full border-2 transition-all duration-200
-      ${
-        answers[question.id] === 'yes'
-          ? 'border-green-500 bg-green-500'
-          : 'border-gray-300'
-      }
-    `}>
-                                {answers[question.id] === 'yes' && (
-                                  <Check
-                                    className="w-2 h-2 text-white absolute top-0.5 left-0.5"
-                                    strokeWidth={3}
-                                  />
-                                )}
+
+                            {isCritical && (
+                              <div className="p-3 mb-3 border border-red-200 rounded-md bg-red-50">
+                                <p className="text-sm text-red-800">
+                                  <strong>
+                                    위반 등급: {question.criticalViolation?.grade}
+                                  </strong>
+                                </p>
+                                <p className="mt-1 text-sm text-red-700">
+                                  {question.criticalViolation?.reason}
+                                </p>
                               </div>
-                              <input
-                                type="radio"
-                                value="yes"
-                                checked={answers[question.id] === 'yes'}
-                                onChange={() => handleAnswerChange(question.id, 'yes')}
-                                className="sr-only"
+                            )}
+
+                            <div className="flex items-center gap-4 mb-3">
+                              <label className="flex items-center gap-2 cursor-pointer">
+                                <input
+                                  type="radio"
+                                  name={question.id}
+                                  value="yes"
+                                  checked={answer?.answer === 'yes'}
+                                  onChange={() =>
+                                    handleAnswerChange(
+                                      question.id,
+                                      'yes',
+                                      question.category,
+                                      question.weight,
+                                      isCritical,
+                                      question.criticalViolation?.grade
+                                    )
+                                  }
+                                  className="text-green-600 focus:ring-green-500"
+                                />
+                                <span className="font-medium text-green-700">예</span>
+                              </label>
+                              <label className="flex items-center gap-2 cursor-pointer">
+                                <input
+                                  type="radio"
+                                  name={question.id}
+                                  value="no"
+                                  checked={answer?.answer === 'no'}
+                                  onChange={() =>
+                                    handleAnswerChange(
+                                      question.id,
+                                      'no',
+                                      question.category,
+                                      question.weight,
+                                      isCritical,
+                                      question.criticalViolation?.grade
+                                    )
+                                  }
+                                  className="text-red-600 focus:ring-red-500"
+                                />
+                                <span className="font-medium text-red-700">아니오</span>
+                              </label>
+                            </div>
+
+                            <div>
+                              <label className="block mb-1 text-sm font-medium text-gray-700">
+                                비고 (선택사항)
+                              </label>
+                              <textarea
+                                value={answer?.remarks || ''}
+                                onChange={e =>
+                                  handleRemarksChange(question.id, e.target.value)
+                                }
+                                placeholder="추가 설명이나 특이사항을 입력하세요"
+                                rows={2}
+                                className="w-full px-3 py-2 text-sm border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                               />
-                              <span className="text-sm font-medium">예</span>
-                            </label>
-                            <label
-                              className={`
-    flex items-center gap-2 px-3 py-2 rounded-lg cursor-pointer transition-all duration-200 hover:scale-105
-    ${
-      answers[question.id] === 'no'
-        ? 'bg-red-100 text-red-800 border-2 border-red-300'
-        : 'bg-gray-50 text-gray-700 border-2 border-gray-200 hover:border-red-200 hover:bg-red-50'
-    }
-  `}>
-                              <div
-                                className={`
-      relative w-4 h-4 rounded-full border-2 transition-all duration-200
-      ${answers[question.id] === 'no' ? 'border-red-500 bg-red-500' : 'border-gray-300'}
-    `}>
-                                {answers[question.id] === 'no' && (
-                                  <AlertCircle
-                                    className="w-2 h-2 text-white absolute top-0.5 left-0.5"
-                                    strokeWidth={3}
-                                  />
-                                )}
-                              </div>
-                              <input
-                                type="radio"
-                                value="no"
-                                checked={answers[question.id] === 'no'}
-                                onChange={() => handleAnswerChange(question.id, 'no')}
-                                className="sr-only"
-                              />
-                              <span className="text-sm font-medium">아니오</span>
-                            </label>
+                            </div>
+
+                            <div className="flex items-center gap-2 mt-2">
+                              <span className="text-xs text-gray-500">
+                                가중치: {question.weight}
+                              </span>
+                              {answer?.answer && (
+                                <CheckCircle className="w-4 h-4 text-green-500" />
+                              )}
+                            </div>
                           </div>
                         </div>
                       </div>
-                    </div>
-                  )
-                })}
+                    )
+                  })}
+                </div>
+              )}
             </div>
-          </Card>
+          )
+        })}
+
+        {/* 제출 버튼 */}
+        <div className="p-6 bg-white rounded-lg shadow-sm">
+          <div className="flex items-center justify-between">
+            <div>
+              <p className="text-sm text-gray-600">
+                총 {questions.length}개 질문 중{' '}
+                {Object.values(answers).filter(a => a.answer !== '').length}개 답변 완료
+              </p>
+              {progress === 100 && (
+                <p className="mt-1 text-sm font-medium text-green-600">
+                  모든 질문에 답변하였습니다!
+                </p>
+              )}
+            </div>
+
+            <button
+              onClick={handleSubmit}
+              disabled={progress !== 100 || isSubmitting}
+              className="flex items-center gap-2 px-6 py-3 text-white transition-colors bg-blue-600 rounded-md hover:bg-blue-700 disabled:bg-gray-400 disabled:cursor-not-allowed">
+              <Send className="w-4 h-4" />
+              {isSubmitting ? '제출 중...' : '자가진단 제출'}
+            </button>
+          </div>
         </div>
       </div>
-      {/* 제출하기 버튼 (Submit Button) */}
-      {!submitted && (
-        <div className="flex justify-end mt-8">
-          <button
-            onClick={handleSubmit}
-            className="px-6 py-3 text-white bg-blue-600 rounded hover:bg-blue-700">
-            자가진단 제출하기
-          </button>
-        </div>
-      )}
     </div>
   )
 }
