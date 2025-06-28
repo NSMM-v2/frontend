@@ -199,7 +199,7 @@ export function CalculatorItem({
                   className={`text-sm font-medium transition-colors ${
                     mode ? 'text-blue-600' : 'text-gray-500'
                   }`}>
-                  수동입력
+                  LCA 기반 입력
                 </span>
               </motion.div>
 
@@ -231,7 +231,14 @@ export function CalculatorItem({
           animate={{opacity: 1, y: 0}}
           transition={{delay: animationDelay + 0.6, duration: 0.4}}
           className="p-6">
-          {mode ? (
+          {mode ?  (
+            <ExcelCascadingSelector
+              id={id}
+              state={state}
+              onChangeState={handleStateChange}
+              onChangeTotal={onChangeTotal}
+            />
+          ):(
             <SelfInputCalculator
               id={id}
               state={{
@@ -245,14 +252,8 @@ export function CalculatorItem({
               onChangeState={handleStateChange}
               onChangeTotal={onChangeTotal}
             />
-          ) : (
-            <ExcelCascadingSelector
-              id={id}
-              state={state}
-              onChangeState={handleStateChange}
-              onChangeTotal={onChangeTotal}
-            />
-          )}
+          ) 
+          }
         </motion.div>
       </motion.div>
 
