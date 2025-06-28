@@ -47,10 +47,8 @@ import {PageHeader} from '@/components/layout/PageHeader'
 // 분리된 Scope1 컴포넌트들 임포트
 import {
   CategorySelector,
-  Scope1PotentialCategoryKey,
-  Scope1KineticCategoryKey,
-  scope1PotentialCategoryList,
-  scope1KineticCategoryList
+  Scope1CategoryKey,
+  scope1CategoryList
 } from '@/components/scopeTotal/CategorySelector'
 import {Scope1DataInput} from '@/components/scope1/Scope1DataInput'
 import {MonthSelector} from '@/components/scopeTotal/MonthSelector'
@@ -88,53 +86,31 @@ export default function Scope1Form() {
   // 기본 상태 관리 (Basic State Management)
   // ========================================================================
   const [calculatorModes, setCalculatorModes] = useState<
-    Record<Scope1PotentialCategoryKey | Scope1KineticCategoryKey, Record<number, boolean>>
+    Record<Scope1CategoryKey, Record<number, boolean>>
   >({
-    list1: {},
-    list2: {},
-    list3: {}
+    kinetic: [],
+    potential: []
   })
   const [selectedYear, setSelectedYear] = useState<number>(new Date().getFullYear()) // 선택된 연도
   const currentMonth = new Date().getMonth() + 1 // JavaScript의 월은 0부터 시작하므로 1을 더함
   const [selectedMonth, setSelectedMonth] = useState<number | null>(currentMonth) // 선택된 월 (null이면 전체)
 
-  const [activePotentialCategory, setActivePotentialCategory] =
-    useState<Scope1PotentialCategoryKey | null>(null) // 현재 선택된 고정연소 카테고리
-  const [activeKineticCategory, setActiveKineticCategory] =
-    useState<Scope1KineticCategoryKey | null>(null) // 현재 선택된 이동연소 카테고리
+  const [activeCategory, setActiveCategory] = useState<Scope1CategoryKey | null>(null) // 현재 선택된 이동연소 카테고리
 
   // 카테고리별 계산기 목록 관리
-  const [potentialCategoryCalculators, setPotentialCategoryCalculators] = useState<
-    Record<Scope1PotentialCategoryKey, CalculatorData[]>
+  const [categoryCalculators, setCategoryCalculators] = useState<
+    Record<Scope1CategoryKey, CalculatorData[]>
   >({
-    list1: [],
-    list2: [],
-    list3: []
-  })
-
-  const [kineticCategoryCalculators, setKineticCategoryCalculators] = useState<
-    Record<Scope1KineticCategoryKey, CalculatorData[]>
-  >({
-    list1: [],
-    list2: [],
-    list3: []
+    kinetic: [],
+    potential: []
   })
 
   // 카테고리별 배출량 총계 관리
-  const [potentialCategoryTotals, setPotentialCategoryTotals] = useState<
-    Record<Scope1PotentialCategoryKey, {id: number; emission: number}[]>
+  const [categoryTotals, setCategoryTotals] = useState<
+    Record<Scope1CategoryKey, {id: number; emission: number}[]>
   >({
-    list1: [],
-    list2: [],
-    list3: []
-  })
-
-  const [kineticCategoryTotals, setKineticCategoryTotals] = useState<
-    Record<Scope1KineticCategoryKey, {id: number; emission: number}[]>
-  >({
-    list1: [],
-    list2: [],
-    list3: []
+    kinetic: [],
+    potential: []
   })
 
   // ========================================================================
@@ -155,11 +131,8 @@ export default function Scope1Form() {
    * 현재 활성 카테고리의 계산기 목록 반환
    */
   const getCurrentCalculators = (): CalculatorData[] => {
-    if (activePotentialCategory) {
-      return potentialCategoryCalculators[activePotentialCategory] || []
-    }
-    if (activeKineticCategory) {
-      return kineticCategoryCalculators[activeKineticCategory] || []
+    if (activeCategory) {
+      return categoryCalculators[activeCategory] || []
     }
     return []
   }
@@ -167,11 +140,8 @@ export default function Scope1Form() {
   /**
    * 특정 카테고리의 총 배출량 계산
    */
-  const getPotentialTotalEmission = (category: Scope1PotentialCategoryKey): number =>
-    (potentialCategoryTotals[category] || []).reduce((sum, t) => sum + t.emission, 0)
-
-  const getKineticTotalEmission = (category: Scope1KineticCategoryKey): number =>
-    (kineticCategoryTotals[category] || []).reduce((sum, t) => sum + t.emission, 0)
+  const getTotalEmission = (category: Scope1CategoryKey): number =>
+    (categoryTotals[category] || []).reduce((sum, t) => sum + t.emission, 0)
 
   // ========================================================================
   // 유틸리티 함수 - ID 생성 (Utility Functions - ID Generation)
@@ -181,11 +151,11 @@ export default function Scope1Form() {
    * 새로운 임시 ID 생성 (음수 사용)
    */
   const generateNewTemporaryId = (
-    categoryKey: Scope1PotentialCategoryKey | Scope1KineticCategoryKey
+    categoryKey: Scope1CategoryKey | Scope1CategoryKey
   ): number => {
-    const existingCalculators = activePotentialCategory
-      ? potentialCategoryCalculators[categoryKey as Scope1PotentialCategoryKey] || []
-      : kineticCategoryCalculators[categoryKey as Scope1KineticCategoryKey] || []
+    const existingCalculators = activeCategory
+      ? categoryCalculators[categoryKey as Scope1CategoryKey] || []
+      : []
     const existingIds = existingCalculators.map(c => c.id).filter(id => id < 0)
 
     const minId = existingIds.length > 0 ? Math.min(...existingIds) : 0
@@ -196,13 +166,13 @@ export default function Scope1Form() {
   // 이벤트 핸들러 (Event Handlers)
   // ========================================================================
   const handleModeChange = (id: number, checked: boolean) => {
-    const activeCategory = activePotentialCategory || activeKineticCategory
-    if (!activeCategory) return
+    const activeScope1Category = activeCategory
+    if (!activeScope1Category) return
 
     setCalculatorModes(prev => ({
       ...prev,
-      [activeCategory]: {
-        ...prev[activeCategory],
+      [activeScope1Category]: {
+        ...prev[activeScope1Category],
         [id]: checked
       }
     }))
@@ -212,26 +182,13 @@ export default function Scope1Form() {
    * 계산기의 배출량 업데이트 핸들러
    */
   const updateTotal = (id: number, emission: number) => {
-    if (activePotentialCategory) {
-      setPotentialCategoryTotals(prev => ({
+    if (activeCategory) {
+      setCategoryTotals(prev => ({
         ...prev,
-        [activePotentialCategory]: (prev[activePotentialCategory] || [])
+        [activeCategory]: (prev[activeCategory] || [])
           .map(t => (t.id === id ? {id, emission} : t))
           .concat(
-            (prev[activePotentialCategory] || []).find(t => t.id === id)
-              ? []
-              : [{id, emission}]
-          )
-      }))
-    } else if (activeKineticCategory) {
-      setKineticCategoryTotals(prev => ({
-        ...prev,
-        [activeKineticCategory]: (prev[activeKineticCategory] || [])
-          .map(t => (t.id === id ? {id, emission} : t))
-          .concat(
-            (prev[activeKineticCategory] || []).find(t => t.id === id)
-              ? []
-              : [{id, emission}]
+            (prev[activeCategory] || []).find(t => t.id === id) ? [] : [{id, emission}]
           )
       }))
     }
@@ -241,24 +198,12 @@ export default function Scope1Form() {
    * 새로운 계산기 추가 핸들러
    */
   const addCalculator = () => {
-    if (activePotentialCategory) {
-      const newId = generateNewTemporaryId(activePotentialCategory)
-      setPotentialCategoryCalculators(prev => ({
+    if (activeCategory) {
+      const newId = generateNewTemporaryId(activeCategory)
+      setCategoryCalculators(prev => ({
         ...prev,
-        [activePotentialCategory]: [
-          ...prev[activePotentialCategory],
-          {
-            id: newId,
-            state: {category: '', separate: '', rawMaterial: '', quantity: ''}
-          }
-        ]
-      }))
-    } else if (activeKineticCategory) {
-      const newId = generateNewTemporaryId(activeKineticCategory)
-      setKineticCategoryCalculators(prev => ({
-        ...prev,
-        [activeKineticCategory]: [
-          ...prev[activeKineticCategory],
+        [activeCategory]: [
+          ...prev[activeCategory],
           {
             id: newId,
             state: {category: '', separate: '', rawMaterial: '', quantity: ''}
@@ -272,71 +217,33 @@ export default function Scope1Form() {
    * 계산기 삭제 핸들러
    */
   const removeCalculator = async (id: number) => {
-    if (activePotentialCategory) {
-      const currentCalculators =
-        potentialCategoryCalculators[activePotentialCategory] || []
+    if (activeCategory) {
+      const currentCalculators = categoryCalculators[activeCategory] || []
       const isLastItem = currentCalculators.length === 1
 
       if (isLastItem) {
-        const newTemporaryId = generateNewTemporaryId(activePotentialCategory)
-        setPotentialCategoryCalculators(prev => ({
+        const newTemporaryId = generateNewTemporaryId(activeCategory)
+        setCategoryCalculators(prev => ({
           ...prev,
-          [activePotentialCategory]: [
+          [activeCategory]: [
             {
               id: newTemporaryId,
               state: {category: '', separate: '', rawMaterial: '', quantity: ''}
             }
           ]
         }))
-        setPotentialCategoryTotals(prev => ({
+        setCategoryTotals(prev => ({
           ...prev,
-          [activePotentialCategory]: [{id: newTemporaryId, emission: 0}]
+          [activeCategory]: [{id: newTemporaryId, emission: 0}]
         }))
       } else {
-        setPotentialCategoryCalculators(prev => ({
+        setCategoryCalculators(prev => ({
           ...prev,
-          [activePotentialCategory]: (prev[activePotentialCategory] || []).filter(
-            c => c.id !== id
-          )
+          [activeCategory]: (prev[activeCategory] || []).filter(c => c.id !== id)
         }))
-        setPotentialCategoryTotals(prev => ({
+        setCategoryTotals(prev => ({
           ...prev,
-          [activePotentialCategory]: (prev[activePotentialCategory] || []).filter(
-            t => t.id !== id
-          )
-        }))
-      }
-    } else if (activeKineticCategory) {
-      const currentCalculators = kineticCategoryCalculators[activeKineticCategory] || []
-      const isLastItem = currentCalculators.length === 1
-
-      if (isLastItem) {
-        const newTemporaryId = generateNewTemporaryId(activeKineticCategory)
-        setKineticCategoryCalculators(prev => ({
-          ...prev,
-          [activeKineticCategory]: [
-            {
-              id: newTemporaryId,
-              state: {category: '', separate: '', rawMaterial: '', quantity: ''}
-            }
-          ]
-        }))
-        setKineticCategoryTotals(prev => ({
-          ...prev,
-          [activeKineticCategory]: [{id: newTemporaryId, emission: 0}]
-        }))
-      } else {
-        setKineticCategoryCalculators(prev => ({
-          ...prev,
-          [activeKineticCategory]: (prev[activeKineticCategory] || []).filter(
-            c => c.id !== id
-          )
-        }))
-        setKineticCategoryTotals(prev => ({
-          ...prev,
-          [activeKineticCategory]: (prev[activeKineticCategory] || []).filter(
-            t => t.id !== id
-          )
+          [activeCategory]: (prev[activeCategory] || []).filter(t => t.id !== id)
         }))
       }
     }
@@ -346,17 +253,10 @@ export default function Scope1Form() {
    * 계산기 입력 상태 업데이트 핸들러
    */
   const updateCalculatorState = (id: number, newState: SelectorState) => {
-    if (activePotentialCategory) {
-      setPotentialCategoryCalculators(prev => ({
+    if (activeCategory) {
+      setCategoryCalculators(prev => ({
         ...prev,
-        [activePotentialCategory]: (prev[activePotentialCategory] || []).map(c =>
-          c.id === id ? {...c, state: newState} : c
-        )
-      }))
-    } else if (activeKineticCategory) {
-      setKineticCategoryCalculators(prev => ({
-        ...prev,
-        [activeKineticCategory]: (prev[activeKineticCategory] || []).map(c =>
+        [activeCategory]: (prev[activeCategory] || []).map(c =>
           c.id === id ? {...c, state: newState} : c
         )
       }))
@@ -366,39 +266,13 @@ export default function Scope1Form() {
   /**
    * 카테고리 선택 핸들러
    */
-  const handlePotentialCategorySelect = (category: Scope1PotentialCategoryKey) => {
-    setActivePotentialCategory(category)
-    setActiveKineticCategory(null) // 다른 타입 카테고리는 초기화
+  const handleCategorySelect = (category: Scope1CategoryKey) => {
+    setActiveCategory(category)
 
     // 해당 카테고리에 계산기가 없으면 기본 계산기 1개 생성
-    if (
-      !potentialCategoryCalculators[category] ||
-      potentialCategoryCalculators[category]!.length === 0
-    ) {
+    if (!categoryCalculators[category] || categoryCalculators[category]!.length === 0) {
       const newId = generateNewTemporaryId(category)
-      setPotentialCategoryCalculators(prev => ({
-        ...prev,
-        [category]: [
-          {
-            id: newId,
-            state: {category: '', separate: '', rawMaterial: '', quantity: ''}
-          }
-        ]
-      }))
-    }
-  }
-
-  const handleKineticCategorySelect = (category: Scope1KineticCategoryKey) => {
-    setActiveKineticCategory(category)
-    setActivePotentialCategory(null) // 다른 타입 카테고리는 초기화
-
-    // 해당 카테고리에 계산기가 없으면 기본 계산기 1개 생성
-    if (
-      !kineticCategoryCalculators[category] ||
-      kineticCategoryCalculators[category]!.length === 0
-    ) {
-      const newId = generateNewTemporaryId(category)
-      setKineticCategoryCalculators(prev => ({
+      setCategoryCalculators(prev => ({
         ...prev,
         [category]: [
           {
@@ -414,28 +288,21 @@ export default function Scope1Form() {
    * 카테고리 입력 완료 핸들러
    */
   const handleComplete = () => {
-    setActivePotentialCategory(null)
-    setActiveKineticCategory(null)
+    setActiveCategory(null)
   }
 
   /**
    * 목록으로 돌아가기 핸들러
    */
   const handleBackToList = () => {
-    setActivePotentialCategory(null)
-    setActiveKineticCategory(null)
+    setActiveCategory(null)
   }
 
   // 전체 총 배출량 계산
-  const grandTotal =
-    Object.keys(scope1PotentialCategoryList).reduce(
-      (sum, key) => sum + getPotentialTotalEmission(key as Scope1PotentialCategoryKey),
-      0
-    ) +
-    Object.keys(scope1KineticCategoryList).reduce(
-      (sum, key) => sum + getKineticTotalEmission(key as Scope1KineticCategoryKey),
-      0
-    )
+  const grandTotal = Object.keys(scope1CategoryList).reduce(
+    (sum, key) => sum + getTotalEmission(key as Scope1CategoryKey),
+    0
+  )
 
   // ========================================================================
   // 데이터 새로고침 함수 (Data Refresh Function)
@@ -490,7 +357,7 @@ export default function Scope1Form() {
           메인 컨텐츠 영역 (Main Content Area)
           - 카테고리 선택 또는 데이터 입력 화면
           ======================================================================== */}
-      {!activePotentialCategory && !activeKineticCategory ? (
+      {!activeCategory ? (
         /* ====================================================================
             카테고리 선택 화면 (Category Selection Screen)
             ==================================================================== */
@@ -503,7 +370,7 @@ export default function Scope1Form() {
             <CardContent className="p-4">
               <div className="grid items-center justify-center h-24 grid-cols-1 gap-8 md:grid-cols-3">
                 {/* 총 배출량 카드 */}
-                <Card className="justify-center h-24 bg-gradient-to-br from-blue-50 to-white border-blue-100">
+                <Card className="justify-center h-24 border-blue-100 bg-gradient-to-br from-blue-50 to-white">
                   <CardContent className="flex items-center p-4">
                     <div className="p-2 mr-3 bg-blue-100 rounded-full">
                       <Factory className="w-5 h-5 text-blue-600" />
@@ -570,9 +437,9 @@ export default function Scope1Form() {
                 </p>
               </div>
               <CategorySelector
-                categoryList={scope1PotentialCategoryList}
-                getTotalEmission={getPotentialTotalEmission}
-                onCategorySelect={handlePotentialCategorySelect}
+                categoryList={scope1CategoryList.potential}
+                getTotalEmission={getTotalEmission}
+                onCategorySelect={handleCategorySelect}
                 animationDelay={0.1}
               />
             </motion.div>
@@ -590,11 +457,11 @@ export default function Scope1Form() {
                   이동수단 연료 사용으로 발생하는 직접 배출량
                 </p>
               </div>
-              <CategorySelector
-                categoryList={scope1KineticCategoryList}
-                getTotalEmission={getKineticTotalEmission}
-                onCategorySelect={handleKineticCategorySelect}
-                animationDelay={0.2}
+              <CategorySelector<'list1' | 'list2' | 'list3'>
+                categoryList={scope1CategoryList.kinetic}
+                getTotalEmission={getTotalEmission}
+                onCategorySelect={handleCategorySelect}
+                animationDelay={0.1}
               />
             </motion.div>
           </div>
@@ -604,12 +471,12 @@ export default function Scope1Form() {
             카테고리별 데이터 입력 화면 (Category Data Input Screen)
             ==================================================================== */
         <Scope1DataInput
-          activeCategory={activePotentialCategory || activeKineticCategory}
+          activeCategory={activeCategory || activeCategory}
           calculators={getCurrentCalculators()}
           getTotalEmission={category =>
-            activePotentialCategory
-              ? getPotentialTotalEmission(category as Scope1PotentialCategoryKey)
-              : getKineticTotalEmission(category as Scope1KineticCategoryKey)
+            activeCategory
+              ? getTotalEmission(category as Scope1CategoryKey)
+              : getTotalEmission(category as Scope1CategoryKey)
           }
           onAddCalculator={addCalculator}
           onRemoveCalculator={removeCalculator}
@@ -617,9 +484,7 @@ export default function Scope1Form() {
           onChangeTotal={updateTotal}
           onComplete={handleComplete}
           onBackToList={handleBackToList}
-          calculatorModes={
-            calculatorModes[activePotentialCategory || activeKineticCategory!] || {}
-          }
+          calculatorModes={calculatorModes[activeCategory || activeCategory!] || {}}
           onModeChange={handleModeChange}
           selectedYear={selectedYear}
           selectedMonth={selectedMonth}
