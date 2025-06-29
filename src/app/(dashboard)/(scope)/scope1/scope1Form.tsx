@@ -3,9 +3,11 @@
  *
  * 주요 기능:
  * - 고정연소/이동연소 배출량 데이터 관리
- * - 월별/연도별 데이터 필터링 및 조회
- * - 배출량 통계 현황 대시보드
- * - 데이터 CRUD 작업 (생성, 조회, 수정, 삭제)
+ * - 카테고리별 계산기 추가/삭제 기능
+ * - CSV 데이터 기반 배출계수 적용
+ * - 실시간 배출량 계산 및 집계
+ * - scope3Form.tsx와 동일한 레이아웃 구조 적용
+ * - 백엔드 API 연동으로 데이터 영속화 지원
  *
  * @author ESG Project Team
  * @version 1.0
@@ -13,59 +15,24 @@
  */
 'use client'
 
-// React 및 애니메이션 라이브러리 임포트
-import React, {useState} from 'react'
+// ============================================================================
+// React 및 애니메이션 라이브러리 임포트 (React & Animation Imports)
+// ============================================================================
+import React, {useState, useEffect} from 'react'
 import {motion} from 'framer-motion'
 
-// UI 아이콘 임포트 (Lucide React)
+// ============================================================================
+// UI 아이콘 임포트 (UI Icon Imports)
+// ============================================================================
 import {
-  Car, // 자동차 아이콘 (이동연소)
-  Factory, // 공장 아이콘 (고정연소)
-  Plus, // 플러스 아이콘 (데이터 추가)
-  TrendingUp, // 상승 트렌드 아이콘 (총 배출량)
-  Edit, // 편집 아이콘
-  Trash2, // 삭제 아이콘
-  CalendarDays, // 달력 아이콘 (날짜 선택)
-  ArrowLeft, // 왼쪽 화살표 (뒤로가기)
-  Home // 홈 아이콘
+  Home, // 홈 아이콘
+  Factory, // 공장 아이콘
+  CalendarDays // 달력 아이콘
 } from 'lucide-react'
-import Link from 'next/link'
 
-// UI 컴포넌트 임포트 (Shadcn/ui)
-import {Button} from '@/components/ui/button'
-import {Card, CardContent, CardHeader, CardTitle} from '@/components/ui/card'
-import {Input} from '@/components/ui/input'
-import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow
-} from '@/components/ui/table'
-import {Tabs, TabsContent, TabsList, TabsTrigger} from '@/components/ui/tabs'
-import {Badge} from '@/components/ui/badge'
-
-// 커스텀 컴포넌트 임포트
-import ScopeModal from '@/components/scope/ScopeModal' // Scope 데이터 입력 모달
-import {MonthSelector} from '@/components/scope/MonthSelector' // 월 선택기
-
-// 타입 정의 임포트
-import type {
-  StationaryCombustion, // 고정연소 배출량 타입
-  MobileCombustion, // 이동연소 배출량 타입
-  ScopeFormData // Scope 폼 데이터 타입
-} from '@/types/scopeType'
-
-// API 서비스 함수 임포트 - 백엔드 통신 제거
-// import {
-//   fetchStationaryCombustionList, // 고정연소 데이터 조회
-//   fetchMobileCombustionList, // 이동연소 데이터 조회
-//   deleteStationaryCombustion, // 고정연소 데이터 삭제
-//   deleteMobileCombustion // 이동연소 데이터 삭제
-// } from '@/services/scopeService' // Scope 관련 API 서비스 함수
-
-// 브레드크럼 네비게이션 컴포넌트 임포트
+// ============================================================================
+// 컴포넌트 임포트 (Component Imports)
+// ============================================================================
 import {
   Breadcrumb,
   BreadcrumbItem,
@@ -73,147 +40,349 @@ import {
   BreadcrumbList,
   BreadcrumbSeparator
 } from '@/components/ui/breadcrumb'
+
+// 레이아웃 컴포넌트 임포트
 import {PageHeader} from '@/components/layout/PageHeader'
+
+// 분리된 Scope1 컴포넌트들 임포트
 import {
   CategorySelector,
-  Scope1KineticCategoryKey,
-  scope1KineticCategoryList,
   Scope1PotentialCategoryKey,
-  scope1PotentialCategoryList
-} from '@/components/scope3/CategorySelector'
-import {Scope3EmissionResponse, SelectorState} from '@/lib/types'
+  Scope1KineticCategoryKey,
+  scope1PotentialCategoryList,
+  scope1KineticCategoryList
+} from '@/components/scopeTotal/CategorySelector'
+import {Scope1DataInput} from '@/components/scope1/Scope1DataInput'
+import {MonthSelector} from '@/components/scopeTotal/MonthSelector'
+import {Input} from '@/components/ui/input'
+import {Card, CardContent} from '@/components/ui/card'
 
+// ============================================================================
+// 타입 및 서비스 임포트 (Types & Services Imports)
+// ============================================================================
+import {SelectorState} from '@/lib/types'
+
+// ============================================================================
+// 타입 정의 (Type Definitions)
+// ============================================================================
+
+/**
+ * Scope 1 계산기 데이터 구조
+ */
 interface CalculatorData {
-  id: number
-  state: SelectorState
-  emissionId?: number // 백엔드에서 받은 배출량 데이터 ID (수정/삭제용)
-  savedData?: Scope3EmissionResponse // 백엔드에서 받은 전체 데이터
+  id: number // 식별자: emissionId(양수) 또는 임시ID(음수)
+  state: SelectorState // 사용자 입력 상태
+  savedData?: any // 백엔드에서 받은 전체 데이터 (저장된 경우에만)
 }
+
+// ============================================================================
+// 메인 Scope1 폼 컴포넌트 (Main Scope1 Form Component)
+// ============================================================================
+
 /**
  * Scope 1 배출량 관리 메인 컴포넌트
- *
- * 기능:
- * - 연도/월 필터링
- * - 고정연소/이동연소 배출량 데이터 조회 및 관리
- * - 배출량 통계 대시보드 제공
- * - 데이터 추가/편집/삭제 기능
+ * scope3Form.tsx와 동일한 레이아웃 구조를 적용하여 일관성 있는 UI 제공
  */
 export default function Scope1Form() {
-  // ============================================================================
-  // 상태 관리 (State Management)
-  // ============================================================================
-
-  // 필터 관련 상태
+  // ========================================================================
+  // 기본 상태 관리 (Basic State Management)
+  // ========================================================================
+  const [calculatorModes, setCalculatorModes] = useState<
+    Record<Scope1PotentialCategoryKey | Scope1KineticCategoryKey, Record<number, boolean>>
+  >({
+    list1: {},
+    list2: {},
+    list3: {}
+  })
   const [selectedYear, setSelectedYear] = useState<number>(new Date().getFullYear()) // 선택된 연도
   const currentMonth = new Date().getMonth() + 1 // JavaScript의 월은 0부터 시작하므로 1을 더함
   const [selectedMonth, setSelectedMonth] = useState<number | null>(currentMonth) // 선택된 월 (null이면 전체)
 
-  // 데이터 관련 상태
-  const [stationaryData, setStationaryData] = useState<StationaryCombustion[]>([]) // 고정연소 배출량 데이터
-  const [mobileData, setMobileData] = useState<MobileCombustion[]>([]) // 이동연소 배출량 데이터
+  const [activePotentialCategory, setActivePotentialCategory] =
+    useState<Scope1PotentialCategoryKey | null>(null) // 현재 선택된 고정연소 카테고리
+  const [activeKineticCategory, setActiveKineticCategory] =
+    useState<Scope1KineticCategoryKey | null>(null) // 현재 선택된 이동연소 카테고리
 
-  // UI 관련 상태
-  const [isModalOpen, setIsModalOpen] = useState(false) // 데이터 입력 모달 표시 여부
-  const [searchTerm, setSearchTerm] = useState('') // 검색어 (현재 미사용)
+  // 카테고리별 계산기 목록 관리
+  const [potentialCategoryCalculators, setPotentialCategoryCalculators] = useState<
+    Record<Scope1PotentialCategoryKey, CalculatorData[]>
+  >({
+    list1: [],
+    list2: [],
+    list3: []
+  })
+
+  const [kineticCategoryCalculators, setKineticCategoryCalculators] = useState<
+    Record<Scope1KineticCategoryKey, CalculatorData[]>
+  >({
+    list1: [],
+    list2: [],
+    list3: []
+  })
+
+  // 카테고리별 배출량 총계 관리
+  const [potentialCategoryTotals, setPotentialCategoryTotals] = useState<
+    Record<Scope1PotentialCategoryKey, {id: number; emission: number}[]>
+  >({
+    list1: [],
+    list2: [],
+    list3: []
+  })
+
+  const [kineticCategoryTotals, setKineticCategoryTotals] = useState<
+    Record<Scope1KineticCategoryKey, {id: number; emission: number}[]>
+  >({
+    list1: [],
+    list2: [],
+    list3: []
+  })
+
+  // ========================================================================
+  // 백엔드 연동 상태 관리 (Backend Integration State)
+  // ========================================================================
+
+  // 로딩 상태 관리
+  const [isLoading, setIsLoading] = useState<boolean>(false)
+
+  // 데이터 새로고침 트리거 (CRUD 작업 후 데이터 다시 로드용)
+  const [refreshTrigger, setRefreshTrigger] = useState<number>(0)
+
+  // ========================================================================
+  // 유틸리티 함수 (Utility Functions)
+  // ========================================================================
+
   /**
-   * 모달에서 새로운 배출량 데이터가 제출되었을 때 처리합니다.
-   * 데이터 저장 후 목록을 새로고침합니다.
-   *
-   * @param data - 제출된 Scope 폼 데이터
+   * 현재 활성 카테고리의 계산기 목록 반환
    */
-  const handleFormSubmit = (data: ScopeFormData) => {
-    console.log('폼 데이터:', data)
-    // loadData() // 데이터 새로고침
+  const getCurrentCalculators = (): CalculatorData[] => {
+    if (activePotentialCategory) {
+      return potentialCategoryCalculators[activePotentialCategory] || []
+    }
+    if (activeKineticCategory) {
+      return kineticCategoryCalculators[activeKineticCategory] || []
+    }
+    return []
   }
 
-  // ============================================================================
-  // 데이터 필터링 (Data Filtering)
-  // ============================================================================
-
   /**
-   * 선택된 월과 검색어에 따라 고정연소 데이터를 필터링합니다.
-   * - 월이 선택된 경우: 해당 월의 데이터만 표시
-   * - 검색어가 있는 경우: 시설명에 검색어가 포함된 데이터만 표시
+   * 특정 카테고리의 총 배출량 계산
    */
-  const filteredStationaryData = stationaryData
-    .filter(item => (selectedMonth ? item.reportingMonth === selectedMonth : true))
-    .filter(item =>
-      searchTerm
-        ? item.facilityName.toLowerCase().includes(searchTerm.toLowerCase())
-        : true
-    )
-
-  /**
-   * 선택된 월과 검색어에 따라 이동연소 데이터를 필터링합니다.
-   * - 월이 선택된 경우: 해당 월의 데이터만 표시
-   * - 검색어가 있는 경우: 차량 타입에 검색어가 포함된 데이터만 표시
-   */
-  const filteredMobileData = mobileData
-    .filter(item => (selectedMonth ? item.reportingMonth === selectedMonth : true))
-    .filter(item =>
-      searchTerm
-        ? item.vehicleType.toLowerCase().includes(searchTerm.toLowerCase())
-        : true
-    )
-
-  // ============================================================================
-  // 통계 계산 (Statistics Calculation)
-  // ============================================================================
-
-  // 고정연소 총 배출량 계산 (tCO₂eq)
-  const totalStationaryEmission = filteredStationaryData.reduce(
-    (sum, item) => sum + (item.totalCo2Equivalent || 0),
-    0
-  )
-
-  // 이동연소 총 배출량 계산 (tCO₂eq)
-  const totalMobileEmission = filteredMobileData.reduce(
-    (sum, item) => sum + (item.totalCo2Equivalent || 0),
-    0
-  )
-
-  // =============================================================================================
-  const [categoryPotentialCalculators, setCategoryPotentialCalculators] = useState<{
-    [key in Scope1PotentialCategoryKey]?: CalculatorData[]
-  }>({})
-
-  const [categoryKineticCalculators, setCategoryKineticCalculators] = useState<{
-    [key in Scope1KineticCategoryKey]?: CalculatorData[]
-  }>({})
-
-  // 전력 카테고리별 배출량 총계 관리
-  const [potentialCategoryTotals, setPotentialCategoryTotals] = useState<{
-    [key in Scope1PotentialCategoryKey]?: {id: number; emission: number}[]
-  }>({})
-
-  const [kineticCategoryTotals, setKineticCategoryTotals] = useState<{
-    [key in Scope1KineticCategoryKey]?: {id: number; emission: number}[]
-  }>({})
-
-  const [activePotentialCategory, setActivePotentialCategory] =
-    useState<Scope1PotentialCategoryKey | null>(null) // 현재 선택된 스팀 카테고리
-
-  const [activeKineticCategory, setActiveKineticCategory] =
-    useState<Scope1KineticCategoryKey | null>(null) // 현재 선택된 스팀 카테고리
-
   const getPotentialTotalEmission = (category: Scope1PotentialCategoryKey): number =>
     (potentialCategoryTotals[category] || []).reduce((sum, t) => sum + t.emission, 0)
 
   const getKineticTotalEmission = (category: Scope1KineticCategoryKey): number =>
     (kineticCategoryTotals[category] || []).reduce((sum, t) => sum + t.emission, 0)
 
+  // ========================================================================
+  // 유틸리티 함수 - ID 생성 (Utility Functions - ID Generation)
+  // ========================================================================
+
+  /**
+   * 새로운 임시 ID 생성 (음수 사용)
+   */
+  const generateNewTemporaryId = (
+    categoryKey: Scope1PotentialCategoryKey | Scope1KineticCategoryKey
+  ): number => {
+    const existingCalculators = activePotentialCategory
+      ? potentialCategoryCalculators[categoryKey as Scope1PotentialCategoryKey] || []
+      : kineticCategoryCalculators[categoryKey as Scope1KineticCategoryKey] || []
+    const existingIds = existingCalculators.map(c => c.id).filter(id => id < 0)
+
+    const minId = existingIds.length > 0 ? Math.min(...existingIds) : 0
+    return minId - 1
+  }
+
+  // ========================================================================
+  // 이벤트 핸들러 (Event Handlers)
+  // ========================================================================
+  const handleModeChange = (id: number, checked: boolean) => {
+    const activeCategory = activePotentialCategory || activeKineticCategory
+    if (!activeCategory) return
+
+    setCalculatorModes(prev => ({
+      ...prev,
+      [activeCategory]: {
+        ...prev[activeCategory],
+        [id]: checked
+      }
+    }))
+  }
+
+  /**
+   * 계산기의 배출량 업데이트 핸들러
+   */
+  const updateTotal = (id: number, emission: number) => {
+    if (activePotentialCategory) {
+      setPotentialCategoryTotals(prev => ({
+        ...prev,
+        [activePotentialCategory]: (prev[activePotentialCategory] || [])
+          .map(t => (t.id === id ? {id, emission} : t))
+          .concat(
+            (prev[activePotentialCategory] || []).find(t => t.id === id)
+              ? []
+              : [{id, emission}]
+          )
+      }))
+    } else if (activeKineticCategory) {
+      setKineticCategoryTotals(prev => ({
+        ...prev,
+        [activeKineticCategory]: (prev[activeKineticCategory] || [])
+          .map(t => (t.id === id ? {id, emission} : t))
+          .concat(
+            (prev[activeKineticCategory] || []).find(t => t.id === id)
+              ? []
+              : [{id, emission}]
+          )
+      }))
+    }
+  }
+
+  /**
+   * 새로운 계산기 추가 핸들러
+   */
+  const addCalculator = () => {
+    if (activePotentialCategory) {
+      const newId = generateNewTemporaryId(activePotentialCategory)
+      setPotentialCategoryCalculators(prev => ({
+        ...prev,
+        [activePotentialCategory]: [
+          ...prev[activePotentialCategory],
+          {
+            id: newId,
+            state: {category: '', separate: '', rawMaterial: '', quantity: ''}
+          }
+        ]
+      }))
+    } else if (activeKineticCategory) {
+      const newId = generateNewTemporaryId(activeKineticCategory)
+      setKineticCategoryCalculators(prev => ({
+        ...prev,
+        [activeKineticCategory]: [
+          ...prev[activeKineticCategory],
+          {
+            id: newId,
+            state: {category: '', separate: '', rawMaterial: '', quantity: ''}
+          }
+        ]
+      }))
+    }
+  }
+
+  /**
+   * 계산기 삭제 핸들러
+   */
+  const removeCalculator = async (id: number) => {
+    if (activePotentialCategory) {
+      const currentCalculators =
+        potentialCategoryCalculators[activePotentialCategory] || []
+      const isLastItem = currentCalculators.length === 1
+
+      if (isLastItem) {
+        const newTemporaryId = generateNewTemporaryId(activePotentialCategory)
+        setPotentialCategoryCalculators(prev => ({
+          ...prev,
+          [activePotentialCategory]: [
+            {
+              id: newTemporaryId,
+              state: {category: '', separate: '', rawMaterial: '', quantity: ''}
+            }
+          ]
+        }))
+        setPotentialCategoryTotals(prev => ({
+          ...prev,
+          [activePotentialCategory]: [{id: newTemporaryId, emission: 0}]
+        }))
+      } else {
+        setPotentialCategoryCalculators(prev => ({
+          ...prev,
+          [activePotentialCategory]: (prev[activePotentialCategory] || []).filter(
+            c => c.id !== id
+          )
+        }))
+        setPotentialCategoryTotals(prev => ({
+          ...prev,
+          [activePotentialCategory]: (prev[activePotentialCategory] || []).filter(
+            t => t.id !== id
+          )
+        }))
+      }
+    } else if (activeKineticCategory) {
+      const currentCalculators = kineticCategoryCalculators[activeKineticCategory] || []
+      const isLastItem = currentCalculators.length === 1
+
+      if (isLastItem) {
+        const newTemporaryId = generateNewTemporaryId(activeKineticCategory)
+        setKineticCategoryCalculators(prev => ({
+          ...prev,
+          [activeKineticCategory]: [
+            {
+              id: newTemporaryId,
+              state: {category: '', separate: '', rawMaterial: '', quantity: ''}
+            }
+          ]
+        }))
+        setKineticCategoryTotals(prev => ({
+          ...prev,
+          [activeKineticCategory]: [{id: newTemporaryId, emission: 0}]
+        }))
+      } else {
+        setKineticCategoryCalculators(prev => ({
+          ...prev,
+          [activeKineticCategory]: (prev[activeKineticCategory] || []).filter(
+            c => c.id !== id
+          )
+        }))
+        setKineticCategoryTotals(prev => ({
+          ...prev,
+          [activeKineticCategory]: (prev[activeKineticCategory] || []).filter(
+            t => t.id !== id
+          )
+        }))
+      }
+    }
+  }
+
+  /**
+   * 계산기 입력 상태 업데이트 핸들러
+   */
+  const updateCalculatorState = (id: number, newState: SelectorState) => {
+    if (activePotentialCategory) {
+      setPotentialCategoryCalculators(prev => ({
+        ...prev,
+        [activePotentialCategory]: (prev[activePotentialCategory] || []).map(c =>
+          c.id === id ? {...c, state: newState} : c
+        )
+      }))
+    } else if (activeKineticCategory) {
+      setKineticCategoryCalculators(prev => ({
+        ...prev,
+        [activeKineticCategory]: (prev[activeKineticCategory] || []).map(c =>
+          c.id === id ? {...c, state: newState} : c
+        )
+      }))
+    }
+  }
+
+  /**
+   * 카테고리 선택 핸들러
+   */
   const handlePotentialCategorySelect = (category: Scope1PotentialCategoryKey) => {
     setActivePotentialCategory(category)
+    setActiveKineticCategory(null) // 다른 타입 카테고리는 초기화
 
     // 해당 카테고리에 계산기가 없으면 기본 계산기 1개 생성
     if (
-      !categoryPotentialCalculators[category] ||
-      categoryPotentialCalculators[category]!.length === 0
+      !potentialCategoryCalculators[category] ||
+      potentialCategoryCalculators[category]!.length === 0
     ) {
-      setCategoryPotentialCalculators(prev => ({
+      const newId = generateNewTemporaryId(category)
+      setPotentialCategoryCalculators(prev => ({
         ...prev,
         [category]: [
-          {id: 1, state: {category: '', separate: '', rawMaterial: '', quantity: ''}}
+          {
+            id: newId,
+            state: {category: '', separate: '', rawMaterial: '', quantity: ''}
+          }
         ]
       }))
     }
@@ -221,30 +390,67 @@ export default function Scope1Form() {
 
   const handleKineticCategorySelect = (category: Scope1KineticCategoryKey) => {
     setActiveKineticCategory(category)
+    setActivePotentialCategory(null) // 다른 타입 카테고리는 초기화
 
     // 해당 카테고리에 계산기가 없으면 기본 계산기 1개 생성
     if (
-      !categoryKineticCalculators[category] ||
-      categoryKineticCalculators[category]!.length === 0
+      !kineticCategoryCalculators[category] ||
+      kineticCategoryCalculators[category]!.length === 0
     ) {
-      setCategoryKineticCalculators(prev => ({
+      const newId = generateNewTemporaryId(category)
+      setKineticCategoryCalculators(prev => ({
         ...prev,
         [category]: [
-          {id: 1, state: {category: '', separate: '', rawMaterial: '', quantity: ''}}
+          {
+            id: newId,
+            state: {category: '', separate: '', rawMaterial: '', quantity: ''}
+          }
         ]
       }))
     }
   }
 
-  // Scope 1 총 배출량 계산 (고정연소 + 이동연소)
-  const totalScope1Emission = totalStationaryEmission + totalMobileEmission
+  /**
+   * 카테고리 입력 완료 핸들러
+   */
+  const handleComplete = () => {
+    setActivePotentialCategory(null)
+    setActiveKineticCategory(null)
+  }
 
-  // ============================================================================
-  // 컴포넌트 렌더링 (Component Rendering)
-  // ============================================================================
+  /**
+   * 목록으로 돌아가기 핸들러
+   */
+  const handleBackToList = () => {
+    setActivePotentialCategory(null)
+    setActiveKineticCategory(null)
+  }
+
+  // 전체 총 배출량 계산
+  const grandTotal =
+    Object.keys(scope1PotentialCategoryList).reduce(
+      (sum, key) => sum + getPotentialTotalEmission(key as Scope1PotentialCategoryKey),
+      0
+    ) +
+    Object.keys(scope1KineticCategoryList).reduce(
+      (sum, key) => sum + getKineticTotalEmission(key as Scope1KineticCategoryKey),
+      0
+    )
+
+  // ========================================================================
+  // 데이터 새로고침 함수 (Data Refresh Function)
+  // ========================================================================
+
+  const refreshData = () => {
+    setRefreshTrigger(prev => prev + 1)
+  }
+
+  // ========================================================================
+  // 렌더링 (Rendering)
+  // ========================================================================
 
   return (
-    <div className="flex flex-col w-full p-4">
+    <div className="flex flex-col w-full h-full p-4">
       {/* ========================================================================
           상단 네비게이션 (Top Navigation)
           - 브레드크럼을 통한 현재 위치 표시
@@ -258,19 +464,20 @@ export default function Scope1Form() {
             </BreadcrumbItem>
             <BreadcrumbSeparator />
             <BreadcrumbItem>
-              <span className="font-bold text-blue-500">Scope1</span>
+              <span className="font-bold text-blue-600">Scope1</span>
             </BreadcrumbItem>
           </BreadcrumbList>
         </Breadcrumb>
       </div>
+
       {/* ========================================================================
           헤더 섹션 (Header Section)
           - 뒤로가기 버튼과 페이지 제목/설명
           ======================================================================== */}
-      <div className="flex flex-row w-full h-24 mb-4">
+      <div className="flex flex-row justify-between w-full h-24 mb-4">
         <div className="flex flex-row items-center p-4">
           <PageHeader
-            icon={<Factory className="w-6 h-6 text-customG-600" />}
+            icon={<Factory className="w-6 h-6 text-blue-600" />}
             title="Scope 1 배출량 관리"
             description="직접 배출량 (고정연소, 이동연소) 데이터를 관리하고 추적합니다"
             module="SCOPE"
@@ -278,16 +485,16 @@ export default function Scope1Form() {
           />
         </div>
       </div>
-      {/* 데이터 관리 메인 영역 (Main Data Management Area) - 통계 카드, 데이터 테이블 포함 */}
-      <motion.div
-        className="space-y-4"
-        initial={{opacity: 0, y: 20}}
-        animate={{opacity: 1, y: 0}}
-        transition={{delay: 0.7, duration: 0.6}}>
-        {/* ========================================================================
-          연도 선택 섹션 (Year Selection)
-          - 데이터 조회를 위한 필터 조건 설정
+
+      {/* ========================================================================
+          메인 컨텐츠 영역 (Main Content Area)
+          - 카테고리 선택 또는 데이터 입력 화면
           ======================================================================== */}
+      {!activePotentialCategory && !activeKineticCategory ? (
+        /* ====================================================================
+            카테고리 선택 화면 (Category Selection Screen)
+            ==================================================================== */
+
         <motion.div
           initial={{opacity: 0}}
           animate={{opacity: 1}}
@@ -295,18 +502,18 @@ export default function Scope1Form() {
           <Card className="mb-4 overflow-hidden shadow-sm">
             <CardContent className="p-4">
               <div className="grid items-center justify-center h-24 grid-cols-1 gap-8 md:grid-cols-3">
-                {/* 총 Scope 1 배출량 카드 */}
-                <Card className="justify-center h-24 border-blue-100 bg-gradient-to-br from-blue-50 to-white">
+                {/* 총 배출량 카드 */}
+                <Card className="justify-center h-24 bg-gradient-to-br from-blue-50 to-white border-blue-100">
                   <CardContent className="flex items-center p-4">
                     <div className="p-2 mr-3 bg-blue-100 rounded-full">
-                      <TrendingUp className="w-5 h-5 text-blue-600" />
+                      <Factory className="w-5 h-5 text-blue-600" />
                     </div>
                     <div>
                       <p className="text-sm font-medium text-gray-500">
                         총 Scope 1 배출량
                       </p>
                       <h3 className="text-2xl font-bold">
-                        {totalScope1Emission.toFixed(2)}
+                        {grandTotal.toFixed(2)}
                         <span className="ml-1 text-sm font-normal text-gray-500">
                           tCO₂eq
                         </span>
@@ -346,72 +553,79 @@ export default function Scope1Form() {
               </div>
             </CardContent>
           </Card>
+
+          {/* 카테고리 선택 영역 */}
+          <div className="space-y-8">
+            {/* 고정연소 카테고리 */}
+            <motion.div
+              initial={{opacity: 0, y: 20}}
+              animate={{opacity: 1, y: 0}}
+              transition={{duration: 0.5, delay: 0.2}}>
+              <div className="mb-6">
+                <h2 className="mb-2 text-xl font-bold text-customG-800">
+                  고정연소 배출량
+                </h2>
+                <p className="text-sm text-customG-600">
+                  연료 연소 시설에서 발생하는 직접 배출량
+                </p>
+              </div>
+              <CategorySelector
+                categoryList={scope1PotentialCategoryList}
+                getTotalEmission={getPotentialTotalEmission}
+                onCategorySelect={handlePotentialCategorySelect}
+                animationDelay={0.1}
+              />
+            </motion.div>
+
+            {/* 이동연소 카테고리 */}
+            <motion.div
+              initial={{opacity: 0, y: 20}}
+              animate={{opacity: 1, y: 0}}
+              transition={{duration: 0.5, delay: 0.4}}>
+              <div className="mb-6">
+                <h2 className="mb-2 text-xl font-bold text-customG-800">
+                  이동연소 배출량
+                </h2>
+                <p className="text-sm text-customG-600">
+                  이동수단 연료 사용으로 발생하는 직접 배출량
+                </p>
+              </div>
+              <CategorySelector
+                categoryList={scope1KineticCategoryList}
+                getTotalEmission={getKineticTotalEmission}
+                onCategorySelect={handleKineticCategorySelect}
+                animationDelay={0.2}
+              />
+            </motion.div>
+          </div>
         </motion.div>
-
-        {/* ==================================================================
-              데이터 테이블 섹션 (Data Table Section)
-              - 탭으로 구분된 고정연소/이동연소 데이터 표시
-              ================================================================== */}
-        <div className="space-y-8">
-          {/* ================================================================
-                        전력 카테고리 섹션 (Electricity Category Section)
-                        ================================================================ */}
-          <motion.div
-            initial={{opacity: 0, y: 20}}
-            animate={{opacity: 1, y: 0}}
-            transition={{duration: 0.5, delay: 0.2}}>
-            <div className="mb-6">
-              <h2 className="mb-2 text-xl font-bold text-customG-800">
-                고정 연소 사용량
-              </h2>
-              <p className="text-sm text-customG-600">===</p>
-            </div>
-            {/* 전력 카테고리 선택 그리드 */}
-            <CategorySelector
-              categoryList={scope1PotentialCategoryList}
-              getTotalEmission={getPotentialTotalEmission}
-              onCategorySelect={handlePotentialCategorySelect}
-              animationDelay={0.1}
-            />
-          </motion.div>
-
-          {/* ================================================================
-                        스팀 카테고리 섹션 (Steam Category Section)
-                        ================================================================ */}
-          <motion.div
-            initial={{opacity: 0, y: 20}}
-            animate={{opacity: 1, y: 0}}
-            transition={{duration: 0.5, delay: 0.4}}>
-            <div className="mb-6">
-              <h2 className="mb-2 text-xl font-bold text-customG-800">
-                이동 연소 사용량
-              </h2>
-              <p className="text-sm text-customG-600">===</p>
-            </div>
-            {/* 스팀 카테고리 선택 그리드 */}
-            <CategorySelector
-              categoryList={scope1KineticCategoryList}
-              getTotalEmission={getKineticTotalEmission}
-              onCategorySelect={handleKineticCategorySelect}
-              animationDelay={0.2}
-            />
-          </motion.div>
-        </div>
-      </motion.div>
-
-      {/* ========================================================================
-          Scope 데이터 입력 모달 (Scope Data Input Modal)
-          - 새로운 배출량 데이터 추가를 위한 모달 폼
-          ======================================================================== */}
-      <ScopeModal
-        isOpen={isModalOpen}
-        onClose={() => setIsModalOpen(false)}
-        onSubmit={handleFormSubmit}
-        partnerCompanies={[]}
-        defaultYear={selectedYear}
-        defaultMonth={selectedMonth || new Date().getMonth() + 1}
-        scope="SCOPE1"
-      />
+      ) : (
+        /* ====================================================================
+            카테고리별 데이터 입력 화면 (Category Data Input Screen)
+            ==================================================================== */
+        <Scope1DataInput
+          activeCategory={activePotentialCategory || activeKineticCategory}
+          calculators={getCurrentCalculators()}
+          getTotalEmission={category =>
+            activePotentialCategory
+              ? getPotentialTotalEmission(category as Scope1PotentialCategoryKey)
+              : getKineticTotalEmission(category as Scope1KineticCategoryKey)
+          }
+          onAddCalculator={addCalculator}
+          onRemoveCalculator={removeCalculator}
+          onUpdateCalculatorState={updateCalculatorState}
+          onChangeTotal={updateTotal}
+          onComplete={handleComplete}
+          onBackToList={handleBackToList}
+          calculatorModes={
+            calculatorModes[activePotentialCategory || activeKineticCategory!] || {}
+          }
+          onModeChange={handleModeChange}
+          selectedYear={selectedYear}
+          selectedMonth={selectedMonth}
+          onDataChange={refreshData}
+        />
+      )}
     </div>
   )
 }
