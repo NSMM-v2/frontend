@@ -189,19 +189,18 @@ export default function EvaluationForm() {
     return 'bg-red-500'
   }
 
-
   // 인증 에러가 있는 경우
   if (authError) {
     return (
-      <div className="flex items-center justify-center min-h-screen p-4">
+      <div className="flex justify-center items-center p-4 min-h-screen">
         <Card className="w-full max-w-md shadow-xl backdrop-blur-sm bg-white/95">
           <CardContent className="p-8 text-center">
-            <AlertCircle className="w-12 h-12 mx-auto mb-4 text-red-500" />
+            <AlertCircle className="mx-auto mb-4 w-12 h-12 text-red-500" />
             <h2 className="mb-2 text-xl font-semibold text-gray-900">접근 제한</h2>
             <p className="mb-6 text-gray-600">{authError}</p>
             <button
               onClick={redirectToLogin}
-              className="w-full px-4 py-2 text-white transition-all bg-blue-600 rounded-lg hover:bg-blue-700 hover:shadow-lg">
+              className="px-4 py-2 w-full text-white bg-blue-600 rounded-lg transition-all hover:bg-blue-700 hover:shadow-lg">
               로그인 페이지로 이동
             </button>
           </CardContent>
@@ -210,16 +209,15 @@ export default function EvaluationForm() {
     )
   }
 
-
   return (
     <div className="flex flex-col w-full min-h-screen">
       {/* 브레드크럼 영역 */}
       <div className="p-4 pb-0">
-        <div className="flex flex-row items-center p-3 mb-6 text-sm text-gray-600 border shadow-sm bg-white/80 backdrop-blur-sm rounded-xl border-white/50">
+        <div className="flex flex-row items-center p-3 mb-6 text-sm text-gray-600 rounded-xl border shadow-sm backdrop-blur-sm bg-white/80 border-white/50">
           <Breadcrumb>
             <BreadcrumbList>
               <BreadcrumbItem>
-                <Home className="w-4 h-4 mr-1" />
+                <Home className="mr-1 w-4 h-4" />
                 <BreadcrumbLink
                   href="/dashboard"
                   className="transition-colors hover:text-blue-600">
@@ -245,10 +243,10 @@ export default function EvaluationForm() {
 
       {/* 페이지 헤더 영역 */}
       <div className="px-4 pb-0">
-        <div className="flex flex-row w-full mb-6">
+        <div className="flex flex-row mb-6 w-full">
           <Link
             href="/dashboard"
-            className="flex flex-row items-center p-4 space-x-4 transition-all rounded-xl hover:bg-white/30 backdrop-blur-sm group">
+            className="flex flex-row items-center p-4 space-x-4 rounded-xl backdrop-blur-sm transition-all hover:bg-white/30 group">
             <ArrowLeft className="w-6 h-6 text-gray-500 transition-colors group-hover:text-blue-600" />
             <PageHeader
               icon={<Shield className="w-6 h-6 text-blue-600" />}
@@ -267,14 +265,14 @@ export default function EvaluationForm() {
           <div className="grid grid-cols-1 gap-6 lg:grid-cols-3">
             {/* 결과 목록 */}
             <div className="lg:col-span-2">
-              <div className="border shadow-xl bg-white/95 backdrop-blur-sm rounded-xl border-white/50">
+              <div className="rounded-xl border shadow-xl backdrop-blur-sm bg-white/95 border-white/50">
                 <div className="px-6 py-5 border-b border-gray-100">
-                  <div className="flex items-center justify-between">
+                  <div className="flex justify-between items-center">
                     <h2 className="text-xl font-bold text-gray-900">진단 결과 목록</h2>
                     <button
                       onClick={fetchResults}
                       disabled={loading}
-                      className="inline-flex items-center px-4 py-2 text-white transition-all bg-blue-600 rounded-lg hover:bg-blue-700 hover:shadow-lg disabled:opacity-50 disabled:cursor-not-allowed">
+                      className="inline-flex items-center px-4 py-2 text-white bg-blue-600 rounded-lg transition-all hover:bg-blue-700 hover:shadow-lg disabled:opacity-50 disabled:cursor-not-allowed">
                       <RefreshCw
                         className={`w-4 h-4 mr-2 ${loading ? 'animate-spin' : ''}`}
                       />
@@ -286,12 +284,12 @@ export default function EvaluationForm() {
                 <div className="p-6">
                   {loading ? (
                     <div className="py-12 text-center">
-                      <div className="w-8 h-8 mx-auto mb-4 border-4 border-blue-600 rounded-full border-t-transparent animate-spin"></div>
+                      <div className="mx-auto mb-4 w-8 h-8 rounded-full border-4 border-blue-600 animate-spin border-t-transparent"></div>
                       <p className="text-gray-600">데이터를 불러오는 중...</p>
                     </div>
                   ) : results.length === 0 ? (
                     <div className="py-12 text-center">
-                      <BarChart3 className="w-12 h-12 mx-auto mb-4 text-gray-400" />
+                      <BarChart3 className="mx-auto mb-4 w-12 h-12 text-gray-400" />
                       <p className="font-medium text-gray-600">진단 결과가 없습니다.</p>
                       <p className="mt-1 text-sm text-gray-500">
                         새로운 자가진단을 실시해보세요.
@@ -311,10 +309,10 @@ export default function EvaluationForm() {
                             onClick={() => fetchDetailResult(result.id)}
                             className={`border rounded-xl p-5 cursor-pointer transition-all hover:shadow-lg ${
                               isSelected
-                                ? 'border-blue-400 bg-blue-50/50 shadow-lg'
+                                ? 'border-blue-400 shadow-lg bg-blue-50/50'
                                 : 'border-gray-200 hover:border-gray-300 bg-white/50'
                             }`}>
-                            <div className="flex items-center justify-between mb-4">
+                            <div className="flex justify-between items-center mb-4">
                               <div className="flex items-center space-x-3">
                                 <div className="p-2 bg-blue-100 rounded-lg">
                                   <FileText className="w-6 h-6 text-blue-600" />
@@ -334,7 +332,7 @@ export default function EvaluationForm() {
 
                             {/* 점수 진행바 */}
                             <div className="mb-4">
-                              <div className="flex items-center justify-between mb-2 text-sm">
+                              <div className="flex justify-between items-center mb-2 text-sm">
                                 <span className="font-medium text-gray-700">
                                   종합 점수
                                 </span>
@@ -346,7 +344,7 @@ export default function EvaluationForm() {
                                   </span>
                                 </span>
                               </div>
-                              <div className="w-full h-3 overflow-hidden bg-gray-200 rounded-full">
+                              <div className="overflow-hidden w-full h-3 bg-gray-200 rounded-full">
                                 <div
                                   className={`h-3 rounded-full transition-all duration-500 ${getScoreColor(
                                     result.actualScore,
@@ -358,7 +356,7 @@ export default function EvaluationForm() {
                             </div>
 
                             <div className="grid grid-cols-3 gap-4 text-sm">
-                              <div className="p-3 text-center rounded-lg bg-gray-50">
+                              <div className="p-3 text-center bg-gray-50 rounded-lg">
                                 <span className="block mb-1 text-gray-500">
                                   진단 점수
                                 </span>
@@ -366,7 +364,7 @@ export default function EvaluationForm() {
                                   {result.score}점
                                 </p>
                               </div>
-                              <div className="p-3 text-center rounded-lg bg-gray-50">
+                              <div className="p-3 text-center bg-gray-50 rounded-lg">
                                 <span className="block mb-1 text-gray-500">
                                   위반 건수
                                 </span>
@@ -379,7 +377,7 @@ export default function EvaluationForm() {
                                   {result.criticalViolationCount}건
                                 </p>
                               </div>
-                              <div className="p-3 text-center rounded-lg bg-gray-50">
+                              <div className="p-3 text-center bg-gray-50 rounded-lg">
                                 <span className="block mb-1 text-gray-500">
                                   완료 일시
                                 </span>
@@ -405,23 +403,21 @@ export default function EvaluationForm() {
 
             {/* 상세 결과 */}
             <div className="lg:col-span-1">
-              <div className="sticky border shadow-xl top-6 bg-white/95 backdrop-blur-sm rounded-xl border-white/50">
+              <div className="sticky top-6 rounded-xl border shadow-xl backdrop-blur-sm bg-white/95 border-white/50">
                 <div className="px-6 py-5 border-b border-gray-100">
                   <h2 className="text-xl font-bold text-gray-900">상세 결과</h2>
                 </div>
 
-
                 <div className="p-6">
                   {detailLoading ? (
                     <div className="py-8 text-center">
-                      <div className="w-8 h-8 mx-auto mb-4 border-4 border-blue-600 rounded-full border-t-transparent animate-spin"></div>
+                      <div className="mx-auto mb-4 w-8 h-8 rounded-full border-4 border-blue-600 animate-spin border-t-transparent"></div>
                       <p className="text-gray-600">상세 정보 로딩 중...</p>
                     </div>
                   ) : !selectedResult ? (
                     <div className="py-8 text-center">
-                      <div className="p-4 mx-auto mb-4 rounded-full bg-blue-50 w-fit">
+                      <div className="p-4 mx-auto mb-4 bg-blue-50 rounded-full w-fit">
                         <FileText className="w-8 h-8 text-blue-500" />
-
                       </div>
                       <p className="mb-2 font-medium text-gray-700">
                         상세 정보를 확인하세요
@@ -435,7 +431,7 @@ export default function EvaluationForm() {
                   ) : (
                     <div className="space-y-6">
                       {/* 기업 정보 */}
-                      <div className="p-5 border border-blue-100 rounded-xl bg-gradient-to-br from-blue-50 to-indigo-50">
+                      <div className="p-5 bg-gradient-to-br from-blue-50 to-indigo-50 rounded-xl border border-blue-100">
                         <div className="mb-4">
                           <h3 className="text-lg font-bold text-gray-900">
                             자가진단 상세 결과
@@ -443,7 +439,7 @@ export default function EvaluationForm() {
                         </div>
 
                         <div className="space-y-4">
-                          <div className="flex items-center justify-between p-3 rounded-lg bg-white/70">
+                          <div className="flex justify-between items-center p-3 rounded-lg bg-white/70">
                             <span className="text-sm font-medium text-gray-700">
                               최종 등급
                             </span>
@@ -455,7 +451,7 @@ export default function EvaluationForm() {
                             </span>
                           </div>
 
-                          <div className="flex items-center justify-between p-3 rounded-lg bg-white/70">
+                          <div className="flex justify-between items-center p-3 rounded-lg bg-white/70">
                             <span className="text-sm font-medium text-gray-700">
                               총점
                             </span>
@@ -465,7 +461,7 @@ export default function EvaluationForm() {
                             </span>
                           </div>
 
-                          <div className="flex items-center justify-between p-3 rounded-lg bg-white/70">
+                          <div className="flex justify-between items-center p-3 rounded-lg bg-white/70">
                             <span className="text-sm font-medium text-gray-700">
                               위반 건수
                             </span>
@@ -487,7 +483,7 @@ export default function EvaluationForm() {
                           <h4 className="mb-4 font-bold text-gray-900">위반 항목 요약</h4>
                           {selectedResult.answers.filter(a => a.answer === 'no')
                             .length === 0 ? (
-                            <div className="p-4 border border-green-200 rounded-xl bg-gradient-to-br from-green-50 to-emerald-50">
+                            <div className="p-4 bg-gradient-to-br from-green-50 to-emerald-50 rounded-xl border border-green-200">
                               <div className="flex items-center space-x-3">
                                 <div className="p-2 bg-green-100 rounded-lg">
                                   <CheckCircle2 className="w-5 h-5 text-green-600" />
@@ -502,7 +498,7 @@ export default function EvaluationForm() {
                             </div>
                           ) : (
                             <div className="space-y-3">
-                              <div className="p-3 border border-red-200 rounded-lg bg-red-50">
+                              <div className="p-3 bg-red-50 rounded-lg border border-red-200">
                                 <p className="text-sm font-bold text-red-700">
                                   {
                                     selectedResult.answers.filter(a => a.answer === 'no')
@@ -516,7 +512,7 @@ export default function EvaluationForm() {
                                 .map((a, i) => (
                                   <div
                                     key={i}
-                                    className="p-3 border border-red-200 rounded-lg bg-red-50">
+                                    className="p-3 bg-red-50 rounded-lg border border-red-200">
                                     <div className="flex items-center space-x-2">
                                       <XCircle className="w-4 h-4 text-red-500" />
                                       <span className="text-sm font-medium text-red-700">
