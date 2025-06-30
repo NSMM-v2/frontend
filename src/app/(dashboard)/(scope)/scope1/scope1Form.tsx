@@ -503,7 +503,7 @@ export default function Scope1Form() {
             <CardContent className="p-4">
               <div className="grid items-center justify-center h-24 grid-cols-1 gap-8 md:grid-cols-3">
                 {/* 총 배출량 카드 */}
-                <Card className="justify-center h-24 bg-gradient-to-br from-blue-50 to-white border-blue-100">
+                <Card className="justify-center h-24 border-blue-100 bg-gradient-to-br from-blue-50 to-white">
                   <CardContent className="flex items-center p-4">
                     <div className="p-2 mr-3 bg-blue-100 rounded-full">
                       <Factory className="w-5 h-5 text-blue-600" />

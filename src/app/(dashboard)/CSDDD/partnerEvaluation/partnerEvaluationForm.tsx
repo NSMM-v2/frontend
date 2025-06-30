@@ -33,7 +33,7 @@ import {
   XCircle
 } from 'lucide-react'
 
-export default function EvaluationForm() {
+export default function PartnerEvaluationForm() {
   const [results, setResults] = useState<SelfAssessmentResponse[]>([])
   const [selectedResult, setSelectedResult] = useState<SelfAssessmentResponse | null>(
     null
@@ -66,16 +66,31 @@ export default function EvaluationForm() {
   const fetchResults = async () => {
     setLoading(true)
     try {
-      const isAuthenticated = await checkAuth()
-      if (!isAuthenticated) {
+      const user = await authService.getCurrentUserByType()
+      if (!user || !user.success) {
+        setAuthError('로그인이 필요합니다.')
         return
       }
 
-      const response: PaginatedSelfAssessmentResponse = await getSelfAssessmentResults()
-      setResults(response.content || [])
+      setUserInfo(user.data) // 상태 업데이트
+      const response: PaginatedSelfAssessmentResponse = await getSelfAssessmentResults({
+        userType: user.data.userType,
+        headquartersId: user.data.headquartersId ?? user.data.headquarters?.id ?? '',
+        partnerId: user.data.partnerId,
+        treePath: user.data.treePath ?? ''
+      })
+
+      const partnerRes = await authService.getAccessiblePartners()
+      const partnerMap = new Map(
+        partnerRes.data.map((p: any) => [p.partnerId, p.companyName])
+      )
+      const enriched = (response.content || []).map(result => ({
+        ...result,
+        companyName: String(partnerMap.get(result.partnerId) ?? '알 수 없음')
+      }))
+      setResults(enriched)
     } catch (error: any) {
       console.error('결과 조회 실패:', error)
-
       if (error.response?.status === 401 || error.response?.status === 403) {
         setAuthError('접근 권한이 없습니다. 다시 로그인해주세요.')
       } else {
@@ -92,11 +107,6 @@ export default function EvaluationForm() {
     setAuthError(null)
 
     try {
-      const isAuthenticated = await checkAuth()
-      if (!isAuthenticated) {
-        return
-      }
-
       const result = await getSelfAssessmentResult(resultId, {
         userType: userInfo.userType,
         headquartersId: userInfo.headquartersId,

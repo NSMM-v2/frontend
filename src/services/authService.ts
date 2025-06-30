@@ -41,6 +41,7 @@ export interface UserInfo {
   }
   partnerId?: string
   headquartersId?: string
+  treePath?: string
 }
 
 // API 응답 인터페이스
@@ -248,6 +249,11 @@ class AuthService {
     return response.data
   }
 
+  // 접근 가능한 협력사만 조회
+  async getAccessiblePartners(): Promise<ApiResponse<any[]>> {
+    const response = await api.get('/api/v1/partners/accessible')
+    return response.data
+  }
   /**
    * 특정 협력사 정보 조회
    */
