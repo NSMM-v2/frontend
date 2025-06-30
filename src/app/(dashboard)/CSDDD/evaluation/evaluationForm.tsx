@@ -283,17 +283,6 @@ export default function EvaluationForm({
 
   // Deprecated: generateActionPlan, use analysisData.actionPlan directly if available.
 
-  if (!analysisData) {
-    return (
-      <div className="flex justify-center items-center min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100">
-        <div className="text-center">
-          <Activity className="mx-auto mb-4 w-12 h-12 text-blue-500 animate-spin" />
-          <p className="text-lg text-gray-600">분석 데이터를 로딩 중입니다...</p>
-        </div>
-      </div>
-    )
-  }
-
   const RISK_LEVEL_MAP = {
     A: {
       level: '매우 낮음',
@@ -490,10 +479,12 @@ export default function EvaluationForm({
                   <div className="flex-shrink-0">
                     <div
                       className={`flex flex-col items-center p-6 rounded-lg border-2 ${getGradeColor(
-                        analysisData.grade
+                        analysisData?.grade ?? ''
                       )}`}>
-                      {getGradeIcon(analysisData.grade)}
-                      <div className="mt-2 text-3xl font-bold">{analysisData.grade}</div>
+                      {getGradeIcon(analysisData?.grade ?? '')}
+                      <div className="mt-2 text-3xl font-bold">
+                        {analysisData?.grade ?? ''}
+                      </div>
                       <div className="mt-1 text-sm font-medium">등급</div>
                     </div>
                   </div>
@@ -502,14 +493,14 @@ export default function EvaluationForm({
                   <div className="flex-1 space-y-4">
                     <div>
                       <div className="mb-1 text-sm text-gray-600">평가 결과</div>
-                      <div className="text-gray-800">{analysisData.summary}</div>
+                      <div className="text-gray-800">{analysisData?.summary ?? ''}</div>
                     </div>
                     <div>
                       <div className="mb-1 text-sm font-medium text-gray-700">
                         권장 조치
                       </div>
                       <div className="text-sm text-gray-700">
-                        {analysisData.recommendations}
+                        {analysisData?.recommendations ?? ''}
                       </div>
                     </div>
                   </div>

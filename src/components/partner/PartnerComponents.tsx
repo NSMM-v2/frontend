@@ -87,9 +87,9 @@ export function PartnerSearchSection({onOpenAddDialog}: PartnerSearchSectionProp
  */
 export function PartnerLoadingState() {
   return (
-    <div className="flex items-center justify-center p-16">
+    <div className="flex justify-center items-center p-16">
       <div className="text-center">
-        <Loader2 className="w-12 h-12 mx-auto mb-4 animate-spin text-blue-500" />
+        <Loader2 className="mx-auto mb-4 w-12 h-12 text-blue-500 animate-spin" />
         <p className="text-lg font-medium text-slate-700">
           파트너사 목록을 불러오는 중...
         </p>
@@ -106,8 +106,8 @@ export function PartnerLoadingState() {
  */
 export function PageLoadingState() {
   return (
-    <div className="flex items-center justify-center h-screen">
-      <Loader2 className="w-12 h-12 animate-spin text-blue-500" />
+    <div className="flex justify-center items-center h-screen">
+      <Loader2 className="w-12 h-12 text-blue-500 animate-spin" />
     </div>
   )
 }
@@ -136,20 +136,20 @@ export function PartnerPagination({
   if (totalPages <= 1) return null
 
   return (
-    <div className="flex items-center justify-center gap-3 pt-8 mt-8 border-t-2 border-slate-100">
+    <div className="flex gap-3 justify-center items-center pt-8 mt-8 border-t-2 border-slate-100">
       {/* 이전 페이지 버튼 */}
       <Button
         variant="outline"
         size="sm"
         onClick={() => onPageChange(currentPage - 1)}
         disabled={currentPage === 1}
-        className="h-10 px-4 font-medium transition-all duration-200 border-2 rounded-lg border-slate-200 hover:border-blue-500 hover:bg-blue-50">
-        <ChevronLeft className="w-4 h-4 mr-1" />
+        className="px-4 h-10 font-medium rounded-lg border-2 transition-all duration-200 border-slate-200 hover:border-blue-500 hover:bg-blue-50">
+        <ChevronLeft className="mr-1 w-4 h-4" />
         이전
       </Button>
 
       {/* 페이지 번호들 */}
-      <div className="flex items-center gap-1">
+      <div className="flex gap-1 items-center">
         {Array.from({length: totalPages}, (_, i) => i + 1)
           .filter(
             page =>
@@ -185,9 +185,9 @@ export function PartnerPagination({
         size="sm"
         onClick={() => onPageChange(currentPage + 1)}
         disabled={currentPage === totalPages}
-        className="h-10 px-4 font-medium transition-all duration-200 border-2 rounded-lg border-slate-200 hover:border-blue-500 hover:bg-blue-50">
+        className="px-4 h-10 font-medium rounded-lg border-2 transition-all duration-200 border-slate-200 hover:border-blue-500 hover:bg-blue-50">
         다음
-        <ChevronRight className="w-4 h-4 ml-1" />
+        <ChevronRight className="ml-1 w-4 h-4" />
       </Button>
     </div>
   )
@@ -207,10 +207,10 @@ export function PartnerPagination({
  */
 export function EmptyPartnerState({onOpenAddDialog}: EmptyStateProps) {
   return (
-    <div className="bg-white border-2 shadow-sm border-slate-200 rounded-2xl">
+    <div className="bg-white rounded-2xl border-2 shadow-sm border-slate-200">
       <div className="py-16 text-center">
         {/* 아이콘 */}
-        <div className="flex items-center justify-center w-24 h-24 mx-auto mb-6 bg-gradient-to-br from-slate-100 to-slate-200 rounded-2xl">
+        <div className="flex justify-center items-center mx-auto mb-6 w-24 h-24 bg-gradient-to-br rounded-2xl from-slate-100 to-slate-200">
           <Users className="w-12 h-12 text-slate-400" />
         </div>
 
@@ -220,7 +220,7 @@ export function EmptyPartnerState({onOpenAddDialog}: EmptyStateProps) {
         </h3>
 
         {/* 설명 메시지 */}
-        <p className="max-w-md mx-auto mb-8 text-base text-slate-500">
+        <p className="mx-auto mb-8 max-w-md text-base text-slate-500">
           ESG 경영을 함께할 파트너사를 등록해보세요. DART 데이터베이스와 연동하여 손쉽게
           관리할 수 있습니다.
         </p>
@@ -228,8 +228,8 @@ export function EmptyPartnerState({onOpenAddDialog}: EmptyStateProps) {
         {/* 액션 버튼 */}
         <Button
           onClick={onOpenAddDialog}
-          className="h-12 px-8 font-semibold text-white transition-all duration-200 transform shadow-sm bg-gradient-to-r from-blue-500 to-blue-600 hover:from-blue-600 hover:to-blue-700 rounded-xl hover:shadow-sm hover:scale-105">
-          <Plus className="w-5 h-5 mr-2" />첫 번째 파트너사 등록하기
+          className="px-8 h-12 font-semibold text-white bg-gradient-to-r from-blue-500 to-blue-600 rounded-xl shadow-sm transition-all duration-200 transform hover:from-blue-600 hover:to-blue-700 hover:shadow-sm hover:scale-105">
+          <Plus className="mr-2 w-5 h-5" />첫 번째 파트너사 등록하기
         </Button>
       </div>
     </div>
@@ -246,10 +246,10 @@ export function EmptyPartnerState({onOpenAddDialog}: EmptyStateProps) {
  */
 export function SearchEmptyState({searchQuery}: SearchEmptyStateProps) {
   return (
-    <div className="bg-white border-2 shadow-sm border-slate-200 rounded-2xl">
+    <div className="bg-white rounded-2xl border-2 shadow-sm border-slate-200">
       <div className="py-16 text-center">
         {/* 검색 아이콘 */}
-        <div className="flex items-center justify-center w-24 h-24 mx-auto mb-6 bg-gradient-to-br from-slate-100 to-slate-200 rounded-2xl">
+        <div className="flex justify-center items-center mx-auto mb-6 w-24 h-24 bg-gradient-to-br rounded-2xl from-slate-100 to-slate-200">
           <Search className="w-12 h-12 text-slate-400" />
         </div>
 

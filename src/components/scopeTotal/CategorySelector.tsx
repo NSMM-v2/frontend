@@ -18,7 +18,7 @@
 import React from 'react'
 import {motion} from 'framer-motion'
 import {Card, CardHeader, CardTitle} from '@/components/ui/card'
-import {SelectorState} from '@/lib/types'
+import {SelectorState} from '@/types/scopeTypes'
 
 /**
  * =============================================================================

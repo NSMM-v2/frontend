@@ -33,7 +33,7 @@ import {
   Sparkles,
   TrendingUp
 } from 'lucide-react'
-import type {SelectorState} from '@/lib/types'
+import type {SelectorState} from '@/types/scopeTypes'
 import {showWarning} from '@/util/toast'
 
 interface SelfInputCalculatorProps {

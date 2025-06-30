@@ -37,7 +37,7 @@ import {
   AlertDialogHeader,
   AlertDialogTitle
 } from '@/components/ui/alert-dialog'
-import type {SelectorState} from '@/lib/types'
+import type {SelectorState} from '@/types/scopeTypes'
 import {showSuccess} from '@/util/toast'
 
 /**
@@ -231,14 +231,14 @@ export function CalculatorItem({
           animate={{opacity: 1, y: 0}}
           transition={{delay: animationDelay + 0.6, duration: 0.4}}
           className="p-6">
-          {mode ?  (
+          {mode ? (
             <ExcelCascadingSelector
               id={id}
               state={state}
               onChangeState={handleStateChange}
               onChangeTotal={onChangeTotal}
             />
-          ):(
+          ) : (
             <SelfInputCalculator
               id={id}
               state={{
@@ -252,8 +252,7 @@ export function CalculatorItem({
               onChangeState={handleStateChange}
               onChangeTotal={onChangeTotal}
             />
-          ) 
-          }
+          )}
         </motion.div>
       </motion.div>
 

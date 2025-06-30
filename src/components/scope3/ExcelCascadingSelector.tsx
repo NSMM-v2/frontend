@@ -33,7 +33,7 @@ import {
   Hash,
   TrendingUp
 } from 'lucide-react'
-import type {SelectorState} from '@/lib/types'
+import type {SelectorState} from '@/types/scopeTypes'
 
 export interface CO2Data {
   category: string

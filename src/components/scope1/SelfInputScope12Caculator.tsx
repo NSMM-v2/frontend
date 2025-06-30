@@ -24,7 +24,7 @@ import {motion} from 'framer-motion'
 import {Card, CardContent} from '@/components/ui/card'
 import {Input} from '../ui/input'
 import {Layers, Tag, Zap, Ruler, Calculator, Hash, TrendingUp} from 'lucide-react'
-import type {SelectorState} from '@/lib/types'
+import type {SelectorState} from '@/types/scopeTypes'
 import {showWarning} from '@/util/toast'
 
 interface SelfInputCalculatorProps {
