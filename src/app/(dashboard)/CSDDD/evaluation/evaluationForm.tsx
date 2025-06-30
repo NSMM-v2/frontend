@@ -66,21 +66,26 @@ export default function EvaluationForm() {
   const fetchResults = async () => {
     setLoading(true)
     try {
-      const isAuthenticated = await checkAuth()
-      if (!isAuthenticated) {
-        return
-      }
+      const user = await authService.getCurrentUserByType()
+      if (user && user.success) {
+        const userInfo = user.data
+        setUserInfo(userInfo)
 
-      const response: PaginatedSelfAssessmentResponse = await getSelfAssessmentResults()
-      setResults(response.content || [])
-    } catch (error: any) {
-      console.error('결과 조회 실패:', error)
+        const response: PaginatedSelfAssessmentResponse = await getSelfAssessmentResults({
+          userType: userInfo.userType!,
+          headquartersId: userInfo.headquartersId!,
+          partnerId: userInfo.partnerId,
+          treePath: userInfo.treePath!
+        })
 
-      if (error.response?.status === 401 || error.response?.status === 403) {
-        setAuthError('접근 권한이 없습니다. 다시 로그인해주세요.')
+        setResults(response.content || [])
+        setAuthError(null)
       } else {
-        alert('결과를 불러오는데 실패했습니다.')
+        setAuthError('로그인이 필요합니다.')
       }
+    } catch (error) {
+      console.error('결과 조회 실패:', error)
+      setAuthError('인증 확인에 실패했습니다.')
     } finally {
       setLoading(false)
     }
