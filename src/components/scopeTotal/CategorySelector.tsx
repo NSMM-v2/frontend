@@ -18,7 +18,11 @@
 import React from 'react'
 import {motion} from 'framer-motion'
 import {Card, CardHeader, CardTitle} from '@/components/ui/card'
+
 import {SelectorState} from '@/types/scopeTypes'
+
+import {usePathname} from 'next/navigation'
+
 
 /**
  * =============================================================================
@@ -29,27 +33,27 @@ import {SelectorState} from '@/types/scopeTypes'
  */
 
 // Scope 1 - 고정연소 카테고리 (Stationary Combustion Categories)
-export const scope1PotentialCategoryList = {
-  list1: '액체 연료', // 경유, 휘발유, 등유 등
-  list2: '가스 연료', // LNG, LPG, 도시가스 등
-  list3: '고체연료' // 석탄, 코크스, 바이오매스 등
-} as const
-
-// Scope 1 - 이동연소 카테고리 (Mobile Combustion Categories)
-export const scope1KineticCategoryList = {
-  list1: '차량', // 승용차, 트럭, 버스 등
-  list2: '항공기', // 비행기, 헬리콥터 등
-  list3: '선박' // 화물선, 여객선, 어선 등
+export const scope1CategoryList = {
+  potential: {
+    list1: '액체 연료', // 경유, 휘발유, 등유 등
+    list2: '가스 연료', // LNG, LPG, 도시가스 등
+    list3: '고체연료' // 석탄, 코크스, 바이오매스 등
+  },
+  kinetic: {
+    list1: '차량', // 승용차, 트럭, 버스 등
+    list2: '항공기', // 비행기, 헬리콥터 등
+    list3: '선박' // 화물선, 여객선, 어선 등
+  }
 } as const
 
 // Scope 2 - 전력 카테고리 (Electricity Categories)
-export const scope2ElectricCategoryList = {
-  list1: '전력' // 전력 사용량 (일반전력, 재생에너지)
-} as const
-
-// Scope 2 - 스팀 카테고리 (Steam Categories)
-export const scope2SteamCategoryList = {
-  list1: '스팀' // 스팀 사용량 (A타입, B타입, C타입)
+export const scope2CategoryList = {
+  electric: {
+    list1: '전력' // 전력 사용량 (일반전력, 재생에너지)
+  },
+  steam: {
+    list1: '스팀' // 스팀 사용량 (A타입, B타입, C타입)
+  }
 } as const
 
 // Scope 3 - 간접배출 카테고리 (Indirect Emissions Categories)
@@ -78,10 +82,10 @@ export const scope3CategoryList = {
  * 각 카테고리 목록의 키 타입을 정의하여 타입 안전성을 보장합니다.
  */
 
-export type Scope1PotentialCategoryKey = keyof typeof scope1PotentialCategoryList
-export type Scope1KineticCategoryKey = keyof typeof scope1KineticCategoryList
-export type Scope2ElectricCategoryKey = keyof typeof scope2ElectricCategoryList
-export type Scope2SteamCategoryKey = keyof typeof scope2SteamCategoryList
+export type Scope1CategoryKey = keyof typeof scope1CategoryList
+export type Scope1CategoryGroupKey = keyof typeof scope1CategoryList // 'potential' | 'kinetic'
+export type Scope1SubCategoryKey = keyof (typeof scope1CategoryList)['potential'] // 'list1' | 'list2' | 'list3'
+export type Scope2CategoryKey = keyof typeof scope2CategoryList
 export type Scope3CategoryKey = keyof typeof scope3CategoryList
 
 /**
@@ -172,7 +176,7 @@ export function CategorySelector<KeyType extends string>({
               onClick={() => onCategorySelect(key as KeyType)}>
               <CardHeader className="p-4">
                 {/* 카테고리 정보 컨테이너 */}
-                <div className="flex justify-between items-start">
+                <div className="flex items-start justify-between">
                   {/* 카테고리 메인 정보 */}
                   <div className="flex-1">
                     {/* 카테고리 번호 라벨 */}
@@ -188,7 +192,7 @@ export function CategorySelector<KeyType extends string>({
                 </div>
 
                 {/* 배출량 표시 섹션 */}
-                <div className="flex justify-between items-center pt-3 mt-3 border-t border-gray-200">
+                <div className="flex items-center justify-between pt-3 mt-3 border-t border-gray-200">
                   {/* 배출량 수치 */}
                   <div
                     className={`text-lg font-bold transition-colors ${
@@ -202,7 +206,7 @@ export function CategorySelector<KeyType extends string>({
                 </div>
 
                 {/* 데이터 상태 표시 섹션 */}
-                <div className="flex justify-between items-center pt-3 mt-3 border-t border-gray-200">
+                <div className="flex items-center justify-between pt-3 mt-3 border-t border-gray-200">
                   {/* 데이터 상태 인디케이터 */}
                   <div
                     className={`flex items-center text-xs ${
