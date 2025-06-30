@@ -33,7 +33,7 @@ import {
   XCircle
 } from 'lucide-react'
 
-export default function EvaluationForm() {
+export default function PartnerEvaluationForm() {
   const [results, setResults] = useState<SelfAssessmentResponse[]>([])
   const [selectedResult, setSelectedResult] = useState<SelfAssessmentResponse | null>(
     null
@@ -67,25 +67,35 @@ export default function EvaluationForm() {
     setLoading(true)
     try {
       const user = await authService.getCurrentUserByType()
-      if (user && user.success) {
-        const userInfo = user.data
-        setUserInfo(userInfo)
-
-        const response: PaginatedSelfAssessmentResponse = await getSelfAssessmentResults({
-          userType: userInfo.userType!,
-          headquartersId: userInfo.headquartersId!,
-          partnerId: userInfo.partnerId,
-          treePath: userInfo.treePath!
-        })
-
-        setResults(response.content || [])
-        setAuthError(null)
-      } else {
+      if (!user || !user.success) {
         setAuthError('로그인이 필요합니다.')
+        return
       }
-    } catch (error) {
+
+      setUserInfo(user.data) // 상태 업데이트
+      const response: PaginatedSelfAssessmentResponse = await getSelfAssessmentResults({
+        userType: user.data.userType,
+        headquartersId: user.data.headquartersId ?? user.data.headquarters?.id ?? '',
+        partnerId: user.data.partnerId,
+        treePath: user.data.treePath ?? ''
+      })
+
+      const partnerRes = await authService.getAccessiblePartners()
+      const partnerMap = new Map(
+        partnerRes.data.map((p: any) => [p.partnerId, p.companyName])
+      )
+      const enriched = (response.content || []).map(result => ({
+        ...result,
+        companyName: String(partnerMap.get(result.partnerId) ?? '알 수 없음')
+      }))
+      setResults(enriched)
+    } catch (error: any) {
       console.error('결과 조회 실패:', error)
-      setAuthError('인증 확인에 실패했습니다.')
+      if (error.response?.status === 401 || error.response?.status === 403) {
+        setAuthError('접근 권한이 없습니다. 다시 로그인해주세요.')
+      } else {
+        alert('결과를 불러오는데 실패했습니다.')
+      }
     } finally {
       setLoading(false)
     }
@@ -97,11 +107,6 @@ export default function EvaluationForm() {
     setAuthError(null)
 
     try {
-      const isAuthenticated = await checkAuth()
-      if (!isAuthenticated) {
-        return
-      }
-
       const result = await getSelfAssessmentResult(resultId, {
         userType: userInfo.userType,
         headquartersId: userInfo.headquartersId,
@@ -189,7 +194,6 @@ export default function EvaluationForm() {
     return 'bg-red-500'
   }
 
-
   // 인증 에러가 있는 경우
   if (authError) {
     return (
@@ -209,7 +213,6 @@ export default function EvaluationForm() {
       </div>
     )
   }
-
 
   return (
     <div className="flex flex-col w-full min-h-screen">
@@ -410,7 +413,6 @@ export default function EvaluationForm() {
                   <h2 className="text-xl font-bold text-gray-900">상세 결과</h2>
                 </div>
 
-
                 <div className="p-6">
                   {detailLoading ? (
                     <div className="py-8 text-center">
@@ -421,7 +423,6 @@ export default function EvaluationForm() {
                     <div className="py-8 text-center">
                       <div className="p-4 mx-auto mb-4 rounded-full bg-blue-50 w-fit">
                         <FileText className="w-8 h-8 text-blue-500" />
-
                       </div>
                       <p className="mb-2 font-medium text-gray-700">
                         상세 정보를 확인하세요

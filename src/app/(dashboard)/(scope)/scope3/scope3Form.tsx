@@ -61,8 +61,8 @@ import {scope3CategoryList} from '@/components/scopeTotal/CategorySelector'
 // ============================================================================
 // 타입 및 서비스 임포트 (Types & Services Imports)
 // ============================================================================
-import {SelectorState} from '@/lib/types'
-import {Scope3EmissionResponse, Scope3CategorySummary} from '@/lib/types'
+import {SelectorState} from '@/types/scopeTypes'
+import {Scope3EmissionResponse, Scope3CategorySummary} from '@/types/scopeTypes'
 import {
   fetchScope3EmissionsByYearAndMonth,
   fetchScope3CategorySummary,

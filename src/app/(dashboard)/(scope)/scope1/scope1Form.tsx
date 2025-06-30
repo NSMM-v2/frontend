@@ -58,7 +58,7 @@ import {Card, CardContent} from '@/components/ui/card'
 // ============================================================================
 // 타입 및 서비스 임포트 (Types & Services Imports)
 // ============================================================================
-import {SelectorState} from '@/lib/types'
+import {SelectorState} from '@/types/scopeTypes'
 
 // ============================================================================
 // 타입 정의 (Type Definitions)

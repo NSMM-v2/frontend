@@ -43,13 +43,12 @@ import {
 } from '@/components/ui/command'
 import {Popover, PopoverContent, PopoverTrigger} from '@/components/ui/popover'
 import {cn} from '@/lib/utils'
-import {useToast} from '@/hooks/use-toast'
 import {LoadingState} from '@/components/ui/loading-state'
 import {
-  fetchUniquePartnerCompanyNames,
-  fetchFinancialRiskAssessment,
-  fetchPartnerCompanies
-} from '@/services/partnerCompanyService'
+  useFetchPartnerCompanies,
+  useFetchFinancialRisk
+} from '@/hooks/usePartnerCompanyAPI'
+import {showError} from '@/util/toast'
 import {
   Breadcrumb,
   BreadcrumbItem,
@@ -209,7 +208,9 @@ function PartnerCombobox({options, value, onChange}: PartnerComboboxProps) {
 }
 
 export default function FinancialRiskForm() {
-  const {toast} = useToast()
+  // 커스텀 훅
+  const {fetchPartners} = useFetchPartnerCompanies()
+  const {fetchFinancialRisk} = useFetchFinancialRisk()
 
   // 상태 관리
   const [isLoading, setIsLoading] = useState(false)
@@ -238,16 +239,12 @@ export default function FinancialRiskForm() {
         try {
           setIsLoading(true)
           setError(null)
-          const data = await fetchFinancialRiskAssessment(companyId, companyName)
+          const data = await fetchFinancialRisk(companyId, companyName)
           setRiskData(data)
         } catch (err) {
           console.error('Failed to load financial risk data:', err)
           setError('재무 위험 데이터를 불러오는데 실패했습니다.')
-          toast({
-            variant: 'destructive',
-            title: '오류',
-            description: '재무 위험 데이터를 불러오는데 실패했습니다.'
-          })
+          // 에러 토스트는 커스텀 훅에서 자동 처리됨
         } finally {
           setIsLoading(false)
         }
@@ -293,7 +290,7 @@ export default function FinancialRiskForm() {
   const loadPartnerOptions = async () => {
     try {
       setIsLoading(true)
-      const response = await fetchPartnerCompanies(1, 100)
+      const response = await fetchPartners(1, 100)
       let partnerData: any[] = []
       if (response && response.data && Array.isArray(response.data)) {
         partnerData = response.data
@@ -318,11 +315,7 @@ export default function FinancialRiskForm() {
     } catch (err) {
       console.error('Failed to load partner options:', err)
       setError('파트너사 목록을 불러오는데 실패했습니다.')
-      toast({
-        variant: 'destructive',
-        title: '오류',
-        description: '파트너사 목록을 불러오는데 실패했습니다.'
-      })
+      // 에러 토스트는 커스텀 훅에서 자동 처리되지 않음 (목록 조회는 조용히 처리)
     } finally {
       setIsLoading(false)
     }
@@ -340,17 +333,13 @@ export default function FinancialRiskForm() {
       setIsLoading(true)
       setError(null)
       setRiskData(null)
-      const data = await fetchFinancialRiskAssessment(code, selectedOption?.name)
+      const data = await fetchFinancialRisk(code, selectedOption?.name)
       setRiskData(data)
       setExpandedItems(new Set())
     } catch (err) {
       console.error('Failed to load financial risk data:', err)
       setError('재무 위험 데이터를 불러오는데 실패했습니다.')
-      toast({
-        variant: 'destructive',
-        title: '오류',
-        description: '재무 위험 데이터를 불러오는데 실패했습니다.'
-      })
+      // 에러 토스트는 커스텀 훅에서 자동 처리됨
     } finally {
       setIsLoading(false)
     }

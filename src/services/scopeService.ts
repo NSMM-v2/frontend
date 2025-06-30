@@ -12,7 +12,7 @@ import {
   Scope3EmissionUpdateRequest,
   ApiResponse,
   Scope3CategorySummary
-} from '@/lib/types'
+} from '@/types/scopeTypes'
 
 // =============================================================================
 // Scope3 배출량 관리 서비스 (Scope3 Emission Management Service)

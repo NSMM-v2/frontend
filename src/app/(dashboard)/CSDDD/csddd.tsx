@@ -5,10 +5,8 @@
 // ============================================================================
 
 import Link from 'next/link' // Next.js 라우팅을 위한 Link 컴포넌트
-import {useState, useEffect} from 'react' // React 상태 관리 및 생명주기 훅
-import {getSelfAssessmentResults} from '@/services/csdddService'
+import {useState} from 'react' // React 상태 관리 훅
 import {motion} from 'framer-motion' // 애니메이션 효과를 위한 Framer Motion
-
 // ============================================================================
 // 아이콘 라이브러리 임포트 (Icon Library Imports)
 // ============================================================================
@@ -366,112 +364,7 @@ export function CSDDDLayout() {
   // ========================================================================
   // 상태 관리 (State Management)
   // ========================================================================
-
-  /**
-   * 컴포넌트 마운트 시 애니메이션 트리거용 상태
-   * useEffect에서 true로 변경하여 Framer Motion 애니메이션 시작
-   */
-  const [isVisible, setIsVisible] = useState(false)
-
-  // 협력사 자가진단 결과 조회 관련 상태
-  const [partnerList, setPartnerList] = useState<{id: number; name: string}[]>([])
-  const [selectedPartnerId, setSelectedPartnerId] = useState<number | ''>('')
-  const [partnerResult, setPartnerResult] = useState<any>(null)
-
-  // ========================================================================
-  // 생명주기 관리 (Lifecycle Management)
-  // ========================================================================
-
-  /**
-   * 컴포넌트 마운트 시 애니메이션 활성화
-   * 페이지 로드 후 부드러운 진입 효과 제공
-   */
-  useEffect(() => {
-    const loadPartnerList = async () => {
-      try {
-        const response = await getSelfAssessmentResults()
-        console.log('✅ 백엔드 응답:', JSON.stringify(response, null, 2))
-
-        const rows = response
-        // 데이터 유효성 검사
-        if (!rows || !Array.isArray(rows)) {
-          console.warn('⚠️ 잘못된 데이터 형식:', rows)
-          setPartnerList([])
-          return
-        }
-
-        // 중복 제거 및 데이터 정규화
-        const uniqueMap = new Map<number, string>()
-        rows.forEach((item: any, index: number) => {
-          // 각 아이템의 상세 정보 로깅
-          console.log(`📋 Item ${index}:`, {
-            memberId: item.memberId,
-            companyName: item.companyName,
-            company_name: item.company_name,
-            name: item.name,
-            corporationName: item.corporationName,
-            businessName: item.businessName,
-            partnerName: item.partnerName,
-            allKeys: Object.keys(item),
-            fullObject: item
-          })
-          if (!item?.memberId || typeof item.memberId !== 'number') {
-            console.warn('⚠️ 잘못된 memberId:', item)
-            return
-          }
-          const id = item.memberId
-          const possibleNames = [
-            item.companyName,
-            item.company_name,
-            item.name,
-            item.corporationName,
-            item.businessName,
-            item.partnerName
-          ].filter(name => name && typeof name === 'string' && name.trim() !== '')
-          const companyName = possibleNames[0]?.trim()
-          console.log(`🔍 ID ${id} 회사명 후보들:`, {
-            possibleNames,
-            selectedName: companyName,
-            isValid: !!companyName
-          })
-          const name = companyName || `ID ${id}`
-          if (
-            !uniqueMap.has(id) ||
-            (companyName && uniqueMap.get(id)?.startsWith('ID '))
-          ) {
-            uniqueMap.set(id, name)
-          }
-        })
-        const uniqueList = Array.from(uniqueMap.entries()).map(([id, name]) => ({
-          id,
-          name
-        }))
-        console.log('🎯 최종 목록:', uniqueList)
-        setPartnerList(uniqueList)
-      } catch (err) {
-        console.error('❌ 협력사 목록 로딩 실패:', err)
-        setPartnerList([])
-      }
-    }
-    loadPartnerList()
-  }, [])
-
-  const handleFetchPartnerResult = async () => {
-    if (!selectedPartnerId) return
-    try {
-      // getSelfAssessmentResults()는 전체 목록, 단일 결과 조회 함수가 별도 필요할 수 있음
-      // 임시로 getSelfAssessmentResults()에서 선택된 협력사 결과를 찾음
-      const response = await getSelfAssessmentResults()
-      // response는 배열이라고 가정
-      const rows = response
-      const found = Array.isArray(rows)
-        ? rows.find((item: any) => item.memberId === selectedPartnerId)
-        : null
-      setPartnerResult(found?.content)
-    } catch (err) {
-      setPartnerResult(null)
-    }
-  }
+  // 애니메이션 트리거용 상태 (불필요하므로 제거 가능)
 
   // ========================================================================
   // 렌더링 (Rendering)
@@ -536,52 +429,6 @@ export function CSDDDLayout() {
         transition={{delay: 0.6, duration: 0.5}} // 0.6초 지연 후 0.5초간 애니메이션
         className="space-y-6">
         {' '}
-        {/* 모든 자식 요소 간 24px 간격 */}
-        {/* 협력사 자가진단 결과 조회 섹션 */}
-        <div className="p-6 space-y-4 bg-white border border-gray-200 shadow-sm rounded-xl">
-          <h3 className="text-2xl font-bold text-gray-900">협력사 자가진단 결과 조회</h3>
-          <div className="flex flex-col gap-4 sm:flex-row sm:items-center">
-            <select
-              className="w-full px-4 py-2 border rounded-lg sm:w-1/2"
-              value={selectedPartnerId}
-              onChange={e => setSelectedPartnerId(Number(e.target.value))}>
-              <option value="">협력사를 선택하세요</option>
-              {partnerList.map(partner => (
-                <option key={partner.id} value={partner.id}>
-                  {partner.name}
-                </option>
-              ))}
-            </select>
-            <button
-              onClick={handleFetchPartnerResult}
-              className="px-6 py-2 text-white bg-blue-500 rounded-lg hover:bg-blue-600">
-              결과 조회
-            </button>
-          </div>
-
-          {partnerResult && (
-            <div className="p-4 mt-4 border border-gray-200 rounded-lg bg-gray-50">
-              <p className="text-lg font-semibold text-gray-800">
-                선택한 협력사 등급: {partnerResult.grade}
-              </p>
-              <p className="text-sm text-gray-600">
-                점수: {partnerResult.actualScore} / {partnerResult.totalPossibleScore}
-              </p>
-              <p className="text-sm text-gray-600">
-                중대 위반 수: {partnerResult.criticalViolationCount}
-              </p>
-            </div>
-          )}
-        </div>
-        {/* ====================================================================
-            통계 개요 섹션 (Statistics Overview Section)
-            - 4개 주요 통계 카드 (평가항목, 소요시간, 완료율, 인증등급)
-            - scope2의 배출량 카드와 동일한 디자인 패턴
-            - 반응형 그리드: 모바일(1열) → 태블릿(2열) → 데스크탑(4열)
-            ==================================================================== */}
-        <div className="grid grid-cols-1 gap-8 sm:grid-cols-2 lg:grid-cols-4">
-          {ASSESSMENT_STATS.map(renderAssessmentStat)}
-        </div>
         {/* ====================================================================
             메인 진단 카드 섹션 (Main Assessment Card Section)
             - CSDDD 자가진단 시작을 위한 핵심 카드
@@ -688,13 +535,13 @@ export function CSDDDLayout() {
                 결과 보기
               </Link>
 
-              {/* 가이드라인 다운로드 버튼 (Ghost) */}
-              <button
-                className="flex items-center justify-center px-8 py-4 text-lg font-semibold text-gray-700 transition-all duration-300 bg-gray-100 rounded-xl hover:bg-gray-200"
-                type="button">
-                <Download className="w-5 h-5 mr-3" />
-                가이드라인
-              </button>
+              {/* 협력사 자가진단 확인 버튼 */}
+              <Link
+                href="/CSDDD/partnerEvaluation"
+                className="flex items-center justify-center px-8 py-4 text-lg font-semibold text-white transition-all duration-300 transform bg-purple-500 shadow-lg rounded-xl hover:bg-purple-600 hover:scale-105 hover:shadow-xl">
+                <Users className="w-5 h-5 mr-3" />
+                협력사 자가진단 확인
+              </Link>
             </div>
           </div>
         </div>

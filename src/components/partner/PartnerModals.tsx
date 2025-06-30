@@ -82,10 +82,14 @@ interface AddPartnerModalProps {
   selectedDartCompany: DartCorpInfo | null
   onSelectDartCompany: (company: DartCorpInfo) => void
 
+  /** 계약 시작일 */
+  contractStartDate: string
+  onContractStartDateChange: (date: string) => void
+
   /** 에러 메시지 */
   dialogError: string | null
 
-  /** 회사명 중복 검사 결과 */
+  /** 회사명 중복 검사 결과 (더 이상 사용하지 않음) */
   duplicateCheckResult: {
     isDuplicate: boolean
     message: string
@@ -149,6 +153,8 @@ export function PartnerCompanyModal({
   dartSearchResults,
   selectedDartCompany,
   onSelectDartCompany,
+  contractStartDate,
+  onContractStartDateChange,
   dialogError,
   duplicateCheckResult
 }: AddPartnerModalProps) {
@@ -283,6 +289,28 @@ export function PartnerCompanyModal({
             </div>
           )}
 
+          {/* 계약 시작일 입력 필드 */}
+          {selectedDartCompany && (
+            <div className="space-y-3">
+              <Label
+                htmlFor="contractStartDate"
+                className="text-sm font-medium text-gray-700">
+                계약 시작일 <span className="text-red-500">*</span>
+              </Label>
+              <Input
+                id="contractStartDate"
+                type="date"
+                value={contractStartDate}
+                onChange={e => onContractStartDateChange(e.target.value)}
+                className="h-9 text-sm bg-white rounded-md border border-gray-100 focus:border-gray-200 focus:ring-gray-100"
+                disabled={isSubmitting}
+              />
+              <p className="text-xs text-gray-500">
+                파트너사와의 계약 시작일을 선택해주세요.
+              </p>
+            </div>
+          )}
+
           {dialogError && !companySearchQuery && (
             <div className="flex gap-3 items-center p-4 bg-red-50 rounded-xl border border-red-200">
               <AlertTriangle className="flex-shrink-0 w-5 h-5 text-red-500" />
@@ -306,7 +334,10 @@ export function PartnerCompanyModal({
             type="button"
             onClick={onSubmit}
             disabled={
-              isSubmitting || !selectedDartCompany || duplicateCheckResult?.isDuplicate
+              isSubmitting ||
+              !selectedDartCompany ||
+              !contractStartDate ||
+              duplicateCheckResult?.isDuplicate
             }
             className={cn(
               'px-4 h-9 text-sm font-medium text-white',

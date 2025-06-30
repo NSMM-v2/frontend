@@ -37,7 +37,7 @@ import {
   AlertDialogHeader,
   AlertDialogTitle
 } from '@/components/ui/alert-dialog'
-import type {SelectorState} from '@/lib/types'
+import type {SelectorState} from '@/types/scopeTypes'
 import {showSuccess} from '@/util/toast'
 
 /**
@@ -199,7 +199,7 @@ export function CalculatorItem({
                   className={`text-sm font-medium transition-colors ${
                     mode ? 'text-blue-600' : 'text-gray-500'
                   }`}>
-                  수동입력
+                  LCA 기반 입력
                 </span>
               </motion.div>
 
@@ -232,6 +232,13 @@ export function CalculatorItem({
           transition={{delay: animationDelay + 0.6, duration: 0.4}}
           className="p-6">
           {mode ? (
+            <ExcelCascadingSelector
+              id={id}
+              state={state}
+              onChangeState={handleStateChange}
+              onChangeTotal={onChangeTotal}
+            />
+          ) : (
             <SelfInputCalculator
               id={id}
               state={{
@@ -242,13 +249,6 @@ export function CalculatorItem({
                 unit: state.unit ?? '',
                 kgCO2eq: state.kgCO2eq ?? ''
               }}
-              onChangeState={handleStateChange}
-              onChangeTotal={onChangeTotal}
-            />
-          ) : (
-            <ExcelCascadingSelector
-              id={id}
-              state={state}
               onChangeState={handleStateChange}
               onChangeTotal={onChangeTotal}
             />

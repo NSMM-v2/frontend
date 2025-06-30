@@ -18,7 +18,11 @@
 import React from 'react'
 import {motion} from 'framer-motion'
 import {Card, CardHeader, CardTitle} from '@/components/ui/card'
+
+import {SelectorState} from '@/types/scopeTypes'
+
 import {usePathname} from 'next/navigation'
+
 
 /**
  * =============================================================================
