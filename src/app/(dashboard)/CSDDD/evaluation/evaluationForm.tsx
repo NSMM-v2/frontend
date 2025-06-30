@@ -189,6 +189,7 @@ export default function EvaluationForm() {
     return 'bg-red-500'
   }
 
+
   // 인증 에러가 있는 경우
   if (authError) {
     return (
@@ -208,6 +209,7 @@ export default function EvaluationForm() {
       </div>
     )
   }
+
 
   return (
     <div className="flex flex-col w-full min-h-screen">
@@ -408,6 +410,7 @@ export default function EvaluationForm() {
                   <h2 className="text-xl font-bold text-gray-900">상세 결과</h2>
                 </div>
 
+
                 <div className="p-6">
                   {detailLoading ? (
                     <div className="py-8 text-center">
@@ -418,6 +421,7 @@ export default function EvaluationForm() {
                     <div className="py-8 text-center">
                       <div className="p-4 mx-auto mb-4 rounded-full bg-blue-50 w-fit">
                         <FileText className="w-8 h-8 text-blue-500" />
+
                       </div>
                       <p className="mb-2 font-medium text-gray-700">
                         상세 정보를 확인하세요

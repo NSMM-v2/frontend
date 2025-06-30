@@ -20,7 +20,7 @@ import {Card, CardContent} from '@/components/ui/card'
 import {Plus} from 'lucide-react'
 import {CalculatorItem} from './CalculatorItem'
 import {scope3CategoryList, Scope3CategoryKey} from '../scopeTotal/CategorySelector'
-import {SelectorState, Scope3EmissionResponse} from '@/lib/types'
+import {SelectorState, Scope3EmissionResponse} from '@/types/scopeTypes'
 import {createScope3Emission, updateScope3Emission} from '@/services/scopeService'
 import {showError, showSuccess, showWarning} from '@/util/toast'
 

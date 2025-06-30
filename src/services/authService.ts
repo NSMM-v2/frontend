@@ -63,7 +63,7 @@ class AuthService {
    * 본사 회원가입
    */
   async registerHeadquarters(signupData: SignupRequest): Promise<ApiResponse<any>> {
-    const response = await api.post('/api/v1/headquarters/register', signupData)
+    const response = await api.post('/api/v1/auth/headquarters/register', signupData)
     return response.data
   }
 
@@ -71,7 +71,7 @@ class AuthService {
    * 본사 로그인
    */
   async loginHeadquarters(loginData: LoginRequest): Promise<ApiResponse<UserInfo>> {
-    const response = await api.post('/api/v1/headquarters/login', loginData)
+    const response = await api.post('/api/v1/auth/headquarters/login', loginData)
     return response.data
   }
 
@@ -79,7 +79,7 @@ class AuthService {
    * 협력사 로그인
    */
   async loginPartner(loginData: PartnerLoginRequest): Promise<ApiResponse<UserInfo>> {
-    const response = await api.post('/api/v1/partners/login', loginData)
+    const response = await api.post('/api/v1/auth/partners/login', loginData)
     return response.data
   }
 
@@ -87,7 +87,7 @@ class AuthService {
    * 로그아웃 (쿠키 삭제)
    */
   async logout(): Promise<ApiResponse<any>> {
-    const response = await api.post('/api/v1/headquarters/logout')
+    const response = await api.post('/api/v1/auth/headquarters/logout')
     return response.data
   }
 
@@ -95,7 +95,7 @@ class AuthService {
    * 현재 본사 사용자 정보 조회
    */
   // async getCurrentUser(): Promise<ApiResponse<UserInfo>> {
-  //   const response = await api.get('/api/v1/headquarters/me')
+  //   const response = await api.get('/api/v1/auth/headquarters/me')
   //   return response.data
   // }
 
@@ -112,7 +112,7 @@ class AuthService {
       if (userType === 'PARTNER') {
         // 협력사 사용자인 경우 협력사 API 먼저 시도
         try {
-          const partnerResponse = await api.get('/api/v1/partners/me', {
+          const partnerResponse = await api.get('/api/v1/auth/partners/me', {
             validateStatus: status => status < 500
           })
 
@@ -125,7 +125,7 @@ class AuthService {
       } else if (userType === 'HEADQUARTERS') {
         // 본사 사용자인 경우 본사 API 먼저 시도
         try {
-          const headquartersResponse = await api.get('/api/v1/headquarters/me', {
+          const headquartersResponse = await api.get('/api/v1/auth/headquarters/me', {
             validateStatus: status => status < 500
           })
 
@@ -141,7 +141,7 @@ class AuthService {
       if (userType !== 'HEADQUARTERS') {
         // 본사 API 시도
         try {
-          const headquartersResponse = await api.get('/api/v1/headquarters/me', {
+          const headquartersResponse = await api.get('/api/v1/auth/headquarters/me', {
             validateStatus: status => status < 500
           })
 
@@ -156,7 +156,7 @@ class AuthService {
       if (userType !== 'PARTNER') {
         // 협력사 API 시도
         try {
-          const partnerResponse = await api.get('/api/v1/partners/me', {
+          const partnerResponse = await api.get('/api/v1/auth/partners/me', {
             validateStatus: status => status < 500
           })
 
@@ -204,7 +204,7 @@ class AuthService {
    * 이메일 중복 확인
    */
   async checkEmailExists(email: string): Promise<ApiResponse<boolean>> {
-    const response = await api.get('/api/v1/headquarters/check-email', {
+    const response = await api.get('/api/v1/auth/headquarters/check-email', {
       params: {email}
     })
     return response.data
@@ -217,7 +217,7 @@ class AuthService {
     currentPassword: string,
     newPassword: string
   ): Promise<ApiResponse<any>> {
-    const response = await api.put('/api/v1/headquarters/password', {
+    const response = await api.put('/api/v1/auth/headquarters/password', {
       currentPassword,
       newPassword
     })
@@ -237,7 +237,7 @@ class AuthService {
     address?: string
     parentAccountNumber?: string
   }): Promise<ApiResponse<any>> {
-    const response = await api.post('/api/v1/partners/create', partnerData)
+    const response = await api.post('/api/v1/auth/partners/create', partnerData)
     return response.data
   }
 
@@ -245,7 +245,7 @@ class AuthService {
    * 협력사 목록 조회
    */
   async getPartners(): Promise<ApiResponse<any[]>> {
-    const response = await api.get('/api/v1/partners')
+    const response = await api.get('/api/v1/auth/partners')
     return response.data
   }
 
@@ -258,7 +258,7 @@ class AuthService {
    * 특정 협력사 정보 조회
    */
   async getPartner(partnerUuid: string): Promise<ApiResponse<any>> {
-    const response = await api.get(`/api/v1/partners/${partnerUuid}`)
+    const response = await api.get(`/api/v1/auth/partners/${partnerUuid}`)
     return response.data
   }
 
@@ -276,7 +276,7 @@ class AuthService {
       address?: string
     }
   ): Promise<ApiResponse<any>> {
-    const response = await api.put(`/api/v1/partners/${partnerUuid}`, updateData)
+    const response = await api.put(`/api/v1/auth/partners/${partnerUuid}`, updateData)
     return response.data
   }
 
@@ -284,7 +284,7 @@ class AuthService {
    * 협력사 삭제
    */
   async deletePartner(partnerUuid: string): Promise<ApiResponse<any>> {
-    const response = await api.delete(`/api/v1/partners/${partnerUuid}`)
+    const response = await api.delete(`/api/v1/auth/partners/${partnerUuid}`)
     return response.data
   }
 
@@ -294,7 +294,7 @@ class AuthService {
   async resetPartnerPassword(
     partnerUuid: string
   ): Promise<ApiResponse<{temporaryPassword: string}>> {
-    const response = await api.post(`/api/v1/partners/${partnerUuid}/reset-password`)
+    const response = await api.post(`/api/v1/auth/partners/${partnerUuid}/reset-password`)
     return response.data
   }
 
@@ -307,7 +307,7 @@ class AuthService {
     temporaryPassword: string,
     newPassword: string
   ): Promise<ApiResponse<any>> {
-    const response = await api.put('/api/v1/partners/initial-password', {
+    const response = await api.put('/api/v1/auth/partners/initial-password', {
       accountNumber,
       email,
       temporaryPassword,

@@ -68,18 +68,8 @@ import {
 // 서비스 및 유틸리티 임포트 (Services & Utilities)
 // ============================================================================
 
-// API 서비스 함수들
-import {
-  fetchPartnerCompanies, // 파트너사 목록 조회
-  createPartnerCompany, // 파트너사 등록
-  deletePartnerCompany, // 파트너사 삭제
-  updatePartnerCompany, // 파트너사 정보 수정
-  searchCompaniesFromDart, // DART API 기업 검색
-  checkCompanyNameDuplicate // 회사명 중복 검사
-} from '@/services/partnerCompanyService'
-
-// 토스트 유틸리티
-import {showError, showWarning, showPartnerRestore, showSuccess} from '@/util/toast'
+// 커스텀 API 훅
+import {usePartnerCompanyAPI} from '@/hooks/usePartnerCompanyAPI'
 
 // 커스텀 훅
 import {useDebounce} from '@/hooks/useDebounce'
@@ -104,6 +94,22 @@ import {DartCorpInfo, PartnerCompany} from '@/types/partnerCompanyType'
  * - 실시간 검색 및 필터링
  */
 export default function ManagePartnerForm() {
+  // ========================================================================
+  // 커스텀 훅 (Custom Hooks)
+  // ========================================================================
+
+  const {
+    createPartner,
+    updatePartner,
+    deletePartner,
+    fetchPartners,
+    searchDartCompanies: searchDartAPI,
+    checkDuplicateName,
+    isLoading: apiIsLoading,
+    error: apiError,
+    clearError
+  } = usePartnerCompanyAPI()
+
   // ========================================================================
   // 상태 관리 (State Management)
   // ========================================================================
@@ -146,6 +152,11 @@ export default function ManagePartnerForm() {
     contractStartDate: new Date().toISOString().split('T')[0] // 계약 시작일
   })
 
+  // 파트너사 추가 시 계약 시작일 (별도 상태)
+  const [contractStartDate, setContractStartDate] = useState(
+    new Date().toISOString().split('T')[0]
+  )
+
   const [dialogError, setDialogError] = useState<string | null>(null) // 다이얼로그 내 에러 메시지
 
   // 중복 검사 관련 상태
@@ -177,7 +188,7 @@ export default function ManagePartnerForm() {
       setIsLoading(true)
       setIsPageLoading(false)
       try {
-        const response = await fetchPartnerCompanies(page, pageSize, companyNameFilter)
+        const response = await fetchPartners(page, pageSize, companyNameFilter)
 
         // API 응답이 Spring Data Page 형태인지 확인하고 적절히 처리
         const partners = response.content || response.data || []
@@ -190,7 +201,6 @@ export default function ManagePartnerForm() {
         setCurrentPage(page)
       } catch (error) {
         console.error('파트너사 목록 조회 오류:', error)
-        showError('파트너사 목록을 불러오는데 실패했습니다.')
         setPartners([])
         setTotalItems(0)
         setTotalPages(1)
@@ -199,34 +209,36 @@ export default function ManagePartnerForm() {
         setIsPageLoading(false)
       }
     },
-    [pageSize]
+    [pageSize, fetchPartners]
   )
 
   /**
    * DART API에서 기업 정보를 검색하는 함수
    */
-  const searchDartCompanies = useCallback(async (query: string) => {
-    if (!query.trim()) {
-      setDartSearchResults([])
-      return
-    }
+  const searchDartCompanies = useCallback(
+    async (query: string) => {
+      if (!query.trim()) {
+        setDartSearchResults([])
+        return
+      }
 
-    setIsLoading(true)
-    try {
-      const response = await searchCompaniesFromDart({
-        corpNameFilter: query.trim(),
-        page: 1,
-        pageSize: 20
-      })
-      setDartSearchResults(response.content)
-    } catch (error) {
-      console.error('DART 기업 검색 오류:', error)
-      showError('기업 정보 검색에 실패했습니다.')
-      setDartSearchResults([])
-    } finally {
-      setIsLoading(false)
-    }
-  }, [])
+      setIsLoading(true)
+      try {
+        const response = await searchDartAPI({
+          corpNameFilter: query.trim(),
+          page: 1,
+          pageSize: 20
+        })
+        setDartSearchResults(response.content)
+      } catch (error) {
+        console.error('DART 기업 검색 오류:', error)
+        setDartSearchResults([])
+      } finally {
+        setIsLoading(false)
+      }
+    },
+    [searchDartAPI]
+  )
 
   /**
    * 회사명 중복 검사를 수행하는 함수
@@ -241,7 +253,7 @@ export default function ManagePartnerForm() {
       setDuplicateCheckResult(null)
 
       try {
-        const response = await checkCompanyNameDuplicate(companyName.trim())
+        const response = await checkDuplicateName(companyName.trim())
         const result = {
           isDuplicate: response.isDuplicate,
           message: response.message
@@ -258,7 +270,7 @@ export default function ManagePartnerForm() {
         setIsDuplicateChecking(false)
       }
     },
-    [lastCheckedCompanyName]
+    [lastCheckedCompanyName, checkDuplicateName]
   )
 
   // ========================================================================
@@ -274,40 +286,28 @@ export default function ManagePartnerForm() {
 
     try {
       // 유효성 검사
-      if (!formData.companyName.trim()) {
-        setDialogError('회사명을 입력해주세요.')
+      if (!selectedDartCompany) {
+        setDialogError('DART 기업을 선택해주세요.')
         return
       }
 
-      if (!formData.corpCode.trim()) {
-        setDialogError('기업 코드를 입력해주세요.')
-        return
-      }
-
-      if (!formData.contractStartDate) {
+      if (!contractStartDate) {
         setDialogError('계약 시작일을 선택해주세요.')
         return
       }
 
-      // 중복 검사 결과 확인
-      if (duplicateCheckResult?.isDuplicate) {
-        setDialogError('이미 등록된 회사명입니다.')
-        return
-      }
-
-      // 파트너사 등록 API 호출
-      await createPartnerCompany({
-        companyName: formData.companyName.trim(),
-        corpCode: formData.corpCode.trim(),
-        contractStartDate: formData.contractStartDate
+      // 파트너사 등록 API 호출 - 새로운 형식
+      await createPartner({
+        corpCode: selectedDartCompany.corpCode || selectedDartCompany.corp_code!,
+        contractStartDate: contractStartDate
       })
 
-      showSuccess('파트너사가 성공적으로 등록되었습니다.')
       setIsAddDialogOpen(false)
       resetForm()
       await loadPartners(currentPage, debouncedMainSearchQuery)
     } catch (error) {
       console.error('파트너사 등록 오류:', error)
+      // 에러 토스트는 커스텀 훅에서 자동 처리됨
       setDialogError('파트너사 등록에 실패했습니다.')
     } finally {
       setIsSubmitting(false)
@@ -325,11 +325,6 @@ export default function ManagePartnerForm() {
 
     try {
       // 유효성 검사
-      if (!formData.companyName.trim()) {
-        setDialogError('회사명을 입력해주세요.')
-        return
-      }
-
       if (!formData.corpCode.trim()) {
         setDialogError('기업 코드를 입력해주세요.')
         return
@@ -340,28 +335,18 @@ export default function ManagePartnerForm() {
         return
       }
 
-      // 회사명이 변경되었고 중복인 경우 에러
-      if (
-        formData.companyName !== selectedPartner.companyName &&
-        duplicateCheckResult?.isDuplicate
-      ) {
-        setDialogError('이미 등록된 회사명입니다.')
-        return
-      }
-
       // 파트너사 수정 API 호출
-      await updatePartnerCompany(selectedPartner.id!, {
-        companyName: formData.companyName.trim(),
+      await updatePartner(selectedPartner.id!, {
         corpCode: formData.corpCode.trim(),
         contractStartDate: formData.contractStartDate
       })
 
-      showSuccess('파트너사 정보가 성공적으로 수정되었습니다.')
       setIsEditDialogOpen(false)
       resetForm()
       await loadPartners(currentPage, debouncedMainSearchQuery)
     } catch (error) {
       console.error('파트너사 수정 오류:', error)
+      // 에러 토스트는 커스텀 훅에서 자동 처리됨
       setDialogError('파트너사 정보 수정에 실패했습니다.')
     } finally {
       setIsSubmitting(false)
@@ -377,8 +362,7 @@ export default function ManagePartnerForm() {
     setIsSubmitting(true)
 
     try {
-      await deletePartnerCompany(selectedPartner.id!)
-      showSuccess(`${selectedPartner.companyName}이(가) 성공적으로 삭제되었습니다.`)
+      await deletePartner(selectedPartner.id!, selectedPartner.companyName)
       setIsDeleteDialogOpen(false)
       setSelectedPartner(null)
 
@@ -391,7 +375,7 @@ export default function ManagePartnerForm() {
       }
     } catch (error) {
       console.error('파트너사 삭제 오류:', error)
-      showError('파트너사 삭제에 실패했습니다.')
+      // 에러 토스트는 커스텀 훅에서 자동 처리됨
     } finally {
       setIsSubmitting(false)
     }
@@ -448,6 +432,7 @@ export default function ManagePartnerForm() {
       corpCode: '',
       contractStartDate: new Date().toISOString().split('T')[0]
     })
+    setContractStartDate(new Date().toISOString().split('T')[0])
     setSelectedDartCompany(null)
     setCompanySearchQuery('')
     setDartSearchResults([])
@@ -628,6 +613,8 @@ export default function ManagePartnerForm() {
         dartSearchResults={dartSearchResults}
         selectedDartCompany={selectedDartCompany}
         onSelectDartCompany={handleDartCompanySelect}
+        contractStartDate={contractStartDate}
+        onContractStartDateChange={setContractStartDate}
         dialogError={dialogError}
         duplicateCheckResult={duplicateCheckResult}
       />

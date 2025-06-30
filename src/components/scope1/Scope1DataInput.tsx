@@ -54,7 +54,7 @@ import {ExcelCascadingSelector} from '@/components/scope1/ExcelCascadingSelector
 // ============================================================================
 // 타입 임포트 (Type Imports)
 // ============================================================================
-import {SelectorState} from '@/lib/types'
+import {SelectorState} from '@/types/scopeTypes'
 
 // ============================================================================
 // 타입 정의 (Type Definitions)
