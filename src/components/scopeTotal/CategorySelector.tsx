@@ -1,4 +1,4 @@
-/**
+/**More actions
  * CategorySelector 컴포넌트
  *
  * 다양한 Scope 카테고리를 선택할 수 있는 카드 그리드 형태의 UI 컴포넌트입니다.
@@ -18,12 +18,8 @@
 import React from 'react'
 import {motion} from 'framer-motion'
 import {Card, CardHeader, CardTitle} from '@/components/ui/card'
-
 import {SelectorState} from '@/types/scopeTypes'
-
 import {usePathname} from 'next/navigation'
-
-
 /**
  * =============================================================================
  * 카테고리 목록 정의 (Category Lists Definition)
@@ -32,31 +28,37 @@ import {usePathname} from 'next/navigation'
  * 이 목록들은 CategorySelector 컴포넌트에서 동적으로 렌더링됩니다.
  */
 
-// Scope 1 - 고정연소 카테고리 (Stationary Combustion Categories)
-export const scope1CategoryList = {
-  potential: {
-    list1: '액체 연료', // 경유, 휘발유, 등유 등
-    list2: '가스 연료', // LNG, LPG, 도시가스 등
-    list3: '고체연료' // 석탄, 코크스, 바이오매스 등
-  },
-  kinetic: {
-    list1: '차량', // 승용차, 트럭, 버스 등
-    list2: '항공기', // 비행기, 헬리콥터 등
-    list3: '선박' // 화물선, 여객선, 어선 등
-  }
+// Scope 1 - 고정연소 카테고리 (Stationary Combustion Categories)====================================================================
+export const scope1PotentialCategoryList = {
+  list1: '액체 연료', // 경유, 휘발유, 등유 등
+  list2: '가스 연료', // LNG, LPG, 도시가스 등
+  list3: '고체연료' // 석탄, 코크스, 바이오매스 등
+} as const
+// Scope 1 - 이동연소 카테고리 (Mobile Combustion Categories)
+export const scope1KineticCategoryList = {
+  list4: '차량', // 승용차, 트럭, 버스 등
+  list5: '항공기', // 비행기, 헬리콥터 등
+  list6: '선박' // 화물선, 여객선, 어선 등
+} as const
+// Scope 1 - 공정배출 카테고리
+export const scope1ProcessCategoryList = {
+  list7: '공정배출' // 화학 공정, 금속 가공 등
+} as const
+// Scope 1 - 냉매누출 카테고리
+export const scope1LeakCategoryList = {
+  list8: '누출배출' // 냉매, 가스 누출
 } as const
 
-// Scope 2 - 전력 카테고리 (Electricity Categories)
-export const scope2CategoryList = {
-  electric: {
-    list1: '전력' // 전력 사용량 (일반전력, 재생에너지)
-  },
-  steam: {
-    list1: '스팀' // 스팀 사용량 (A타입, B타입, C타입)
-  }
+// Scope 2 - 전력 카테고리 (Electricity Categories)================================================================================
+export const scope2ElectricCategoryList = {
+  list1: '전력' // 전력 사용량 (일반전력, 재생에너지)
+} as const
+// Scope 2 - 스팀 카테고리 (Steam Categories)
+export const scope2SteamCategoryList = {
+  list2: '스팀' // 스팀 사용량 (A타입, B타입, C타입)
 } as const
 
-// Scope 3 - 간접배출 카테고리 (Indirect Emissions Categories)
+// Scope 3 - 간접배출 카테고리 (Indirect Emissions Categories)======================================================================
 export const scope3CategoryList = {
   list1: '구매한 상품 및 서비스', // 원자재, 부품, 서비스 구매
   list2: '자본재', // 건물, 장비, 인프라 투자
@@ -82,10 +84,15 @@ export const scope3CategoryList = {
  * 각 카테고리 목록의 키 타입을 정의하여 타입 안전성을 보장합니다.
  */
 
-export type Scope1CategoryKey = keyof typeof scope1CategoryList
-export type Scope1CategoryGroupKey = keyof typeof scope1CategoryList // 'potential' | 'kinetic'
-export type Scope1SubCategoryKey = keyof (typeof scope1CategoryList)['potential'] // 'list1' | 'list2' | 'list3'
-export type Scope2CategoryKey = keyof typeof scope2CategoryList
+// scope1 ======================================================================
+export type Scope1PotentialCategoryKey = keyof typeof scope1PotentialCategoryList
+export type Scope1KineticCategoryKey = keyof typeof scope1KineticCategoryList
+export type Scope1ProcessCategoryKey = keyof typeof scope1ProcessCategoryList
+export type Scope1LeakCategoryKey = keyof typeof scope1LeakCategoryList
+// scope2 ======================================================================
+export type Scope2ElectricCategoryKey = keyof typeof scope2ElectricCategoryList
+export type Scope2SteamCategoryKey = keyof typeof scope2SteamCategoryList
+// scope3 ======================================================================
 export type Scope3CategoryKey = keyof typeof scope3CategoryList
 
 /**
@@ -137,6 +144,7 @@ export function CategorySelector<KeyType extends string>({
   onCategorySelect,
   animationDelay = 0
 }: CategorySelectorProps<KeyType>) {
+  const pathname = usePathname()
   return (
     <motion.div
       // 컨테이너 초기 애니메이션 설정
@@ -180,9 +188,11 @@ export function CategorySelector<KeyType extends string>({
                   {/* 카테고리 메인 정보 */}
                   <div className="flex-1">
                     {/* 카테고리 번호 라벨 */}
-                    <div className="mb-2 text-xs font-medium text-gray-500">
-                      카테고리 {key.replace('list', '')}
-                    </div>
+                    {pathname === '/scope3' && (
+                      <div className="mb-2 text-xs font-medium text-gray-500">
+                        카테고리 {key.replace('list', '')}
+                      </div>
+                    )}
 
                     {/* 카테고리 제목 */}
                     <CardTitle className="text-sm leading-tight text-gray-800 transition-colors hover:text-blue-700">

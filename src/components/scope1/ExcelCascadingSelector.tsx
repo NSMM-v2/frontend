@@ -31,9 +31,12 @@ import {
   Ruler,
   Calculator,
   Hash,
-  TrendingUp
+  TrendingUp,
+  Cog
 } from 'lucide-react'
 import type {SelectorState} from '@/types/scopeTypes'
+import {Switch} from '../ui/switch'
+import {Input} from '../ui/input'
 
 export interface CO2Data {
   category: string
@@ -235,6 +238,26 @@ export function ExcelCascadingSelector({
   /**
    * 선택 단계 필드 (대분류, 구분, 원료/에너지)
    */
+  const productInfoFields = [
+    {
+      step: '1',
+      label: '제품명',
+      key: 'productName' as keyof SelectorState,
+      type: 'text',
+      placeholder: '예: 타이어, 엔진',
+      icon: Cog,
+      description: '제품 명을 입력하세요'
+    },
+    {
+      step: '2',
+      label: '제품 코드',
+      key: 'productCode' as keyof SelectorState,
+      type: 'text',
+      placeholder: '예: P12345',
+      icon: Cog,
+      description: '제품 코드를 입력하세요'
+    }
+  ]
   const selectionFields = [
     {
       step: '1',
@@ -305,6 +328,8 @@ export function ExcelCascadingSelector({
       ? parseFloat(state.quantity) * selectedItem.kgCO2eq
       : 0
 
+  const [productEnabled, setProductEnabled] = useState(false)
+
   return (
     <motion.div
       initial={{opacity: 0, scale: 0.95}}
@@ -330,6 +355,33 @@ export function ExcelCascadingSelector({
               <h3 className="text-lg font-semibold text-gray-900">분류 선택</h3>
               <span className="text-sm text-gray-500">배출계수 데이터 선택</span>
             </div>
+
+            <div className="flex items-center gap-4 mb-4">
+              <h2 className="text-lg font-semibold">제품 관련</h2>
+              <Switch checked={productEnabled} onCheckedChange={setProductEnabled} />
+            </div>
+
+            {/* 필드 렌더링 */}
+            {productEnabled && (
+              <div className="grid grid-cols-1 gap-6 md:grid-cols-2">
+                {productInfoFields.map(field => (
+                  <div key={field.key}>
+                    <div className="flex items-center mb-3 space-x-2">
+                      <field.icon className="w-4 h-4 text-blue-500" />
+                      <label className="text-sm font-semibold text-gray-700">
+                        {field.label}
+                      </label>
+                    </div>
+                    <Input
+                      type={field.type}
+                      placeholder={field.placeholder}
+                      className="w-full px-4 py-3 text-sm transition-all duration-200 border-2 border-gray-200 rounded-xl focus:border-blue-500 focus:ring-4 focus:ring-blue-100 hover:border-gray-300"
+                    />
+                    <p className="mt-2 text-xs text-gray-500">{field.description}</p>
+                  </div>
+                ))}
+              </div>
+            )}
 
             <div className="grid grid-cols-1 gap-6 md:grid-cols-3">
               {selectionFields.map((field, index) => (
