@@ -13,15 +13,8 @@
  */
 'use client'
 
-// ============================================================================
-// React 및 애니메이션 라이브러리 임포트 (React & Animation Imports)
-// ============================================================================
 import React, {useState} from 'react'
 import {motion} from 'framer-motion'
-
-// ============================================================================
-// UI 아이콘 임포트 (UI Icon Imports)
-// ============================================================================
 import {
   ArrowLeft, // 왼쪽 화살표 (뒤로가기)
   Plus, // 플러스 아이콘 (추가)
@@ -29,31 +22,23 @@ import {
   Save, // 저장 아이콘
   Calculator // 계산기 아이콘
 } from 'lucide-react'
-
-// ============================================================================
-// UI 컴포넌트 임포트 (UI Component Imports)
-// ============================================================================
 import {Button} from '@/components/ui/button'
 import {Card, CardContent, CardHeader, CardTitle} from '@/components/ui/card'
 import {Input} from '@/components/ui/input'
 import {Label} from '@/components/ui/label'
 import {Switch} from '@/components/ui/switch'
-
-// ============================================================================
-// 커스텀 컴포넌트 임포트 (Custom Component Imports)
-// ============================================================================
 import {
   Scope1PotentialCategoryKey,
   Scope1KineticCategoryKey,
+  Scope1ProcessCategoryKey,
+  Scope1LeakCategoryKey,
   scope1PotentialCategoryList,
-  scope1KineticCategoryList
+  scope1KineticCategoryList,
+  scope1ProcessCategoryList,
+  scope1LeakCategoryList
 } from '@/components/scopeTotal/CategorySelector'
 import {SelfInputScope12Calculator} from '@/components/scope1/SelfInputScope12Caculator'
 import {ExcelCascadingSelector} from '@/components/scope1/ExcelCascadingSelector'
-
-// ============================================================================
-// 타입 임포트 (Type Imports)
-// ============================================================================
 import {SelectorState} from '@/types/scopeTypes'
 
 // ============================================================================
@@ -73,10 +58,19 @@ interface Scope1CalculatorData {
  * 컴포넌트 Props 정의
  */
 interface Scope1DataInputProps {
-  activeCategory: Scope1PotentialCategoryKey | Scope1KineticCategoryKey | null
+  activeCategory:
+    | Scope1PotentialCategoryKey
+    | Scope1KineticCategoryKey
+    | Scope1ProcessCategoryKey
+    | Scope1LeakCategoryKey
+    | null
   calculators: Scope1CalculatorData[]
   getTotalEmission: (
-    category: Scope1PotentialCategoryKey | Scope1KineticCategoryKey
+    category:
+      | Scope1PotentialCategoryKey
+      | Scope1KineticCategoryKey
+      | Scope1ProcessCategoryKey
+      | Scope1LeakCategoryKey
   ) => number
   onAddCalculator: () => void
   onRemoveCalculator: (id: number) => void
@@ -151,6 +145,30 @@ export function Scope1DataInput({
       }
     }
 
+    // 공정배출 카테고리 확인
+    if (activeCategory in scope1ProcessCategoryList) {
+      return {
+        key: activeCategory,
+        title:
+          scope1ProcessCategoryList[
+            activeCategory as keyof typeof scope1ProcessCategoryList
+          ],
+        description: '공정에서 발생하는 직접 배출량',
+        icon: '🏭'
+      }
+    }
+
+    // 누출배출 카테고리 확인
+    if (activeCategory in scope1LeakCategoryList) {
+      return {
+        key: activeCategory,
+        title:
+          scope1LeakCategoryList[activeCategory as keyof typeof scope1LeakCategoryList],
+        description: '누출배출에서 발생하는 직접 배출량',
+        icon: '💧'
+      }
+    }
+
     return null
   }
 
@@ -170,49 +188,67 @@ export function Scope1DataInput({
       initial={{opacity: 0, scale: 0.95}}
       animate={{opacity: 1, scale: 1}}
       transition={{delay: 0.6, duration: 0.5}}
-      className="space-y-6">
+      className="flex flex-col justify-center w-full space-y-4">
       {/* ====================================================================
           카테고리 헤더 (Category Header)
           ==================================================================== */}
-      <Card className="overflow-hidden shadow-sm">
-        <CardHeader className="bg-gradient-to-r from-blue-50 to-white border-b border-blue-100">
-          <div className="flex justify-between items-center">
-            <div className="flex items-center space-x-4">
-              <Button
-                variant="ghost"
-                size="sm"
-                onClick={onBackToList}
-                className="text-gray-500 hover:text-blue-600">
-                <ArrowLeft className="mr-2 w-4 h-4" />
-                목록으로
-              </Button>
+      <div className="overflow-hidden bg-white border-0 shadow-sm rounded-3xl">
+        <div className="p-6 bg-white">
+          <div className="flex flex-row items-center justify-between">
+            <motion.div
+              initial={{opacity: 0, x: -20}}
+              animate={{opacity: 1, x: 0}}
+              transition={{delay: 0.1, duration: 0.5}}
+              onClick={onBackToList}
+              className="flex flex-row items-center p-4 transition-all duration-200 rounded-xl hover:cursor-pointer hover:bg-blue-50">
+              <div className="mr-4 text-2xl text-blue-500">←</div>
               <div>
-                <CardTitle className="flex items-center space-x-3 text-lg">
-                  <span className="text-2xl">{categoryInfo.icon}</span>
-                  <span className="text-gray-900">{categoryInfo.title}</span>
-                </CardTitle>
-                <p className="mt-1 text-sm text-gray-600">{categoryInfo.description}</p>
+                <h1 className="text-3xl font-bold text-gray-900">{categoryInfo.title}</h1>
+                <div className="mt-1 text-sm text-gray-600">
+                  {categoryInfo.description}
+                </div>
               </div>
-            </div>
-            <div className="text-right">
-              <p className="text-sm text-gray-500">총 배출량</p>
-              <p className="text-2xl font-bold text-blue-600">
-                {totalEmission.toFixed(2)}
-                <span className="ml-1 text-sm font-normal text-gray-500">tCO₂eq</span>
-              </p>
-            </div>
+            </motion.div>
+
+            {/* ========================================================================
+                    현재 카테고리 소계 카드 (Category Summary Card)
+                    - 현재 카테고리의 총 배출량 표시
+                    ======================================================================== */}
+            <motion.div
+              initial={{opacity: 0, x: 20}}
+              animate={{opacity: 1, x: 0}}
+              transition={{delay: 0.1, duration: 0.5}}>
+              <Card className="bg-white border-2 border-blue-200 shadow-sm rounded-2xl min-w-md">
+                <CardContent className="flex items-center justify-between p-6">
+                  <div>
+                    <span className="text-lg font-semibold text-gray-900">
+                      현재 카테고리 소계:
+                    </span>
+                    <div className="mt-1 text-xs text-gray-500">
+                      {calculators.length}개 항목 입력됨
+                    </div>
+                  </div>
+                  <div className="text-right">
+                    <span className="text-2xl font-bold text-blue-600">
+                      {totalEmission.toFixed(2)}
+                    </span>
+                    <div className="text-sm text-gray-500">kgCO₂</div>
+                  </div>
+                </CardContent>
+              </Card>
+            </motion.div>
           </div>
-        </CardHeader>
-      </Card>
+        </div>
+      </div>
 
       {/* ====================================================================
           계산기 목록 (Calculator List)
           ==================================================================== */}
-      <div className="space-y-4">
+      <div className="flex flex-col items-center w-full space-y-8">
         {calculators.map((calculator, index) => (
-          <Card key={calculator.id} className="overflow-hidden shadow-sm">
-            <CardHeader className="bg-gray-50 border-b">
-              <div className="flex justify-between items-center">
+          <Card key={calculator.id} className="p-4 overflow-hidden shadow-sm w-[80%]">
+            <CardHeader className="pb-2 border-b">
+              <div className="flex items-center justify-between">
                 <div className="flex items-center space-x-3">
                   <Calculator className="w-5 h-5 text-blue-600" />
                   <span className="font-semibold text-gray-900">계산기 {index + 1}</span>
@@ -223,7 +259,7 @@ export function Scope1DataInput({
                     <Label
                       htmlFor={`manual-${calculator.id}`}
                       className="text-sm text-gray-600">
-                      수동 입력
+                      LCA 사용
                     </Label>
                     <Switch
                       id={`manual-${calculator.id}`}
@@ -244,9 +280,9 @@ export function Scope1DataInput({
             </CardHeader>
             <CardContent className="p-4">
               {calculatorModes[calculator.id] ? (
-                /* 수동 입력 모드 */
-                <SelfInputScope12Calculator
-                  key={`manual-${calculator.id}`}
+                /* 자동 계산 모드 */
+                <ExcelCascadingSelector
+                  key={`auto-${calculator.id}`}
                   id={calculator.id}
                   state={calculator.state}
                   onChangeState={(newState: SelectorState) =>
@@ -257,9 +293,9 @@ export function Scope1DataInput({
                   }
                 />
               ) : (
-                /* 자동 계산 모드 */
-                <ExcelCascadingSelector
-                  key={`auto-${calculator.id}`}
+                /* 수동 입력 모드 */
+                <SelfInputScope12Calculator
+                  key={`manual-${calculator.id}`}
                   id={calculator.id}
                   state={calculator.state}
                   onChangeState={(newState: SelectorState) =>
@@ -278,18 +314,18 @@ export function Scope1DataInput({
       {/* ====================================================================
           액션 버튼들 (Action Buttons)
           ==================================================================== */}
-      <div className="flex justify-between items-center pt-4 border-t border-gray-200">
+      <div className="flex items-center justify-between pt-4 border-t border-gray-200">
         <Button
           onClick={onAddCalculator}
           className="text-white bg-blue-500 hover:bg-blue-600">
-          <Plus className="mr-2 w-4 h-4" />
+          <Plus className="w-4 h-4 mr-2" />
           계산기 추가
         </Button>
         <Button
           onClick={onComplete}
           variant="outline"
           className="text-green-700 border-green-500 hover:bg-green-50">
-          <Save className="mr-2 w-4 h-4" />
+          <Save className="w-4 h-4 mr-2" />
           완료
         </Button>
       </div>
