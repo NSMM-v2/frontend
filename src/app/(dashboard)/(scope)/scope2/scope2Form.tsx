@@ -51,9 +51,9 @@ import {
   Scope2SteamCategoryKey,
   scope2ElectricCategoryList,
   scope2SteamCategoryList
-} from '@/components/scopeTotal/CategorySelector'
-import {Scope2DataInput} from '@/components/scope2/Scope2DataInput'
-import {MonthSelector} from '@/components/scopeTotal/MonthSelector'
+} from '@/components/scopeTotal/Scope123CategorySelector'
+import {Scope2DataInput} from '@/components/scope12/Scope2DataInput'
+import {MonthSelector} from '@/components/scopeTotal/Scope123MonthSelector'
 import {Input} from '@/components/ui/input'
 import {Card, CardContent} from '@/components/ui/card'
 

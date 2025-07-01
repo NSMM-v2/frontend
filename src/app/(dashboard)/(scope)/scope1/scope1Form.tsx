@@ -35,9 +35,9 @@ import {
   scope1KineticCategoryList,
   scope1ProcessCategoryList,
   scope1LeakCategoryList
-} from '@/components/scopeTotal/CategorySelector'
-import {Scope1DataInput} from '@/components/scope1/Scope1DataInput'
-import {MonthSelector} from '@/components/scopeTotal/MonthSelector'
+} from '@/components/scopeTotal/Scope123CategorySelector'
+import {Scope1DataInput} from '@/components/scope12/Scope1DataInput'
+import {MonthSelector} from '@/components/scopeTotal/Scope123MonthSelector'
 import {Input} from '@/components/ui/input'
 import {Card, CardContent} from '@/components/ui/card'
 import {SelectorState} from '@/types/scopeTypes'

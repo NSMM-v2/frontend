@@ -14,13 +14,12 @@
  */
 'use client'
 
-import React, {useState} from 'react'
-import {motion} from 'framer-motion'
+import React, {useState, useEffect} from 'react'
+import {motion, AnimatePresence} from 'framer-motion'
 import {
   Plus, // 플러스 아이콘 (추가)
   Trash2, // 삭제 아이콘
   Save, // 저장 아이콘
-  Calculator, // 계산기 아이콘
   Sparkles, // LCA 모드용 아이콘 추가
   Database, // 수동 입력 모드용 아이콘 추가
   AlertTriangle // 경고 아이콘 (삭제 확인용)
@@ -47,9 +46,9 @@ import {
   scope1KineticCategoryList,
   scope1ProcessCategoryList,
   scope1LeakCategoryList
-} from '@/components/scopeTotal/CategorySelector'
-import {SelfInputScope12Calculator} from '@/components/scope1/SelfInputScope12Caculator'
-import {ExcelCascadingSelector} from '@/components/scope1/ExcelCascadingSelector'
+} from '@/components/scopeTotal/Scope123CategorySelector'
+import {SelfInputScope12Calculator} from '@/components/scope12/Scope12SelfInputCaculator'
+import {ExcelCascadingSelector} from '@/components/scope12/Scope12ExcelCascadingSelector'
 import {SelectorState} from '@/types/scopeTypes'
 import {showSuccess} from '@/util/toast'
 
@@ -302,218 +301,214 @@ export function Scope1DataInput({
         </div>
       </div>
 
-      {/* ====================================================================
-          계산기 목록 (Calculator List) - Scope 3 CalculatorItem 스타일 적용
-          ==================================================================== */}
+      {/* ======================================================================
+          계산기 목록 섹션 (Calculators List Section)
+          ====================================================================== */}
       <div className="flex flex-col items-center space-y-8 w-full">
-        {calculators.map((calculator, index) => {
-          // ========================================================================
-          // 모드별 제목 및 설명 설정 (Scope 3 CalculatorItem 스타일 적용)
-          // ========================================================================
-          const mode = calculatorModes[calculator.id] || false
-          const title = mode
-            ? `LCA 기반 배출계수 선택 ${index + 1}`
-            : `수동 입력 ${index + 1}`
-          const description = mode
-            ? '배출계수를 단계별로 선택하여 자동 계산하세요'
-            : '직접 값을 입력하여 배출량을 계산하세요.'
-          const IconComponent = mode ? Sparkles : Database
-          const animationDelay = index * 0.1
+        <AnimatePresence mode="popLayout" initial={false}>
+          {calculators.map((calculator, index) => {
+            // ========================================================================
+            // 모드별 제목 및 설명 설정 (Scope 3 CalculatorItem 스타일 적용)
+            // ========================================================================
+            const mode = calculatorModes[calculator.id] || false
+            const title = mode
+              ? `LCA 기반 배출계수 선택 ${index + 1}`
+              : `수동 입력 ${index + 1}`
+            const description = mode
+              ? '배출계수를 단계별로 선택하여 자동 계산하세요'
+              : '직접 값을 입력하여 배출량을 계산하세요.'
+            const IconComponent = mode ? Sparkles : Database
+            const animationDelay = index * 0.2 // 순차적 등장 효과
 
-          return (
-            <React.Fragment key={calculator.id}>
-              <motion.div
-                initial={{opacity: 0, y: 30}}
-                animate={{opacity: 1, y: 0}}
-                exit={{opacity: 0, y: -30}}
-                transition={{
-                  delay: animationDelay,
-                  duration: 0.5
-                }}
-                className="w-[80%]">
-                <Card className="overflow-hidden bg-white rounded-3xl border-0 shadow-lg">
-                  {/* ========================================================================
-                    계산기 헤더 (Calculator Header) - Scope 3 스타일 적용
-                    ======================================================================== */}
-                  <div className="p-6 bg-gradient-to-r from-blue-50 to-blue-100">
-                    <div className="flex relative items-center">
-                      {/* 계산기 번호 배지 */}
-                      <motion.div
-                        initial={{scale: 0}}
-                        animate={{scale: 1}}
-                        transition={{
-                          delay: animationDelay + 0.1,
-                          duration: 0.3
-                        }}
-                        className="flex justify-center items-center mr-5 w-14 h-14 bg-blue-500 rounded-2xl shadow-md">
-                        <span className="text-lg font-bold text-white">{index + 1}</span>
-                      </motion.div>
-
-                      {/* 계산기 제목 및 설명 */}
-                      <div className="flex-1">
+            return (
+              <React.Fragment key={calculator.id}>
+                {/* 개별 계산기 컨테이너 */}
+                <motion.div
+                  initial={{opacity: 0, y: 30}}
+                  animate={{opacity: 1, y: 0}}
+                  exit={{opacity: 0, y: -30}}
+                  transition={{
+                    delay: 0, // 삭제 시 딜레이 제거
+                    duration: 0.5
+                  }}
+                  className="w-[80%]">
+                  <Card className="overflow-hidden bg-white rounded-3xl border-0 shadow-lg">
+                    {/* ========================================================================
+                      계산기 헤더 (Calculator Header) - Scope 3 스타일 적용
+                      ======================================================================== */}
+                    <div className="p-6 bg-gradient-to-r from-blue-50 to-blue-100">
+                      <div className="flex relative items-center">
+                        {/* 계산기 번호 배지 */}
                         <motion.div
-                          initial={{opacity: 0, x: -20}}
-                          animate={{opacity: 1, x: 0}}
-                          transition={{delay: animationDelay + 0.2, duration: 0.4}}>
-                          <div className="flex items-center mb-1 space-x-2">
-                            <IconComponent className="w-5 h-5 text-blue-500" />
-                            <h3 className="text-lg font-bold text-gray-900">{title}</h3>
-                          </div>
-                          <p className="text-sm text-gray-600">{description}</p>
-                        </motion.div>
-                      </div>
-
-                      {/* 오른쪽 컨트롤 영역 */}
-                      <div className="flex items-center space-x-4">
-                        {/* 수동 입력 모드 토글 */}
-                        <motion.div
-                          initial={{opacity: 0, scale: 0.8}}
-                          animate={{opacity: 1, scale: 1}}
-                          transition={{delay: animationDelay + 0.3, duration: 0.3}}
-                          className="flex items-center px-4 py-2 space-x-3 bg-white rounded-xl border border-blue-200 shadow-sm transition-all hover:bg-blue-50">
-                          {/* 토글 스위치 */}
-                          <Switch
-                            checked={mode}
-                            onCheckedChange={checked =>
-                              onModeChange(calculator.id, checked)
-                            }
-                            className="data-[state=checked]:bg-blue-500"
-                          />
-
-                          {/* 라벨 */}
-                          <span
-                            className={`text-sm font-medium transition-colors ${
-                              mode ? 'text-blue-600' : 'text-gray-500'
-                            }`}>
-                            LCA 기반 입력
+                          initial={{scale: 0}}
+                          animate={{scale: 1}}
+                          transition={{
+                            delay: 0, // 딜레이 제거
+                            duration: 0.3
+                          }}
+                          className="flex justify-center items-center mr-5 w-14 h-14 bg-blue-500 rounded-2xl shadow-md">
+                          <span className="text-lg font-bold text-white">
+                            {index + 1}
                           </span>
                         </motion.div>
 
-                        {/* 삭제 버튼 - 입력된 데이터가 있으면 상시 표시 */}
-                        {hasInputData(calculator) && (
+                        {/* 계산기 제목 및 설명 */}
+                        <div className="flex-1">
+                          <motion.div
+                            initial={{opacity: 0, x: -20}}
+                            animate={{opacity: 1, x: 0}}
+                            transition={{delay: 0, duration: 0.4}}>
+                            {' '}
+                            {/* 딜레이 제거 */}
+                            <div className="flex items-center mb-1 space-x-2">
+                              <IconComponent className="w-5 h-5 text-blue-500" />
+                              <h3 className="text-lg font-bold text-gray-900">{title}</h3>
+                            </div>
+                            <p className="text-sm text-gray-600">{description}</p>
+                          </motion.div>
+                        </div>
+
+                        {/* 오른쪽 컨트롤 영역 */}
+                        <div className="flex items-center space-x-4">
+                          {/* 수동 입력 모드 토글 */}
                           <motion.div
                             initial={{opacity: 0, scale: 0.8}}
                             animate={{opacity: 1, scale: 1}}
-                            transition={{delay: animationDelay + 0.4, duration: 0.3}}>
-                            <Button
-                              variant="ghost"
-                              size="sm"
-                              onClick={() => handleShowDeleteDialog(calculator.id, true)}
-                              className="px-4 py-2 text-red-500 bg-red-50 rounded-xl border border-red-200 transition-all duration-200 hover:text-red-700 hover:bg-red-100 hover:border-red-300 hover:scale-105">
-                              <Trash2 className="mr-2 w-4 h-4" />
-                              <span className="font-medium">삭제</span>
-                            </Button>
+                            transition={{delay: 0, duration: 0.3}} // 딜레이 제거
+                            className="flex items-center px-4 py-2 space-x-3 bg-white rounded-xl border border-blue-200 shadow-sm transition-all hover:bg-blue-50">
+                            {/* 토글 스위치 */}
+                            <Switch
+                              checked={mode}
+                              onCheckedChange={checked =>
+                                onModeChange(calculator.id, checked)
+                              }
+                              className="data-[state=checked]:bg-blue-500"
+                            />
+
+                            {/* 라벨 */}
+                            <span
+                              className={`text-sm font-medium transition-colors ${
+                                mode ? 'text-blue-600' : 'text-gray-500'
+                              }`}>
+                              LCA 기반 입력
+                            </span>
                           </motion.div>
-                        )}
+
+                          {/* 삭제 버튼 - 입력된 데이터가 있으면 상시 표시 */}
+                          {hasInputData(calculator) && (
+                            <motion.div
+                              initial={{opacity: 0, scale: 0.8}}
+                              animate={{opacity: 1, scale: 1}}
+                              transition={{delay: 0, duration: 0.3}}>
+                              {' '}
+                              {/* 딜레이 제거 */}
+                              <Button
+                                variant="ghost"
+                                size="sm"
+                                onClick={() =>
+                                  handleShowDeleteDialog(calculator.id, true)
+                                }
+                                className="px-4 py-2 text-red-500 bg-red-50 rounded-xl border border-red-200 transition-all duration-200 hover:text-red-700 hover:bg-red-100 hover:border-red-300 hover:scale-105">
+                                <Trash2 className="mr-2 w-4 h-4" />
+                                <span className="font-medium">삭제</span>
+                              </Button>
+                            </motion.div>
+                          )}
+                        </div>
                       </div>
                     </div>
-                  </div>
 
-                  {/* ========================================================================
-                    계산기 내용 영역 (Calculator Content)
-                    ======================================================================== */}
-                  <CardContent className="p-8 bg-white">
-                    <motion.div
-                      initial={{opacity: 0, y: 20}}
-                      animate={{opacity: 1, y: 0}}
-                      transition={{delay: animationDelay + 0.5, duration: 0.4}}>
-                      {mode ? (
-                        /* LCA 기반 자동 계산 모드 */
-                        <ExcelCascadingSelector
-                          key={`auto-${calculator.id}`}
-                          id={calculator.id}
-                          state={calculator.state}
-                          onChangeState={(newState: SelectorState) =>
-                            onUpdateCalculatorState(calculator.id, newState)
-                          }
-                          onChangeTotal={(id: number, emission: number) =>
-                            onChangeTotal(id, emission)
-                          }
-                        />
-                      ) : (
-                        /* 수동 입력 모드 */
-                        <SelfInputScope12Calculator
-                          key={`manual-${calculator.id}`}
-                          id={calculator.id}
-                          state={calculator.state}
-                          onChangeState={(newState: SelectorState) =>
-                            onUpdateCalculatorState(calculator.id, newState)
-                          }
-                          onChangeTotal={(id: number, emission: number) =>
-                            onChangeTotal(id, emission)
-                          }
-                        />
-                      )}
-                    </motion.div>
-                  </CardContent>
-                </Card>
+                    {/* ========================================================================
+                      계산기 내용 영역 (Calculator Content)
+                      ======================================================================== */}
+                    <CardContent className="p-8 bg-white">
+                      <motion.div
+                        initial={{opacity: 0, y: 20}}
+                        animate={{opacity: 1, y: 0}}
+                        transition={{delay: 0, duration: 0.4}}>
+                        {' '}
+                        {/* 딜레이 제거 */}
+                        {mode ? (
+                          /* LCA 기반 자동 계산 모드 */
+                          <ExcelCascadingSelector
+                            key={`auto-${calculator.id}`}
+                            id={calculator.id}
+                            state={calculator.state}
+                            onChangeState={(newState: SelectorState) =>
+                              onUpdateCalculatorState(calculator.id, newState)
+                            }
+                            onChangeTotal={(id: number, emission: number) =>
+                              onChangeTotal(id, emission)
+                            }
+                          />
+                        ) : (
+                          /* 수동 입력 모드 */
+                          <SelfInputScope12Calculator
+                            key={`manual-${calculator.id}`}
+                            id={calculator.id}
+                            state={calculator.state}
+                            onChangeState={(newState: SelectorState) =>
+                              onUpdateCalculatorState(calculator.id, newState)
+                            }
+                            onChangeTotal={(id: number, emission: number) =>
+                              onChangeTotal(id, emission)
+                            }
+                          />
+                        )}
+                      </motion.div>
+                    </CardContent>
+                  </Card>
 
-                {/* ============================================================================
-                  계산기 간 구분선 (Inter-Calculator Divider) - Scope 3 스타일 적용
-                  ============================================================================ */}
-                {index < calculators.length - 1 && (
-                  <motion.div
-                    initial={{scaleX: 0}}
-                    animate={{scaleX: 1}}
-                    transition={{delay: animationDelay + 0.7, duration: 0.3}}
-                    className="relative mt-6 mb-2">
-                    {/* 심플한 구분선 */}
-                    <div className="h-px bg-blue-200" />
-
-                    {/* 중앙 포인트 */}
-                    <div className="absolute top-1/2 left-1/2 w-3 h-3 bg-blue-500 rounded-full border-2 border-white transform -translate-x-1/2 -translate-y-1/2" />
-                  </motion.div>
-                )}
-
-                {/* ============================================================================
-                  삭제 확인 다이얼로그 (Delete Confirmation Dialog) - Scope 3 스타일 적용
-                  ============================================================================ */}
-                <AlertDialog
-                  open={deleteDialogStates[calculator.id] || false}
-                  onOpenChange={open => handleShowDeleteDialog(calculator.id, open)}>
-                  <AlertDialogContent className="max-w-md">
-                    <AlertDialogHeader>
-                      <div className="flex items-center mb-2 space-x-3">
-                        <div className="flex justify-center items-center w-12 h-12 bg-red-100 rounded-full">
-                          <AlertTriangle className="w-6 h-6 text-red-600" />
+                  {/* ============================================================================
+                    삭제 확인 다이얼로그 (Delete Confirmation Dialog) - Scope 3 스타일 적용
+                    ============================================================================ */}
+                  <AlertDialog
+                    open={deleteDialogStates[calculator.id] || false}
+                    onOpenChange={open => handleShowDeleteDialog(calculator.id, open)}>
+                    <AlertDialogContent className="max-w-md">
+                      <AlertDialogHeader>
+                        <div className="flex items-center mb-2 space-x-3">
+                          <div className="flex justify-center items-center w-12 h-12 bg-red-100 rounded-full">
+                            <AlertTriangle className="w-6 h-6 text-red-600" />
+                          </div>
+                          <div>
+                            <AlertDialogTitle className="text-lg font-semibold text-gray-900">
+                              계산기 삭제 확인
+                            </AlertDialogTitle>
+                          </div>
                         </div>
-                        <div>
-                          <AlertDialogTitle className="text-lg font-semibold text-gray-900">
-                            계산기 삭제 확인
-                          </AlertDialogTitle>
-                        </div>
-                      </div>
-                    </AlertDialogHeader>
+                      </AlertDialogHeader>
 
-                    <AlertDialogDescription className="space-y-3 leading-relaxed text-gray-600">
-                      <span className="block">
-                        <span className="font-medium text-gray-900">
-                          {mode ? 'LCA 기반 배출계수 선택' : '수동 입력'} {index + 1}
+                      <AlertDialogDescription className="space-y-3 leading-relaxed text-gray-600">
+                        <span className="block">
+                          <span className="font-medium text-gray-900">
+                            {mode ? 'LCA 기반 배출계수 선택' : '수동 입력'} {index + 1}
+                          </span>
+                          을(를) 삭제하시겠습니까?
                         </span>
-                        을(를) 삭제하시겠습니까?
-                      </span>
-                      <span className="block text-sm text-red-600">
-                        입력된 모든 데이터가 완전히 삭제되며, 이 작업은 되돌릴 수
-                        없습니다.
-                      </span>
-                    </AlertDialogDescription>
+                        <span className="block text-sm text-red-600">
+                          입력된 모든 데이터가 완전히 삭제되며, 이 작업은 되돌릴 수
+                          없습니다.
+                        </span>
+                      </AlertDialogDescription>
 
-                    <AlertDialogFooter className="gap-3">
-                      <AlertDialogCancel className="px-6 py-2 text-gray-700 bg-gray-100 rounded-lg border-0 transition-all hover:bg-gray-200">
-                        취소
-                      </AlertDialogCancel>
-                      <AlertDialogAction
-                        onClick={() => handleDeleteConfirm(calculator.id, index, mode)}
-                        className="px-6 py-2 text-white bg-red-600 rounded-lg border-0 transition-all hover:bg-red-700">
-                        삭제
-                      </AlertDialogAction>
-                    </AlertDialogFooter>
-                  </AlertDialogContent>
-                </AlertDialog>
-              </motion.div>
-            </React.Fragment>
-          )
-        })}
+                      <AlertDialogFooter className="gap-3">
+                        <AlertDialogCancel className="px-6 py-2 text-gray-700 bg-gray-100 rounded-lg border-0 transition-all hover:bg-gray-200">
+                          취소
+                        </AlertDialogCancel>
+                        <AlertDialogAction
+                          onClick={() => handleDeleteConfirm(calculator.id, index, mode)}
+                          className="px-6 py-2 text-white bg-red-600 rounded-lg border-0 transition-all hover:bg-red-700">
+                          삭제
+                        </AlertDialogAction>
+                      </AlertDialogFooter>
+                    </AlertDialogContent>
+                  </AlertDialog>
+                </motion.div>
+              </React.Fragment>
+            )
+          })}
+        </AnimatePresence>
       </div>
 
       {/* ====================================================================

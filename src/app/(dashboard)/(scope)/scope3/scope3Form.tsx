@@ -19,14 +19,12 @@
 // ============================================================================
 import React, {useState, useEffect} from 'react'
 import {motion} from 'framer-motion'
-import Link from 'next/link'
 
 // ============================================================================
 // UI 아이콘 임포트 (UI Icon Imports)
 // ============================================================================
 import {
   Home, // 홈 아이콘
-  ArrowLeft, // 왼쪽 화살표 (뒤로가기)
   Factory, // 공장 아이콘
   CalendarDays, // 달력 아이콘
   TrendingUp // 상승 트렌드 아이콘 (배출량 카드용)
@@ -50,12 +48,12 @@ import {PageHeader} from '@/components/layout/PageHeader'
 import {
   CategorySelector,
   Scope3CategoryKey
-} from '@/components/scopeTotal/CategorySelector'
-import {CategoryDataInput} from '@/components/scope3/CategoryDataInput'
-import {MonthSelector} from '@/components/scopeTotal/MonthSelector'
+} from '@/components/scopeTotal/Scope123CategorySelector'
+import {CategoryDataInput} from '@/components/scope3/Scope3CategoryDataInput'
+import {MonthSelector} from '@/components/scopeTotal/Scope123MonthSelector'
 import {Input} from '@/components/ui/input'
 import {Card, CardContent} from '@/components/ui/card'
-import {scope3CategoryList} from '@/components/scopeTotal/CategorySelector'
+import {scope3CategoryList} from '@/components/scopeTotal/Scope123CategorySelector'
 
 // ============================================================================
 // 타입 및 서비스 임포트 (Types & Services Imports)

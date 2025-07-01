@@ -6,6 +6,7 @@
  * - ExcelCascadingSelector 컴포넌트를 래핑
  * - 계산기별 상태 관리 및 이벤트 처리
  * - NSMM 통일된 블루 디자인 적용
+ * - Scope 1, 2와 동일한 삭제 모션 적용
  *
  * 디자인 특징:
  * - 통일된 블루 색상 체계
@@ -15,7 +16,7 @@
  * - 모드별 제목 구분 (중복 방지)
  *
  * @author ESG Project Team
- * @version 3.0
+ * @version 3.1
  */
 
 import React, {useState} from 'react'
@@ -129,25 +130,18 @@ export function CalculatorItem({
 
   return (
     <motion.div
-      initial={{opacity: 0, y: 20}}
+      initial={{opacity: 0, y: 30}}
       animate={{opacity: 1, y: 0}}
-      exit={{opacity: 0, y: -20}}
+      exit={{opacity: 0, y: -30}}
       transition={{
         delay: animationDelay,
-        duration: 0.4,
-        type: 'spring',
-        stiffness: 100
+        duration: 0.5
       }}
-      className="relative w-[80%] mb-8">
+      className="w-[80%]">
       {/* ============================================================================
           메인 카드 컨테이너 (Main Card Container)
           ============================================================================ */}
-      <motion.div
-        whileHover={{
-          scale: 1.01,
-          transition: {duration: 0.2}
-        }}
-        className="overflow-hidden relative bg-white rounded-3xl border-0 shadow-lg transition-all duration-300 hover:shadow-xl">
+      <div className="overflow-hidden relative bg-white rounded-3xl border-0 shadow-lg transition-all duration-300 hover:shadow-xl">
         {/* ========================================================================
             계산기 헤더 (Calculator Header)
             ======================================================================== */}
@@ -226,11 +220,7 @@ export function CalculatorItem({
         {/* ========================================================================
             계산기 컴포넌트 영역 (Calculator Component Area)
             ======================================================================== */}
-        <motion.div
-          initial={{opacity: 0, y: 10}}
-          animate={{opacity: 1, y: 0}}
-          transition={{delay: animationDelay + 0.6, duration: 0.4}}
-          className="p-6">
+        <div className="p-6">
           {mode ? (
             <ExcelCascadingSelector
               id={id}
@@ -253,8 +243,8 @@ export function CalculatorItem({
               onChangeTotal={onChangeTotal}
             />
           )}
-        </motion.div>
-      </motion.div>
+        </div>
+      </div>
 
       {/* ============================================================================
           계산기 간 구분선 (Inter-Calculator Divider)
