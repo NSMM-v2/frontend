@@ -34,7 +34,8 @@ import {
   searchCompaniesFromDart,
   fetchFinancialRiskAssessment,
   checkCompanyNameDuplicate,
-  fetchDartCompanyProfile
+  fetchDartCompanyProfile,
+  fetchAvailablePeriods
 } from '@/services/partnerCompanyService'
 
 import {showSuccess, showError, showWarning, showPartnerRestore} from '@/util/toast'
@@ -80,7 +81,9 @@ interface UsePartnerCompanyAPIReturn {
   // 기타 함수들
   fetchFinancialRisk: (
     corpCode: string,
-    partnerName?: string
+    partnerName?: string,
+    bsnsYear?: string,
+    reprtCode?: string
   ) => Promise<FinancialRiskAssessment>
   checkDuplicateName: (
     companyName: string,
@@ -275,9 +278,19 @@ export function usePartnerCompanyAPI(): UsePartnerCompanyAPIReturn {
    * 에러 시 자동으로 에러 토스트를 표시합니다.
    */
   const fetchFinancialRisk = useCallback(
-    async (corpCode: string, partnerName?: string): Promise<FinancialRiskAssessment> => {
+    async (
+      corpCode: string,
+      partnerName?: string,
+      bsnsYear?: string,
+      reprtCode?: string
+    ): Promise<FinancialRiskAssessment> => {
       return wrapAPICall(async () => {
-        const result = await fetchFinancialRiskAssessment(corpCode, partnerName)
+        const result = await fetchFinancialRiskAssessment(
+          corpCode,
+          partnerName,
+          bsnsYear,
+          reprtCode
+        )
         return result
       }, true) // 재무 위험 데이터 조회 실패 시 토스트 표시
     },
@@ -386,4 +399,18 @@ export function useFetchFinancialRisk() {
     error,
     clearError
   }
+}
+
+/**
+ * 특정 파트너사의 이용 가능한 재무제표 기간을 조회하는 훅
+ */
+export function useFetchAvailablePeriods() {
+  return useCallback(async (corpCode: string) => {
+    try {
+      return await fetchAvailablePeriods(corpCode)
+    } catch (error) {
+      console.error('이용 가능한 기간 조회 실패:', error)
+      throw error
+    }
+  }, [])
 }

@@ -245,6 +245,43 @@ export interface PaginatedPartnerCompanyResponse {
 // ============================================================================
 
 /**
+ * 보고서 코드 열거형 (DART 기준)
+ */
+export type ReportCode = '11011' | '11012' | '11013' | '11014'
+
+/**
+ * 보고서 코드별 정보
+ */
+export interface ReportCodeInfo {
+  code: ReportCode
+  name: string
+  description: string
+  period: string
+  quarter?: number
+}
+
+/**
+ * 재무 위험 분석 요청 파라미터
+ */
+export interface FinancialRiskAssessmentParams {
+  corpCode: string // DART 기업 코드
+  partnerName?: string // 파트너사명 (선택사항)
+  bsnsYear?: string // 분석할 사업연도 (YYYY, 미지정시 자동)
+  reprtCode?: ReportCode // 분석할 보고서 코드 (미지정시 자동)
+}
+
+/**
+ * 연도/분기 선택 옵션
+ */
+export interface YearQuarterOption {
+  year: string // 연도 (YYYY)
+  reportCode: ReportCode // 보고서 코드
+  label: string // 표시명 (예: "2024년 3분기")
+  period: string // 기간 설명 (예: "2024년 7월~9월")
+  isAuto?: boolean // 자동 선택 여부
+}
+
+/**
  * 재무 위험 분석 항목
  */
 export interface FinancialRiskItem {
@@ -631,4 +668,16 @@ export function mapPartnerCompany(raw: any): PartnerCompany {
     contract_start_date: raw.contract_start_date || raw.contractStartDate,
     modify_date: raw.modify_date || raw.modifyDate
   }
+}
+
+/**
+ * 이용 가능한 재무제표 기간 정보
+ */
+export interface AvailablePeriod {
+  bsnsYear: string // 사업연도 (YYYY)
+  reprtCode: ReportCode // 보고서 코드
+  reprtName: string // 보고서명
+  periodDescription: string // 기간 설명
+  itemCount: number // 재무제표 항목 수
+  isAutoSelected: boolean // 자동 선택 여부
 }
