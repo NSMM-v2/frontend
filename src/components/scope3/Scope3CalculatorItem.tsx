@@ -23,9 +23,9 @@ import React, {useState} from 'react'
 import {motion} from 'framer-motion'
 import {Button} from '@/components/ui/button'
 import {Trash2, Database, Sparkles, AlertTriangle} from 'lucide-react'
-import {ExcelCascadingSelector} from './ExcelCascadingSelector'
+import {ExcelCascadingSelector} from './Scope3ExcelCascadingSelector'
 import {Switch} from '@/components/ui/switch'
-import {SelfInputCalculator} from './SelfInputScope3Caculator'
+import {SelfInputCalculator} from './Scope3SelfInputCaculator'
 import {
   AlertDialog,
   AlertDialogAction,
