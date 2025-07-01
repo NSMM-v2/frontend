@@ -257,9 +257,32 @@ export function SelfInputScope12Calculator({
               <span className="text-sm text-gray-500">ESG 데이터 분류 정보</span>
             </div>
 
-            <div className="flex gap-4 items-center mb-4">
-              <h2 className="text-lg font-semibold">제품 관련</h2>
-              <Switch checked={productEnabled} onCheckedChange={setProductEnabled} />
+            {/* 제품 관련 토글 - Scope 1/2 모드 토글과 동일한 스타일 적용 */}
+            <div className="flex items-center px-4 py-3 mb-4 space-x-3 bg-white rounded-xl border border-blue-200 shadow-sm transition-all hover:bg-blue-50">
+              {/* 토글 스위치 */}
+              <Switch
+                checked={productEnabled}
+                onCheckedChange={setProductEnabled}
+                className="data-[state=checked]:bg-blue-500"
+              />
+
+              {/* 라벨 */}
+              <span
+                className={`text-sm font-medium transition-colors ${
+                  productEnabled ? 'text-blue-600' : 'text-gray-500'
+                }`}>
+                제품 관련 정보 입력
+              </span>
+
+              {/* 상태 표시 */}
+              <span
+                className={`text-xs px-2 py-1 rounded-full font-medium transition-colors ${
+                  productEnabled
+                    ? 'text-blue-700 bg-blue-100'
+                    : 'text-gray-500 bg-gray-100'
+                }`}>
+                {productEnabled ? '활성' : '비활성'}
+              </span>
             </div>
 
             {/* 필드 렌더링 */}
