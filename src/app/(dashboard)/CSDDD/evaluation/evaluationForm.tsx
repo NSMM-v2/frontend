@@ -1,7 +1,11 @@
 'use client'
 import {useState, useEffect} from 'react'
 import {Card, CardContent, CardHeader, CardTitle} from '@/components/ui/card'
-import {getSelfAssessmentResults, getSelfAssessmentResult} from '@/services/csdddService'
+import {
+  getSelfAssessmentResults,
+  getSelfAssessmentResult,
+  getViolationMeta
+} from '@/services/csdddService'
 import authService from '@/services/authService'
 import type {
   SelfAssessmentResponse,
@@ -17,17 +21,19 @@ import {
   BreadcrumbSeparator
 } from '@/components/ui/breadcrumb'
 import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogDescription
+} from '@/components/ui/dialog'
+import {
   Shield,
   RefreshCw,
   AlertCircle,
   FileText,
   Home,
   ArrowLeft,
-  Calendar,
-  Building2,
-  Award,
-  Users,
-  ChevronRight,
   BarChart3,
   CheckCircle2,
   XCircle
@@ -42,6 +48,24 @@ export default function EvaluationForm() {
   const [detailLoading, setDetailLoading] = useState(false)
   const [authError, setAuthError] = useState<string | null>(null)
   const [userInfo, setUserInfo] = useState<any>(null)
+
+  const [violationMeta, setViolationMeta] = useState<{
+    category: string
+    penaltyInfo: string
+    legalBasis: string
+  } | null>(null)
+  const [selectedViolationId, setSelectedViolationId] = useState<string | null>(null)
+
+  const handleViolationClick = async (questionId: string) => {
+    setSelectedViolationId(questionId)
+    try {
+      if (!userInfo) return
+      const meta = await getViolationMeta(questionId, userInfo)
+      setViolationMeta(meta)
+    } catch (error) {
+      console.error('Violation meta 불러오기 실패:', error)
+    }
+  }
 
   // 사용자 인증 상태 확인
   const checkAuth = async () => {
@@ -88,7 +112,8 @@ export default function EvaluationForm() {
             userType: userInfo.userType,
             headquartersId: userInfo.headquartersId!,
             partnerId: userInfo.partnerId,
-            treePath: userInfo.treePath!
+            treePath: userInfo.treePath,
+            forPartnerEvaluation: false // Explicitly include this field by extending the function's parameter type
           })
         } else {
           throw new Error('Unknown user type')
@@ -528,7 +553,8 @@ export default function EvaluationForm() {
                                 .map((a, i) => (
                                   <div
                                     key={i}
-                                    className="p-3 border border-red-200 rounded-lg bg-red-50">
+                                    className="p-3 border border-red-200 rounded-lg cursor-pointer bg-red-50"
+                                    onClick={() => handleViolationClick(a.questionId)}>
                                     <div className="flex items-center space-x-2">
                                       <XCircle className="w-4 h-4 text-red-500" />
                                       <span className="text-sm font-medium text-red-700">
@@ -549,6 +575,39 @@ export default function EvaluationForm() {
           </div>
         </div>
       </div>
+      <Dialog
+        open={!!selectedViolationId}
+        onOpenChange={() => {
+          setSelectedViolationId(null)
+          setViolationMeta(null)
+        }}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>위반 상세 정보</DialogTitle>
+            <DialogDescription>
+              선택한 위반 항목의 세부 정보를 보여줍니다.
+            </DialogDescription>
+          </DialogHeader>
+          {violationMeta ? (
+            <div className="space-y-2">
+              <p>
+                <strong>질문 ID:</strong> {selectedViolationId}
+              </p>
+              <p>
+                <strong>카테고리:</strong> {violationMeta.category}
+              </p>
+              <p>
+                <strong>벌칙 정보:</strong> {violationMeta.penaltyInfo}
+              </p>
+              <p>
+                <strong>법적 근거:</strong> {violationMeta.legalBasis}
+              </p>
+            </div>
+          ) : (
+            <p>로딩 중...</p>
+          )}
+        </DialogContent>
+      </Dialog>
     </div>
   )
 }

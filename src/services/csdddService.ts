@@ -61,6 +61,7 @@ export const getSelfAssessmentResults = async (
     headquartersId: string
     partnerId?: string
     treePath?: string
+    forPartnerEvaluation?: boolean
   },
   params?: {
     companyName?: string
@@ -77,27 +78,21 @@ export const getSelfAssessmentResults = async (
     'X-HEADQUARTERS-ID': userInfo.headquartersId
   }
 
-  if (
-    userInfo.userType === 'PARTNER' &&
-    userInfo.partnerId != null &&
-    userInfo.partnerId !== ''
-  ) {
-    headers['X-PARTNER-ID'] = userInfo.partnerId
-  }
-
-  if (
-    userInfo.userType === 'PARTNER' &&
-    userInfo.treePath !== undefined &&
-    userInfo.treePath !== null &&
-    userInfo.treePath !== ''
-  ) {
-    headers['X-TREE-PATH'] = userInfo.treePath
+  const isPartnerEval = userInfo.forPartnerEvaluation ?? false
+  if (userInfo.userType === 'PARTNER') {
+    if (isPartnerEval) {
+      headers['X-TREE-PATH'] = userInfo.treePath ?? ''
+    } else {
+      headers['X-PARTNER-ID'] = userInfo.partnerId ?? ''
+    }
   }
 
   console.log('📦 최종 headers:', headers)
 
+  const finalParams = isPartnerEval ? {...params, onlyPartners: true} : {...params}
+
   const response = await api.get('/api/v1/csddd/results', {
-    params,
+    params: finalParams,
     headers
   })
 
@@ -123,4 +118,16 @@ export const fetchSelfAssessmentAnswers = async (
     answerMap[item.questionId] = item.answer
   })
   return answerMap
+}
+
+export const getViolationMeta = async (questionId: string, userInfo: any) => {
+  const response = await api.get(`/api/v1/csddd/violation-meta/${questionId}`, {
+    headers: {
+      'X-USER-TYPE': userInfo.userType,
+      'X-HEADQUARTERS-ID': userInfo.headquartersId,
+      ...(userInfo.partnerId && {'X-PARTNER-ID': userInfo.partnerId}),
+      ...(userInfo.treePath && {'X-TREE-PATH': userInfo.treePath})
+    }
+  })
+  return response.data.data
 }
