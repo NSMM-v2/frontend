@@ -2,10 +2,12 @@
  * Scope 2 배출량 관리 폼 컴포넌트
  *
  * 주요 기능:
- * - 협력사별 전력/스팀 사용량 데이터 관리
- * - 월별/연도별 데이터 필터링 및 조회
- * - 배출량 통계 현황 대시보드
- * - 데이터 CRUD 작업 (생성, 조회, 수정, 삭제)
+ * - 전력/스팀 사용량 데이터 관리
+ * - 카테고리별 계산기 추가/삭제 기능
+ * - CSV 데이터 기반 배출계수 적용
+ * - 실시간 배출량 계산 및 집계
+ * - scope3Form.tsx와 동일한 레이아웃 구조 적용
+ * - 백엔드 API 연동으로 데이터 영속화 지원
  *
  * @author ESG Project Team
  * @version 1.0
@@ -13,44 +15,25 @@
  */
 'use client'
 
-// React 및 애니메이션 라이브러리 임포트
+// ============================================================================
+// React 및 애니메이션 라이브러리 임포트 (React & Animation Imports)
+// ============================================================================
 import React, {useState, useEffect} from 'react'
 import {motion} from 'framer-motion'
 
-// UI 아이콘 임포트 (Lucide React)
+// ============================================================================
+// UI 아이콘 임포트 (UI Icon Imports)
+// ============================================================================
 import {
-  Building, // 건물 아이콘 (협력사)
-  Zap, // 전력 아이콘
-  Wind, // 스팀 아이콘
-  Plus, // 플러스 아이콘 (데이터 추가)
-  TrendingUp, // 상승 트렌드 아이콘 (총 배출량)
-  Edit, // 편집 아이콘
-  Trash2, // 삭제 아이콘
-  BarChart, // 차트 아이콘 (통계)
-  CalendarDays, // 달력 아이콘 (날짜 선택)
-  ArrowLeft, // 왼쪽 화살표 (뒤로가기)
   Home, // 홈 아이콘
-  Factory
+  Factory, // 공장 아이콘
+  CalendarDays, // 달력 아이콘
+  TrendingUp // 상승 트렌드 아이콘
 } from 'lucide-react'
-import Link from 'next/link'
 
-// UI 컴포넌트 임포트 (Shadcn/ui)
-import {Button} from '@/components/ui/button'
-import {Card, CardContent, CardHeader, CardTitle} from '@/components/ui/card'
-import {Input} from '@/components/ui/input'
-import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow
-} from '@/components/ui/table'
-
-import {Tabs, TabsContent, TabsList, TabsTrigger} from '@/components/ui/tabs'
-import {Badge} from '@/components/ui/badge'
-
-// 브레드크럼 네비게이션 컴포넌트 임포트
+// ============================================================================
+// 컴포넌트 임포트 (Component Imports)
+// ============================================================================
 import {
   Breadcrumb,
   BreadcrumbItem,
@@ -59,252 +42,420 @@ import {
   BreadcrumbSeparator
 } from '@/components/ui/breadcrumb'
 
-// 커스텀 컴포넌트 임포트
-import ScopeModal from '@/components/scope/ScopeModal'
-
-// 타입 정의 및 API 서비스 임포트
-import {ElectricityUsage, SteamUsage} from '@/types/scopeType'
-import {
-  submitScopeData,
-  fetchElectricityUsageByPartnerAndYear,
-  fetchSteamUsageByPartnerAndYear
-} from '@/services/scopeService'
-import {fetchPartnerCompaniesForScope} from '@/services/partnerCompany' // 실제 협력사 API 추가
-import {PartnerSelector} from '@/components/scope/PartnerSelector'
-import {DirectionButton} from '@/components/layout/direction'
+// 레이아웃 컴포넌트 임포트
 import {PageHeader} from '@/components/layout/PageHeader'
-import {MonthSelector} from '@/components/scope/MonthSelector'
+
+// 분리된 Scope2 컴포넌트들 임포트
+import {
+  CategorySelector,
+  Scope2ElectricCategoryKey,
+  Scope2SteamCategoryKey,
+  scope2ElectricCategoryList,
+  scope2SteamCategoryList
+} from '@/components/scopeTotal/CategorySelector'
+import {Scope2DataInput} from '@/components/scope2/Scope2DataInput'
+import {MonthSelector} from '@/components/scopeTotal/MonthSelector'
+import {Input} from '@/components/ui/input'
+import {Card, CardContent} from '@/components/ui/card'
+
+// ============================================================================
+// 타입 및 서비스 임포트 (Types & Services Imports)
+// ============================================================================
+import {SelectorState} from '@/types/scopeTypes'
+
+// ============================================================================
+// 타입 정의 (Type Definitions)
+// ============================================================================
 
 /**
- * Scope2Form 컴포넌트
- * - 협력사별 전력/스팀 사용량 데이터 관리
- * - 탭을 통한 전력/스팀 데이터 분리 표시
- * - scope1Form.tsx와 동일한 디자인 패턴 적용
+ * Scope 2 계산기 데이터 구조
+ */
+interface CalculatorData {
+  id: number // 식별자: emissionId(양수) 또는 임시ID(음수)
+  state: SelectorState // 사용자 입력 상태
+  savedData?: any // 백엔드에서 받은 전체 데이터 (저장된 경우에만)
+}
+
+// ============================================================================
+// 메인 Scope2 폼 컴포넌트 (Main Scope2 Form Component)
+// ============================================================================
+
+/**
+ * Scope 2 배출량 관리 메인 컴포넌트
+ * scope3Form.tsx와 동일한 레이아웃 구조를 적용하여 일관성 있는 UI 제공
  */
 export default function Scope2Form() {
-  // ============================================================================
-  // 상태 관리 (State Management)
-  // ============================================================================
-
-  // 필터 관련 상태
-  const [selectedPartnerId, setSelectedPartnerId] = useState<string | null>(null) // 선택된 협력사 ID (UUID)
+  // ========================================================================
+  // 기본 상태 관리 (Basic State Management)
+  // ========================================================================
+  const [calculatorModes, setCalculatorModes] = useState<
+    Record<Scope2ElectricCategoryKey | Scope2SteamCategoryKey, Record<number, boolean>>
+  >({
+    list1: {},
+    list2: {}
+  })
   const [selectedYear, setSelectedYear] = useState<number>(new Date().getFullYear()) // 선택된 연도
   const currentMonth = new Date().getMonth() + 1 // JavaScript의 월은 0부터 시작하므로 1을 더함
   const [selectedMonth, setSelectedMonth] = useState<number | null>(currentMonth) // 선택된 월 (null이면 전체)
 
-  // 데이터 관련 상태
-  const [electricityData, setElectricityData] = useState<ElectricityUsage[]>([]) // 전력 사용량 데이터
-  const [steamData, setSteamData] = useState<SteamUsage[]>([]) // 스팀 사용량 데이터
-  const [realPartnerCompanies, setRealPartnerCompanies] = useState<any[]>([]) // 실제 협력사 데이터
+  const [activeElectricCategory, setActiveElectricCategory] =
+    useState<Scope2ElectricCategoryKey | null>(null) // 현재 선택된 전력 카테고리
+  const [activeSteamCategory, setActiveSteamCategory] =
+    useState<Scope2SteamCategoryKey | null>(null) // 현재 선택된 스팀 카테고리
 
-  // UI 관련 상태
-  const [isModalOpen, setIsModalOpen] = useState(false) // 데이터 입력 모달 표시 여부
-  const [searchTerm, setSearchTerm] = useState('') // 검색어 (현재 미사용)
-  const [loading, setLoading] = useState(false) // 로딩 상태
-
-  // 편집 관련 상태
-  const [editingItem, setEditingItem] = useState<ElectricityUsage | SteamUsage | null>(
-    null
-  )
-  const [editingType, setEditingType] = useState<'ELECTRICITY' | 'STEAM'>('ELECTRICITY')
-
-  // ============================================================================
-  // 실제 협력사 데이터 로딩 (Real Partner Data Loading)
-  // ============================================================================
-
-  /**
-   * 실제 API에서 협력사 목록을 가져옵니다
-   */
-  const loadPartnerCompanies = async () => {
-    try {
-      const response = await fetchPartnerCompaniesForScope()
-
-      setRealPartnerCompanies(response.content || [])
-    } catch (error) {
-      console.error('협력사 목록 로딩 실패:', error)
-      setRealPartnerCompanies([])
-    }
-  }
-
-  // ============================================================================
-  // 데이터 로딩 및 처리 (Data Loading & Processing)
-  // ============================================================================
-
-  /**
-   * 선택된 협력사와 연도에 따른 배출량 데이터를 로딩합니다
-   */
-  const loadData = async () => {
-    if (!selectedPartnerId) return
-
-    setLoading(true)
-    try {
-      console.log('🔄 배출량 데이터 로딩 시작:', {selectedPartnerId, selectedYear})
-
-      const [electricity, steam] = await Promise.all([
-        fetchElectricityUsageByPartnerAndYear(selectedPartnerId, selectedYear),
-        fetchSteamUsageByPartnerAndYear(selectedPartnerId, selectedYear)
-      ])
-
-      console.log('배출량 데이터 로딩 성공:', {electricity, steam})
-
-      setElectricityData(electricity)
-      setSteamData(steam)
-    } catch (error) {
-      console.error('배출량 데이터 로딩 실패:', error)
-      setElectricityData([])
-      setSteamData([])
-    } finally {
-      setLoading(false)
-    }
-  }
-
-  // ============================================================================
-  // 폼 제출 핸들러 (Form Submit Handler)
-  // ============================================================================
-
-  /**
-   * ScopeModal에서 제출된 데이터를 처리합니다
-   */
-  const handleFormSubmit = async (data: any) => {
-    try {
-      console.log('💾 폼 데이터 제출:', data)
-
-      // 데이터 저장 후 목록 새로고침
-      await loadData()
-    } catch (error) {
-      console.error('폼 제출 실패:', error)
-    }
-  }
-
-  // ============================================================================
-  // useEffect 훅들 (useEffect Hooks)
-  // ============================================================================
-
-  // 컴포넌트 마운트 시 협력사 목록 로딩
-  useEffect(() => {
-    loadPartnerCompanies()
-  }, [])
-
-  // 협력사 또는 연도 변경 시 데이터 로딩
-  useEffect(() => {
-    if (selectedPartnerId) {
-      loadData()
-    }
-  }, [selectedPartnerId, selectedYear])
-
-  // ============================================================================
-  // 데이터 필터링 (Data Filtering)
-  // ============================================================================
-
-  // 전력 데이터 필터링
-  const filteredElectricityData = electricityData.filter(item => {
-    const matchesMonth = selectedMonth === null || item.reportingMonth === selectedMonth
-    const matchesSearch =
-      !searchTerm || item.facilityName?.toLowerCase().includes(searchTerm.toLowerCase())
-    return matchesMonth && matchesSearch
+  // 카테고리별 계산기 목록 관리
+  const [electricCategoryCalculators, setElectricCategoryCalculators] = useState<
+    Record<Scope2ElectricCategoryKey, CalculatorData[]>
+  >({
+    list1: []
   })
 
-  // 스팀 데이터 필터링
-  const filteredSteamData = steamData.filter(item => {
-    const matchesMonth = selectedMonth === null || item.reportingMonth === selectedMonth
-    const matchesSearch =
-      !searchTerm || item.facilityName?.toLowerCase().includes(searchTerm.toLowerCase())
-    return matchesMonth && matchesSearch
+  const [steamCategoryCalculators, setSteamCategoryCalculators] = useState<
+    Record<Scope2SteamCategoryKey, CalculatorData[]>
+  >({
+    list2: []
   })
 
-  // ============================================================================
-  // 통계 계산 (Statistics Calculation)
-  // ============================================================================
+  // 카테고리별 배출량 총계 관리
+  const [electricCategoryTotals, setElectricCategoryTotals] = useState<
+    Record<Scope2ElectricCategoryKey, {id: number; emission: number}[]>
+  >({
+    list1: []
+  })
 
-  // 전력 통계
-  const electricityStats = {
-    totalUsage: filteredElectricityData.reduce(
-      (sum, item) => sum + (item.electricityUsage || 0),
-      0
-    ),
-    totalEmissions: filteredElectricityData.reduce(
-      (sum, item) => sum + ((item.electricityUsage || 0) * 0.459) / 1000,
-      0
-    ),
-    renewableCount: filteredElectricityData.filter(item => item.isRenewable).length,
-    totalCount: filteredElectricityData.length
+  const [steamCategoryTotals, setSteamCategoryTotals] = useState<
+    Record<Scope2SteamCategoryKey, {id: number; emission: number}[]>
+  >({
+    list2: []
+  })
+
+  // ========================================================================
+  // 백엔드 연동 상태 관리 (Backend Integration State)
+  // ========================================================================
+
+  // 로딩 상태 관리
+  const [isLoading, setIsLoading] = useState<boolean>(false)
+
+  // 데이터 새로고침 트리거 (CRUD 작업 후 데이터 다시 로드용)
+  const [refreshTrigger, setRefreshTrigger] = useState<number>(0)
+
+  // ========================================================================
+  // 유틸리티 함수 (Utility Functions)
+  // ========================================================================
+
+  /**
+   * 현재 활성 카테고리의 계산기 목록 반환
+   */
+  const getCurrentCalculators = (): CalculatorData[] => {
+    if (activeElectricCategory) {
+      return electricCategoryCalculators[activeElectricCategory] || []
+    }
+    if (activeSteamCategory) {
+      return steamCategoryCalculators[activeSteamCategory] || []
+    }
+    return []
   }
 
-  // 스팀 통계
-  const steamStats = {
-    totalUsage: filteredSteamData.reduce((sum, item) => sum + (item.steamUsage || 0), 0),
-    totalEmissions: filteredSteamData.reduce(
-      (sum, item) => sum + (item.steamUsage || 0) * 0.07,
-      0
-    ),
-    totalCount: filteredSteamData.length
+  /**
+   * 특정 카테고리의 총 배출량 계산
+   */
+  const getElectricTotalEmission = (category: Scope2ElectricCategoryKey): number =>
+    (electricCategoryTotals[category] || []).reduce((sum, t) => sum + t.emission, 0)
+
+  const getSteamTotalEmission = (category: Scope2SteamCategoryKey): number =>
+    (steamCategoryTotals[category] || []).reduce((sum, t) => sum + t.emission, 0)
+
+  // ========================================================================
+  // 유틸리티 함수 - ID 생성 (Utility Functions - ID Generation)
+  // ========================================================================
+
+  /**
+   * 새로운 임시 ID 생성 (음수 사용)
+   */
+  const generateNewTemporaryId = (
+    categoryKey: Scope2ElectricCategoryKey | Scope2SteamCategoryKey
+  ): number => {
+    const existingCalculators = activeElectricCategory
+      ? electricCategoryCalculators[categoryKey as Scope2ElectricCategoryKey] || []
+      : steamCategoryCalculators[categoryKey as Scope2SteamCategoryKey] || []
+    const existingIds = existingCalculators.map(c => c.id).filter(id => id < 0)
+
+    const minId = existingIds.length > 0 ? Math.min(...existingIds) : 0
+    return minId - 1
   }
 
-  // 전체 통계
-  const totalEmissions = electricityStats.totalEmissions + steamStats.totalEmissions
-  const totalDataCount = electricityStats.totalCount + steamStats.totalCount
-
-  // ============================================================================
+  // ========================================================================
   // 이벤트 핸들러 (Event Handlers)
-  // ============================================================================
+  // ========================================================================
+  const handleModeChange = (id: number, checked: boolean) => {
+    const activeCategory = activeElectricCategory || activeSteamCategory
+    if (!activeCategory) return
 
-  // 데이터 편집
-  const handleEditElectricity = (item: ElectricityUsage) => {
-    setEditingItem(item)
-    setEditingType('ELECTRICITY')
-    setIsModalOpen(true)
+    setCalculatorModes(prev => ({
+      ...prev,
+      [activeCategory]: {
+        ...prev[activeCategory],
+        [id]: checked
+      }
+    }))
   }
 
-  const handleEditSteam = (item: SteamUsage) => {
-    setEditingItem(item)
-    setEditingType('STEAM')
-    setIsModalOpen(true)
-  }
-
-  // 전력 데이터 삭제
-  const handleDeleteElectricity = async (id: number) => {
-    if (!confirm('정말로 이 데이터를 삭제하시겠습니까?')) return
-
-    try {
-      // TODO: 실제 삭제 API 호출 구현 필요
-      setElectricityData(prev => prev.filter(item => item.id !== id))
-    } catch (error) {
-      console.error('삭제 실패:', error)
+  /**
+   * 계산기의 배출량 업데이트 핸들러
+   */
+  const updateTotal = (id: number, emission: number) => {
+    if (activeElectricCategory) {
+      setElectricCategoryTotals(prev => ({
+        ...prev,
+        [activeElectricCategory]: (prev[activeElectricCategory] || [])
+          .map(t => (t.id === id ? {id, emission} : t))
+          .concat(
+            (prev[activeElectricCategory] || []).find(t => t.id === id)
+              ? []
+              : [{id, emission}]
+          )
+      }))
+    } else if (activeSteamCategory) {
+      setSteamCategoryTotals(prev => ({
+        ...prev,
+        [activeSteamCategory]: (prev[activeSteamCategory] || [])
+          .map(t => (t.id === id ? {id, emission} : t))
+          .concat(
+            (prev[activeSteamCategory] || []).find(t => t.id === id)
+              ? []
+              : [{id, emission}]
+          )
+      }))
     }
   }
 
-  // 스팀 데이터 삭제
-  const handleDeleteSteam = async (id: number) => {
-    if (!confirm('정말로 이 데이터를 삭제하시겠습니까?')) return
-
-    try {
-      // TODO: 실제 삭제 API 호출 구현 필요
-      setSteamData(prev => prev.filter(item => item.id !== id))
-    } catch (error) {
-      console.error('삭제 실패:', error)
+  /**
+   * 새로운 계산기 추가 핸들러
+   */
+  const addCalculator = () => {
+    if (activeElectricCategory) {
+      const newId = generateNewTemporaryId(activeElectricCategory)
+      setElectricCategoryCalculators(prev => ({
+        ...prev,
+        [activeElectricCategory]: [
+          ...prev[activeElectricCategory],
+          {
+            id: newId,
+            state: {category: '', separate: '', rawMaterial: '', quantity: ''}
+          }
+        ]
+      }))
+    } else if (activeSteamCategory) {
+      const newId = generateNewTemporaryId(activeSteamCategory)
+      setSteamCategoryCalculators(prev => ({
+        ...prev,
+        [activeSteamCategory]: [
+          ...prev[activeSteamCategory],
+          {
+            id: newId,
+            state: {category: '', separate: '', rawMaterial: '', quantity: ''}
+          }
+        ]
+      }))
     }
   }
 
-  // ============================================================================
+  /**
+   * 계산기 삭제 핸들러
+   */
+  const removeCalculator = async (id: number) => {
+    if (activeElectricCategory) {
+      const currentCalculators = electricCategoryCalculators[activeElectricCategory] || []
+      const isLastItem = currentCalculators.length === 1
+
+      if (isLastItem) {
+        const newTemporaryId = generateNewTemporaryId(activeElectricCategory)
+        setElectricCategoryCalculators(prev => ({
+          ...prev,
+          [activeElectricCategory]: [
+            {
+              id: newTemporaryId,
+              state: {category: '', separate: '', rawMaterial: '', quantity: ''}
+            }
+          ]
+        }))
+        setElectricCategoryTotals(prev => ({
+          ...prev,
+          [activeElectricCategory]: [{id: newTemporaryId, emission: 0}]
+        }))
+      } else {
+        setElectricCategoryCalculators(prev => ({
+          ...prev,
+          [activeElectricCategory]: (prev[activeElectricCategory] || []).filter(
+            c => c.id !== id
+          )
+        }))
+        setElectricCategoryTotals(prev => ({
+          ...prev,
+          [activeElectricCategory]: (prev[activeElectricCategory] || []).filter(
+            t => t.id !== id
+          )
+        }))
+      }
+    } else if (activeSteamCategory) {
+      const currentCalculators = steamCategoryCalculators[activeSteamCategory] || []
+      const isLastItem = currentCalculators.length === 1
+
+      if (isLastItem) {
+        const newTemporaryId = generateNewTemporaryId(activeSteamCategory)
+        setSteamCategoryCalculators(prev => ({
+          ...prev,
+          [activeSteamCategory]: [
+            {
+              id: newTemporaryId,
+              state: {category: '', separate: '', rawMaterial: '', quantity: ''}
+            }
+          ]
+        }))
+        setSteamCategoryTotals(prev => ({
+          ...prev,
+          [activeSteamCategory]: [{id: newTemporaryId, emission: 0}]
+        }))
+      } else {
+        setSteamCategoryCalculators(prev => ({
+          ...prev,
+          [activeSteamCategory]: (prev[activeSteamCategory] || []).filter(
+            c => c.id !== id
+          )
+        }))
+        setSteamCategoryTotals(prev => ({
+          ...prev,
+          [activeSteamCategory]: (prev[activeSteamCategory] || []).filter(
+            t => t.id !== id
+          )
+        }))
+      }
+    }
+  }
+
+  /**
+   * 계산기 입력 상태 업데이트 핸들러
+   */
+  const updateCalculatorState = (id: number, newState: SelectorState) => {
+    if (activeElectricCategory) {
+      setElectricCategoryCalculators(prev => ({
+        ...prev,
+        [activeElectricCategory]: (prev[activeElectricCategory] || []).map(c =>
+          c.id === id ? {...c, state: newState} : c
+        )
+      }))
+    } else if (activeSteamCategory) {
+      setSteamCategoryCalculators(prev => ({
+        ...prev,
+        [activeSteamCategory]: (prev[activeSteamCategory] || []).map(c =>
+          c.id === id ? {...c, state: newState} : c
+        )
+      }))
+    }
+  }
+
+  /**
+   * 카테고리 선택 핸들러
+   */
+  const handleElectricCategorySelect = (category: Scope2ElectricCategoryKey) => {
+    setActiveElectricCategory(category)
+    setActiveSteamCategory(null) // 다른 타입 카테고리는 초기화
+
+    // 해당 카테고리에 계산기가 없으면 기본 계산기 1개 생성
+    if (
+      !electricCategoryCalculators[category] ||
+      electricCategoryCalculators[category]!.length === 0
+    ) {
+      const newId = generateNewTemporaryId(category)
+      setElectricCategoryCalculators(prev => ({
+        ...prev,
+        [category]: [
+          {
+            id: newId,
+            state: {category: '', separate: '', rawMaterial: '', quantity: ''}
+          }
+        ]
+      }))
+    }
+  }
+
+  const handleSteamCategorySelect = (category: Scope2SteamCategoryKey) => {
+    setActiveSteamCategory(category)
+    setActiveElectricCategory(null) // 다른 타입 카테고리는 초기화
+
+    // 해당 카테고리에 계산기가 없으면 기본 계산기 1개 생성
+    if (
+      !steamCategoryCalculators[category] ||
+      steamCategoryCalculators[category]!.length === 0
+    ) {
+      const newId = generateNewTemporaryId(category)
+      setSteamCategoryCalculators(prev => ({
+        ...prev,
+        [category]: [
+          {
+            id: newId,
+            state: {category: '', separate: '', rawMaterial: '', quantity: ''}
+          }
+        ]
+      }))
+    }
+  }
+
+  /**
+   * 카테고리 입력 완료 핸들러
+   */
+  const handleComplete = () => {
+    setActiveElectricCategory(null)
+    setActiveSteamCategory(null)
+  }
+
+  /**
+   * 목록으로 돌아가기 핸들러
+   */
+  const handleBackToList = () => {
+    setActiveElectricCategory(null)
+    setActiveSteamCategory(null)
+  }
+
+  // 전체 총 배출량 계산
+  const grandTotal =
+    Object.keys(scope2ElectricCategoryList).reduce(
+      (sum, key) => sum + getElectricTotalEmission(key as Scope2ElectricCategoryKey),
+      0
+    ) +
+    Object.keys(scope2SteamCategoryList).reduce(
+      (sum, key) => sum + getSteamTotalEmission(key as Scope2SteamCategoryKey),
+      0
+    )
+
+  // ========================================================================
+  // 데이터 새로고침 함수 (Data Refresh Function)
+  // ========================================================================
+
+  const refreshData = () => {
+    setRefreshTrigger(prev => prev + 1)
+  }
+
+  // ========================================================================
   // 렌더링 (Rendering)
-  // ============================================================================
+  // ========================================================================
 
   return (
-    <div className="flex flex-col p-4 w-full h-full">
+    <div className="flex flex-col w-full h-full p-4">
       {/* ========================================================================
           상단 네비게이션 (Top Navigation)
           - 브레드크럼을 통한 현재 위치 표시
           ======================================================================== */}
-      <div className="flex flex-row items-center p-2 px-2 mb-6 text-sm text-gray-500 bg-white rounded-lg shadow-sm">
+      <div className="flex flex-row items-center p-2 px-2 mb-4 text-sm text-gray-500 bg-white rounded-lg shadow-sm">
         <Breadcrumb>
           <BreadcrumbList>
             <BreadcrumbItem>
-              <Home className="mr-1 w-4 h-4" />
+              <Home className="w-4 h-4 mr-1" />
               <BreadcrumbLink href="/dashboard">대시보드</BreadcrumbLink>
             </BreadcrumbItem>
             <BreadcrumbSeparator />
             <BreadcrumbItem>
-              <span className="font-bold text-customG">Scope2</span>
+              <span className="font-bold text-blue-600">Scope2</span>
             </BreadcrumbItem>
           </BreadcrumbList>
         </Breadcrumb>
@@ -314,50 +465,57 @@ export default function Scope2Form() {
           헤더 섹션 (Header Section)
           - 뒤로가기 버튼과 페이지 제목/설명
           ======================================================================== */}
-      <div className="flex flex-row mb-6 w-full h-24">
-        <Link
-          href="/home"
-          className="flex flex-row items-center p-4 space-x-4 rounded-md transition cursor-pointer hover:bg-gray-200">
-          <ArrowLeft className="w-6 h-6 text-gray-500 group-hover:text-blue-600" />
+      <div className="flex flex-row justify-between w-full h-24 mb-4">
+        <div className="flex flex-row items-center p-4">
           <PageHeader
-            icon={<Factory className="w-6 h-6 text-customG-600" />}
+            icon={<Factory className="w-6 h-6 text-blue-600" />}
             title="Scope 2 배출량 관리"
             description="간접 배출량 (전력, 스팀) 데이터를 관리하고 추적합니다"
             module="SCOPE"
             submodule="scope2"
           />
-        </Link>
+        </div>
       </div>
 
       {/* ========================================================================
-          협력사 미선택 시 안내 메시지 (Partner Not Selected Message)
-          - 협력사 선택을 유도하는 UI
+          메인 컨텐츠 영역 (Main Content Area)
+          - 카테고리 선택 또는 데이터 입력 화면
           ======================================================================== */}
-      {!selectedPartnerId ? (
-        <motion.div
-          initial={{opacity: 0, scale: 0.95}}
-          animate={{opacity: 1, scale: 1}}
-          transition={{delay: 0.6, duration: 0.5}}>
-          <Card className="overflow-hidden mb-4 shadow-sm">
-            <CardContent className="px-4 pt-8 pb-6">
-              <div className="grid grid-cols-1 gap-8 md:grid-cols-3">
-                {/* 협력사 선택 드롭다운 */}
-                <motion.div className="space-y-3">
-                  <label className="flex gap-2 items-center text-sm font-semibold text-customG-700">
-                    <Building className="w-4 h-4" />
-                    협력사 선택
-                  </label>
-                  <div className="relative">
-                    <PartnerSelector
-                      selectedPartnerId={selectedPartnerId}
-                      onSelect={setSelectedPartnerId}
-                    />
-                  </div>
-                </motion.div>
+      {!activeElectricCategory && !activeSteamCategory ? (
+        /* ====================================================================
+            카테고리 선택 화면 (Category Selection Screen)
+            ==================================================================== */
 
-                {/* 연도 선택 */}
-                <motion.div className="space-y-3">
-                  <label className="flex gap-2 items-center text-sm font-semibold text-customG-700">
+        <motion.div
+          initial={{opacity: 0}}
+          animate={{opacity: 1}}
+          transition={{duration: 0.4, delay: 0.1}}>
+          <Card className="mb-4 overflow-hidden shadow-sm">
+            <CardContent className="p-4">
+              <div className="grid items-center justify-center h-24 grid-cols-1 gap-8 md:grid-cols-3">
+                {/* 총 배출량 카드 */}
+                <Card className="justify-center h-24 border-blue-100 bg-gradient-to-br from-blue-50 to-white">
+                  <CardContent className="flex items-center p-4">
+                    <div className="p-2 mr-3 bg-blue-100 rounded-full">
+                      <TrendingUp className="w-5 h-5 text-blue-600" />
+                    </div>
+                    <div>
+                      <p className="text-sm font-medium text-gray-500">
+                        총 Scope 2 배출량
+                      </p>
+                      <h3 className="text-2xl font-bold">
+                        {grandTotal.toFixed(2)}
+                        <span className="ml-1 text-sm font-normal text-gray-500">
+                          tCO₂eq
+                        </span>
+                      </h3>
+                    </div>
+                  </CardContent>
+                </Card>
+
+                {/* 보고연도 입력 필드 */}
+                <div className="space-y-3">
+                  <label className="flex items-center gap-2 text-sm font-semibold text-customG-700">
                     <CalendarDays className="w-4 h-4" />
                     보고연도
                   </label>
@@ -367,525 +525,94 @@ export default function Scope2Form() {
                     onChange={e => setSelectedYear(parseInt(e.target.value))}
                     min="1900"
                     max="2200"
-                    className="px-3 py-2 w-full h-9 text-sm backdrop-blur-sm border-customG-200 focus:border-customG-400 focus:ring-customG-100 bg-white/80"
+                    className="w-full px-3 py-2 text-sm h-9 backdrop-blur-sm border-customG-200 focus:border-customG-400 focus:ring-customG-100 bg-white/80"
                   />
-                </motion.div>
+                </div>
+
                 {/* 보고월 선택 드롭다운 (선택사항) */}
                 <div className="space-y-3">
-                  <label className="flex gap-2 items-center text-sm font-semibold text-customG-700">
+                  <label className="flex items-center gap-2 text-sm font-semibold text-customG-700">
                     <CalendarDays className="w-4 h-4" />
                     보고월 (선택사항)
                   </label>
                   <MonthSelector
+                    className="w-full"
                     selectedMonth={selectedMonth}
                     onSelect={setSelectedMonth}
-                    placeholder={`${currentMonth}월`}
                   />
                 </div>
               </div>
             </CardContent>
           </Card>
 
-          <Card className="flex justify-center items-center h-80 bg-gradient-to-br from-white shadow-sm border-customG-200/50 via-customG-25 to-emerald-25">
-            <CardContent className="py-12 text-center">
-              <h3 className="mb-4 text-2xl font-bold text-customG-800">
-                협력사를 선택해주세요
-              </h3>
-              <p className="max-w-md leading-relaxed whitespace-nowrap text-customG-600">
-                먼저 협력사를 선택하여 해당 협력사의 배출량 데이터를 관리하고 추적하세요
-              </p>
-            </CardContent>
-          </Card>
+          {/* 카테고리 선택 영역 */}
+          <div className="space-y-8">
+            {/* 전력 카테고리 */}
+            <motion.div
+              initial={{opacity: 0, y: 20}}
+              animate={{opacity: 1, y: 0}}
+              transition={{duration: 0.5, delay: 0.2}}>
+              <div className="mb-6">
+                <h2 className="mb-2 text-xl font-bold text-customG-800">전력 사용량</h2>
+                <p className="text-sm text-customG-600">
+                  시설별 전력 소비량 및 배출량 관리
+                </p>
+              </div>
+              <CategorySelector
+                categoryList={scope2ElectricCategoryList}
+                getTotalEmission={getElectricTotalEmission}
+                onCategorySelect={handleElectricCategorySelect}
+                animationDelay={0.1}
+              />
+            </motion.div>
+
+            {/* 스팀 카테고리 */}
+            <motion.div
+              initial={{opacity: 0, y: 20}}
+              animate={{opacity: 1, y: 0}}
+              transition={{duration: 0.5, delay: 0.4}}>
+              <div className="mb-6">
+                <h2 className="mb-2 text-xl font-bold text-customG-800">스팀 사용량</h2>
+                <p className="text-sm text-customG-600">
+                  시설별 스팀 소비량 및 배출량 관리
+                </p>
+              </div>
+              <CategorySelector
+                categoryList={scope2SteamCategoryList}
+                getTotalEmission={getSteamTotalEmission}
+                onCategorySelect={handleSteamCategorySelect}
+                animationDelay={0.2}
+              />
+            </motion.div>
+          </div>
         </motion.div>
       ) : (
-        /* ======================================================================
-            데이터 관리 메인 영역 (Main Data Management Area)
-            - 통계 카드, 데이터 테이블 포함
-            ====================================================================== */
-        <motion.div
-          className="space-y-4"
-          initial={{opacity: 0, y: 20}}
-          animate={{opacity: 1, y: 0}}
-          transition={{delay: 0.7, duration: 0.6}}>
-          {/* ==================================================================
-              통계 카드들 (Statistics Cards)
-              - 배출량 현황을 한눈에 볼 수 있는 대시보드
-              ================================================================== */}
-          <motion.div
-            initial={{opacity: 0}}
-            animate={{opacity: 1}}
-            transition={{duration: 0.4, delay: 0.1}}
-            className="grid grid-cols-1 gap-4 mb-4 md:grid-cols-2 lg:grid-cols-4">
-            {/* 총 Scope 2 배출량 카드 */}
-            <Card className="justify-center h-24 bg-gradient-to-br from-blue-50 to-white border-blue-100">
-              <CardContent className="flex items-center p-4">
-                <div className="p-2 mr-3 bg-blue-100 rounded-full">
-                  <TrendingUp className="w-5 h-5 text-blue-600" />
-                </div>
-                <div>
-                  <p className="text-sm font-medium text-gray-500">총 Scope 2 배출량</p>
-                  <h3 className="text-2xl font-bold">
-                    {totalEmissions.toFixed(2)}
-                    <span className="ml-1 text-sm font-normal text-gray-500">tCO₂eq</span>
-                  </h3>
-                </div>
-              </CardContent>
-            </Card>
-
-            {/* 전력 사용량 카드 */}
-            <Card className="justify-center h-24 bg-gradient-to-br from-emerald-50 to-white border-emerald-100">
-              <CardContent className="flex items-center p-4">
-                <div className="p-2 mr-3 bg-emerald-100 rounded-full">
-                  <Zap className="w-5 h-5 text-emerald-600" />
-                </div>
-                <div>
-                  <p className="text-sm font-medium text-gray-500">전력 배출량</p>
-                  <h3 className="text-2xl font-bold">
-                    {electricityStats.totalEmissions.toFixed(2)}
-                    <span className="ml-1 text-sm font-normal text-gray-500">tCO₂eq</span>
-                  </h3>
-                </div>
-              </CardContent>
-            </Card>
-
-            {/* 스팀 사용량 카드 */}
-            <Card className="justify-center h-24 bg-gradient-to-br from-amber-50 to-white border-amber-100">
-              <CardContent className="flex items-center p-4">
-                <div className="p-2 mr-3 bg-amber-100 rounded-full">
-                  <Wind className="w-5 h-5 text-amber-600" />
-                </div>
-                <div>
-                  <p className="text-sm font-medium text-gray-500">스팀 배출량</p>
-                  <h3 className="text-2xl font-bold">
-                    {steamStats.totalEmissions.toFixed(2)}
-                    <span className="ml-1 text-sm font-normal text-gray-500">tCO₂eq</span>
-                  </h3>
-                </div>
-              </CardContent>
-            </Card>
-
-            {/* 총 데이터 건수 카드 */}
-            <Card className="justify-center h-24 bg-gradient-to-br to-white border-customG-100 from-customG-50">
-              <CardContent className="flex items-center p-4">
-                <div className="p-2 mr-3 rounded-full bg-customG-100">
-                  <BarChart className="w-5 h-5 text-customG-600" />
-                </div>
-                <div>
-                  <p className="text-sm font-medium text-gray-500">총 데이터 건수</p>
-                  <h3 className="text-2xl font-bold">
-                    {totalDataCount}
-                    <span className="ml-1 text-sm font-normal text-gray-500">건</span>
-                  </h3>
-                </div>
-              </CardContent>
-            </Card>
-          </motion.div>
-
-          {/* ========================================================================
-          협력사 및 연도 선택 섹션 (Partner & Year Selection)
-          - 데이터 조회를 위한 필터 조건 설정
-          ======================================================================== */}
-          <motion.div
-            initial={{opacity: 0}}
-            animate={{opacity: 1}}
-            transition={{duration: 0.4, delay: 0.1}}>
-            <Card className="overflow-hidden mb-4 shadow-sm">
-              <CardContent className="p-4">
-                <div className="grid grid-cols-1 gap-8 justify-center h-16 md:grid-cols-3">
-                  {/* 협력사 선택 드롭다운 */}
-                  <motion.div className="space-y-3">
-                    <label className="flex gap-2 items-center text-sm font-semibold text-customG-700">
-                      <Building className="w-4 h-4" />
-                      협력사 선택
-                    </label>
-                    <div className="relative">
-                      <PartnerSelector
-                        selectedPartnerId={selectedPartnerId}
-                        onSelect={setSelectedPartnerId}
-                      />
-                    </div>
-                  </motion.div>
-
-                  {/* 연도 선택 */}
-                  <motion.div className="space-y-3">
-                    <label className="flex gap-2 items-center text-sm font-semibold text-customG-700">
-                      <CalendarDays className="w-4 h-4" />
-                      보고연도
-                    </label>
-                    <Input
-                      type="number"
-                      value={selectedYear}
-                      onChange={e => setSelectedYear(parseInt(e.target.value))}
-                      min="1900"
-                      max="2200"
-                      className="px-3 py-2 w-full h-9 text-sm backdrop-blur-sm border-customG-200 focus:border-customG-400 focus:ring-customG-100 bg-white/80"
-                    />
-                  </motion.div>
-                  {/* 보고월 선택 드롭다운 (선택사항) */}
-                  <div className="space-y-3">
-                    <label className="flex gap-2 items-center text-sm font-semibold text-customG-700">
-                      <CalendarDays className="w-4 h-4" />
-                      보고월 (선택사항)
-                    </label>
-                    <MonthSelector
-                      className="w-full"
-                      selectedMonth={selectedMonth}
-                      onSelect={setSelectedMonth}
-                      placeholder={`${currentMonth}월`}
-                    />
-                  </div>
-                </div>
-              </CardContent>
-            </Card>
-          </motion.div>
-
-          {/* ==================================================================
-              데이터 테이블 섹션 (Data Table Section)
-              - 탭으로 구분된 전력/스팀 데이터 표시
-              ================================================================== */}
-          <Tabs defaultValue="electricity" className="w-full">
-            {/* 탭 헤더 - 전력/스팀 전환 */}
-            <TabsList className="grid grid-cols-2 p-1 w-full bg-gray-100 rounded-lg">
-              <TabsTrigger
-                value="electricity"
-                className="flex items-center gap-2 data-[state=active]:bg-white data-[state=active]:shadow-sm rounded-md font-medium">
-                {/* 아이콘 삭제 */}
-                전력 ({filteredElectricityData.length})
-              </TabsTrigger>
-              <TabsTrigger
-                value="steam"
-                className="flex items-center gap-2 data-[state=active]:bg-white data-[state=active]:shadow-sm rounded-md font-medium">
-                {/* 아이콘 삭제 */}
-                스팀 ({filteredSteamData.length})
-              </TabsTrigger>
-            </TabsList>
-
-            {/* ================================================================
-                전력 사용량 탭 (Electricity Usage Tab)
-                ================================================================ */}
-            <TabsContent value="electricity" className="mt-4">
-              <motion.div
-                initial={{opacity: 0, y: 20}}
-                animate={{opacity: 1, y: 0}}
-                transition={{duration: 0.5}}>
-                <Card className="overflow-hidden shadow-sm">
-                  {/* 전력 섹션 헤더 */}
-                  <CardHeader className="border-b border-customG-100/50">
-                    <CardTitle className="flex justify-between items-center text-customG-800">
-                      <div className="flex gap-3 items-center">
-                        {/* 아이콘 삭제 */}
-                        <div>
-                          <h3 className="text-lg font-bold">전력 사용량 데이터</h3>
-                          <p className="text-sm font-normal text-customG-600">
-                            시설별 전력 소비량 및 배출량 관리
-                          </p>
-                        </div>
-                      </div>
-                      <Button
-                        onClick={() => {
-                          setEditingItem(null)
-                          setEditingType('ELECTRICITY')
-                          setIsModalOpen(true)
-                        }}
-                        className="px-4 py-2 text-sm font-medium text-white bg-black rounded-lg transition-colors duration-200 hover:cursor-pointer">
-                        <Plus className="mr-2 w-4 h-4" />
-                        데이터 추가
-                      </Button>
-                    </CardTitle>
-                  </CardHeader>
-
-                  {/* 전력 데이터 테이블 */}
-                  <CardContent className="p-0">
-                    <div className="overflow-x-auto">
-                      <Table>
-                        {/* 테이블 헤더 */}
-                        <TableHeader>
-                          <TableRow className="border-b">
-                            <TableHead className="font-semibold text-customG-700">
-                              시설명
-                            </TableHead>
-                            <TableHead className="font-semibold text-customG-700">
-                              보고월
-                            </TableHead>
-                            <TableHead className="font-semibold text-customG-700">
-                              사용량
-                            </TableHead>
-                            <TableHead className="font-semibold text-customG-700">
-                              단위
-                            </TableHead>
-                            <TableHead className="font-semibold text-customG-700">
-                              재생에너지
-                            </TableHead>
-                            <TableHead className="font-semibold text-customG-700">
-                              배출량
-                            </TableHead>
-                            <TableHead className="font-semibold text-customG-700">
-                              작업
-                            </TableHead>
-                          </TableRow>
-                        </TableHeader>
-
-                        {/* 테이블 바디 - 전력 데이터 목록 */}
-                        <TableBody>
-                          {filteredElectricityData.map((item, index) => (
-                            <motion.tr
-                              key={item.id}
-                              initial={{opacity: 0, x: -20}}
-                              animate={{opacity: 1, x: 0}}
-                              transition={{delay: index * 0.1, duration: 0.3}}
-                              className="border-b transition-all duration-200 border-customG-100/50 hover:bg-gradient-to-r hover:from-customG-25 hover:to-emerald-25">
-                              {/* 시설명 */}
-                              <TableCell className="font-medium text-customG-800">
-                                {item.facilityName}
-                              </TableCell>
-                              {/* 보고월 */}
-                              <TableCell className="text-customG-700">
-                                {item.reportingMonth}월
-                              </TableCell>
-                              {/* 전력 사용량 */}
-                              <TableCell className="font-medium text-customG-700">
-                                {item.electricityUsage?.toLocaleString()}
-                              </TableCell>
-                              {/* 사용량 단위 */}
-                              <TableCell className="text-customG-600">
-                                {item.unit}
-                              </TableCell>
-                              {/* 재생에너지 배지 */}
-                              <TableCell>
-                                <Badge
-                                  variant="outline"
-                                  className={`border-customG-300 font-medium ${
-                                    item.isRenewable
-                                      ? 'bg-green-50 text-green-700 border-green-300'
-                                      : 'bg-gray-50 text-gray-700 border-gray-300'
-                                  }`}>
-                                  {item.isRenewable ? '재생에너지' : '일반전력'}
-                                </Badge>
-                              </TableCell>
-                              {/* CO₂ 배출량 */}
-                              <TableCell className="font-bold text-customG-800">
-                                {(((item.electricityUsage || 0) * 0.459) / 1000).toFixed(
-                                  3
-                                )}{' '}
-                                tCO₂eq
-                              </TableCell>
-                              {/* 작업 버튼 (편집/삭제) */}
-                              <TableCell>
-                                <div className="flex space-x-1">
-                                  {/* 편집 버튼 */}
-                                  <Button
-                                    variant="ghost"
-                                    size="sm"
-                                    onClick={() => handleEditElectricity(item)}
-                                    className="hover:bg-customG-100 text-customG-600 hover:text-customG-800">
-                                    <Edit className="w-4 h-4" />
-                                  </Button>
-                                  {/* 삭제 버튼 */}
-                                  <Button
-                                    variant="ghost"
-                                    size="sm"
-                                    onClick={() =>
-                                      item.id && handleDeleteElectricity(item.id)
-                                    }
-                                    className="text-red-500 hover:text-red-700 hover:bg-red-50">
-                                    <Trash2 className="w-4 h-4" />
-                                  </Button>
-                                </div>
-                              </TableCell>
-                            </motion.tr>
-                          ))}
-                          {/* 데이터가 없을 때 표시되는 빈 상태 */}
-                          {filteredElectricityData.length === 0 && (
-                            <TableRow>
-                              <TableCell colSpan={7} className="py-16 text-center">
-                                <div className="flex flex-col justify-center items-center space-y-4">
-                                  {/* 아이콘 삭제 */}
-                                  <div>
-                                    <h3 className="mb-2 text-lg font-semibold text-customG-700">
-                                      데이터가 없습니다
-                                    </h3>
-                                    <p className="text-customG-500">
-                                      새로운 전력 사용량 데이터를 추가해보세요
-                                    </p>
-                                  </div>
-                                </div>
-                              </TableCell>
-                            </TableRow>
-                          )}
-                        </TableBody>
-                      </Table>
-                    </div>
-                  </CardContent>
-                </Card>
-              </motion.div>
-            </TabsContent>
-
-            {/* ================================================================
-                스팀 사용량 탭 (Steam Usage Tab)
-                ================================================================ */}
-            <TabsContent value="steam" className="mt-4">
-              <motion.div
-                initial={{opacity: 0, y: 20}}
-                animate={{opacity: 1, y: 0}}
-                transition={{duration: 0.5}}>
-                <Card className="overflow-hidden shadow-sm">
-                  {/* 스팀 섹션 헤더 */}
-                  <CardHeader className="bg-gradient-to-r border-b border-customG-100/50">
-                    <CardTitle className="flex justify-between items-center text-customG-800">
-                      <div className="flex gap-3 items-center">
-                        {/* 아이콘 삭제 */}
-                        <div>
-                          <h3 className="text-lg font-bold">스팀 사용량 데이터</h3>
-                          <p className="text-sm font-normal text-customG-600">
-                            시설별 스팀 소비량 및 배출량 관리
-                          </p>
-                        </div>
-                      </div>
-                      <Button
-                        onClick={() => {
-                          setEditingItem(null)
-                          setEditingType('STEAM')
-                          setIsModalOpen(true)
-                        }}
-                        className="px-4 py-2 text-sm font-medium text-white bg-black rounded-lg transition-colors duration-200 hover:cursor-pointer">
-                        <Plus className="mr-2 w-4 h-4" />
-                        데이터 추가
-                      </Button>
-                    </CardTitle>
-                  </CardHeader>
-
-                  {/* 스팀 데이터 테이블 */}
-                  <CardContent className="p-0">
-                    <div className="overflow-x-auto">
-                      <Table>
-                        {/* 테이블 헤더 */}
-                        <TableHeader>
-                          <TableRow className="bg-gradient-to-r border-b border-customG-200/50">
-                            <TableHead className="font-semibold text-customG-700">
-                              시설명
-                            </TableHead>
-                            <TableHead className="font-semibold text-customG-700">
-                              보고월
-                            </TableHead>
-                            <TableHead className="font-semibold text-customG-700">
-                              사용량
-                            </TableHead>
-                            <TableHead className="font-semibold text-customG-700">
-                              단위
-                            </TableHead>
-                            <TableHead className="font-semibold text-customG-700">
-                              배출량
-                            </TableHead>
-                            <TableHead className="font-semibold text-customG-700">
-                              작업
-                            </TableHead>
-                          </TableRow>
-                        </TableHeader>
-
-                        {/* 테이블 바디 - 스팀 데이터 목록 */}
-                        <TableBody>
-                          {filteredSteamData.map((item, index) => (
-                            <motion.tr
-                              key={item.id}
-                              initial={{opacity: 0, x: -20}}
-                              animate={{opacity: 1, x: 0}}
-                              transition={{delay: index * 0.1, duration: 0.3}}
-                              className="border-b transition-all duration-200 border-customG-100/50 hover:bg-gradient-to-r hover:from-amber-25 hover:to-orange-25">
-                              {/* 시설명 */}
-                              <TableCell className="font-medium text-customG-800">
-                                {item.facilityName}
-                              </TableCell>
-                              {/* 보고월 */}
-                              <TableCell className="text-customG-700">
-                                {item.reportingMonth}월
-                              </TableCell>
-                              {/* 스팀 사용량 */}
-                              <TableCell className="font-medium text-customG-700">
-                                {item.steamUsage?.toLocaleString()}
-                              </TableCell>
-                              {/* 사용량 단위 */}
-                              <TableCell className="text-customG-600">
-                                {item.unit}
-                              </TableCell>
-                              {/* CO₂ 배출량 */}
-                              <TableCell className="font-bold text-customG-800">
-                                {((item.steamUsage || 0) * 0.07).toFixed(3)} tCO₂eq
-                              </TableCell>
-                              {/* 작업 버튼 (편집/삭제) */}
-                              <TableCell>
-                                <div className="flex space-x-1">
-                                  {/* 편집 버튼 */}
-                                  <Button
-                                    variant="ghost"
-                                    size="sm"
-                                    onClick={() => handleEditSteam(item)}
-                                    className="hover:bg-customG-100 text-customG-600 hover:text-customG-800">
-                                    <Edit className="w-4 h-4" />
-                                  </Button>
-                                  {/* 삭제 버튼 */}
-                                  <Button
-                                    variant="ghost"
-                                    size="sm"
-                                    onClick={() => item.id && handleDeleteSteam(item.id)}
-                                    className="text-red-500 hover:text-red-700 hover:bg-red-50">
-                                    <Trash2 className="w-4 h-4" />
-                                  </Button>
-                                </div>
-                              </TableCell>
-                            </motion.tr>
-                          ))}
-                          {/* 데이터가 없을 때 표시되는 빈 상태 */}
-                          {filteredSteamData.length === 0 && (
-                            <TableRow>
-                              <TableCell colSpan={6} className="py-16 text-center">
-                                <div className="flex flex-col justify-center items-center space-y-4">
-                                  {/* 아이콘 삭제 */}
-                                  <div>
-                                    <h3 className="mb-2 text-lg font-semibold text-customG-700">
-                                      데이터가 없습니다
-                                    </h3>
-                                    <p className="text-customG-500">
-                                      새로운 스팀 사용량 데이터를 추가해보세요
-                                    </p>
-                                  </div>
-                                </div>
-                              </TableCell>
-                            </TableRow>
-                          )}
-                        </TableBody>
-                      </Table>
-                    </div>
-                  </CardContent>
-                </Card>
-              </motion.div>
-            </TabsContent>
-          </Tabs>
-        </motion.div>
+        /* ====================================================================
+            카테고리별 데이터 입력 화면 (Category Data Input Screen)
+            ==================================================================== */
+        <Scope2DataInput
+          activeCategory={activeElectricCategory || activeSteamCategory}
+          calculators={getCurrentCalculators()}
+          getTotalEmission={category =>
+            activeElectricCategory
+              ? getElectricTotalEmission(category as Scope2ElectricCategoryKey)
+              : getSteamTotalEmission(category as Scope2SteamCategoryKey)
+          }
+          onAddCalculator={addCalculator}
+          onRemoveCalculator={removeCalculator}
+          onUpdateCalculatorState={updateCalculatorState}
+          onChangeTotal={updateTotal}
+          onComplete={handleComplete}
+          onBackToList={handleBackToList}
+          calculatorModes={
+            calculatorModes[activeElectricCategory || activeSteamCategory!] || {}
+          }
+          onModeChange={handleModeChange}
+          selectedYear={selectedYear}
+          selectedMonth={selectedMonth}
+          onDataChange={refreshData}
+        />
       )}
-
-      {/* ========================================================================
-          Scope 데이터 입력 모달 (Scope Data Input Modal)
-          - 새로운 배출량 데이터 추가를 위한 모달 폼
-          ======================================================================== */}
-      <ScopeModal
-        isOpen={isModalOpen}
-        onClose={() => setIsModalOpen(false)}
-        onSubmit={handleFormSubmit}
-        partnerCompanies={realPartnerCompanies}
-        defaultPartnerId={selectedPartnerId || undefined}
-        defaultYear={selectedYear}
-        defaultMonth={selectedMonth || new Date().getMonth() + 1}
-        scope="SCOPE2"
-      />
-
-      <DirectionButton
-        direction="left"
-        tooltip="scope1으로 이동"
-        href="/scope1"
-        fixed
-        position="middle-left"
-        size={48}
-      />
     </div>
   )
 }

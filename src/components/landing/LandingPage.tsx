@@ -48,122 +48,120 @@ export default function LandingPage() {
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br via-blue-900 to-emerald-900 from-slate-900">
-      {/* Hero Section */}
-      <div className="overflow-hidden relative">
-        {/* Background Pattern */}
-        <div className="absolute inset-0 bg-grid-white/[0.02] bg-grid-16" />
+    <div className="min-h-screen bg-white">
+      {/* Navigation */}
+      <nav className="relative z-10 px-6 py-6 bg-white">
+        <div className="flex justify-between items-center mx-auto max-w-6xl">
+          <div className="flex items-center space-x-2">
+            <div className="flex justify-center items-center w-8 h-8 bg-blue-500 rounded-lg">
+              <span className="text-sm font-bold text-white">N</span>
+            </div>
+            <span className="text-xl font-bold text-gray-900">NSMM</span>
+          </div>
+          <div className="flex space-x-3">
+            {isLoggedIn ? (
+              <button
+                onClick={handleLoginClick}
+                disabled={isCheckingAuth}
+                className="px-5 py-2.5 text-sm font-medium text-white bg-blue-500 rounded-lg transition-all duration-200 hover:bg-blue-600 disabled:opacity-50">
+                대시보드
+              </button>
+            ) : (
+              <>
+                <button
+                  onClick={handleLoginClick}
+                  disabled={isCheckingAuth}
+                  className="px-4 py-2.5 text-sm font-medium text-gray-700 transition-colors duration-200 hover:text-gray-900 disabled:opacity-50">
+                  로그인
+                </button>
+                <button
+                  onClick={handleSignupClick}
+                  disabled={isCheckingAuth}
+                  className="px-5 py-2.5 text-sm font-medium text-white bg-blue-500 rounded-lg transition-all duration-200 hover:bg-blue-600 disabled:opacity-50">
+                  회원가입
+                </button>
+              </>
+            )}
+          </div>
+        </div>
+      </nav>
 
-        {/* Navigation */}
-        <nav className="relative z-10 px-6 py-4">
-          <div className="flex justify-between items-center mx-auto max-w-7xl">
-            <div className="text-xl font-bold text-white">NSMM</div>
-            <div className="flex space-x-4">
+      {/* Hero Section */}
+      <div className="relative px-6 py-20 bg-white">
+        <div className="mx-auto max-w-4xl text-center">
+          <div
+            className={`transition-all duration-1000 ${
+              isVisible ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-10'
+            }`}>
+            <h1 className="mb-6 text-5xl font-bold leading-tight text-gray-900 md:text-6xl">
+              ESG의 모든 것<br />
+              <span className="text-blue-500">간편하게</span>
+            </h1>
+
+            <p className="mx-auto mb-12 max-w-2xl text-xl leading-relaxed text-gray-600">
+              본사와 협력사의 ESG 데이터를 체계적으로 관리하고
+              <br />
+              지속가능경영을 효율적으로 쉽게 실현하세요.
+            </p>
+
+            <div className="flex flex-col gap-4 justify-center items-center sm:flex-row">
               {isLoggedIn ? (
                 <button
                   onClick={handleLoginClick}
                   disabled={isCheckingAuth}
-                  className="px-4 py-2 text-white bg-emerald-600 rounded-lg transition-colors duration-200 hover:bg-emerald-700 disabled:opacity-50">
-                  대시보드
+                  className="px-8 py-4 text-lg font-semibold text-white bg-blue-500 rounded-xl shadow-lg transition-all duration-300 transform hover:bg-blue-600 hover:scale-105 hover:shadow-xl disabled:opacity-50 disabled:transform-none">
+                  대시보드로 이동
                 </button>
               ) : (
                 <>
                   <button
-                    onClick={handleLoginClick}
-                    disabled={isCheckingAuth}
-                    className="transition-colors duration-200 text-white/80 hover:text-white disabled:opacity-50">
-                    로그인
-                  </button>
-                  <button
                     onClick={handleSignupClick}
                     disabled={isCheckingAuth}
-                    className="px-4 py-2 text-white bg-emerald-600 rounded-lg transition-colors duration-200 hover:bg-emerald-700 disabled:opacity-50">
-                    회원가입
+                    className="px-8 py-4 text-lg font-semibold text-white bg-blue-500 rounded-xl shadow-lg transition-all duration-300 transform hover:bg-blue-600 hover:scale-105 hover:shadow-xl disabled:opacity-50 disabled:transform-none">
+                    무료로 시작하기
+                  </button>
+                  <button
+                    onClick={handleLoginClick}
+                    disabled={isCheckingAuth}
+                    className="px-8 py-4 text-lg font-semibold text-gray-700 bg-gray-100 rounded-xl transition-all duration-300 hover:bg-gray-200 disabled:opacity-50">
+                    기존 계정으로 로그인
                   </button>
                 </>
               )}
             </div>
           </div>
-        </nav>
-
-        {/* Hero Content */}
-        <div className="relative z-10 px-6 py-20">
-          <div className="mx-auto max-w-7xl text-center">
-            <div
-              className={`transition-all duration-1000 ${
-                isVisible ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-10'
-              }`}>
-              <h1 className="mb-6 text-5xl font-bold text-white md:text-7xl">
-                지속가능한 미래를 위한
-                <span className="block mt-2 text-transparent bg-clip-text bg-gradient-to-r from-emerald-400 to-blue-400">
-                  ESG 관리 플랫폼
-                </span>
-              </h1>
-
-              <p className="mx-auto mb-8 max-w-3xl text-xl leading-relaxed md:text-2xl text-white/80">
-                본사와 협력사의 환경, 사회, 거버넌스 데이터를
-                <br className="hidden md:block" />
-                통합 관리하고 분석하는 전문 플랫폼
-              </p>
-
-              <div className="flex flex-col gap-4 justify-center items-center sm:flex-row">
-                {isLoggedIn ? (
-                  <button
-                    onClick={handleLoginClick}
-                    disabled={isCheckingAuth}
-                    className="px-8 py-4 text-lg font-semibold text-white bg-gradient-to-r from-emerald-600 to-blue-600 rounded-xl shadow-lg transition-all duration-300 transform hover:from-emerald-700 hover:to-blue-700 hover:scale-105 hover:shadow-xl disabled:opacity-50 disabled:transform-none">
-                    대시보드로 이동
-                  </button>
-                ) : (
-                  <>
-                    <button
-                      onClick={handleLoginClick}
-                      disabled={isCheckingAuth}
-                      className="px-8 py-4 text-lg font-semibold text-white bg-gradient-to-r from-emerald-600 to-blue-600 rounded-xl shadow-lg transition-all duration-300 transform hover:from-emerald-700 hover:to-blue-700 hover:scale-105 hover:shadow-xl disabled:opacity-50 disabled:transform-none">
-                      플랫폼 시작하기
-                    </button>
-                    <button
-                      onClick={handleSignupClick}
-                      disabled={isCheckingAuth}
-                      className="px-8 py-4 text-lg font-semibold text-white rounded-xl border-2 backdrop-blur-sm transition-all duration-300 border-white/30 hover:border-white/50 hover:bg-white/10 disabled:opacity-50">
-                      무료 체험하기
-                    </button>
-                  </>
-                )}
-              </div>
-            </div>
-          </div>
         </div>
 
-        {/* Floating Elements */}
-        <div className="absolute top-20 left-20 w-20 h-20 rounded-full blur-xl animate-pulse bg-emerald-400/10" />
-        <div className="absolute right-20 bottom-20 w-32 h-32 rounded-full blur-xl delay-1000 animate-pulse bg-blue-400/10" />
+        {/* Floating 3D Elements */}
+        <div className="absolute left-20 top-32 w-20 h-20 bg-blue-100 rounded-2xl opacity-60 transform rotate-12"></div>
+        <div className="absolute right-32 top-40 w-16 h-16 bg-green-100 rounded-xl opacity-40 transform -rotate-6"></div>
+        <div className="absolute bottom-32 left-32 w-12 h-12 bg-purple-100 rounded-lg opacity-50 transform rotate-45"></div>
       </div>
 
       {/* Features Section */}
-      <div className="px-6 py-20 backdrop-blur-sm bg-white/5">
-        <div className="mx-auto max-w-7xl">
+      <div className="px-6 py-20 bg-gray-50">
+        <div className="mx-auto max-w-6xl">
           <div
             className={`text-center mb-16 transition-all duration-1000 delay-300 ${
               isVisible ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-10'
             }`}>
-            <h2 className="mb-4 text-4xl font-bold text-white md:text-5xl">
-              ESG 통합 관리 솔루션
+            <h2 className="mb-4 text-4xl font-bold text-gray-900">
+              모든 ESG 관리를 한 번에
             </h2>
-            <p className="mx-auto max-w-2xl text-xl text-white/70">
-              체계적인 ESG 데이터 관리를 통해 지속가능경영을 실현하세요
+            <p className="mx-auto max-w-2xl text-xl text-gray-600">
+              복잡한 ESG 데이터 관리, 이제 간단하게 해결하세요
             </p>
           </div>
 
           <div className="grid gap-8 md:grid-cols-3">
             {/* Environment */}
             <div
-              className={`bg-white/10 backdrop-blur-sm rounded-2xl p-8 border border-white/20 transition-all duration-1000 delay-500 hover:bg-white/15 hover:transform hover:scale-105 ${
+              className={`bg-white rounded-2xl p-8 shadow-sm border border-gray-100 transition-all duration-500 delay-500 hover:shadow-lg hover:transform hover:scale-105 ${
                 isVisible ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-10'
               }`}>
-              <div className="flex justify-center items-center mb-6 w-16 h-16 bg-emerald-500 rounded-2xl">
+              <div className="flex justify-center items-center mb-6 w-14 h-14 bg-green-100 rounded-2xl">
                 <svg
-                  className="w-8 h-8 text-white"
+                  className="w-7 h-7 text-green-600"
                   fill="none"
                   stroke="currentColor"
                   viewBox="0 0 24 24">
@@ -175,24 +173,24 @@ export default function LandingPage() {
                   />
                 </svg>
               </div>
-              <h3 className="mb-4 text-2xl font-bold text-white">Environment</h3>
-              <p className="leading-relaxed text-white/70">
-                Scope 1, 2, 3 탄소배출량 추적 및 관리
+              <h3 className="mb-4 text-xl font-bold text-gray-900">Environment</h3>
+              <p className="leading-relaxed text-gray-600">
+                Scope 1, 2, 3 탄소배출량을 정확하게 추적하고
                 <br />
-                LCA 기반 정확한 배출계수 적용
+                LCA 기반 배출계수로 신뢰할 수 있는
                 <br />
-                실시간 환경 데이터 모니터링
+                환경 데이터를 관리하세요
               </p>
             </div>
 
             {/* Social */}
             <div
-              className={`bg-white/10 backdrop-blur-sm rounded-2xl p-8 border border-white/20 transition-all duration-1000 delay-700 hover:bg-white/15 hover:transform hover:scale-105 ${
+              className={`bg-white rounded-2xl p-8 shadow-sm border border-gray-100 transition-all duration-500 delay-700 hover:shadow-lg hover:transform hover:scale-105 ${
                 isVisible ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-10'
               }`}>
-              <div className="flex justify-center items-center mb-6 w-16 h-16 bg-blue-500 rounded-2xl">
+              <div className="flex justify-center items-center mb-6 w-14 h-14 bg-blue-100 rounded-2xl">
                 <svg
-                  className="w-8 h-8 text-white"
+                  className="w-7 h-7 text-blue-600"
                   fill="none"
                   stroke="currentColor"
                   viewBox="0 0 24 24">
@@ -204,24 +202,24 @@ export default function LandingPage() {
                   />
                 </svg>
               </div>
-              <h3 className="mb-4 text-2xl font-bold text-white">Social</h3>
-              <p className="leading-relaxed text-white/70">
-                사회적 책임 이행 현황 평가
+              <h3 className="mb-4 text-xl font-bold text-gray-900">Social</h3>
+              <p className="leading-relaxed text-gray-600">
+                사회적 책임 이행 현황을 체계적으로 평가하고
                 <br />
-                공급망 사회적 리스크 관리
+                공급망의 사회적 리스크를 효과적으로
                 <br />
-                이해관계자 만족도 측정
+                관리할 수 있습니다
               </p>
             </div>
 
             {/* Governance */}
             <div
-              className={`bg-white/10 backdrop-blur-sm rounded-2xl p-8 border border-white/20 transition-all duration-1000 delay-900 hover:bg-white/15 hover:transform hover:scale-105 ${
+              className={`bg-white rounded-2xl p-8 shadow-sm border border-gray-100 transition-all duration-500 delay-900 hover:shadow-lg hover:transform hover:scale-105 ${
                 isVisible ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-10'
               }`}>
-              <div className="flex justify-center items-center mb-6 w-16 h-16 bg-purple-500 rounded-2xl">
+              <div className="flex justify-center items-center mb-6 w-14 h-14 bg-purple-100 rounded-2xl">
                 <svg
-                  className="w-8 h-8 text-white"
+                  className="w-7 h-7 text-purple-600"
                   fill="none"
                   stroke="currentColor"
                   viewBox="0 0 24 24">
@@ -233,13 +231,13 @@ export default function LandingPage() {
                   />
                 </svg>
               </div>
-              <h3 className="mb-4 text-2xl font-bold text-white">Governance</h3>
-              <p className="leading-relaxed text-white/70">
-                투명한 거버넌스 체계 구축
+              <h3 className="mb-4 text-xl font-bold text-gray-900">Governance</h3>
+              <p className="leading-relaxed text-gray-600">
+                투명한 거버넌스 체계를 구축하고
                 <br />
-                CSDDD 공시 기준 준수
+                CSDDD 공시 기준을 준수하여
                 <br />
-                리스크 관리 및 컴플라이언스
+                리스크를 체계적으로 관리하세요
               </p>
             </div>
           </div>
@@ -247,24 +245,22 @@ export default function LandingPage() {
       </div>
 
       {/* Benefits Section */}
-      <div className="px-6 py-20">
-        <div className="mx-auto max-w-7xl">
+      <div className="px-6 py-20 bg-white">
+        <div className="mx-auto max-w-6xl">
           <div className="grid gap-12 items-center lg:grid-cols-2">
             <div
               className={`transition-all duration-1000 delay-300 ${
                 isVisible ? 'opacity-100 translate-x-0' : 'opacity-0 -translate-x-10'
               }`}>
-              <h2 className="mb-8 text-4xl font-bold text-white md:text-5xl">
-                왜 ESG Manager를
+              <h2 className="mb-8 text-4xl font-bold leading-tight text-gray-900">
+                왜 많은 기업이
                 <br />
-                <span className="text-transparent bg-clip-text bg-gradient-to-r from-emerald-400 to-blue-400">
-                  선택해야 할까요?
-                </span>
+                <span className="text-blue-500">NSMM를 선택할까요?</span>
               </h2>
 
               <div className="space-y-6">
                 <div className="flex items-start space-x-4">
-                  <div className="flex flex-shrink-0 justify-center items-center mt-1 w-6 h-6 bg-emerald-500 rounded-full">
+                  <div className="flex flex-shrink-0 justify-center items-center mt-1 w-6 h-6 bg-blue-500 rounded-full">
                     <svg
                       className="w-4 h-4 text-white"
                       fill="none"
@@ -279,17 +275,17 @@ export default function LandingPage() {
                     </svg>
                   </div>
                   <div>
-                    <h3 className="mb-2 text-xl font-semibold text-white">
-                      계층적 권한 관리
+                    <h3 className="mb-2 text-xl font-semibold text-gray-900">
+                      스마트한 권한 관리
                     </h3>
-                    <p className="text-white/70">
-                      본사-협력사 간 체계적인 데이터 접근 권한 제어
+                    <p className="text-gray-600">
+                      본사와 협력사 간 체계적인 데이터 접근 권한을 자동으로 제어합니다
                     </p>
                   </div>
                 </div>
 
                 <div className="flex items-start space-x-4">
-                  <div className="flex flex-shrink-0 justify-center items-center mt-1 w-6 h-6 bg-emerald-500 rounded-full">
+                  <div className="flex flex-shrink-0 justify-center items-center mt-1 w-6 h-6 bg-blue-500 rounded-full">
                     <svg
                       className="w-4 h-4 text-white"
                       fill="none"
@@ -304,17 +300,17 @@ export default function LandingPage() {
                     </svg>
                   </div>
                   <div>
-                    <h3 className="mb-2 text-xl font-semibold text-white">
-                      실시간 데이터 분석
+                    <h3 className="mb-2 text-xl font-semibold text-gray-900">
+                      AI 기반 인사이트
                     </h3>
-                    <p className="text-white/70">
-                      AI 기반 ESG 성과 분석 및 개선 방안 제시
+                    <p className="text-gray-600">
+                      실시간 데이터 분석으로 ESG 성과를 개선할 수 있는 방안을 제시합니다
                     </p>
                   </div>
                 </div>
 
                 <div className="flex items-start space-x-4">
-                  <div className="flex flex-shrink-0 justify-center items-center mt-1 w-6 h-6 bg-emerald-500 rounded-full">
+                  <div className="flex flex-shrink-0 justify-center items-center mt-1 w-6 h-6 bg-blue-500 rounded-full">
                     <svg
                       className="w-4 h-4 text-white"
                       fill="none"
@@ -329,11 +325,11 @@ export default function LandingPage() {
                     </svg>
                   </div>
                   <div>
-                    <h3 className="mb-2 text-xl font-semibold text-white">
-                      규제 준수 지원
+                    <h3 className="mb-2 text-xl font-semibold text-gray-900">
+                      규제 대응 자동화
                     </h3>
-                    <p className="text-white/70">
-                      국내외 ESG 공시 기준에 맞는 보고서 자동 생성
+                    <p className="text-gray-600">
+                      국내외 ESG 공시 기준에 맞는 보고서를 자동으로 생성합니다
                     </p>
                   </div>
                 </div>
@@ -344,23 +340,23 @@ export default function LandingPage() {
               className={`transition-all duration-1000 delay-500 ${
                 isVisible ? 'opacity-100 translate-x-0' : 'opacity-0 translate-x-10'
               }`}>
-              <div className="p-8 rounded-3xl border backdrop-blur-sm bg-white/10 border-white/20">
-                <div className="grid grid-cols-2 gap-6">
+              <div className="p-8 bg-gray-50 rounded-3xl">
+                <div className="grid grid-cols-2 gap-8">
                   <div className="text-center">
-                    <div className="mb-2 text-3xl font-bold text-emerald-400">500+</div>
-                    <div className="text-white/70">관리 대상 협력사</div>
+                    <div className="mb-2 text-3xl font-bold text-blue-500">500+</div>
+                    <div className="text-sm text-gray-600">관리 대상 협력사</div>
                   </div>
                   <div className="text-center">
-                    <div className="mb-2 text-3xl font-bold text-blue-400">99.9%</div>
-                    <div className="text-white/70">시스템 안정성</div>
+                    <div className="mb-2 text-3xl font-bold text-green-500">99.9%</div>
+                    <div className="text-sm text-gray-600">시스템 안정성</div>
                   </div>
                   <div className="text-center">
-                    <div className="mb-2 text-3xl font-bold text-purple-400">24/7</div>
-                    <div className="text-white/70">모니터링 지원</div>
+                    <div className="mb-2 text-3xl font-bold text-purple-500">24/7</div>
+                    <div className="text-sm text-gray-600">모니터링 지원</div>
                   </div>
                   <div className="text-center">
-                    <div className="mb-2 text-3xl font-bold text-orange-400">ISO</div>
-                    <div className="text-white/70">국제 표준 준수</div>
+                    <div className="mb-2 text-3xl font-bold text-orange-500">ISO</div>
+                    <div className="text-sm text-gray-600">국제 표준 준수</div>
                   </div>
                 </div>
               </div>
@@ -370,24 +366,24 @@ export default function LandingPage() {
       </div>
 
       {/* CTA Section */}
-      <div className="px-6 py-20 bg-gradient-to-r backdrop-blur-sm from-emerald-600/20 to-blue-600/20">
+      <div className="px-6 py-20 bg-blue-50">
         <div className="mx-auto max-w-4xl text-center">
           <div
             className={`transition-all duration-1000 delay-300 ${
               isVisible ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-10'
             }`}>
-            <h2 className="mb-6 text-4xl font-bold text-white md:text-5xl">
-              지금 시작하세요
+            <h2 className="mb-6 text-4xl font-bold text-gray-900">
+              지금 바로 시작하세요
             </h2>
-            <p className="mx-auto mb-8 max-w-2xl text-xl text-white/80">
-              ESG Manager와 함께 지속가능한 미래를 만들어가세요
+            <p className="mx-auto mb-8 max-w-2xl text-xl text-gray-600">
+              5분이면 충분합니다. 복잡한 ESG 관리를 간단하게 만들어보세요
             </p>
             <div className="flex flex-col gap-4 justify-center sm:flex-row">
               {isLoggedIn ? (
                 <button
                   onClick={handleLoginClick}
                   disabled={isCheckingAuth}
-                  className="px-8 py-4 text-lg font-semibold text-gray-900 bg-white rounded-xl shadow-lg transition-all duration-300 transform hover:scale-105 hover:shadow-xl disabled:opacity-50 disabled:transform-none">
+                  className="px-8 py-4 text-lg font-semibold text-white bg-blue-500 rounded-xl shadow-lg transition-all duration-300 transform hover:bg-blue-600 hover:scale-105 hover:shadow-xl disabled:opacity-50 disabled:transform-none">
                   대시보드로 이동
                 </button>
               ) : (
@@ -395,14 +391,14 @@ export default function LandingPage() {
                   <button
                     onClick={handleSignupClick}
                     disabled={isCheckingAuth}
-                    className="px-8 py-4 text-lg font-semibold text-gray-900 bg-white rounded-xl shadow-lg transition-all duration-300 transform hover:scale-105 hover:shadow-xl disabled:opacity-50 disabled:transform-none">
+                    className="px-8 py-4 text-lg font-semibold text-white bg-blue-500 rounded-xl shadow-lg transition-all duration-300 transform hover:bg-blue-600 hover:scale-105 hover:shadow-xl disabled:opacity-50 disabled:transform-none">
                     무료로 시작하기
                   </button>
                   <button
                     onClick={handleLoginClick}
                     disabled={isCheckingAuth}
-                    className="px-8 py-4 text-lg font-semibold text-white rounded-xl border-2 border-white transition-all duration-300 hover:bg-white hover:text-gray-900 disabled:opacity-50">
-                    로그인
+                    className="px-8 py-4 text-lg font-semibold text-gray-700 bg-white rounded-xl border border-gray-200 transition-all duration-300 hover:bg-gray-50 disabled:opacity-50">
+                    기존 계정으로 로그인
                   </button>
                 </>
               )}
@@ -412,9 +408,17 @@ export default function LandingPage() {
       </div>
 
       {/* Footer */}
-      <footer className="px-6 py-8 border-t border-white/10">
-        <div className="mx-auto max-w-7xl text-center">
-          <p className="text-white/60">© 2024 NSMM. All rights reserved.</p>
+      <footer className="px-6 py-12 bg-white border-t border-gray-100">
+        <div className="mx-auto max-w-6xl">
+          <div className="flex flex-col justify-between items-center md:flex-row">
+            <div className="flex items-center mb-4 space-x-2 md:mb-0">
+              <div className="flex justify-center items-center w-6 h-6 bg-blue-500 rounded-lg">
+                <span className="text-xs font-bold text-white">N</span>
+              </div>
+              <span className="text-lg font-bold text-gray-900">NSMM</span>
+            </div>
+            <p className="text-sm text-gray-500">© 2024 NSMM. All rights reserved.</p>
+          </div>
         </div>
       </footer>
     </div>

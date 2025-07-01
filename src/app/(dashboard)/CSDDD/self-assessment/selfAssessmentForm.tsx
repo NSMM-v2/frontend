@@ -1,26 +1,64 @@
 'use client'
-import {useEffect, useState} from 'react'
-import {Button} from '@/components/ui/button'
-import {Card} from '@/components/ui/card'
+import {useState, useEffect} from 'react'
 import {
-  Check,
-  AlertCircle,
-  Info,
-  BarChart3,
-  Download,
+  ChevronDown,
+  ChevronUp,
+  CheckCircle,
   AlertTriangle,
-  Shield
+  Building,
+  Send,
+  Home,
+  ArrowLeft,
+  Shield,
+  Star,
+  Sparkles,
+  Activity,
+  TrendingUp,
+  Clock,
+  Users,
+  Globe,
+  FileText,
+  Zap
 } from 'lucide-react'
 
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger
+} from '@/components/ui/tooltip'
+
+import Link from 'next/link'
+import {PageHeader} from '@/components/layout/PageHeader'
+
+import {
+  Breadcrumb,
+  BreadcrumbItem,
+  BreadcrumbLink,
+  BreadcrumbList,
+  BreadcrumbSeparator
+} from '@/components/ui/breadcrumb'
+
+import authService from '@/services/authService'
+
+import {submitSelfAssessmentToBackend} from '@/services/csdddService'
+// 질문 데이터 타입 정의
 interface Question {
   id: string
   category: string
   text: string
   weight: number
   criticalViolation?: {
-    grade: 'D' | 'C' | 'B' | 'B/C'
+    grade: string
     reason: string
   }
+}
+
+// 답변 상태 타입
+interface Answer {
+  questionId: string
+  answer: 'yes' | 'no' | ''
+  remarks?: string
 }
 
 const categories = [
@@ -30,6 +68,22 @@ const categories = [
   '공급망 및 조달',
   '윤리경영 및 정보보호'
 ]
+
+const categoryIcons: Record<(typeof categories)[number], React.ComponentType<any>> = {
+  '인권 및 노동': Users,
+  '산업안전·보건': Shield,
+  환경경영: Globe,
+  '공급망 및 조달': Activity,
+  '윤리경영 및 정보보호': FileText
+}
+
+const categoryColors: Record<(typeof categories)[number], string> = {
+  '인권 및 노동': 'from-purple-500 to-pink-500',
+  '산업안전·보건': 'from-blue-500 to-cyan-500',
+  환경경영: 'from-green-500 to-emerald-500',
+  '공급망 및 조달': 'from-orange-500 to-red-500',
+  '윤리경영 및 정보보호': 'from-indigo-500 to-purple-500'
+}
 
 const questions: Question[] = [
   // 인권 및 노동 카테고리
@@ -107,7 +161,7 @@ const questions: Question[] = [
     text: '근로자 고충처리 메커니즘을 갖추고 있습니까?',
     weight: 1.0,
     criticalViolation: {
-      grade: 'B/C',
+      grade: 'C',
       reason: '시스템 미비 → B, 고의 누락 → C'
     }
   },
@@ -239,7 +293,7 @@ const questions: Question[] = [
     text: '공급망의 추적 가능성을 확보하고 있습니까?',
     weight: 1.5,
     criticalViolation: {
-      grade: 'B/C',
+      grade: 'C',
       reason: 'OECD Due Diligence 위반'
     }
   },
@@ -363,494 +417,524 @@ const questions: Question[] = [
   }
 ]
 
-// 총 가중치 계산 (모든 질문의 가중치 합)
-const TOTAL_WEIGHT = questions.reduce((sum, q) => sum + q.weight, 0) // 52.5
-
-// 등급 기준 (100점 만점 기준)
-const gradeThresholds = {
-  A: 90, // ≥ 90%
-  B: 75, // 75-89.9%
-  C: 60, // 60-74.9%
-  D: 0 // < 60%
-}
-
-export default function SelfAssessmentForm() {
-  const [answers, setAnswers] = useState<Record<string, string>>({})
-  const [activeTab, setActiveTab] = useState('인권 및 노동')
-  const [showResults, setShowResults] = useState(false)
+export default function CSAssessmentPage() {
+  const [companyName, setCompanyName] = useState('')
+  const [answers, setAnswers] = useState<Record<string, Answer>>({})
+  const [expandedCategories, setExpandedCategories] = useState<Record<string, boolean>>(
+    {}
+  )
+  const [isSubmitting, setIsSubmitting] = useState(false)
 
   useEffect(() => {
-    // 모든 질문을 'yes'로 초기화
-    const initial: Record<string, string> = {}
-    questions.forEach(q => {
-      initial[q.id] = 'yes'
-    })
-    setAnswers(initial)
+    authService
+      .getCurrentUserByType()
+      .then(res => {
+        if (res?.data?.companyName) {
+          setCompanyName(res.data.companyName)
+        }
+      })
+      .catch(err => console.error('회사명 로드 실패:', err))
   }, [])
 
-  const handleAnswerChange = (questionId: string, value: string) => {
+  // 답변 변경 핸들러
+  const handleAnswerChange = (
+    questionId: string,
+    answer: 'yes' | 'no',
+    category: string,
+    weight: number,
+    critical: boolean,
+    criticalGrade?: string
+  ) => {
     setAnswers(prev => ({
       ...prev,
-      [questionId]: value
+      [questionId]: {
+        questionId,
+        answer,
+        remarks: prev[questionId]?.remarks || ''
+      }
     }))
   }
 
-  const calculateScore = () => {
-    let totalScore = 0
-    questions.forEach(q => {
-      if (answers[q.id] === 'yes') {
-        totalScore += q.weight
+  // 비고 변경 핸들러
+  const handleRemarksChange = (questionId: string, remarks: string) => {
+    setAnswers(prev => ({
+      ...prev,
+      [questionId]: {
+        ...prev[questionId],
+        questionId,
+        answer: prev[questionId]?.answer || '',
+        remarks
+      }
+    }))
+  }
+
+  // 카테고리 토글
+  const toggleCategory = (category: string) => {
+    setExpandedCategories(prev => ({
+      ...prev,
+      [category]: !prev[category]
+    }))
+  }
+
+  // 진행률 계산
+  const calculateProgress = () => {
+    const totalQuestions = questions.length
+    const answeredQuestions = Object.values(answers).filter(
+      answer => answer.answer !== ''
+    ).length
+    return Math.round((answeredQuestions / totalQuestions) * 100)
+  }
+
+  // 카테고리별 질문 그룹화
+  const questionsByCategory = questions.reduce((acc, question) => {
+    if (!acc[question.category]) {
+      acc[question.category] = []
+    }
+    acc[question.category].push(question)
+    return acc
+  }, {} as Record<string, Question[]>)
+
+  // 카테고리 전체 선택 핸들러
+  const handleSelectAllInCategory = (category: string, answer: 'yes' | 'no') => {
+    const updatedAnswers = {...answers}
+    const categoryQuestions = questionsByCategory[category] || []
+
+    categoryQuestions.forEach(question => {
+      updatedAnswers[question.id] = {
+        questionId: question.id,
+        answer,
+        remarks: answers[question.id]?.remarks || ''
       }
     })
-    return Math.round((totalScore / TOTAL_WEIGHT) * 100)
+
+    setAnswers(updatedAnswers)
   }
 
-  const calculateCategoryScore = (category: string) => {
-    const categoryQuestions = questions.filter(q => q.category === category)
-    let totalScore = 0
-    let maxScore = 0
+  // 제출 핸들러
+  const handleSubmit = async () => {
+    const unansweredQuestions = questions.filter(
+      q => !answers[q.id] || answers[q.id].answer === ''
+    )
+    if (unansweredQuestions.length > 0) {
+      alert(`모든 질문에 답변해주세요. (미답변: ${unansweredQuestions.length}개)`)
+      return
+    }
 
-    categoryQuestions.forEach(q => {
-      if (answers[q.id] === 'yes') {
-        totalScore += q.weight
+    setIsSubmitting(true)
+
+    try {
+      // TypeScript 인터페이스에 맞는 데이터 구조로 변환
+      const submissionData = {
+        companyName,
+        answers: questions
+          .map(question => {
+            const answerValue = answers[question.id]?.answer
+            if (answerValue !== 'yes' && answerValue !== 'no') return null
+
+            return {
+              questionId: question.id,
+              answer: answerValue as 'yes' | 'no',
+              category: question.category,
+              weight: question.weight,
+              critical: !!question.criticalViolation,
+              criticalGrade: question.criticalViolation?.grade,
+              remarks: answers[question.id].remarks || undefined
+            }
+          })
+          .filter((item): item is NonNullable<typeof item> => item !== null) // 타입 가드 사용
       }
-      maxScore += q.weight
-    })
 
-    return maxScore ? Math.round((totalScore / maxScore) * 100) : 0
-  }
+      console.log('📦 제출 데이터:', submissionData)
 
-  const getFinalGrade = () => {
-    const baseScore = calculateScore()
+      // 실제 API 호출
+      await submitSelfAssessmentToBackend(submissionData)
 
-    // 중대 위반 항목 검사
-    const criticalViolations = questions
-      .filter(q => q.criticalViolation && answers[q.id] === 'no')
-      .map(q => q.criticalViolation!)
-
-    if (criticalViolations.length === 0) {
-      // 일반 등급 계산
-      if (baseScore >= gradeThresholds.A) return 'A'
-      if (baseScore >= gradeThresholds.B) return 'B'
-      if (baseScore >= gradeThresholds.C) return 'C'
-      return 'D'
-    }
-
-    // 중대 위반이 있는 경우 최저 등급으로 강등
-    const worstGrade = criticalViolations.reduce((worst, violation) => {
-      const grades = ['A', 'B', 'C', 'D']
-      const currentWorst = grades.indexOf(worst)
-      const violationGrade = violation.grade === 'B/C' ? 'C' : violation.grade
-      const violationWorst = grades.indexOf(violationGrade)
-      return violationWorst > currentWorst ? violationGrade : worst
-    }, 'A')
-
-    return worstGrade
-  }
-
-  const getGradeInfo = (grade: string) => {
-    switch (grade) {
-      case 'A':
-        return {
-          color: 'text-green-700 bg-green-50 border-green-200',
-          description: '리스크 거의 없음',
-          action: '계약 가능, 실사 면제 가능'
-        }
-      case 'B':
-        return {
-          color: 'text-blue-700 bg-blue-50 border-blue-200',
-          description: '관리 가능 수준',
-          action: '개선 개별 수준'
-        }
-      case 'C':
-        return {
-          color: 'text-yellow-700 bg-yellow-50 border-yellow-200',
-          description: '중위험 구간',
-          action: '세부 정밀 실사'
-        }
-      case 'D':
-        return {
-          color: 'text-red-700 bg-red-50 border-red-200',
-          description: '고위험 구간',
-          action: '계약 중단, 블랙리스트 가능성'
-        }
-      default:
-        return {
-          color: 'text-gray-700 bg-gray-50 border-gray-200',
-          description: '평가 미완료',
-          action: '진단을 완료해주세요'
-        }
+      alert('자가진단이 성공적으로 제출되었습니다!')
+    } catch (error) {
+      console.error('제출 중 오류 발생:', error)
+      alert('제출 중 오류가 발생했습니다. 다시 시도해주세요.')
+    } finally {
+      setIsSubmitting(false)
     }
   }
 
-  const getCriticalViolations = () => {
-    return questions
-      .filter(q => q.criticalViolation && answers[q.id] === 'no')
-      .map(q => ({
-        question: q,
-        violation: q.criticalViolation!
-      }))
-  }
-
-  const exportResults = () => {
-    const finalGrade = getFinalGrade()
-    const baseScore = calculateScore()
-    const criticalViolations = getCriticalViolations()
-
-    const results = {
-      timestamp: new Date().toISOString(),
-      finalGrade: finalGrade,
-      baseScore: baseScore,
-      totalPossibleScore: TOTAL_WEIGHT,
-      actualScore: questions.reduce(
-        (sum, q) => sum + (answers[q.id] === 'yes' ? q.weight : 0),
-        0
-      ),
-      criticalViolations: criticalViolations.map(cv => ({
-        questionId: cv.question.id,
-        questionText: cv.question.text,
-        violationGrade: cv.violation.grade,
-        violationReason: cv.violation.reason
-      })),
-      categoryScores: categories.map(cat => ({
-        category: cat,
-        score: calculateCategoryScore(cat)
-      })),
-      answers: answers,
-      gradeInfo: getGradeInfo(finalGrade)
-    }
-
-    const blob = new Blob([JSON.stringify(results, null, 2)], {type: 'application/json'})
-    const url = URL.createObjectURL(blob)
-    const a = document.createElement('a')
-    a.href = url
-    a.download = `supply-chain-assessment-${finalGrade}-grade-${
-      new Date().toISOString().split('T')[0]
-    }.json`
-    a.click()
-    URL.revokeObjectURL(url)
-  }
-
-  const finalGrade = getFinalGrade()
-  const gradeInfo = getGradeInfo(finalGrade)
-  const baseScore = calculateScore()
-  const criticalViolations = getCriticalViolations()
+  const progress = calculateProgress()
 
   return (
-    <div className="w-full min-h-screen p-6">
-      <div className="mx-auto max-w-7xl">
-        {/* Header */}
-        <div className="mb-8 text-center">
-          <h1 className="mb-4 text-4xl font-bold text-gray-900">공급망 실사 자가진단</h1>
-          <p className="max-w-2xl mx-auto text-lg text-gray-600">
-            ESG 관점에서 공급망의 리스크를 평가하고 개선점을 파악해보세요
-          </p>
+    <div className="flex flex-col w-full min-h-screen">
+      {/* 브레드크럼 영역 */}
+      <div className="p-4 pb-0">
+        <div className="flex flex-row items-center p-3 mb-6 text-sm text-gray-600 border shadow-sm rounded-xl backdrop-blur-sm bg-white/80 border-white/50">
+          <Breadcrumb>
+            <BreadcrumbList>
+              <BreadcrumbItem>
+                <Home className="w-4 h-4 mr-1" />
+                <BreadcrumbLink
+                  href="/dashboard"
+                  className="transition-colors hover:text-blue-600">
+                  대시보드
+                </BreadcrumbLink>
+              </BreadcrumbItem>
+              <BreadcrumbSeparator />
+              <BreadcrumbItem>
+                <BreadcrumbLink
+                  href="/CSDDD"
+                  className="transition-colors hover:text-blue-600">
+                  CSDDD
+                </BreadcrumbLink>
+              </BreadcrumbItem>
+              <BreadcrumbSeparator />
+              <BreadcrumbItem>
+                <span className="font-bold text-blue-600">자가진단 결과</span>
+              </BreadcrumbItem>
+            </BreadcrumbList>
+          </Breadcrumb>
         </div>
+      </div>
 
-        {/* Grade Overview */}
-        <Card className="p-6 mb-8 shadow-lg bg-white/80 backdrop-blur-sm">
+      {/* 페이지 헤더 영역 */}
+      <div className="px-4 pb-0">
+        <div className="flex flex-row w-full mb-6">
+          <Link
+            href="/dashboard"
+            className="flex flex-row items-center p-4 space-x-4 transition-all rounded-xl backdrop-blur-sm hover:bg-white/30 group">
+            <ArrowLeft className="w-6 h-6 text-gray-500 transition-colors group-hover:text-blue-600" />
+            <PageHeader
+              icon={<Shield className="w-6 h-6 text-blue-600" />}
+              title="CSDDD 자가진단 시스템"
+              description="유럽연합 공급망 실사 지침 준수를 위한 종합 평가 시스템"
+              module="CSDDD"
+              submodule="assessment"
+            />
+          </Link>
+        </div>
+      </div>
+
+      <div className="flex-1 px-4 pb-8">
+        {/* 진행률 대시보드 */}
+        <div className="p-8 mb-8 border shadow-xl bg-white/70 backdrop-blur-xl rounded-3xl border-white/50 shadow-blue-500/10">
           <div className="flex items-center justify-between mb-6">
-            <h2 className="text-xl font-semibold text-gray-900">종합 평가 결과</h2>
-            <div className="flex gap-2">
-              <Button
-                onClick={() => setShowResults(!showResults)}
-                variant="outline"
-                className="flex items-center gap-2">
-                <BarChart3 className="w-4 h-4" />
-                {showResults ? '질문 보기' : '결과 보기'}
-              </Button>
-              <Button
-                onClick={exportResults}
-                variant="outline"
-                className="flex items-center gap-2">
-                <Download className="w-4 h-4" />
-                결과 다운로드
-              </Button>
+            <div className="flex items-center space-x-3">
+              <div className="p-3 shadow-lg bg-gradient-to-br from-blue-500 to-indigo-600 rounded-xl">
+                <TrendingUp className="w-6 h-6 text-white" />
+              </div>
+              <div>
+                <h2 className="text-2xl font-bold text-slate-800">진행 현황</h2>
+                <p className="text-slate-600">현재 평가 진행 상태를 확인하세요</p>
+              </div>
+            </div>
+            <div className="text-right">
+              <div className="text-4xl font-bold text-transparent bg-gradient-to-r from-blue-600 to-indigo-600 bg-clip-text">
+                {progress}%
+              </div>
+              <p className="mt-1 text-sm text-slate-500">완료율</p>
             </div>
           </div>
 
-          <div className="grid grid-cols-1 gap-6 mb-6 lg:grid-cols-3">
-            {/* Final Grade */}
-            <div className={`p-6 rounded-lg border-2 ${gradeInfo.color}`}>
-              <div className="text-center">
-                <div className="mb-2 text-4xl font-bold">{finalGrade}</div>
-                <div className="mb-1 text-sm font-medium">최종 등급</div>
-                <div className="text-xs">{gradeInfo.description}</div>
+          {/* 진행률 바 */}
+          <div className="relative mb-6">
+            <div className="w-full h-4 overflow-hidden rounded-full shadow-inner bg-gradient-to-r from-slate-200 to-slate-300">
+              <div
+                className="relative h-full transition-all duration-1000 ease-out rounded-full bg-gradient-to-r from-blue-500 via-indigo-500 to-purple-500"
+                style={{width: `${progress}%`}}>
+                <div className="absolute inset-0 rounded-full bg-white/20 animate-pulse"></div>
               </div>
             </div>
-
-            {/* Base Score */}
-            <div className="p-6 bg-white border rounded-lg shadow-sm">
-              <div className="text-center">
-                <div className="mb-2 text-3xl font-bold text-blue-600">{baseScore}점</div>
-                <div className="mb-1 text-sm font-medium">기본 점수</div>
-                <div className="text-xs text-gray-600">100점 만점 기준</div>
-              </div>
-            </div>
-
-            {/* Risk Level */}
-            <div className="p-6 bg-white border rounded-lg shadow-sm">
-              <div className="text-center">
-                <div className="mb-2 text-lg font-bold text-gray-800">
-                  {gradeInfo.action}
-                </div>
-                <div className="mb-1 text-sm font-medium">권장 조치</div>
-                <div className="text-xs text-gray-600">등급 기반 대응</div>
-              </div>
+            <div className="absolute transform -translate-x-1/2 -translate-y-1/2 top-1/2 left-1/2">
+              <Zap className="w-4 h-4 text-white animate-pulse" />
             </div>
           </div>
 
-          {/* Critical Violations Alert */}
-          {criticalViolations.length > 0 && (
-            <div className="p-4 mb-4 border-2 border-red-200 rounded-lg bg-red-50">
-              <div className="flex items-start gap-3">
-                <AlertTriangle className="flex-shrink-0 w-6 h-6 mt-1 text-red-600" />
-                <div className="flex-1">
-                  <h3 className="mb-2 font-bold text-red-800">중대 위반 항목 발견</h3>
-                  <p className="mb-3 text-sm text-red-700">
-                    다음 항목들로 인해 등급이 자동으로 조정되었습니다:
-                  </p>
-                  <div className="space-y-2">
-                    {criticalViolations.map(cv => (
-                      <div key={cv.question.id} className="p-3 bg-red-100 rounded">
-                        <div className="flex items-start gap-2">
-                          <Shield className="w-4 h-4 text-red-600 flex-shrink-0 mt-0.5" />
-                          <div className="flex-1">
-                            <div className="text-sm font-medium text-red-800">
-                              {cv.question.id}: {cv.question.text}
-                            </div>
-                            <div className="mt-1 text-xs text-red-700">
-                              <span className="font-medium">
-                                위반 시 등급: {cv.violation.grade}
-                              </span>
-                              <span className="ml-2">사유: {cv.violation.reason}</span>
-                            </div>
-                          </div>
-                        </div>
-                      </div>
-                    ))}
-                  </div>
-                </div>
+          {/* 통계 */}
+          <div className="grid grid-cols-3 gap-4">
+            <div className="p-4 text-center border bg-gradient-to-br from-green-50 to-emerald-50 rounded-2xl border-green-200/50">
+              <div className="mb-1 text-2xl font-bold text-green-600">
+                {Object.values(answers).filter(a => a.answer === 'yes').length}
+              </div>
+              <div className="text-sm text-green-700">준수 항목</div>
+            </div>
+            <div className="p-4 text-center border bg-gradient-to-br from-red-50 to-rose-50 rounded-2xl border-red-200/50">
+              <div className="mb-1 text-2xl font-bold text-red-600">
+                {Object.values(answers).filter(a => a.answer === 'no').length}
+              </div>
+              <div className="text-sm text-red-700">미준수 항목</div>
+            </div>
+            <div className="p-4 text-center border bg-gradient-to-br from-amber-50 to-yellow-50 rounded-2xl border-amber-200/50">
+              <div className="mb-1 text-2xl font-bold text-amber-600">
+                {questions.length -
+                  Object.values(answers).filter(a => a.answer !== '').length}
+              </div>
+              <div className="text-sm text-amber-700">미답변 항목</div>
+            </div>
+          </div>
+
+          {progress === 100 && (
+            <div className="p-4 mt-6 text-white bg-gradient-to-r from-green-500 to-emerald-500 rounded-2xl">
+              <div className="flex items-center justify-center space-x-2">
+                <Star className="w-5 h-5 animate-spin" />
+                <span className="font-semibold">
+                  모든 질문 답변 완료! 제출할 수 있습니다.
+                </span>
               </div>
             </div>
           )}
+        </div>
 
-          {/* Category Scores */}
-          <div className="grid grid-cols-2 gap-4 md:grid-cols-5">
-            {categories.map(category => {
-              const score = calculateCategoryScore(category)
-              return (
-                <div
-                  key={category}
-                  className="p-4 text-center bg-white border rounded-lg shadow-sm">
-                  <div className="text-xl font-bold text-blue-600">{score}%</div>
-                  <div className="mt-1 text-xs text-gray-600">{category}</div>
+        {/* 질문 카테고리별 섹션 */}
+        {categories.map((category, categoryIndex) => {
+          const categoryQuestions = questionsByCategory[category] || []
+          const isExpanded = expandedCategories[category]
+          const answeredInCategory = categoryQuestions.filter(
+            q => answers[q.id]?.answer
+          ).length
+          const CategoryIcon = categoryIcons[category]
+          const gradientClass = categoryColors[category]
+
+          return (
+            <div
+              key={category}
+              className="mb-6 overflow-hidden transition-all duration-300 border shadow-xl bg-white/70 backdrop-blur-xl rounded-3xl border-white/50 shadow-blue-500/5 hover:shadow-2xl hover:shadow-blue-500/10"
+              style={{animationDelay: `${categoryIndex * 100}ms`}}>
+              <button
+                onClick={() => toggleCategory(category)}
+                className="flex items-center justify-between w-full p-6 transition-all duration-300 hover:bg-white/50 group">
+                <div className="flex items-center space-x-4">
+                  <div
+                    className={`p-3 bg-gradient-to-br ${gradientClass} rounded-2xl shadow-lg group-hover:scale-110 transition-transform duration-300`}>
+                    <CategoryIcon className="w-6 h-6 text-white" />
+                  </div>
+                  <div className="text-left">
+                    <h3 className="text-xl font-bold transition-colors text-slate-800 group-hover:text-blue-600">
+                      {category}
+                    </h3>
+                    <p className="mt-1 text-sm text-slate-500">
+                      {categoryQuestions.length}개 질문
+                    </p>
+                  </div>
                 </div>
-              )
-            })}
-          </div>
-        </Card>
 
-        {showResults ? (
-          /* Results View */
-          <div className="space-y-6">
-            {categories.map(category => {
-              const score = calculateCategoryScore(category)
-              const categoryQuestions = questions.filter(q => q.category === category)
-              const noAnswers = categoryQuestions.filter(q => answers[q.id] === 'no')
-              const criticalInCategory = noAnswers.filter(q => q.criticalViolation)
-
-              return (
-                <Card
-                  key={category}
-                  className="p-6 shadow-lg bg-white/80 backdrop-blur-sm">
-                  <div className="flex items-center justify-between mb-4">
-                    <h3 className="text-xl font-semibold text-gray-900">{category}</h3>
+                <div className="flex items-center space-x-3">
+                  <div className="flex items-center space-x-2">
                     <div className="text-right">
-                      <div className="text-lg font-bold text-blue-600">{score}%</div>
-                      <div className="text-xs text-gray-500">
-                        {categoryQuestions.filter(q => answers[q.id] === 'yes').length}/
-                        {categoryQuestions.length} 준수
+                      <div className="text-lg font-bold text-slate-800">
+                        {answeredInCategory}/{categoryQuestions.length}
                       </div>
+                      <div className="text-xs text-slate-500">답변 완료</div>
                     </div>
+                    {answeredInCategory === categoryQuestions.length &&
+                      categoryQuestions.length > 0 && (
+                        <div className="p-2 bg-green-100 rounded-full">
+                          <CheckCircle className="w-5 h-5 text-green-600" />
+                        </div>
+                      )}
+                  </div>
+                  <div className="p-2 transition-colors rounded-full bg-slate-100 group-hover:bg-blue-100">
+                    {isExpanded ? (
+                      <ChevronUp className="w-5 h-5 transition-colors text-slate-600 group-hover:text-blue-600" />
+                    ) : (
+                      <ChevronDown className="w-5 h-5 transition-colors text-slate-600 group-hover:text-blue-600" />
+                    )}
+                  </div>
+                </div>
+              </button>
+
+              {isExpanded && (
+                <div className="border-t border-slate-200/60">
+                  <div className="flex justify-end gap-3 px-6 py-4 bg-gradient-to-r from-slate-50/50 to-slate-100/50">
+                    <button
+                      onClick={() => handleSelectAllInCategory(category, 'yes')}
+                      className="px-4 py-2 text-sm font-medium text-green-700 transition-all duration-200 bg-green-100 shadow-sm hover:bg-green-200 rounded-xl hover:scale-105 hover:shadow-md">
+                      전체 예
+                    </button>
+                    <button
+                      onClick={() => handleSelectAllInCategory(category, 'no')}
+                      className="px-4 py-2 text-sm font-medium text-red-700 transition-all duration-200 bg-red-100 shadow-sm hover:bg-red-200 rounded-xl hover:scale-105 hover:shadow-md">
+                      전체 아니오
+                    </button>
                   </div>
 
-                  {criticalInCategory.length > 0 && (
-                    <div className="p-4 mb-4 border border-red-200 rounded-lg bg-red-50">
-                      <h4 className="flex items-center gap-2 mb-2 font-medium text-red-800">
-                        <AlertTriangle className="w-4 h-4" />
-                        중대 위반 항목
-                      </h4>
-                      <ul className="space-y-2">
-                        {criticalInCategory.map(q => (
-                          <li
-                            key={q.id}
-                            className="p-2 text-sm text-red-700 bg-red-100 rounded">
-                            <div className="font-medium">{q.text}</div>
-                            <div className="mt-1 text-xs">
-                              등급: {q.criticalViolation!.grade} |{' '}
-                              {q.criticalViolation!.reason}
-                            </div>
-                          </li>
-                        ))}
-                      </ul>
-                    </div>
-                  )}
-
-                  {noAnswers.filter(q => !q.criticalViolation).length > 0 && (
-                    <div className="space-y-2">
-                      <h4 className="mb-2 font-medium text-gray-700">개선 필요 항목</h4>
-                      <ul className="space-y-2">
-                        {noAnswers
-                          .filter(q => !q.criticalViolation)
-                          .map(q => (
-                            <li
-                              key={q.id}
-                              className="p-2 text-sm border border-yellow-200 rounded bg-yellow-50">
-                              <div className="font-medium text-yellow-800">
-                                {q.id}: {q.text}
-                              </div>
-                              <div className="mt-1 text-xs text-yellow-700">
-                                가중치: {q.weight}점
-                              </div>
-                            </li>
-                          ))}
-                      </ul>
-                    </div>
-                  )}
-                </Card>
-              )
-            })}
-          </div>
-        ) : (
-          /* Questions View */
-          <div className="space-y-6">
-            {/* Tab Navigation */}
-            <div className="flex flex-wrap gap-2 p-1 bg-white border rounded-lg shadow-sm">
-              {categories.map(category => (
-                <button
-                  key={category}
-                  onClick={() => setActiveTab(category)}
-                  className={`px-4 py-2 rounded-md text-sm font-medium transition-colors ${
-                    activeTab === category
-                      ? 'bg-blue-600 text-white shadow-sm'
-                      : 'text-gray-600 hover:text-blue-600 hover:bg-blue-50'
-                  }`}>
-                  {category}
-                  <span className="ml-2 text-xs opacity-70">
-                    ({questions.filter(q => q.category === category).length})
-                  </span>
-                </button>
-              ))}
-            </div>
-
-            {/* Questions for Active Tab */}
-            <Card className="p-6 shadow-lg bg-white/80 backdrop-blur-sm">
-              <h3 className="mb-6 text-xl font-semibold text-gray-900">{activeTab}</h3>
-
-              <div className="space-y-4">
-                {questions
-                  .filter(q => q.category === activeTab)
-                  .map(question => {
-                    const isAnswered = answers[question.id]
-                    const isCritical =
-                      question.criticalViolation && answers[question.id] === 'no'
+                  {categoryQuestions.map((question, index) => {
+                    const answer = answers[question.id]
+                    const isCritical = !!question.criticalViolation
 
                     return (
                       <div
                         key={question.id}
-                        className={`p-4 border rounded-lg transition-all ${
-                          isCritical
-                            ? 'border-red-300 bg-red-50'
-                            : 'border-gray-200 bg-white hover:shadow-sm'
-                        }`}>
-                        <div className="flex items-start gap-4">
-                          <div className="flex items-center justify-center flex-shrink-0 w-12 h-12 bg-blue-100 rounded-full">
-                            <span className="text-sm font-medium text-blue-700">
+                        className="p-6 transition-all duration-200 border-b border-slate-200/60 last:border-b-0 hover:bg-white/30">
+                        <div className="flex items-start space-x-4">
+                          <div className="flex-shrink-0">
+                            <div className="inline-flex items-center justify-center w-12 h-8 text-sm font-bold text-blue-600 bg-blue-100 border-2 border-blue-200 rounded-xl">
                               {question.id}
-                            </span>
+                            </div>
                           </div>
 
-                          <div className="flex-1">
-                            <div className="flex items-start justify-between mb-3">
-                              <h4 className="text-base font-medium leading-relaxed text-gray-900">
+                          <div className="flex-1 space-y-4">
+                            <div className="flex items-start space-x-3">
+                              <p className="flex-1 font-medium leading-relaxed text-slate-800">
                                 {question.text}
-                              </h4>
-                              <div className="flex items-center gap-2 ml-4">
-                                <span className="px-2 py-1 text-xs text-gray-600 bg-gray-100 rounded-full">
-                                  가중치: {question.weight}
-                                </span>
-                                {question.criticalViolation && (
-                                  <span className="flex items-center gap-1 px-2 py-1 text-xs text-red-700 bg-red-100 rounded-full">
-                                    <AlertTriangle className="w-3 h-3" />
-                                    중대위반
-                                  </span>
-                                )}
-                              </div>
+                              </p>
+                              {question.criticalViolation && (
+                                <TooltipProvider>
+                                  <Tooltip>
+                                    <TooltipTrigger asChild>
+                                      <div className="flex-shrink-0 p-1 bg-red-100 rounded-full cursor-help">
+                                        <AlertTriangle className="w-4 h-4 text-red-500" />
+                                      </div>
+                                    </TooltipTrigger>
+                                    <TooltipContent className="max-w-xs text-sm text-left text-red-800 border border-red-300 rounded-lg shadow-md bg-red-50">
+                                      <div className="mb-1 font-semibold">
+                                        {question.criticalViolation?.grade} 등급 위반
+                                      </div>
+                                      <div>{question.criticalViolation?.reason}</div>
+                                    </TooltipContent>
+                                  </Tooltip>
+                                </TooltipProvider>
+                              )}
                             </div>
 
-                            {/* Critical Violation Info */}
-                            {question.criticalViolation && (
-                              <div className="p-3 mb-3 bg-red-100 border border-red-200 rounded-lg">
-                                <div className="flex items-start gap-2">
-                                  <Info className="w-4 h-4 text-red-600 flex-shrink-0 mt-0.5" />
-                                  <div className="text-sm text-red-800">
-                                    <div className="mb-1 font-medium">
-                                      위반 시 등급: {question.criticalViolation.grade}
-                                    </div>
-                                    <div className="text-xs">
-                                      {question.criticalViolation.reason}
-                                    </div>
-                                  </div>
-                                </div>
-                              </div>
-                            )}
-
-                            {/* Answer Options */}
-                            <div className="flex gap-3">
-                              <label className="flex items-center gap-2 cursor-pointer">
+                            <div className="flex items-center space-x-6">
+                              <label className="flex items-center p-3 space-x-3 transition-colors cursor-pointer group rounded-xl hover:bg-green-50">
                                 <input
                                   type="radio"
                                   name={question.id}
                                   value="yes"
-                                  checked={answers[question.id] === 'yes'}
-                                  onChange={e =>
-                                    handleAnswerChange(question.id, e.target.value)
+                                  checked={answer?.answer === 'yes'}
+                                  onChange={() =>
+                                    handleAnswerChange(
+                                      question.id,
+                                      'yes',
+                                      question.category,
+                                      question.weight,
+                                      isCritical,
+                                      question.criticalViolation?.grade
+                                    )
                                   }
-                                  className="w-4 h-4 text-green-600"
+                                  className="w-5 h-5 text-green-600 border-2 border-green-300 focus:ring-green-500 focus:ring-2"
                                 />
-                                <span className="flex items-center gap-1 text-sm font-medium text-green-700">
-                                  <Check className="w-4 h-4" />예
+                                <span className="font-medium text-green-700 transition-colors group-hover:text-green-800">
+                                  예
                                 </span>
                               </label>
-
-                              <label className="flex items-center gap-2 cursor-pointer">
+                              <label className="flex items-center p-3 space-x-3 transition-colors cursor-pointer group rounded-xl hover:bg-red-50">
                                 <input
                                   type="radio"
                                   name={question.id}
                                   value="no"
-                                  checked={answers[question.id] === 'no'}
-                                  onChange={e =>
-                                    handleAnswerChange(question.id, e.target.value)
+                                  checked={answer?.answer === 'no'}
+                                  onChange={() =>
+                                    handleAnswerChange(
+                                      question.id,
+                                      'no',
+                                      question.category,
+                                      question.weight,
+                                      isCritical,
+                                      question.criticalViolation?.grade
+                                    )
                                   }
-                                  className="w-4 h-4 text-red-600"
+                                  className="w-5 h-5 text-red-600 border-2 border-red-300 focus:ring-red-500 focus:ring-2"
                                 />
-                                <span className="flex items-center gap-1 text-sm font-medium text-red-700">
-                                  <AlertCircle className="w-4 h-4" />
+                                <span className="font-medium text-red-700 transition-colors group-hover:text-red-800">
                                   아니오
                                 </span>
                               </label>
+                            </div>
+
+                            <div className="space-y-2">
+                              <label className="block text-sm font-medium text-slate-700">
+                                비고 (선택사항)
+                              </label>
+                              <textarea
+                                value={answer?.remarks || ''}
+                                onChange={e =>
+                                  handleRemarksChange(question.id, e.target.value)
+                                }
+                                placeholder="추가 설명이나 특이사항을 입력하세요"
+                                rows={3}
+                                className="w-full px-4 py-3 text-sm transition-colors border-2 border-slate-200 rounded-2xl focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent bg-white/80 backdrop-blur-sm hover:border-slate-300"
+                              />
+                            </div>
+
+                            <div className="flex items-center justify-between">
+                              <div className="flex items-center space-x-2">
+                                <div className="px-3 py-1 text-xs font-medium rounded-full text-slate-600 bg-slate-100">
+                                  가중치 {question.weight}
+                                </div>
+                              </div>
+                              {answer?.answer && (
+                                <div className="flex items-center space-x-2 text-green-600">
+                                  <CheckCircle className="w-5 h-5" />
+                                  <span className="text-sm font-medium">완료</span>
+                                </div>
+                              )}
                             </div>
                           </div>
                         </div>
                       </div>
                     )
                   })}
+                </div>
+              )}
+            </div>
+          )
+        })}
+
+        {/* 제출 섹션 */}
+        <div className="p-8 border shadow-xl bg-gradient-to-br from-white/80 to-slate-50/80 backdrop-blur-xl rounded-3xl border-white/50 shadow-blue-500/10">
+          <div className="flex items-center justify-between">
+            <div className="space-y-2">
+              <h3 className="text-xl font-bold text-slate-800">자가진단 완료</h3>
+              <div className="flex items-center space-x-4 text-sm text-slate-600">
+                <div className="flex items-center space-x-1">
+                  <Clock className="w-4 h-4" />
+                  <span>총 {questions.length}개 질문</span>
+                </div>
+                <div className="flex items-center space-x-1">
+                  <CheckCircle className="w-4 h-4 text-green-500" />
+                  <span className="font-medium text-green-600">
+                    {Object.values(answers).filter(a => a.answer !== '').length}개 답변
+                    완료
+                  </span>
+                </div>
               </div>
-            </Card>
+            </div>
+
+            <button
+              onClick={handleSubmit}
+              disabled={progress !== 100 || isSubmitting}
+              className={`flex items-center space-x-3 px-8 py-4 rounded-2xl font-semibold text-white transition-all duration-300 shadow-lg hover:shadow-xl transform hover:scale-105 ${
+                progress === 100 && !isSubmitting
+                  ? 'bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 shadow-blue-500/25 hover:shadow-blue-500/40'
+                  : 'bg-slate-400 cursor-not-allowed'
+              }`}>
+              {isSubmitting ? (
+                <>
+                  <div className="w-5 h-5 border-2 border-t-2 rounded-full border-white/20 border-t-white animate-spin"></div>
+                  <span>제출 중...</span>
+                </>
+              ) : (
+                <>
+                  <Send className="w-5 h-5" />
+                  <span>자가진단 제출</span>
+                </>
+              )}
+            </button>
           </div>
-        )}
+        </div>
       </div>
     </div>
+  )
+}
+
+// ChevronRight 컴포넌트 추가
+function ChevronRight({className}: {className?: string}) {
+  return (
+    <svg className={className} fill="none" stroke="currentColor" viewBox="0 0 24 24">
+      <path
+        strokeLinecap="round"
+        strokeLinejoin="round"
+        strokeWidth={2}
+        d="M9 5l7 7-7 7"
+      />
+    </svg>
   )
 }
