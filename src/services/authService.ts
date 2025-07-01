@@ -30,6 +30,7 @@ export interface UserInfo {
   accountNumber: string
   companyName: string
   userType: 'HEADQUARTERS' | 'PARTNER'
+  uuid?: string // 협력사의 경우 UUID 정보
   level?: number
   name?: string
   email?: string

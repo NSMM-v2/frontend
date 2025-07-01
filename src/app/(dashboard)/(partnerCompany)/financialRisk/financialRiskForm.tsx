@@ -1,92 +1,156 @@
+/**
+ * 재무 리스크 분석 폼 컴포넌트
+ *
+ * 주요 기능:
+ * - 협력사별 재무 위험도 분석
+ * - 연도/분기별 재무제표 기반 분석
+ * - 위험 항목별 상세 정보 제공
+ * - 실시간 데이터 로드 및 자동 선택 기능
+ *
+ * 사용된 기술:
+ * - Next.js 14 App Router
+ * - React Hooks (useState, useEffect)
+ * - Shadcn/ui 컴포넌트 시스템
+ * - Lucide React 아이콘
+ * - 커스텀 API 훅
+ *
+ * @author ESG Project Team
+ * @version 1.0
+ * @since 2024
+ * @lastModified 2024-12-20
+ */
+
 'use client'
 
+// ============================================================================
+// 외부 라이브러리 임포트 (External Library Imports)
+// ============================================================================
+
 import React, {useState, useEffect} from 'react'
+
+// ============================================================================
+// 아이콘 라이브러리 임포트 (Icon Library Imports)
+// ============================================================================
+
 import {
-  Home,
-  Building2,
-  AlertTriangle,
-  CheckCircle,
-  Info,
-  ChevronsDown,
-  ChevronsUp,
-  FileSearch,
-  Check,
-  ChevronsUpDown,
-  RefreshCcw,
-  ArrowLeft,
-  Calendar,
-  Clock,
-  ChevronDown,
-  ChevronRight
+  Home, // 홈 아이콘 - 브레드크럼 네비게이션
+  Building2, // 빌딩 아이콘 - 협력사 표시
+  AlertTriangle, // 경고 삼각형 - 위험 상태 표시
+  CheckCircle, // 체크 원형 - 안전 상태 표시
+  Info, // 정보 아이콘 - 상세 설명
+  ChevronsDown, // 더블 화살표 아래 - 모두 펼치기
+  ChevronsUp, // 더블 화살표 위 - 모두 접기
+  FileSearch, // 파일 검색 아이콘 - 분석 기능
+  Check, // 체크 아이콘 - 선택 상태
+  ChevronsUpDown, // 더블 화살표 상하 - 드롭다운
+  RefreshCcw, // 새로고침 아이콘 - 데이터 갱신
+  ArrowLeft, // 왼쪽 화살표 - 뒤로가기
+  Calendar, // 달력 아이콘 - 날짜/기간 선택
+  Clock, // 시계 아이콘 - 자동 선택 표시
+  ChevronDown, // 단일 화살표 아래 - 확장/축소
+  ChevronRight // 단일 화살표 오른쪽 - 네비게이션
 } from 'lucide-react'
 
+// ============================================================================
+// UI 컴포넌트 임포트 (UI Components)
+// ============================================================================
+
 import {
-  Accordion,
-  AccordionContent,
-  AccordionItem,
-  AccordionTrigger
+  Accordion, // 아코디언 컨테이너
+  AccordionContent, // 아코디언 내용
+  AccordionItem, // 아코디언 항목
+  AccordionTrigger // 아코디언 트리거
 } from '@/components/ui/accordion'
 
-import {Button} from '@/components/ui/button'
+import {Button} from '@/components/ui/button' // 버튼 컴포넌트
 import {
-  Card,
-  CardContent,
-  CardHeader,
-  CardTitle,
-  CardDescription
+  Card, // 카드 컨테이너
+  CardContent, // 카드 내용
+  CardHeader, // 카드 헤더
+  CardTitle, // 카드 제목
+  CardDescription // 카드 설명
 } from '@/components/ui/card'
-import Link from 'next/link'
-import {PageHeader} from '@/components/layout/PageHeader'
-import {
-  Command,
-  CommandEmpty,
-  CommandGroup,
-  CommandInput,
-  CommandItem,
-  CommandList
-} from '@/components/ui/command'
-import {Popover, PopoverContent, PopoverTrigger} from '@/components/ui/popover'
-import {cn} from '@/lib/utils'
-import {LoadingState} from '@/components/ui/loading-state'
-import {
-  useFetchPartnerCompanies,
-  useFetchFinancialRisk
-} from '@/hooks/usePartnerCompanyAPI'
-import {showError} from '@/util/toast'
-import {
-  Breadcrumb,
-  BreadcrumbItem,
-  BreadcrumbLink,
-  BreadcrumbList,
-  BreadcrumbSeparator
-} from '@/components/ui/breadcrumb'
-import {DirectionButton} from '@/components/layout/direction'
-import {motion} from 'framer-motion'
-import {
-  FinancialRiskAssessment,
-  ReportCode,
-  YearQuarterOption,
-  AvailablePeriod
-} from '@/types/partnerCompanyType'
-import {useSearchParams} from 'next/navigation'
-import {fetchAvailablePeriods} from '@/services/partnerCompanyService'
 
-// API 응답 타입 정의
+import {
+  Command, // 명령어 컨테이너
+  CommandEmpty, // 빈 상태 표시
+  CommandGroup, // 명령어 그룹
+  CommandInput, // 검색 입력
+  CommandItem, // 명령어 항목
+  CommandList // 명령어 목록
+} from '@/components/ui/command'
+
+import {Popover, PopoverContent, PopoverTrigger} from '@/components/ui/popover' // 팝오버 컴포넌트
+import {LoadingState} from '@/components/ui/loading-state' // 로딩 상태 컴포넌트
+
+import {
+  Breadcrumb, // 브레드크럼 컨테이너
+  BreadcrumbItem, // 브레드크럼 항목
+  BreadcrumbLink, // 브레드크럼 링크
+  BreadcrumbList, // 브레드크럼 목록
+  BreadcrumbSeparator // 브레드크럼 구분자
+} from '@/components/ui/breadcrumb'
+
+// ============================================================================
+// 내부 컴포넌트 임포트 (Internal Components)
+// ============================================================================
+
+import Link from 'next/link' // Next.js 링크 컴포넌트
+import {PageHeader} from '@/components/layout/PageHeader' // 페이지 헤더 컴포넌트
+import {DirectionButton} from '@/components/layout/direction' // 방향 버튼 컴포넌트
+import {motion} from 'framer-motion' // 애니메이션 라이브러리
+
+// ============================================================================
+// 유틸리티 및 훅 임포트 (Utilities & Hooks)
+// ============================================================================
+
+import {cn} from '@/lib/utils' // 클래스명 유틸리티
+import {
+  useFetchPartnerCompanies, // 협력사 목록 조회 훅
+  useFetchFinancialRisk // 재무 위험 분석 훅
+} from '@/hooks/usePartnerCompanyAPI'
+import {showError} from '@/util/toast' // 에러 토스트 유틸리티
+import {useSearchParams} from 'next/navigation' // URL 쿼리 파라미터 훅
+
+// ============================================================================
+// 타입 및 서비스 임포트 (Types & Services)
+// ============================================================================
+
+import {
+  FinancialRiskAssessment, // 재무 위험 평가 타입
+  ReportCode, // 보고서 코드 타입
+  YearQuarterOption, // 연도/분기 옵션 타입
+  AvailablePeriod // 이용 가능한 기간 타입
+} from '@/types/partnerCompanyType'
+import {fetchAvailablePeriods} from '@/services/partnerCompanyService' // 이용 가능한 기간 조회 서비스
+
+// ============================================================================
+// API 응답 타입 정의 (API Response Types)
+// ============================================================================
+
+/**
+ * 재무 위험 항목 인터페이스
+ * 개별 재무 지표의 위험도 분석 결과
+ */
 interface RiskItem {
-  description: string
-  actualValue: string
-  threshold: string
-  notes: string | null
-  itemNumber: number
-  atRisk: boolean
+  description: string // 위험 항목 설명
+  actualValue: string // 실제 값 (재무제표에서 조회한 값)
+  threshold: string // 위험 기준값 (임계치)
+  notes: string | null // 추가 설명 및 분석 노트
+  itemNumber: number // 항목 번호 (순서 표시용)
+  atRisk: boolean // 위험 여부 (true: 위험, false: 안전)
 }
 
+/**
+ * 재무 위험 분석 데이터 인터페이스
+ * 특정 협력사의 특정 기간에 대한 전체 재무 위험 분석 결과
+ */
 interface FinancialRiskData {
-  partnerCompanyId: string
-  partnerCompanyName: string
-  assessmentYear: string
-  reportCode: string
-  riskItems: RiskItem[]
+  partnerCompanyId: string // 협력사 DART 코드
+  partnerCompanyName: string // 협력사명
+  assessmentYear: string // 분석 대상 연도
+  reportCode: string // 보고서 코드 (사업보고서, 분기보고서 등)
+  riskItems: RiskItem[] // 위험 항목 목록
 }
 
 // ============================================================================
@@ -95,30 +159,34 @@ interface FinancialRiskData {
 
 /**
  * 보고서 코드별 정보를 반환합니다.
+ * DART API의 보고서 코드를 기반으로 사용자 친화적인 정보 제공
+ *
+ * @param code - DART 보고서 코드 ('11011', '11012', '11013', '11014')
+ * @returns 보고서 정보 객체 (name, description, period, quarter)
  */
 function getReportCodeInfo(code: ReportCode) {
   const reportCodeMap = {
     '11011': {
-      name: '사업보고서',
-      description: '연간 종합 보고서',
+      name: '사업보고서', // 연간 사업보고서
+      description: '연간 종합 보고서', // 1년 전체 기간
       period: '연간',
       quarter: undefined
     },
     '11012': {
-      name: '반기보고서',
-      description: '상반기 보고서',
+      name: '반기보고서', // 상반기 보고서
+      description: '상반기 보고서', // 1월~6월 기간
       period: '상반기',
       quarter: 2
     },
     '11013': {
-      name: '1분기보고서',
-      description: '1분기 보고서',
+      name: '1분기보고서', // 1분기 보고서
+      description: '1분기 보고서', // 1월~3월 기간
       period: '1분기',
       quarter: 1
     },
     '11014': {
-      name: '3분기보고서',
-      description: '3분기 보고서',
+      name: '3분기보고서', // 3분기 보고서
+      description: '3분기 보고서', // 7월~9월 기간
       period: '3분기',
       quarter: 3
     }
@@ -128,11 +196,20 @@ function getReportCodeInfo(code: ReportCode) {
 
 /**
  * 현재 날짜 기준으로 자동 선택될 연도/분기 옵션을 생성합니다.
+ * 재무제표 공시 일정을 고려하여 가장 최근에 공시된 보고서를 자동 선택
+ *
+ * 자동 선택 규칙:
+ * - 1~3월: 작년 3분기 보고서 (가장 최근 공시)
+ * - 4~6월: 작년 사업보고서 (연간 보고서)
+ * - 7~9월: 올해 1분기 보고서
+ * - 10~12월: 올해 상반기 보고서
+ *
+ * @returns YearQuarterOption 객체 (isAuto: true 포함)
  */
 function getAutoYearQuarterOption(): YearQuarterOption {
-  const today = new Date()
-  const currentYear = today.getFullYear()
-  const month = today.getMonth() + 1
+  const today = new Date() // 현재 날짜
+  const currentYear = today.getFullYear() // 현재 연도
+  const month = today.getMonth() + 1 // 현재 월 (1-12)
 
   let year: string
   let reportCode: ReportCode
@@ -140,25 +217,25 @@ function getAutoYearQuarterOption(): YearQuarterOption {
   let period: string
 
   if (month >= 1 && month < 4) {
-    // 1~3월: 작년 3분기 보고서
+    // 1~3월: 작년 3분기 보고서 (가장 최근 공시된 분기 보고서)
     year = String(currentYear - 1)
     reportCode = '11014'
     label = `${year}년 3분기 (자동 선택)`
     period = `${year}년 7월~9월`
   } else if (month >= 4 && month < 7) {
-    // 4~6월: 작년 사업보고서
+    // 4~6월: 작년 사업보고서 (연간 종합 데이터)
     year = String(currentYear - 1)
     reportCode = '11011'
     label = `${year}년 사업보고서 (자동 선택)`
     period = `${year}년 연간`
   } else if (month >= 7 && month < 10) {
-    // 7~9월: 올해 1분기 보고서
+    // 7~9월: 올해 1분기 보고서 (최신 분기 데이터)
     year = String(currentYear)
     reportCode = '11013'
     label = `${year}년 1분기 (자동 선택)`
     period = `${year}년 1월~3월`
   } else {
-    // 10~12월: 올해 반기 보고서
+    // 10~12월: 올해 상반기 보고서 (가장 최근 반기 데이터)
     year = String(currentYear)
     reportCode = '11012'
     label = `${year}년 상반기 (자동 선택)`
@@ -170,18 +247,22 @@ function getAutoYearQuarterOption(): YearQuarterOption {
 
 /**
  * AvailablePeriod 배열을 YearQuarterOption 배열로 변환합니다.
+ * 백엔드 API에서 받은 이용 가능한 기간 데이터를 UI에서 사용할 수 있는 형태로 변환
+ *
+ * @param availablePeriods - 백엔드에서 받은 이용 가능한 기간 배열
+ * @returns UI에서 사용할 수 있는 YearQuarterOption 배열
  */
 function convertAvailablePeriodsToOptions(
   availablePeriods: AvailablePeriod[]
 ): YearQuarterOption[] {
   return availablePeriods.map(period => ({
-    year: period.bsnsYear,
-    reportCode: period.reprtCode,
+    year: period.bsnsYear, // 사업연도
+    reportCode: period.reprtCode, // 보고서 코드
     label: period.isAutoSelected
-      ? `${period.periodDescription} (자동 선택)`
-      : period.periodDescription,
-    period: period.periodDescription,
-    isAuto: period.isAutoSelected
+      ? `${period.periodDescription} (자동 선택)` // 자동 선택된 기간 표시
+      : period.periodDescription, // 일반 기간 표시
+    period: period.periodDescription, // 기간 설명
+    isAuto: period.isAutoSelected // 자동 선택 여부
   }))
 }
 
@@ -189,20 +270,29 @@ function convertAvailablePeriodsToOptions(
 // 연도/분기 선택 컴포넌트
 // ============================================================================
 
+/**
+ * 연도/분기 선택 컴포넌트 Props 인터페이스
+ * 재무제표 분석 기간을 선택할 수 있는 드롭다운 컴포넌트의 속성
+ */
 interface YearQuarterSelectorProps {
-  value: YearQuarterOption | null
-  onChange: (option: YearQuarterOption) => void
-  disabled?: boolean
-  options: YearQuarterOption[]
+  value: YearQuarterOption | null // 현재 선택된 연도/분기 옵션
+  onChange: (option: YearQuarterOption) => void // 연도/분기 선택 시 콜백 함수
+  disabled?: boolean // 컴포넌트 비활성화 여부 (로딩 중일 때 사용)
+  options: YearQuarterOption[] // 선택 가능한 연도/분기 옵션 목록
 }
 
+/**
+ * 연도/분기 선택 컴포넌트
+ * 협력사의 이용 가능한 재무제표 기간을 드롭다운으로 선택
+ * 자동 선택된 옵션과 수동 선택 옵션을 구분하여 표시
+ */
 function YearQuarterSelector({
   value,
   onChange,
   disabled,
   options
 }: YearQuarterSelectorProps) {
-  const [open, setOpen] = useState(false)
+  const [open, setOpen] = useState(false) // 드롭다운 열림/닫힘 상태
 
   return (
     <Popover open={open} onOpenChange={setOpen}>
@@ -322,39 +412,62 @@ function YearQuarterSelector({
   )
 }
 
-// 상태 레이블 유틸리티 함수
+/**
+ * 위험 항목 개수에 따른 상태 레이블을 반환하는 유틸리티 함수
+ * 재무 위험도를 3단계로 분류하여 시각적 표시
+ *
+ * 위험도 분류 기준:
+ * - 안전: 위험 항목 0개 (모든 지표가 정상 범위)
+ * - 주의: 위험 항목 1-2개 (일부 지표에서 주의 필요)
+ * - 위험: 위험 항목 3개 이상 (다수 지표에서 위험 신호)
+ *
+ * @param atRiskCount - 위험 상태인 항목의 개수
+ * @returns 상태 정보 객체 (label, color, icon)
+ */
 function getStatusLabel(atRiskCount: number) {
   if (atRiskCount === 0) {
     return {
-      label: '안전',
-      color: 'text-emerald-600',
-      icon: <CheckCircle className="w-5 h-5 text-emerald-500" />
+      label: '안전', // 모든 재무 지표가 정상 범위
+      color: 'text-emerald-600', // 녹색 계열
+      icon: <CheckCircle className="w-5 h-5 text-emerald-500" /> // 체크 원형 아이콘
     }
   }
   if (atRiskCount <= 2) {
     return {
-      label: '주의',
-      color: 'text-amber-600',
-      icon: <Info className="w-5 h-5 text-amber-500" />
+      label: '주의', // 일부 지표에서 주의 필요
+      color: 'text-amber-600', // 주황색 계열
+      icon: <Info className="w-5 h-5 text-amber-500" /> // 정보 아이콘
     }
   }
   return {
-    label: '위험',
-    color: 'text-red-600',
-    icon: <AlertTriangle className="w-5 h-5 text-red-500" />
+    label: '위험', // 다수 지표에서 위험 신호
+    color: 'text-red-600', // 빨간색 계열
+    icon: <AlertTriangle className="w-5 h-5 text-red-500" /> // 경고 삼각형 아이콘
   }
 }
 
-// PartnerCombobox의 props 타입 수정
+// ============================================================================
+// 컴포넌트 Props 타입 정의 (Component Props Types)
+// ============================================================================
+
+/**
+ * 협력사 선택 콤보박스 Props 인터페이스
+ * 드롭다운으로 협력사를 선택할 수 있는 컴포넌트의 속성
+ */
 interface PartnerComboboxProps {
-  options: Array<{name: string; code: string}>
+  options: Array<{name: string; code: string}> // 협력사 목록 (이름, DART 코드)
   value: string | null // 선택된 협력사의 DART 코드
-  onChange: (code: string) => void
+  onChange: (code: string) => void // 협력사 선택 시 콜백 함수
 }
 
+/**
+ * 협력사 선택 콤보박스 컴포넌트
+ * 등록된 협력사 목록에서 재무 분석 대상을 선택하는 드롭다운
+ * 협력사명과 DART 코드를 함께 표시하여 식별 용이성 제공
+ */
 function PartnerCombobox({options, value, onChange}: PartnerComboboxProps) {
-  const [open, setOpen] = useState(false)
-  const selectedOption = options.find(option => option.code === value)
+  const [open, setOpen] = useState(false) // 드롭다운 열림/닫힘 상태
+  const selectedOption = options.find(option => option.code === value) // 현재 선택된 협력사 정보
 
   return (
     <Popover open={open} onOpenChange={setOpen}>
@@ -451,114 +564,170 @@ function PartnerCombobox({options, value, onChange}: PartnerComboboxProps) {
 }
 
 export default function FinancialRiskForm() {
-  // 커스텀 훅
-  const {fetchPartners} = useFetchPartnerCompanies()
-  const {fetchFinancialRisk} = useFetchFinancialRisk()
+  // ========================================================================
+  // 커스텀 훅 (Custom Hooks)
+  // ========================================================================
 
-  // 상태 관리
-  const [isLoading, setIsLoading] = useState(false)
-  const [error, setError] = useState<string | null>(null)
+  const {fetchPartners} = useFetchPartnerCompanies() // 협력사 목록 조회 훅
+  const {fetchFinancialRisk} = useFetchFinancialRisk() // 재무 위험 분석 훅
+
+  // ========================================================================
+  // 상태 관리 (State Management)
+  // ========================================================================
+
+  const [isLoading, setIsLoading] = useState(false) // 메인 로딩 상태
+  const [error, setError] = useState<string | null>(null) // 에러 메시지
+
+  // 협력사 관련 상태
   const [partnerOptions, setPartnerOptions] = useState<
     Array<{name: string; code: string}>
-  >([])
-  const [selectedPartnerCode, setSelectedPartnerCode] = useState<string | null>(null)
-  const [selectedPartnerName, setSelectedPartnerName] = useState<string | null>(null)
-  const [riskData, setRiskData] = useState<FinancialRiskAssessment | null>(null)
-  const [expandedItems, setExpandedItems] = useState<Set<number>>(new Set())
-  const [accordionValue, setAccordionValue] = useState<string[]>([])
+  >([]) // 선택 가능한 협력사 목록
+  const [selectedPartnerCode, setSelectedPartnerCode] = useState<string | null>(null) // 선택된 협력사 DART 코드
+  const [selectedPartnerName, setSelectedPartnerName] = useState<string | null>(null) // 선택된 협력사명
+
+  // 재무 분석 관련 상태
+  const [riskData, setRiskData] = useState<FinancialRiskAssessment | null>(null) // 재무 위험 분석 결과
+  const [expandedItems, setExpandedItems] = useState<Set<number>>(new Set()) // 확장된 위험 항목 번호들
+  const [accordionValue, setAccordionValue] = useState<string[]>([]) // 아코디언 열림 상태 배열
+
+  // 연도/분기 선택 관련 상태
   const [selectedYearQuarter, setSelectedYearQuarter] =
-    useState<YearQuarterOption | null>(null)
-  const [availableOptions, setAvailableOptions] = useState<YearQuarterOption[]>([])
-  const [isLoadingOptions, setIsLoadingOptions] = useState(false)
+    useState<YearQuarterOption | null>(null) // 선택된 분석 기간
+  const [availableOptions, setAvailableOptions] = useState<YearQuarterOption[]>([]) // 이용 가능한 기간 옵션들
+  const [isLoadingOptions, setIsLoadingOptions] = useState(false) // 기간 옵션 로딩 상태
 
-  // URL 쿼리 파라미터에서 companyId와 companyName 가져오기
-  const searchParams = useSearchParams()
-  const companyId = searchParams.get('companyId')
-  const companyName = searchParams.get('companyName')
+  // ========================================================================
+  // URL 파라미터 처리 (URL Parameter Handling)
+  // ========================================================================
 
-  // 회사 자동 선택 및 데이터 로드
+  const searchParams = useSearchParams() // URL 쿼리 파라미터 훅
+  const companyId = searchParams.get('companyId') // 협력사 DART 코드
+  const companyName = searchParams.get('companyName') // 협력사명
+
+  // ========================================================================
+  // 생명주기 관리 (Lifecycle Management)
+  // ========================================================================
+
+  /**
+   * URL 파라미터를 통한 회사 자동 선택 및 데이터 로드
+   * 다른 페이지에서 특정 협력사로 이동해온 경우 자동으로 해당 협력사 선택
+   */
   useEffect(() => {
     if (companyId && companyName) {
-      setSelectedPartnerCode(companyId)
-      setSelectedPartnerName(decodeURIComponent(companyName))
+      setSelectedPartnerCode(companyId) // 협력사 코드 설정
+      setSelectedPartnerName(decodeURIComponent(companyName)) // 협력사명 설정 (URL 디코딩)
 
-      // URL에서 온 경우 자동으로 최신 분기 기준으로 로드
+      // URL에서 온 경우 자동으로 최신 분기 기준으로 재무 분석 수행
       loadFinancialRiskData(companyId, decodeURIComponent(companyName), null)
     }
   }, [companyId, companyName])
 
-  // 페이지 로드 시 자동 선택 연도/분기 설정
+  /**
+   * 페이지 로드 시 자동 선택 연도/분기 설정
+   * 현재 날짜 기준으로 가장 최근 공시된 재무제표 기간을 자동 선택
+   */
   useEffect(() => {
     if (!selectedYearQuarter) {
-      const autoOption = getAutoYearQuarterOption()
+      const autoOption = getAutoYearQuarterOption() // 자동 선택 옵션 생성
       setSelectedYearQuarter(autoOption)
     }
   }, [])
 
-  // 확장/축소 토글 함수
+  // ========================================================================
+  // 이벤트 핸들러 함수 (Event Handler Functions)
+  // ========================================================================
+
+  /**
+   * 개별 위험 항목의 확장/축소를 토글하는 함수
+   * 특정 항목의 상세 정보를 보거나 숨기기 위해 사용
+   *
+   * @param itemNumber - 토글할 위험 항목 번호
+   */
   const toggleExpand = (itemNumber: number) => {
     setExpandedItems(prev => {
       const newSet = new Set(prev)
       if (newSet.has(itemNumber)) {
-        newSet.delete(itemNumber)
+        newSet.delete(itemNumber) // 이미 확장된 항목이면 축소
       } else {
-        newSet.add(itemNumber)
+        newSet.add(itemNumber) // 축소된 항목이면 확장
       }
       return newSet
     })
   }
 
-  // 모든 항목 확장/축소 함수
+  /**
+   * 모든 위험 항목을 일괄 확장/축소하는 함수
+   * 사용자 편의를 위한 전체 제어 기능
+   *
+   * @param expand - true: 모두 확장, false: 모두 축소
+   */
   const toggleAllExpanded = (expand: boolean) => {
     if (riskData?.riskItems) {
       if (expand) {
+        // 모든 항목 확장
         const allItemValues = riskData.riskItems.map(item => `item-${item.itemNumber}`)
         setAccordionValue(allItemValues)
         setExpandedItems(new Set(riskData.riskItems.map(item => item.itemNumber)))
       } else {
+        // 모든 항목 축소
         setAccordionValue([])
         setExpandedItems(new Set())
       }
     }
   }
 
-  // 초기 데이터 로드
+  /**
+   * 컴포넌트 마운트 시 초기 데이터 로드
+   * 협력사 목록을 먼저 로드하여 선택 옵션 제공
+   */
   useEffect(() => {
     loadPartnerOptions()
   }, [])
 
-  // 파트너사 옵션 로드
+  // ========================================================================
+  // API 호출 함수 (API Call Functions)
+  // ========================================================================
+
+  /**
+   * 협력사 목록을 로드하는 함수
+   * 재무 분석 대상으로 선택할 수 있는 협력사들의 목록을 가져옴
+   * 다양한 API 응답 형태를 처리하여 일관된 형태로 변환
+   */
   const loadPartnerOptions = async () => {
     try {
-      setIsLoading(true)
-      const response = await fetchPartners(1, 100)
+      setIsLoading(true) // 로딩 상태 시작
+      const response = await fetchPartners(1, 100) // 첫 페이지, 100개 항목 조회
       let partnerData: any[] = []
+
+      // API 응답 형태에 따른 데이터 추출 (서로 다른 구조 대응)
       if (response && response.data && Array.isArray(response.data)) {
-        partnerData = response.data
+        partnerData = response.data // { data: [...] } 형태
       } else if (
         response &&
         (response as any).content &&
         Array.isArray((response as any).content)
       ) {
-        partnerData = (response as any).content
+        partnerData = (response as any).content // 페이지네이션 응답 { content: [...] } 형태
       } else if (Array.isArray(response)) {
-        partnerData = response
+        partnerData = response // 직접 배열 형태
       }
+
       if (partnerData.length > 0) {
+        // 협력사 데이터를 선택 옵션 형태로 변환
         const options = partnerData.map((partner: any) => ({
-          name: partner.corpName || partner.companyName,
-          code: partner.corpCode || partner.corp_code
+          name: partner.corpName || partner.companyName, // 회사명 (다양한 필드명 대응)
+          code: partner.corpCode || partner.corp_code // DART 코드 (다양한 필드명 대응)
         }))
         setPartnerOptions(options)
       } else {
-        setPartnerOptions([])
+        setPartnerOptions([]) // 빈 배열로 초기화
       }
     } catch (err) {
-      console.error('Failed to load partner options:', err)
+      console.error('협력사 목록 로드 실패:', err)
       setError('파트너사 목록을 불러오는데 실패했습니다.')
       // 에러 토스트는 커스텀 훅에서 자동 처리되지 않음 (목록 조회는 조용히 처리)
     } finally {
-      setIsLoading(false)
+      setIsLoading(false) // 로딩 상태 종료
     }
   }
 
@@ -646,12 +815,22 @@ export default function FinancialRiskForm() {
     }
   }
 
-  const atRiskCount = riskData?.riskItems?.filter(item => item.atRisk).length || 0
-  const statusInfo = getStatusLabel(atRiskCount)
+  // ========================================================================
+  // 계산된 값 (Computed Values)
+  // ========================================================================
+
+  const atRiskCount = riskData?.riskItems?.filter(item => item.atRisk).length || 0 // 위험 상태인 항목 개수
+  const statusInfo = getStatusLabel(atRiskCount) // 위험도에 따른 상태 정보
+
+  // ========================================================================
+  // 렌더링 (Rendering)
+  // ========================================================================
 
   return (
     <div className="flex flex-col p-4 w-full">
-      {/* Breadcrumb */}
+      {/* ======================================================================
+          상단 네비게이션 섹션 (Top Navigation Section)
+          ====================================================================== */}
       <div className="flex flex-row items-center p-2 px-2 mb-6 text-sm text-gray-500 bg-white rounded-lg shadow-sm">
         <Breadcrumb>
           <BreadcrumbList>
@@ -682,7 +861,9 @@ export default function FinancialRiskForm() {
         </Link>
       </div>
 
-      {/* 분석할 파트너사 선택 카드 */}
+      {/* ======================================================================
+          협력사 선택 섹션 (Partner Selection Section)
+          ====================================================================== */}
       <Card className="overflow-hidden bg-white rounded-xl border-2 shadow-sm transition-all duration-300 border-slate-200">
         <CardContent className="p-6">
           <div className="flex justify-between items-center">
@@ -746,7 +927,9 @@ export default function FinancialRiskForm() {
       <LoadingState isLoading={isLoading} error={error} isEmpty={!riskData}>
         {riskData && (
           <div className="mt-10 space-y-4">
-            {/* 상단 3개 요약 카드 */}
+            {/* ======================================================================
+                재무 위험 분석 결과 섹션 (Financial Risk Analysis Results)
+                ====================================================================== */}
             <div className="flex flex-row gap-4 mb-2">
               {/* Partner Company Info Card */}
               <Card className="flex-1 bg-gradient-to-br from-blue-50 to-white rounded-xl border-2 border-blue-100 shadow-sm">
@@ -842,7 +1025,9 @@ export default function FinancialRiskForm() {
               </Card>
             </div>
 
-            {/* 세부 위험 분석 카드 */}
+            {/* ======================================================================
+                세부 위험 분석 섹션 (Detailed Risk Analysis Section)
+                ====================================================================== */}
             <Card className="overflow-hidden mt-10 shadow-sm">
               <CardHeader className="p-8 bg-white border-b">
                 <div className="flex justify-between items-center">
@@ -1025,6 +1210,9 @@ export default function FinancialRiskForm() {
           </div>
         )}
       </LoadingState>
+      {/* ======================================================================
+          하단 네비게이션 버튼 (Bottom Navigation Button)
+          ====================================================================== */}
       <DirectionButton
         direction="left"
         tooltip="파트너사 관리로 이동"

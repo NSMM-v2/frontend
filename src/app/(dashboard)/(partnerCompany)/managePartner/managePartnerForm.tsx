@@ -79,6 +79,7 @@ import {DartCorpInfo, PartnerCompany} from '@/types/partnerCompanyType'
 
 // 인증 서비스
 import {createPartner as authCreatePartner} from '@/services/authService'
+import authService from '@/services/authService'
 
 // 토스트 알림
 import toast from '@/util/toast'
@@ -492,6 +493,25 @@ export default function ManagePartnerForm() {
         throw new Error('파트너사 UUID가 없습니다.')
       }
 
+      // 현재 사용자 정보 조회하여 parentUuid 결정
+      let parentUuid: string | undefined = undefined
+
+      try {
+        const currentUserResponse = await authService.getCurrentUserByType()
+        if (currentUserResponse?.success && currentUserResponse.data) {
+          const currentUser = currentUserResponse.data
+
+          // 협력사가 로그인한 경우, 해당 협력사를 상위로 설정
+          if (currentUser.userType === 'PARTNER' && currentUser.uuid) {
+            parentUuid = currentUser.uuid
+            console.log('협력사 로그인: 상위 UUID 설정됨', parentUuid)
+          }
+          // 본사가 로그인한 경우 parentUuid는 undefined (1차 협력사로 생성)
+        }
+      } catch (error) {
+        console.warn('현재 사용자 정보 조회 실패, 1차 협력사로 생성됩니다:', error)
+      }
+
       // 디버깅 로그 (개발 환경에서만)
       if (process.env.NODE_ENV === 'development') {
         console.log('계정 생성 대상 파트너사:', {
@@ -499,7 +519,8 @@ export default function ManagePartnerForm() {
           corpName: partner.corpName,
           ceoName: partner.ceoName,
           address: partner.address,
-          phoneNumber: partner.phoneNumber
+          phoneNumber: partner.phoneNumber,
+          parentUuid
         })
       }
 
@@ -510,7 +531,7 @@ export default function ManagePartnerForm() {
         companyName: partner.corpName || partner.companyName || '파트너사', // DART API 회사명
         ...(partner.address && {address: partner.address}), // 주소가 있으면 포함
         ...(partner.phoneNumber && {phone: partner.phoneNumber}), // 전화번호가 있으면 포함
-        parentUuid: undefined // 1차 협력사로 생성 (본사가 상위가 됨)
+        parentUuid // 현재 사용자 타입에 따라 결정된 상위 UUID
       }
 
       if (process.env.NODE_ENV === 'development') {
