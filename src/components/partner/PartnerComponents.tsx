@@ -210,8 +210,8 @@ export function EmptyPartnerState({onOpenAddDialog}: EmptyStateProps) {
     <div className="bg-white rounded-2xl border-2 shadow-sm border-slate-200">
       <div className="py-16 text-center">
         {/* 아이콘 */}
-        <div className="flex justify-center items-center mx-auto mb-6 w-24 h-24 bg-gradient-to-br rounded-2xl from-slate-100 to-slate-200">
-          <Users className="w-12 h-12 text-slate-400" />
+        <div className="flex justify-center items-center mx-auto mb-6 w-24 h-24 bg-gradient-to-br rounded-2xl from-blue-100 to-blue-200">
+          <Users className="w-12 h-12 text-blue-500" />
         </div>
 
         {/* 메인 메시지 */}
@@ -249,8 +249,8 @@ export function SearchEmptyState({searchQuery}: SearchEmptyStateProps) {
     <div className="bg-white rounded-2xl border-2 shadow-sm border-slate-200">
       <div className="py-16 text-center">
         {/* 검색 아이콘 */}
-        <div className="flex justify-center items-center mx-auto mb-6 w-24 h-24 bg-gradient-to-br rounded-2xl from-slate-100 to-slate-200">
-          <Search className="w-12 h-12 text-slate-400" />
+        <div className="flex justify-center items-center mx-auto mb-6 w-24 h-24 bg-gradient-to-br rounded-2xl from-blue-100 to-blue-200">
+          <Search className="w-12 h-12 text-blue-500" />
         </div>
 
         {/* 메인 메시지 */}

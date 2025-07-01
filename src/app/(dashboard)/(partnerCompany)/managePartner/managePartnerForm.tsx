@@ -77,6 +77,12 @@ import {useDebounce} from '@/hooks/useDebounce'
 // 타입 정의
 import {DartCorpInfo, PartnerCompany} from '@/types/partnerCompanyType'
 
+// 인증 서비스
+import {createPartner as authCreatePartner} from '@/services/authService'
+
+// 토스트 알림
+import toast from '@/util/toast'
+
 /**
  * 파트너사 관리 폼 컴포넌트
  *
@@ -474,6 +480,73 @@ export default function ManagePartnerForm() {
     setDartSearchResults([])
   }
 
+  /**
+   * 기존 파트너사를 위한 auth 계정 생성 함수
+   * authService의 createPartner 함수를 활용 (DART API 기반)
+   */
+  const handleCreateAccount = async (partner: PartnerCompany) => {
+    setIsSubmitting(true)
+    try {
+      // 필수 정보 검증
+      if (!partner.id) {
+        throw new Error('파트너사 UUID가 없습니다.')
+      }
+
+      // 디버깅 로그 (개발 환경에서만)
+      if (process.env.NODE_ENV === 'development') {
+        console.log('계정 생성 대상 파트너사:', {
+          id: partner.id,
+          corpName: partner.corpName,
+          ceoName: partner.ceoName,
+          address: partner.address,
+          phoneNumber: partner.phoneNumber
+        })
+      }
+
+      // PartnerCreateRequest 구조에 맞는 데이터 준비
+      const accountData = {
+        uuid: partner.id, // DART API 회사 고유 식별자
+        contactPerson: partner.ceoName || '담당자', // DART API 대표자명
+        companyName: partner.corpName || partner.companyName || '파트너사', // DART API 회사명
+        ...(partner.address && {address: partner.address}), // 주소가 있으면 포함
+        ...(partner.phoneNumber && {phone: partner.phoneNumber}), // 전화번호가 있으면 포함
+        parentUuid: undefined // 1차 협력사로 생성 (본사가 상위가 됨)
+      }
+
+      if (process.env.NODE_ENV === 'development') {
+        console.log('계정 생성 요청 데이터:', accountData)
+      }
+
+      // auth 계정 생성 API 호출
+      const response = await authCreatePartner(accountData)
+
+      if (response.success && response.data) {
+        // 성공 토스트 알림
+        toast.success(
+          `${
+            partner.corpName || partner.companyName
+          }의 계정이 성공적으로 생성되었습니다.\n계정번호: ${
+            response.data.fullAccountNumber
+          }\n초기 비밀번호: ${response.data.initialPassword}`
+        )
+
+        // 파트너사 목록 새로고침
+        await loadPartners(currentPage, debouncedMainSearchQuery || undefined)
+
+        console.log('계정 생성 성공:', response.data)
+      } else {
+        throw new Error(response.message || '계정 생성에 실패했습니다.')
+      }
+    } catch (error) {
+      console.error('계정 생성 실패:', error)
+      const errorMessage =
+        error instanceof Error ? error.message : '계정 생성 중 오류가 발생했습니다.'
+      toast.error(errorMessage)
+    } finally {
+      setIsSubmitting(false)
+    }
+  }
+
   // ========================================================================
   // 생명주기 관리 (Lifecycle Management)
   // ========================================================================
@@ -583,6 +656,7 @@ export default function ManagePartnerForm() {
                   partners={partners}
                   onEditPartner={openEditDialog}
                   onDeletePartner={openDeleteDialog}
+                  onCreateAccount={handleCreateAccount}
                 />
 
                 {/* 페이지네이션 */}
