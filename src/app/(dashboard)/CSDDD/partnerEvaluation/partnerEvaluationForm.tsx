@@ -3,6 +3,7 @@ import {useState, useEffect} from 'react'
 import {Card, CardContent, CardHeader, CardTitle} from '@/components/ui/card'
 import {getSelfAssessmentResults, getSelfAssessmentResult} from '@/services/csdddService'
 import authService from '@/services/authService'
+import type {UserInfo} from '@/services/authService'
 import type {
   SelfAssessmentResponse,
   PaginatedSelfAssessmentResponse
@@ -62,7 +63,7 @@ export default function PartnerEvaluationForm() {
     }
   }
 
-  // 결과 목록 조회
+  // 결과 목록 조회 (본사용 - 협력사 결과만 조회)
   const fetchResults = async () => {
     setLoading(true)
     try {
@@ -72,23 +73,47 @@ export default function PartnerEvaluationForm() {
         return
       }
 
-      setUserInfo(user.data) // 상태 업데이트
-      const response: PaginatedSelfAssessmentResponse = await getSelfAssessmentResults({
+      setUserInfo(user.data)
+
+      // HQ ID 1 전체 결과 조회 (treePath, partnerId 미사용)
+      const userInfo = {
         userType: user.data.userType,
-        headquartersId: user.data.headquartersId ?? user.data.headquarters?.id ?? '',
-        partnerId: user.data.partnerId,
-        treePath: user.data.treePath ?? ''
-      })
+        headquartersId: String(user.data.headquartersId)
+      }
+
+      const queryParams = {
+        onlyPartners: true
+      }
+
+      // 🔍 Log params before API call
+      console.log('🔍 전송 파라미터:', {...userInfo, ...queryParams})
+
+      const response: PaginatedSelfAssessmentResponse = await getSelfAssessmentResults(
+        userInfo,
+        queryParams
+      )
 
       const partnerRes = await authService.getAccessiblePartners()
       const partnerMap = new Map(
         partnerRes.data.map((p: any) => [p.partnerId, p.companyName])
       )
+
       const enriched = (response.content || []).map(result => ({
         ...result,
         companyName: String(partnerMap.get(result.partnerId) ?? '알 수 없음')
       }))
-      setResults(enriched)
+
+      // 본사의 경우 본사 자체 결과는 제외하고 협력사 결과만 표시
+      const filteredResults =
+        user.data.userType === 'HEADQUARTERS'
+          ? enriched.filter(result => result.partnerId !== 0 && result.partnerId !== null)
+          : enriched
+
+      setResults(filteredResults)
+
+      if (filteredResults.length === 0 && user.data.userType === 'HEADQUARTERS') {
+        console.log('📋 관할 협력사의 진단 결과가 없습니다.')
+      }
     } catch (error: any) {
       console.error('결과 조회 실패:', error)
       if (error.response?.status === 401 || error.response?.status === 403) {
@@ -107,12 +132,27 @@ export default function PartnerEvaluationForm() {
     setAuthError(null)
 
     try {
-      const result = await getSelfAssessmentResult(resultId, {
+      const params: {
+        userType: string
+        headquartersId: string
+        treePath: string
+        partnerId?: string
+      } = {
         userType: userInfo.userType,
         headquartersId: userInfo.headquartersId,
-        partnerId: userInfo.partnerId,
-        treePath: userInfo.treePath
-      })
+        treePath: String(
+          (userInfo as any).treePath ??
+            (userInfo as any).partner?.treePath ??
+            (userInfo as any).headquarters?.treePath ??
+            ''
+        )
+      }
+
+      if (userInfo.userType === 'PARTNER') {
+        params.partnerId = String(userInfo.partnerId ?? '')
+      }
+
+      const result = await getSelfAssessmentResult(resultId, params)
       setSelectedResult(result)
     } catch (error: any) {
       console.error('상세 결과 조회 실패:', error)
@@ -239,7 +279,11 @@ export default function PartnerEvaluationForm() {
               </BreadcrumbItem>
               <BreadcrumbSeparator />
               <BreadcrumbItem>
-                <span className="font-bold text-blue-600">자가진단 결과</span>
+                <span className="font-bold text-blue-600">
+                  {userInfo?.userType === 'HEADQUARTERS'
+                    ? '협력사 진단 결과'
+                    : '자가진단 결과'}
+                </span>
               </BreadcrumbItem>
             </BreadcrumbList>
           </Breadcrumb>
@@ -256,7 +300,11 @@ export default function PartnerEvaluationForm() {
             <PageHeader
               icon={<Shield className="w-6 h-6 text-blue-600" />}
               title="CSDDD 자가진단 시스템"
-              description="유럽연합 공급망 실사 지침 준수를 위한 종합 평가 시스템"
+              description={
+                userInfo?.userType === 'HEADQUARTERS'
+                  ? '관할 협력사의 공급망 실사 지침 준수 현황 모니터링'
+                  : '유럽연합 공급망 실사 지침 준수를 위한 종합 평가 시스템'
+              }
               module="CSDDD"
               submodule="assessment"
             />
@@ -273,7 +321,11 @@ export default function PartnerEvaluationForm() {
               <div className="border shadow-xl bg-white/95 backdrop-blur-sm rounded-xl border-white/50">
                 <div className="px-6 py-5 border-b border-gray-100">
                   <div className="flex items-center justify-between">
-                    <h2 className="text-xl font-bold text-gray-900">진단 결과 목록</h2>
+                    <h2 className="text-xl font-bold text-gray-900">
+                      {userInfo?.userType === 'HEADQUARTERS'
+                        ? '협력사 진단 결과 목록'
+                        : '진단 결과 목록'}
+                    </h2>
                     <button
                       onClick={fetchResults}
                       disabled={loading}
@@ -284,6 +336,12 @@ export default function PartnerEvaluationForm() {
                       {loading ? '새로고침 중...' : '새로고침'}
                     </button>
                   </div>
+                  {/* 본사용 안내 메시지 */}
+                  {userInfo?.userType === 'HEADQUARTERS' && (
+                    <p className="mt-2 text-sm text-gray-600">
+                      관할 협력사들의 CSDDD 자가진단 결과를 확인할 수 있습니다.
+                    </p>
+                  )}
                 </div>
 
                 <div className="p-6">
@@ -295,9 +353,15 @@ export default function PartnerEvaluationForm() {
                   ) : results.length === 0 ? (
                     <div className="py-12 text-center">
                       <BarChart3 className="w-12 h-12 mx-auto mb-4 text-gray-400" />
-                      <p className="font-medium text-gray-600">진단 결과가 없습니다.</p>
+                      <p className="font-medium text-gray-600">
+                        {userInfo?.userType === 'HEADQUARTERS'
+                          ? '관할 협력사의 진단 결과가 없습니다.'
+                          : '진단 결과가 없습니다.'}
+                      </p>
                       <p className="mt-1 text-sm text-gray-500">
-                        새로운 자가진단을 실시해보세요.
+                        {userInfo?.userType === 'HEADQUARTERS'
+                          ? '협력사들이 자가진단을 완료하면 결과가 표시됩니다.'
+                          : '새로운 자가진단을 실시해보세요.'}
                       </p>
                     </div>
                   ) : (
@@ -320,13 +384,17 @@ export default function PartnerEvaluationForm() {
                             <div className="flex items-center justify-between mb-4">
                               <div className="flex items-center space-x-3">
                                 <div className="p-2 bg-blue-100 rounded-lg">
-                                  <FileText className="w-6 h-6 text-blue-600" />
+                                  <Building2 className="w-6 h-6 text-blue-600" />
                                 </div>
                                 <div>
                                   <h3 className="font-bold text-gray-900">
                                     {result.companyName}
                                   </h3>
-                                  <p className="text-sm text-gray-600">자가진단 결과</p>
+                                  <p className="text-sm text-gray-600">
+                                    {userInfo?.userType === 'HEADQUARTERS'
+                                      ? '협력사 진단 결과'
+                                      : '자가진단 결과'}
+                                  </p>
                                 </div>
                               </div>
                               <span
@@ -439,7 +507,9 @@ export default function PartnerEvaluationForm() {
                       <div className="p-5 border border-blue-100 rounded-xl bg-gradient-to-br from-blue-50 to-indigo-50">
                         <div className="mb-4">
                           <h3 className="text-lg font-bold text-gray-900">
-                            자가진단 상세 결과
+                            {userInfo?.userType === 'HEADQUARTERS'
+                              ? '협력사 진단 상세 결과'
+                              : '자가진단 상세 결과'}
                           </h3>
                         </div>
 
