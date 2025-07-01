@@ -46,7 +46,7 @@ import {SelectorState} from '@/types/scopeTypes'
 // ============================================================================
 // 타입 정의 (Type Definitions)
 // ============================================================================
-type Scope1CategoryType = 'potential' | 'kinetic' | 'process' | 'leak'
+
 /**
  * Scope 1 계산기 데이터 구조
  */
@@ -79,8 +79,14 @@ export default function Scope1Form() {
   >({
     list1: {},
     list2: {},
-    list3: {}
+    list3: {},
+    list4: {},
+    list5: {},
+    list6: {},
+    list7: {},
+    list8: {}
   })
+
   const [selectedYear, setSelectedYear] = useState<number>(new Date().getFullYear()) // 선택된 연도
   const currentMonth = new Date().getMonth() + 1 // JavaScript의 월은 0부터 시작하므로 1을 더함
   const [selectedMonth, setSelectedMonth] = useState<number | null>(currentMonth) // 선택된 월 (null이면 전체)
@@ -105,19 +111,19 @@ export default function Scope1Form() {
   const [kineticCategoryCalculators, setKineticCategoryCalculators] = useState<
     Record<Scope1KineticCategoryKey, CalculatorData[]>
   >({
-    list1: [],
-    list2: [],
-    list3: []
+    list4: [],
+    list5: [],
+    list6: []
   })
   const [processCategoryCalculators, setProcessCategoryCalculators] = useState<
     Record<Scope1ProcessCategoryKey, CalculatorData[]>
   >({
-    list1: []
+    list7: []
   })
   const [leakCategoryCalculators, setLeakCategoryCalculators] = useState<
     Record<Scope1LeakCategoryKey, CalculatorData[]>
   >({
-    list1: []
+    list8: []
   })
 
   // 카테고리별 배출량 총계 관리 ===========================================================================================
@@ -131,19 +137,19 @@ export default function Scope1Form() {
   const [kineticCategoryTotals, setKineticCategoryTotals] = useState<
     Record<Scope1KineticCategoryKey, {id: number; emission: number}[]>
   >({
-    list1: [],
-    list2: [],
-    list3: []
+    list4: [],
+    list5: [],
+    list6: []
   })
   const [processCategoryTotals, setProcessCategoryTotals] = useState<
     Record<Scope1ProcessCategoryKey, {id: number; emission: number}[]>
   >({
-    list1: []
+    list7: []
   })
   const [leakCategoryTotals, setLeakCategoryTotals] = useState<
     Record<Scope1LeakCategoryKey, {id: number; emission: number}[]>
   >({
-    list1: []
+    list8: []
   })
 
   // ========================================================================
@@ -166,14 +172,11 @@ export default function Scope1Form() {
   const getCurrentCalculators = (): CalculatorData[] => {
     if (activePotentialCategory) {
       return potentialCategoryCalculators[activePotentialCategory] || []
-    }
-    if (activeKineticCategory) {
+    } else if (activeKineticCategory) {
       return kineticCategoryCalculators[activeKineticCategory] || []
-    }
-    if (activeProcessCategory) {
+    } else if (activeProcessCategory) {
       return processCategoryCalculators[activeProcessCategory] || []
-    }
-    if (activeLeakCategory) {
+    } else if (activeLeakCategory) {
       return leakCategoryCalculators[activeLeakCategory] || []
     }
     return []
@@ -195,6 +198,20 @@ export default function Scope1Form() {
   // 유틸리티 함수 - ID 생성 (Utility Functions - ID Generation)
   // ========================================================================
 
+  type Scope1CategoryGroup = 'potential' | 'kinetic' | 'process' | 'leak'
+
+  const getCategoryGroupFromKey = (
+    categoryKey: string
+  ): Scope1CategoryGroup | undefined => {
+    if ((categoryKey as Scope1PotentialCategoryKey) in potentialCategoryCalculators)
+      return 'potential'
+    if ((categoryKey as Scope1KineticCategoryKey) in kineticCategoryCalculators)
+      return 'kinetic'
+    if ((categoryKey as Scope1ProcessCategoryKey) in processCategoryCalculators)
+      return 'process'
+    if ((categoryKey as Scope1LeakCategoryKey) in leakCategoryCalculators) return 'leak'
+    return undefined
+  }
   /**
    * 새로운 임시 ID 생성 (음수 사용)
    */
@@ -205,11 +222,31 @@ export default function Scope1Form() {
       | Scope1ProcessCategoryKey
       | Scope1LeakCategoryKey
   ): number => {
-    const existingCalculators = activePotentialCategory
-      ? potentialCategoryCalculators[categoryKey as Scope1PotentialCategoryKey] || []
-      : kineticCategoryCalculators[categoryKey as Scope1KineticCategoryKey] || []
-    const existingIds = existingCalculators.map(c => c.id).filter(id => id < 0)
+    const group = getCategoryGroupFromKey(categoryKey)
+    let existingCalculators: {id: number}[] = []
 
+    switch (group) {
+      case 'potential':
+        existingCalculators =
+          potentialCategoryCalculators[categoryKey as Scope1PotentialCategoryKey] || []
+        break
+      case 'kinetic':
+        existingCalculators =
+          kineticCategoryCalculators[categoryKey as Scope1KineticCategoryKey] || []
+        break
+      case 'process':
+        existingCalculators =
+          processCategoryCalculators[categoryKey as Scope1ProcessCategoryKey] || []
+        break
+      case 'leak':
+        existingCalculators =
+          leakCategoryCalculators[categoryKey as Scope1LeakCategoryKey] || []
+        break
+      default:
+        return -1
+    }
+
+    const existingIds = existingCalculators.map(c => c.id).filter(id => id < 0)
     const minId = existingIds.length > 0 ? Math.min(...existingIds) : 0
     return minId - 1
   }
@@ -865,13 +902,21 @@ export default function Scope1Form() {
             activeLeakCategory
           }
           calculators={getCurrentCalculators()}
-          getTotalEmission={category =>
-            activePotentialCategory
-              ? getPotentialTotalEmission(category as Scope1PotentialCategoryKey)
-              : getKineticTotalEmission(category as Scope1KineticCategoryKey)
-              ? getProcessTotalEmission(category as Scope1ProcessCategoryKey)
-              : getLeakTotalEmission(category as Scope1LeakCategoryKey)
-          }
+          getTotalEmission={category => {
+            const group = getCategoryGroupFromKey(category)
+            switch (group) {
+              case 'potential':
+                return getPotentialTotalEmission(category as Scope1PotentialCategoryKey)
+              case 'kinetic':
+                return getKineticTotalEmission(category as Scope1KineticCategoryKey)
+              case 'process':
+                return getProcessTotalEmission(category as Scope1ProcessCategoryKey)
+              case 'leak':
+                return getLeakTotalEmission(category as Scope1LeakCategoryKey)
+              default:
+                return 0
+            }
+          }}
           onAddCalculator={addCalculator}
           onRemoveCalculator={removeCalculator}
           onUpdateCalculatorState={updateCalculatorState}

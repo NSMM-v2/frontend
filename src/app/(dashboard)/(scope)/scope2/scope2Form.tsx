@@ -91,7 +91,8 @@ export default function Scope2Form() {
   const [calculatorModes, setCalculatorModes] = useState<
     Record<Scope2ElectricCategoryKey | Scope2SteamCategoryKey, Record<number, boolean>>
   >({
-    list1: {}
+    list1: {},
+    list2: {}
   })
   const [selectedYear, setSelectedYear] = useState<number>(new Date().getFullYear()) // 선택된 연도
   const currentMonth = new Date().getMonth() + 1 // JavaScript의 월은 0부터 시작하므로 1을 더함
@@ -112,7 +113,7 @@ export default function Scope2Form() {
   const [steamCategoryCalculators, setSteamCategoryCalculators] = useState<
     Record<Scope2SteamCategoryKey, CalculatorData[]>
   >({
-    list1: []
+    list2: []
   })
 
   // 카테고리별 배출량 총계 관리
@@ -125,7 +126,7 @@ export default function Scope2Form() {
   const [steamCategoryTotals, setSteamCategoryTotals] = useState<
     Record<Scope2SteamCategoryKey, {id: number; emission: number}[]>
   >({
-    list1: []
+    list2: []
   })
 
   // ========================================================================

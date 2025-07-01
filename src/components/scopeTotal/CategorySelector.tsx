@@ -36,17 +36,17 @@ export const scope1PotentialCategoryList = {
 } as const
 // Scope 1 - 이동연소 카테고리 (Mobile Combustion Categories)
 export const scope1KineticCategoryList = {
-  list1: '차량', // 승용차, 트럭, 버스 등
-  list2: '항공기', // 비행기, 헬리콥터 등
-  list3: '선박' // 화물선, 여객선, 어선 등
+  list4: '차량', // 승용차, 트럭, 버스 등
+  list5: '항공기', // 비행기, 헬리콥터 등
+  list6: '선박' // 화물선, 여객선, 어선 등
 } as const
 // Scope 1 - 공정배출 카테고리
 export const scope1ProcessCategoryList = {
-  list1: '공정배출' // 화학 공정, 금속 가공 등
+  list7: '공정배출' // 화학 공정, 금속 가공 등
 } as const
 // Scope 1 - 냉매누출 카테고리
 export const scope1LeakCategoryList = {
-  list1: '누출배출' // 냉매, 가스 누출
+  list8: '누출배출' // 냉매, 가스 누출
 } as const
 
 // Scope 2 - 전력 카테고리 (Electricity Categories)================================================================================
@@ -55,7 +55,7 @@ export const scope2ElectricCategoryList = {
 } as const
 // Scope 2 - 스팀 카테고리 (Steam Categories)
 export const scope2SteamCategoryList = {
-  list1: '스팀' // 스팀 사용량 (A타입, B타입, C타입)
+  list2: '스팀' // 스팀 사용량 (A타입, B타입, C타입)
 } as const
 
 // Scope 3 - 간접배출 카테고리 (Indirect Emissions Categories)======================================================================
