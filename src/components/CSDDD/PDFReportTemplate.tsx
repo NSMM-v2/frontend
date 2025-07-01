@@ -18,8 +18,6 @@
  *
  * @author ESG Project Team
  * @version 1.0
- * @since 2024
- * @lastModified 2024-12-21
  */
 
 'use client'

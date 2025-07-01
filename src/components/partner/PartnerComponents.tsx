@@ -15,8 +15,6 @@
  *
  * @author ESG Project Team
  * @version 1.0
- * @since 2024
- * @lastModified 2024-12-20
  */
 
 'use client'
@@ -210,7 +208,7 @@ export function EmptyPartnerState({onOpenAddDialog}: EmptyStateProps) {
     <div className="bg-white rounded-2xl border-2 shadow-sm border-slate-200">
       <div className="py-16 text-center">
         {/* 아이콘 */}
-        <div className="flex justify-center items-center mx-auto mb-6 w-24 h-24 bg-gradient-to-br rounded-2xl from-blue-100 to-blue-200">
+        <div className="flex justify-center items-center mx-auto mb-6 w-24 h-24 bg-gradient-to-br from-blue-100 to-blue-200 rounded-2xl">
           <Users className="w-12 h-12 text-blue-500" />
         </div>
 
@@ -249,7 +247,7 @@ export function SearchEmptyState({searchQuery}: SearchEmptyStateProps) {
     <div className="bg-white rounded-2xl border-2 shadow-sm border-slate-200">
       <div className="py-16 text-center">
         {/* 검색 아이콘 */}
-        <div className="flex justify-center items-center mx-auto mb-6 w-24 h-24 bg-gradient-to-br rounded-2xl from-blue-100 to-blue-200">
+        <div className="flex justify-center items-center mx-auto mb-6 w-24 h-24 bg-gradient-to-br from-blue-100 to-blue-200 rounded-2xl">
           <Search className="w-12 h-12 text-blue-500" />
         </div>
 

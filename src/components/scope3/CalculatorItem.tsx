@@ -16,8 +16,6 @@
  *
  * @author ESG Project Team
  * @version 3.0
- * @since 2024
- * @lastModified 2024-12-20
  */
 
 import React, {useState} from 'react'
@@ -95,7 +93,9 @@ export function CalculatorItem({
   const handleDeleteConfirm = () => {
     onRemove(id)
     setShowDeleteDialog(false)
-    showSuccess(`${mode ? '수동 입력' : '배출계수 선택'} ${index}이(가) 삭제되었습니다.`)
+    showSuccess(
+      `${mode ? '수동 입력' : 'LCA 기반 배출계수 선택'} ${index}이(가) 삭제되었습니다.`
+    )
   }
 
   /**
@@ -106,10 +106,10 @@ export function CalculatorItem({
   }
 
   // 모드별 제목 및 설명 설정
-  const title = mode ? `수동 입력 ${index}` : `배출계수 선택 ${index}`
+  const title = mode ? `LCA 기반 배출계수 선택 ${index}` : `수동 입력 ${index}`
   const description = mode
-    ? '직접 값을 입력하여 배출량을 계산하세요'
-    : '배출계수를 단계별로 선택하여 자동 계산하세요'
+    ? '배출계수를 단계별로 선택하여 자동 계산하세요'
+    : '직접 값을 입력하여 배출량을 계산하세요.'
   const IconComponent = mode ? Sparkles : Database
 
   /**

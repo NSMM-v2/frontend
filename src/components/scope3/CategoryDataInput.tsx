@@ -10,14 +10,13 @@
  *
  * @author ESG Project Team
  * @version 1.0
- * @since 2024
  */
 
 import React, {useCallback} from 'react'
 import {motion, AnimatePresence} from 'framer-motion'
 import {Button} from '@/components/ui/button'
 import {Card, CardContent} from '@/components/ui/card'
-import {Plus} from 'lucide-react'
+import {Plus, Save} from 'lucide-react'
 import {CalculatorItem} from './CalculatorItem'
 import {scope3CategoryList, Scope3CategoryKey} from '../scopeTotal/CategorySelector'
 import {SelectorState, Scope3EmissionResponse} from '@/types/scopeTypes'
@@ -478,7 +477,7 @@ export function CategoryDataInput({
           - 현재 카테고리의 모든 계산기 표시
           ======================================================================== */}
       <div className="flex flex-col items-center space-y-8 w-full">
-        <AnimatePresence mode="popLayout">
+        <AnimatePresence mode="popLayout" initial={false}>
           {calculators.length > 0 ? (
             calculators.map((calc, index) => (
               <CalculatorItem
@@ -569,15 +568,16 @@ export function CategoryDataInput({
           <Button
             onClick={handleAddCalculator}
             variant="outline"
-            className="px-8 py-3 text-base font-semibold text-blue-600 bg-white rounded-xl border-2 border-blue-500 transition-all duration-200 hover:bg-blue-50 hover:border-blue-600 hover:shadow-sm">
+            className="px-8 py-4 text-lg font-semibold text-white bg-blue-500 rounded-xl shadow-lg transition-all duration-300 transform hover:bg-blue-600 hover:scale-105 hover:shadow-xl">
             <Plus className="mr-2 w-5 h-5" />
-            항목 추가
+            계산기 추가
           </Button>
 
           {/* 입력 완료 버튼 */}
           <Button
             onClick={handleCompleteAsync}
-            className="px-8 py-3 text-base font-semibold text-white bg-blue-500 rounded-xl shadow-sm transition-all duration-200 hover:bg-blue-600 hover:shadow-sm">
+            className="px-8 py-4 text-lg font-semibold text-green-700 bg-white rounded-xl border-2 border-green-500 shadow-lg transition-all duration-300 hover:bg-green-50 hover:scale-105 hover:shadow-xl">
+            <Save className="mr-2 w-5 h-5" />
             입력 완료
           </Button>
         </motion.div>
