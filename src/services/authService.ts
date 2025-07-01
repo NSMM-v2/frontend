@@ -30,6 +30,7 @@ export interface UserInfo {
   accountNumber: string
   companyName: string
   userType: 'HEADQUARTERS' | 'PARTNER'
+  uuid?: string // 협력사의 경우 UUID 정보
   level?: number
   name?: string
   email?: string
@@ -90,14 +91,6 @@ class AuthService {
     const response = await api.post('/api/v1/auth/headquarters/logout')
     return response.data
   }
-
-  /**
-   * 현재 본사 사용자 정보 조회
-   */
-  // async getCurrentUser(): Promise<ApiResponse<UserInfo>> {
-  //   const response = await api.get('/api/v1/auth/headquarters/me')
-  //   return response.data
-  // }
 
   /**
    * 현재 사용자 정보 조회 (사용자 타입별 자동 분기)
@@ -225,19 +218,17 @@ class AuthService {
   }
 
   /**
-   * 협력사 계정 생성 (본사만 가능)
+   * 협력사 계정 생성 (본사만 가능) - DART API 기반
    */
   async createPartner(partnerData: {
-    companyName: string
-    email: string
-    name: string
-    department?: string
-    position?: string
-    phone?: string
-    address?: string
-    parentAccountNumber?: string
+    uuid: string // DART API에서 제공하는 회사 고유 식별자 (id 필드)
+    contactPerson: string // DART API 대표자명 (ceoName 필드)
+    companyName: string // DART API 회사명 (corpName 필드)
+    address?: string // DART API 회사 주소 (address 필드)
+    phone?: string // DART API 연락처 (phoneNumber 필드)
+    parentUuid?: string // 상위 협력사 UUID (1차 협력사면 null)
   }): Promise<ApiResponse<any>> {
-    const response = await api.post('/api/v1/auth/partners/create', partnerData)
+    const response = await api.post('/api/v1/auth/partners/create-by-uuid', partnerData)
     return response.data
   }
 
@@ -368,7 +359,6 @@ export const {
   loginHeadquarters,
   loginPartner,
   logout,
-  // getCurrentUser,
   getCurrentUserByType,
   getUserTypeFromJWT,
   checkEmailExists,

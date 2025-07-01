@@ -204,6 +204,7 @@ export interface DartPartnerCompanyResponse {
   contractStartDate: string // 계약 시작일
   createdAt: string // 등록 일시
   updatedAt: string // 수정 일시
+  accountCreated: boolean // 계정 생성 여부
 
   // 소유자 정보
   headquartersId?: number // 본사 ID
@@ -243,6 +244,43 @@ export interface PaginatedPartnerCompanyResponse {
 // ============================================================================
 // 재무 위험 분석 관련 타입
 // ============================================================================
+
+/**
+ * 보고서 코드 열거형 (DART 기준)
+ */
+export type ReportCode = '11011' | '11012' | '11013' | '11014'
+
+/**
+ * 보고서 코드별 정보
+ */
+export interface ReportCodeInfo {
+  code: ReportCode
+  name: string
+  description: string
+  period: string
+  quarter?: number
+}
+
+/**
+ * 재무 위험 분석 요청 파라미터
+ */
+export interface FinancialRiskAssessmentParams {
+  corpCode: string // DART 기업 코드
+  partnerName?: string // 파트너사명 (선택사항)
+  bsnsYear?: string // 분석할 사업연도 (YYYY, 미지정시 자동)
+  reprtCode?: ReportCode // 분석할 보고서 코드 (미지정시 자동)
+}
+
+/**
+ * 연도/분기 선택 옵션
+ */
+export interface YearQuarterOption {
+  year: string // 연도 (YYYY)
+  reportCode: ReportCode // 보고서 코드
+  label: string // 표시명 (예: "2024년 3분기")
+  period: string // 기간 설명 (예: "2024년 7월~9월")
+  isAuto?: boolean // 자동 선택 여부
+}
 
 /**
  * 재무 위험 분석 항목
@@ -342,6 +380,9 @@ export interface PartnerCompany {
   stock_code?: string
   contract_start_date?: string
   modify_date?: string
+
+  // 새로운 필드
+  accountCreated?: boolean // 계정 생성 여부
 }
 
 /**
@@ -539,7 +580,10 @@ export function mapDartPartnerCompanyResponse(
     corp_code: response.corpCode,
     corp_name: response.corpName,
     stock_code: response.stockCode,
-    contract_start_date: response.contractStartDate
+    contract_start_date: response.contractStartDate,
+
+    // 새로운 필드
+    accountCreated: response.accountCreated
   }
 }
 
@@ -629,6 +673,21 @@ export function mapPartnerCompany(raw: any): PartnerCompany {
     corp_name: raw.corp_name || raw.corpName,
     stock_code: raw.stock_code || raw.stockCode,
     contract_start_date: raw.contract_start_date || raw.contractStartDate,
-    modify_date: raw.modify_date || raw.modifyDate
+    modify_date: raw.modify_date || raw.modifyDate,
+
+    // 새로운 필드
+    accountCreated: raw.accountCreated || false
   }
+}
+
+/**
+ * 이용 가능한 재무제표 기간 정보
+ */
+export interface AvailablePeriod {
+  bsnsYear: string // 사업연도 (YYYY)
+  reprtCode: ReportCode // 보고서 코드
+  reprtName: string // 보고서명
+  periodDescription: string // 기간 설명
+  itemCount: number // 재무제표 항목 수
+  isAutoSelected: boolean // 자동 선택 여부
 }

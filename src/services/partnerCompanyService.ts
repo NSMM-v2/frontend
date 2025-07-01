@@ -12,7 +12,8 @@ import {
   FinancialRiskAssessment,
   CompanyNameDuplicateCheckResult,
   mapDartPartnerCompanyResponse,
-  mapPartnerCompanies
+  mapPartnerCompanies,
+  AvailablePeriod
 } from '@/types/partnerCompanyType'
 
 /**
@@ -187,6 +188,8 @@ export async function createPartnerCompany(
           // 실제 중복 에러
           errorMessage = responseData?.message || '이미 등록된 파트너사입니다.'
         }
+      } else if (axiosError.response?.status === 400) {
+        errorMessage = '계정이 이미 존재합니다.'
       } else if (axiosError.response?.status === 500) {
         errorMessage = '서버 내부 오류가 발생했습니다.'
       } else if (axiosError.response?.data?.message) {
@@ -471,17 +474,29 @@ export async function checkCompanyNameDuplicate(
  * 파트너사 재무 위험 분석 정보를 가져옵니다.
  * @param corpCode DART 기업 고유 코드
  * @param partnerName 회사명 (선택사항)
+ * @param bsnsYear 분석할 사업연도 (YYYY, 선택사항)
+ * @param reprtCode 분석할 보고서 코드 (선택사항)
  * @returns 재무 위험 분석 결과
  */
 export async function fetchFinancialRiskAssessment(
   corpCode: string,
-  partnerName?: string
+  partnerName?: string,
+  bsnsYear?: string,
+  reprtCode?: string
 ): Promise<FinancialRiskAssessment> {
   try {
     const params: Record<string, string> = {}
 
     if (partnerName) {
       params.partnerName = partnerName
+    }
+
+    if (bsnsYear) {
+      params.bsnsYear = bsnsYear
+    }
+
+    if (reprtCode) {
+      params.reprtCode = reprtCode
     }
 
     console.log('재무 위험 정보 요청 파라미터:', {corpCode, ...params})
@@ -504,7 +519,9 @@ export async function fetchFinancialRiskAssessment(
         response?: {status?: number; data?: {message?: string}}
       }
 
-      if (axiosError.response?.status === 404) {
+      if (axiosError.response?.status === 400) {
+        errorMessage = '잘못된 요청 파라미터입니다. 연도와 보고서 코드를 확인해주세요.'
+      } else if (axiosError.response?.status === 404) {
         errorMessage = '재무 위험 정보를 찾을 수 없습니다.'
       } else if (axiosError.response?.data?.message) {
         errorMessage = axiosError.response.data.message
@@ -564,4 +581,56 @@ export async function fetchPartnerCompanyDetail(
     throw new Error('파트너사를 찾을 수 없습니다.')
   }
   return result
+}
+
+/**
+ * 특정 파트너사의 이용 가능한 재무제표 기간 목록을 조회합니다.
+ * @param corpCode DART 기업 고유 코드
+ * @returns 이용 가능한 기간 목록
+ */
+export async function fetchAvailablePeriods(
+  corpCode: string
+): Promise<AvailablePeriod[]> {
+  try {
+    console.log('이용 가능한 기간 조회 요청:', {corpCode})
+
+    const response = await api.get<AvailablePeriod[]>(
+      `/api/v1/partners/partner-companies/${corpCode}/available-periods`
+    )
+
+    console.log('이용 가능한 기간 응답:', response.data)
+
+    return response.data
+  } catch (error: unknown) {
+    console.error('이용 가능한 기간 조회 오류:', error)
+
+    let errorMessage = '이용 가능한 기간 정보를 가져오는데 실패했습니다.'
+
+    if (error && typeof error === 'object' && 'response' in error) {
+      const axiosError = error as {
+        response?: {status?: number; data?: {message?: string}}
+      }
+
+      if (axiosError.response?.status === 404) {
+        errorMessage = '해당 회사의 재무제표 데이터를 찾을 수 없습니다.'
+      } else if (axiosError.response?.data?.message) {
+        errorMessage = axiosError.response.data.message
+      }
+    }
+
+    throw new Error(errorMessage)
+  }
+}
+
+/**
+ * 파트너사의 계정 생성 상태를 true로 업데이트합니다.
+ */
+export async function updateAccountCreatedStatus(id: string): Promise<void> {
+  try {
+    await api.patch(`/api/v1/partners/partner-companies/${id}/account-created`)
+    console.log('파트너사 계정 생성 상태 업데이트 성공')
+  } catch (error) {
+    console.error('파트너사 계정 생성 상태 업데이트 실패:', error)
+    throw error
+  }
 }
