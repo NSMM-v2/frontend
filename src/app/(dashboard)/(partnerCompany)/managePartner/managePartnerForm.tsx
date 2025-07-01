@@ -585,6 +585,11 @@ export default function ManagePartnerForm() {
     }
   }, [debouncedCompanyName, isAddDialogOpen, isEditDialogOpen, checkDuplicateCompanyName])
 
+  // 현재 페이지의 데이터만 새로고침하는 함수
+  const refreshCurrentPage = async () => {
+    await loadPartners(currentPage, searchQuery)
+  }
+
   return (
     <div className="flex flex-col p-4 w-full">
       {/* ======================================================================
@@ -657,6 +662,7 @@ export default function ManagePartnerForm() {
                   onEditPartner={openEditDialog}
                   onDeletePartner={openDeleteDialog}
                   onCreateAccount={handleCreateAccount}
+                  onRefresh={refreshCurrentPage}
                 />
 
                 {/* 페이지네이션 */}

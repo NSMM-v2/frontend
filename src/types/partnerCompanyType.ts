@@ -204,6 +204,7 @@ export interface DartPartnerCompanyResponse {
   contractStartDate: string // 계약 시작일
   createdAt: string // 등록 일시
   updatedAt: string // 수정 일시
+  accountCreated: boolean // 계정 생성 여부
 
   // 소유자 정보
   headquartersId?: number // 본사 ID
@@ -379,6 +380,9 @@ export interface PartnerCompany {
   stock_code?: string
   contract_start_date?: string
   modify_date?: string
+
+  // 새로운 필드
+  accountCreated?: boolean // 계정 생성 여부
 }
 
 /**
@@ -576,7 +580,10 @@ export function mapDartPartnerCompanyResponse(
     corp_code: response.corpCode,
     corp_name: response.corpName,
     stock_code: response.stockCode,
-    contract_start_date: response.contractStartDate
+    contract_start_date: response.contractStartDate,
+
+    // 새로운 필드
+    accountCreated: response.accountCreated
   }
 }
 
@@ -666,7 +673,10 @@ export function mapPartnerCompany(raw: any): PartnerCompany {
     corp_name: raw.corp_name || raw.corpName,
     stock_code: raw.stock_code || raw.stockCode,
     contract_start_date: raw.contract_start_date || raw.contractStartDate,
-    modify_date: raw.modify_date || raw.modifyDate
+    modify_date: raw.modify_date || raw.modifyDate,
+
+    // 새로운 필드
+    accountCreated: raw.accountCreated || false
   }
 }
 

@@ -188,6 +188,8 @@ export async function createPartnerCompany(
           // 실제 중복 에러
           errorMessage = responseData?.message || '이미 등록된 파트너사입니다.'
         }
+      } else if (axiosError.response?.status === 400) {
+        errorMessage = '계정이 이미 존재합니다.'
       } else if (axiosError.response?.status === 500) {
         errorMessage = '서버 내부 오류가 발생했습니다.'
       } else if (axiosError.response?.data?.message) {
@@ -617,5 +619,18 @@ export async function fetchAvailablePeriods(
     }
 
     throw new Error(errorMessage)
+  }
+}
+
+/**
+ * 파트너사의 계정 생성 상태를 true로 업데이트합니다.
+ */
+export async function updateAccountCreatedStatus(id: string): Promise<void> {
+  try {
+    await api.patch(`/api/v1/partners/partner-companies/${id}/account-created`)
+    console.log('파트너사 계정 생성 상태 업데이트 성공')
+  } catch (error) {
+    console.error('파트너사 계정 생성 상태 업데이트 실패:', error)
+    throw error
   }
 }

@@ -20,12 +20,15 @@ import {
 } from '@/components/ui/dropdown-menu'
 import {PartnerCompany} from '@/types/partnerCompanyType'
 import {cn} from '@/lib/utils'
+import {updateAccountCreatedStatus} from '@/services/partnerCompanyService'
+import {toast} from '@/hooks/use-toast'
 
 interface PartnerTableProps {
   partners: PartnerCompany[]
   onEditPartner: (partner: PartnerCompany) => void
   onDeletePartner: (partner: PartnerCompany) => void
-  onCreateAccount: (partner: PartnerCompany) => void
+  onCreateAccount: (partner: PartnerCompany) => Promise<void>
+  onRefresh?: () => Promise<void>
 }
 
 type SortKey = 'corpName' | 'dartCode' | 'stockCode' | 'contractStartDate'
@@ -35,7 +38,8 @@ export function PartnerTable({
   partners,
   onEditPartner,
   onDeletePartner,
-  onCreateAccount
+  onCreateAccount,
+  onRefresh
 }: PartnerTableProps) {
   const [sortConfig, setSortConfig] = useState<SortConfig>({
     key: null,
@@ -144,8 +148,8 @@ export function PartnerTable({
             const corpName = partner.corpName || partner.companyName
             const dartCode = partner.corpCode || partner.corp_code
             const contractDate = partner.contract_start_date || partner.contractStartDate
-            // auth 계정 존재 여부 확인 (partnerId가 있으면 계정이 있는 것으로 판단)
-            const hasAccount = partner.partnerId && partner.fullAccountNumber
+            // 계정 생성 여부 확인 (accountCreated 필드 사용)
+            const hasAccount = partner.accountCreated === true
 
             const isValid = (() => {
               const str = String(stockCode || '').trim()
@@ -209,8 +213,8 @@ export function PartnerTable({
                   ) : (
                     <Badge
                       variant="secondary"
-                      className="px-3 py-1 font-semibold rounded-lg border-2 text-orange-700 bg-orange-50 border-orange-200">
-                      <div className="mr-2 w-2 h-2 rounded-full bg-orange-500"></div>
+                      className="px-3 py-1 font-semibold text-orange-700 bg-orange-50 rounded-lg border-2 border-orange-200">
+                      <div className="mr-2 w-2 h-2 bg-orange-500 rounded-full"></div>
                       계정 없음
                     </Badge>
                   )}
@@ -231,8 +235,43 @@ export function PartnerTable({
                       className="p-2 w-48 bg-white rounded-xl border-2 shadow-xl border-slate-200">
                       {!hasAccount && (
                         <DropdownMenuItem
-                          onClick={() => onCreateAccount(partner)}
-                          className="flex gap-3 items-center px-4 py-3 rounded-lg transition-colors cursor-pointer hover:bg-blue-50">
+                          onClick={async () => {
+                            if (hasAccount) {
+                              toast({
+                                variant: 'destructive',
+                                title: '계정 생성 실패',
+                                description: '계정이 이미 존재합니다.'
+                              })
+                              return
+                            }
+
+                            try {
+                              // 계정 생성 시도
+                              await onCreateAccount(partner)
+
+                              // 계정 생성이 성공했으면 accountCreated 상태 업데이트
+                              if (partner.id) {
+                                await updateAccountCreatedStatus(partner.id)
+                                // 데이터 새로고침
+                                if (onRefresh) {
+                                  await onRefresh()
+                                }
+                                toast({
+                                  title: '계정 생성 성공',
+                                  description:
+                                    '파트너사 계정이 성공적으로 생성되었습니다.'
+                                })
+                              }
+                            } catch (error) {
+                              console.error('계정 생성 중 오류 발생:', error)
+                              toast({
+                                variant: 'destructive',
+                                title: '계정 생성 실패',
+                                description: '계정 생성 중 오류가 발생했습니다.'
+                              })
+                            }
+                          }}
+                          className="flex gap-3 items-center px-4 py-3 rounded-lg transition-colors cursor-pointer hover:bg-gray-100">
                           <UserPlus className="w-4 h-4 text-blue-600" />
                           <span className="font-medium text-blue-700">계정 생성</span>
                         </DropdownMenuItem>
