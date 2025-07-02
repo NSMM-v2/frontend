@@ -41,11 +41,13 @@ export const scope1KineticCategoryList = {
 } as const
 // Scope 1 - 공정배출 카테고리
 export const scope1ProcessCategoryList = {
-  list7: '공정배출' // 화학 공정, 금속 가공 등
+  list7: '제조 배출', // 화학 공정, 금속 가공 등
+  list8: '폐수 처리'
 } as const
 // Scope 1 - 냉매누출 카테고리
 export const scope1LeakCategoryList = {
-  list8: '누출배출' // 냉매, 가스 누출
+  list9: '냉동/냉방 설비 냉매', // 냉매, 가스 누출
+  list10: '소화기 방출'
 } as const
 
 // Scope 2 - 전력 카테고리 (Electricity Categories)================================================================================
