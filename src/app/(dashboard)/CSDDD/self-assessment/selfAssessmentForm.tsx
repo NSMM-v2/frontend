@@ -1,17 +1,12 @@
 'use client'
 import {useState, useEffect} from 'react'
 import {
-  ChevronDown,
-  ChevronUp,
   CheckCircle,
   AlertTriangle,
-  Building,
   Send,
   Home,
   ArrowLeft,
   Shield,
-  Star,
-  Sparkles,
   Activity,
   TrendingUp,
   Clock,
@@ -60,30 +55,6 @@ interface Answer {
   questionId: string
   answer: 'yes' | 'no' | ''
   remarks?: string
-}
-
-const categories = [
-  '인권 및 노동',
-  '산업안전·보건',
-  '환경경영',
-  '공급망 및 조달',
-  '윤리경영 및 정보보호'
-]
-
-const categoryIcons: Record<(typeof categories)[number], React.ComponentType<any>> = {
-  '인권 및 노동': Users,
-  '산업안전·보건': Shield,
-  환경경영: Globe,
-  '공급망 및 조달': Activity,
-  '윤리경영 및 정보보호': FileText
-}
-
-const categoryColors: Record<(typeof categories)[number], string> = {
-  '인권 및 노동': 'from-purple-500 to-pink-500',
-  '산업안전·보건': 'from-blue-500 to-cyan-500',
-  환경경영: 'from-green-500 to-emerald-500',
-  '공급망 및 조달': 'from-orange-500 to-red-500',
-  '윤리경영 및 정보보호': 'from-indigo-500 to-purple-500'
 }
 
 const questions: Question[] = [
@@ -423,10 +394,10 @@ const categoryMeta = [
   {
     key: '인권 및 노동',
     icon: Users,
-    color: 'from-purple-100 to-purple-50',
-    activeColor: 'from-purple-500 to-pink-500',
-    text: 'text-purple-700',
-    bar: 'bg-purple-500'
+    color: 'from-blue-100 to-blue-50',
+    activeColor: 'from-blue-500 to-cyan-500',
+    text: 'text-blue-700',
+    bar: 'bg-blue-500'
   },
   {
     key: '산업안전·보건',
@@ -439,26 +410,26 @@ const categoryMeta = [
   {
     key: '환경경영',
     icon: Globe,
-    color: 'from-green-100 to-green-50',
-    activeColor: 'from-green-500 to-emerald-500',
-    text: 'text-green-700',
-    bar: 'bg-green-500'
+    color: 'from-blue-100 to-blue-50',
+    activeColor: 'from-blue-500 to-cyan-500',
+    text: 'text-blue-700',
+    bar: 'bg-blue-500'
   },
   {
     key: '공급망 및 조달',
     icon: Activity,
-    color: 'from-orange-100 to-orange-50',
-    activeColor: 'from-orange-500 to-red-500',
-    text: 'text-orange-700',
-    bar: 'bg-orange-500'
+    color: 'from-blue-100 to-blue-50',
+    activeColor: 'from-blue-500 to-cyan-500',
+    text: 'text-blue-700',
+    bar: 'bg-blue-500'
   },
   {
     key: '윤리경영 및 정보보호',
     icon: FileText,
-    color: 'from-indigo-100 to-purple-50',
-    activeColor: 'from-indigo-500 to-purple-500',
-    text: 'text-indigo-700',
-    bar: 'bg-indigo-500'
+    color: 'from-blue-100 to-blue-50',
+    activeColor: 'from-blue-500 to-cyan-500',
+    text: 'text-blue-700',
+    bar: 'bg-blue-500'
   }
 ]
 
@@ -636,7 +607,7 @@ export default function CSAssessmentPage() {
         {/* Toss 스타일 카테고리 헤더 카드 */}
         <div
           className={`flex items-center p-6 mb-6 text-white bg-gradient-to-br rounded-2xl shadow-md ${gradientClass}`}>
-          <div className="flex justify-center items-center mr-4 w-12 h-12 rounded-xl bg-white/20">
+          <div className="flex items-center justify-center w-12 h-12 mr-4 rounded-xl bg-white/20">
             <CategoryIcon className="w-7 h-7" />
           </div>
           <div>
@@ -657,38 +628,43 @@ export default function CSAssessmentPage() {
                 initial={{opacity: 0, y: 20}}
                 animate={{opacity: 1, y: 0}}
                 transition={{delay: index * 0.05}}
-                className="p-6 bg-white rounded-2xl border border-gray-100 shadow-sm transition-all hover:shadow-lg">
+                className="p-4 transition-all bg-white border border-gray-100 shadow-sm rounded-2xl hover:shadow-lg">
                 <div className="flex items-start space-x-4">
                   <div className="flex-shrink-0">
-                    <div className="inline-flex justify-center items-center w-12 h-8 text-sm font-bold text-blue-600 bg-blue-100 rounded-xl border-2 border-blue-200">
+                    <div className="inline-flex items-center justify-center w-12 h-8 text-sm font-bold text-blue-600 bg-blue-100 border-2 border-blue-200 rounded-xl">
                       {question.id}
                     </div>
                   </div>
                   <div className="flex-1 space-y-4">
-                    <div className="flex items-start space-x-3">
-                      <p className="flex-1 font-medium leading-relaxed text-slate-800">
+                    <div className="flex items-start justify-between w-full">
+                      <p className="flex-1 font-medium leading-relaxed text-left text-slate-800">
                         {question.text}
                       </p>
-                      {question.criticalViolation && (
-                        <TooltipProvider>
-                          <Tooltip>
-                            <TooltipTrigger asChild>
-                              <div className="flex-shrink-0 p-1 bg-red-100 rounded-full cursor-help">
-                                <AlertTriangle className="w-4 h-4 text-red-500" />
-                              </div>
-                            </TooltipTrigger>
-                            <TooltipContent className="max-w-xs text-sm text-left text-red-800 bg-red-50 rounded-lg border border-red-300 shadow-md">
-                              <div className="mb-1 font-semibold">
-                                {question.criticalViolation?.grade} 등급 위반
-                              </div>
-                              <div>{question.criticalViolation?.reason}</div>
-                            </TooltipContent>
-                          </Tooltip>
-                        </TooltipProvider>
-                      )}
+                      <div className="flex items-center flex-shrink-0 ml-4 space-x-2">
+                        <div className="px-3 py-1 text-xs font-medium rounded-full text-slate-600 bg-slate-100">
+                          가중치 {question.weight}
+                        </div>
+                        {question.criticalViolation && (
+                          <TooltipProvider>
+                            <Tooltip>
+                              <TooltipTrigger asChild>
+                                <div className="flex-shrink-0 p-1 bg-red-100 rounded-full cursor-help">
+                                  <AlertTriangle className="w-4 h-4 text-red-500" />
+                                </div>
+                              </TooltipTrigger>
+                              <TooltipContent className="max-w-xs text-sm text-left text-red-800 border border-red-300 rounded-lg shadow-md bg-red-50">
+                                <div className="mb-1 font-semibold">
+                                  {question.criticalViolation?.grade} 등급 위반
+                                </div>
+                                <div>{question.criticalViolation?.reason}</div>
+                              </TooltipContent>
+                            </Tooltip>
+                          </TooltipProvider>
+                        )}
+                      </div>
                     </div>
                     <div className="flex items-center space-x-6">
-                      <label className="flex items-center p-3 space-x-3 rounded-xl transition-colors cursor-pointer group hover:bg-green-50">
+                      <label className="flex items-center px-2 py-1 space-x-2 transition-colors cursor-pointer rounded-xl group hover:bg-green-50">
                         <input
                           type="radio"
                           name={question.id}
@@ -704,13 +680,13 @@ export default function CSAssessmentPage() {
                               question.criticalViolation?.grade
                             )
                           }
-                          className="w-5 h-5 text-green-600 border-2 border-green-300 focus:ring-green-500 focus:ring-2"
+                          className="w-4 h-4 border-2 border-green-500 rounded-full appearance-none cursor-pointer checked:bg-green-500 checked:ring-2 checked:ring-green-600"
                         />
                         <span className="font-medium text-green-700 transition-colors group-hover:text-green-800">
                           예
                         </span>
                       </label>
-                      <label className="flex items-center p-3 space-x-3 rounded-xl transition-colors cursor-pointer group hover:bg-red-50">
+                      <label className="flex items-center px-2 py-1 space-x-2 transition-colors cursor-pointer rounded-xl group hover:bg-red-50">
                         <input
                           type="radio"
                           name={question.id}
@@ -726,7 +702,7 @@ export default function CSAssessmentPage() {
                               question.criticalViolation?.grade
                             )
                           }
-                          className="w-5 h-5 text-red-600 border-2 border-red-300 focus:ring-red-500 focus:ring-2"
+                          className="w-4 h-4 border-2 border-red-500 rounded-full appearance-none cursor-pointer checked:bg-red-500 checked:ring-2 checked:ring-red-600"
                         />
                         <span className="font-medium text-red-700 transition-colors group-hover:text-red-800">
                           아니오
@@ -741,23 +717,11 @@ export default function CSAssessmentPage() {
                         value={answer?.remarks || ''}
                         onChange={e => handleRemarksChange(question.id, e.target.value)}
                         placeholder="추가 설명이나 특이사항을 입력하세요"
-                        rows={3}
-                        className="px-4 py-3 w-full text-sm rounded-2xl border-2 backdrop-blur-sm transition-colors border-slate-200 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent bg-white/80 hover:border-slate-300"
+                        rows={1}
+                        className="w-full px-3 py-2 text-sm transition-colors border-2 rounded-2xl backdrop-blur-sm border-slate-200 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent bg-white/80 hover:border-slate-300"
                       />
                     </div>
-                    <div className="flex justify-between items-center">
-                      <div className="flex items-center space-x-2">
-                        <div className="px-3 py-1 text-xs font-medium rounded-full text-slate-600 bg-slate-100">
-                          가중치 {question.weight}
-                        </div>
-                      </div>
-                      {answer?.answer && (
-                        <div className="flex items-center space-x-2 text-green-600">
-                          <CheckCircle className="w-5 h-5" />
-                          <span className="text-sm font-medium">완료</span>
-                        </div>
-                      )}
-                    </div>
+                    {/* 완료 badge 및 하단 가중치 badge 제거됨, 가중치는 위로 이동 */}
                   </div>
                 </div>
               </motion.div>
@@ -765,11 +729,11 @@ export default function CSAssessmentPage() {
           })}
         </div>
         {/* 하단 네비게이션 버튼 (이전/다음/제출) */}
-        <div className="flex gap-4 justify-between items-center mt-10">
+        <div className="flex items-center justify-between gap-4 mt-10">
           <button
             onClick={() => setCurrentCategoryIdx(idx => Math.max(0, idx - 1))}
             disabled={isFirst}
-            className="px-8 py-4 text-lg font-semibold text-gray-700 bg-gray-100 rounded-xl shadow-lg transition-all duration-300 hover:shadow-xl disabled:opacity-50 disabled:transform-none hover:bg-gray-200">
+            className="px-8 py-4 text-lg font-semibold text-gray-700 transition-all duration-300 bg-gray-100 shadow-lg rounded-xl hover:shadow-xl disabled:opacity-50 disabled:transform-none hover:bg-gray-200">
             이전
           </button>
           {isLast ? (
@@ -788,7 +752,7 @@ export default function CSAssessmentPage() {
               onClick={() =>
                 setCurrentCategoryIdx(idx => Math.min(categoryMeta.length - 1, idx + 1))
               }
-              className="px-8 py-4 text-lg font-semibold text-white bg-blue-500 rounded-xl shadow-lg transition-all duration-300 hover:shadow-xl hover:bg-blue-600 hover:scale-105">
+              className="px-8 py-4 text-lg font-semibold text-white transition-all duration-300 bg-blue-500 shadow-lg rounded-xl hover:shadow-xl hover:bg-blue-600 hover:scale-105">
               다음
             </button>
           )}
@@ -801,11 +765,11 @@ export default function CSAssessmentPage() {
     <div className="flex flex-col w-full min-h-screen">
       {/* 브레드크럼 영역 */}
       <div className="p-4 pb-0">
-        <div className="flex flex-row items-center p-3 mb-6 text-sm text-gray-600 rounded-xl border shadow-sm backdrop-blur-sm bg-white/80 border-white/50">
+        <div className="flex flex-row items-center p-3 mb-6 text-sm text-gray-600 border shadow-sm rounded-xl backdrop-blur-sm bg-white/80 border-white/50">
           <Breadcrumb>
             <BreadcrumbList>
               <BreadcrumbItem>
-                <Home className="mr-1 w-4 h-4" />
+                <Home className="w-4 h-4 mr-1" />
                 <BreadcrumbLink
                   href="/dashboard"
                   className="transition-colors hover:text-blue-600">
@@ -831,10 +795,10 @@ export default function CSAssessmentPage() {
 
       {/* 페이지 헤더 영역 */}
       <div className="px-4 pb-0">
-        <div className="flex flex-row mb-6 w-full">
+        <div className="flex flex-row w-full mb-6">
           <Link
             href="/dashboard"
-            className="flex flex-row items-center p-4 space-x-4 rounded-xl backdrop-blur-sm transition-all hover:bg-white/30 group">
+            className="flex flex-row items-center p-4 space-x-4 transition-all rounded-xl backdrop-blur-sm hover:bg-white/30 group">
             <ArrowLeft className="w-6 h-6 text-gray-500 transition-colors group-hover:text-blue-600" />
             <PageHeader
               icon={<Shield className="w-6 h-6 text-blue-600" />}
@@ -848,11 +812,11 @@ export default function CSAssessmentPage() {
       </div>
 
       <div className="flex-1 px-4 pb-8">
-        {/* 진행률 대시보드 */}
-        <div className="p-8 mb-8 rounded-3xl border shadow-xl backdrop-blur-xl bg-white/70 border-white/50 shadow-blue-500/10">
-          <div className="flex justify-between items-center mb-6">
+        {/* 진행 현황 + 카테고리 프로그레스바 통합 */}
+        <div className="p-8 mb-8 border shadow-xl rounded-3xl backdrop-blur-xl bg-white/70 border-white/50 shadow-blue-500/10">
+          <div className="flex items-center justify-between mb-6">
             <div className="flex items-center space-x-3">
-              <div className="p-3 bg-gradient-to-br from-blue-500 to-indigo-600 rounded-xl shadow-lg">
+              <div className="p-3 shadow-lg bg-gradient-to-br from-blue-500 to-cyan-500 rounded-xl">
                 <TrendingUp className="w-6 h-6 text-white" />
               </div>
               <div>
@@ -861,75 +825,64 @@ export default function CSAssessmentPage() {
               </div>
             </div>
             <div className="text-right">
-              <div className="text-4xl font-bold text-transparent bg-clip-text bg-gradient-to-r from-blue-600 to-indigo-600">
+              <div className="text-4xl font-bold text-transparent bg-clip-text bg-gradient-to-r from-blue-500 to-cyan-500">
                 {progress}%
               </div>
               <p className="mt-1 text-sm text-slate-500">완료율</p>
             </div>
           </div>
-
           {/* 진행률 바 */}
           <div className="relative mb-6">
-            <div className="overflow-hidden w-full h-4 bg-gradient-to-r rounded-full shadow-inner from-slate-200 to-slate-300">
+            <div className="w-full h-4 overflow-hidden rounded-full shadow-inner bg-gradient-to-r from-slate-200 to-slate-300">
               <div
-                className="relative h-full bg-gradient-to-r from-blue-500 via-indigo-500 to-purple-500 rounded-full transition-all duration-1000 ease-out"
+                className="relative h-full transition-all duration-1000 ease-out rounded-full bg-gradient-to-r from-blue-500 to-cyan-500"
                 style={{width: `${progress}%`}}>
                 <div className="absolute inset-0 rounded-full animate-pulse bg-white/20"></div>
               </div>
             </div>
-            <div className="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2">
+            <div className="absolute transform -translate-x-1/2 -translate-y-1/2 top-1/2 left-1/2">
               <Zap className="w-4 h-4 text-white animate-pulse" />
             </div>
           </div>
-
-          {/* 통계 */}
-          <div className="grid grid-cols-3 gap-4">
-            <div className="p-4 text-center bg-gradient-to-br from-green-50 to-emerald-50 rounded-2xl border border-green-200/50">
-              <div className="mb-1 text-2xl font-bold text-green-600">
-                {Object.values(answers).filter(a => a.answer === 'yes').length}
-              </div>
-              <div className="text-sm text-green-700">준수 항목</div>
-            </div>
-            <div className="p-4 text-center bg-gradient-to-br from-red-50 to-rose-50 rounded-2xl border border-red-200/50">
-              <div className="mb-1 text-2xl font-bold text-red-600">
-                {Object.values(answers).filter(a => a.answer === 'no').length}
-              </div>
-              <div className="text-sm text-red-700">미준수 항목</div>
-            </div>
-            <div className="p-4 text-center bg-gradient-to-br from-amber-50 to-yellow-50 rounded-2xl border border-amber-200/50">
-              <div className="mb-1 text-2xl font-bold text-amber-600">
-                {questions.length -
-                  Object.values(answers).filter(a => a.answer !== '').length}
-              </div>
-              <div className="text-sm text-amber-700">미답변 항목</div>
-            </div>
+          {/* 카테고리 프로그레스바 (내부로 이동) */}
+          <div className="flex flex-row items-center justify-between gap-2 px-2 py-4 mt-2 bg-white border border-gray-100 shadow-sm rounded-2xl md:px-8">
+            {categoryMeta.map((cat, idx) => {
+              // 카테고리별 전체/완료 질문 수 계산
+              const total = questions.filter(q => q.category === cat.key).length
+              const done = questions.filter(
+                q => q.category === cat.key && answers[q.id]?.answer !== ''
+              ).length
+              const isActive = currentCategory === cat.key
+              const Icon = cat.icon
+              return (
+                <button
+                  key={cat.key}
+                  onClick={() => handleCategoryClick(cat.key)}
+                  className={`flex flex-col items-center flex-1 group transition-all duration-300 ${
+                    isActive ? 'scale-105' : 'opacity-80 hover:scale-102'
+                  }`}
+                  style={{minWidth: 0}}>
+                  <div
+                    className={`flex items-center justify-center w-12 h-12 rounded-xl shadow-md mb-2 bg-gradient-to-br ${
+                      isActive ? cat.activeColor : cat.color
+                    } transition-all`}>
+                    <Icon className={`w-6 h-6 ${cat.text}`} />
+                  </div>
+                  <span className={`text-xs font-semibold truncate ${cat.text}`}>
+                    {cat.key}
+                  </span>
+                </button>
+              )
+            })}
           </div>
-
-          {progress === 100 && (
-            <div className="p-4 mt-6 text-white bg-gradient-to-r from-green-500 to-emerald-500 rounded-2xl">
-              <div className="flex justify-center items-center space-x-2">
-                <Star className="w-5 h-5 animate-spin" />
-                <span className="font-semibold">
-                  모든 질문 답변 완료! 제출할 수 있습니다.
-                </span>
-              </div>
-            </div>
-          )}
         </div>
-
-        {/* 상단 프로그레스바/카테고리 네비게이션 컴포넌트 (Toss 스타일) */}
-        <CategoryProgressBar
-          answers={answers}
-          currentCategory={currentCategory}
-          onCategoryClick={handleCategoryClick}
-        />
 
         {/* 질문 카테고리별 섹션 */}
         {renderCurrentCategorySection()}
 
         {/* 제출 섹션 */}
-        <div className="p-8 bg-gradient-to-br rounded-3xl border shadow-xl backdrop-blur-xl from-white/80 to-slate-50/80 border-white/50 shadow-blue-500/10">
-          <div className="flex justify-between items-center">
+        <div className="p-8 border shadow-xl bg-gradient-to-br rounded-3xl backdrop-blur-xl from-white/80 to-slate-50/80 border-white/50 shadow-blue-500/10">
+          <div className="flex items-center justify-between">
             <div className="space-y-2">
               <h3 className="text-xl font-bold text-slate-800">자가진단 완료</h3>
               <div className="flex items-center space-x-4 text-sm text-slate-600">
@@ -957,7 +910,7 @@ export default function CSAssessmentPage() {
               }`}>
               {isSubmitting ? (
                 <>
-                  <div className="w-5 h-5 rounded-full border-2 border-t-2 animate-spin border-white/20 border-t-white"></div>
+                  <div className="w-5 h-5 border-2 border-t-2 rounded-full animate-spin border-white/20 border-t-white"></div>
                   <span>제출 중...</span>
                 </>
               ) : (
@@ -971,79 +924,5 @@ export default function CSAssessmentPage() {
         </div>
       </div>
     </div>
-  )
-}
-
-// ChevronRight 컴포넌트 추가
-function ChevronRight({className}: {className?: string}) {
-  return (
-    <svg className={className} fill="none" stroke="currentColor" viewBox="0 0 24 24">
-      <path
-        strokeLinecap="round"
-        strokeLinejoin="round"
-        strokeWidth={2}
-        d="M9 5l7 7-7 7"
-      />
-    </svg>
-  )
-}
-
-// ============================================================================
-// 상단 프로그레스바/카테고리 네비게이션 컴포넌트 (Toss 스타일)
-// ============================================================================
-function CategoryProgressBar({
-  answers,
-  currentCategory,
-  onCategoryClick
-}: {
-  answers: Record<string, Answer>
-  currentCategory: string
-  onCategoryClick: (category: string) => void
-}) {
-  return (
-    <motion.div
-      initial={{opacity: 0, y: -20}}
-      animate={{opacity: 1, y: 0}}
-      transition={{duration: 0.6}}
-      className="flex flex-row gap-2 justify-between items-center px-2 py-4 mb-8 bg-white rounded-2xl border border-gray-100 shadow-sm md:px-8">
-      {categoryMeta.map((cat, idx) => {
-        // 카테고리별 전체/완료 질문 수 계산
-        const total = questions.filter(q => q.category === cat.key).length
-        const done = questions.filter(
-          q => q.category === cat.key && answers[q.id]?.answer !== ''
-        ).length
-        const percent = Math.round((done / total) * 100)
-        const isActive = currentCategory === cat.key
-        const Icon = cat.icon
-        return (
-          <button
-            key={cat.key}
-            onClick={() => onCategoryClick(cat.key)}
-            className={`flex flex-col items-center flex-1 group transition-all duration-300 ${
-              isActive ? 'scale-105' : 'opacity-80 hover:scale-102'
-            }`}
-            style={{minWidth: 0}}>
-            <div
-              className={`flex items-center justify-center w-12 h-12 rounded-xl shadow-md mb-2 bg-gradient-to-br ${
-                isActive ? cat.activeColor : cat.color
-              } transition-all`}>
-              <Icon className={`w-6 h-6 ${cat.text}`} />
-            </div>
-            <span className={`text-xs font-semibold truncate ${cat.text}`}>
-              {cat.key}
-            </span>
-            <div className="overflow-hidden mt-2 w-full h-2 bg-gray-200 rounded-full">
-              <div
-                className={`h-2 rounded-full transition-all duration-700 ${cat.bar}`}
-                style={{width: `${percent}%`}}
-              />
-            </div>
-            <span className="text-[10px] text-gray-500 mt-1">
-              {done}/{total}
-            </span>
-          </button>
-        )
-      })}
-    </motion.div>
   )
 }
