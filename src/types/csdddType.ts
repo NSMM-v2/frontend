@@ -2,60 +2,137 @@
  * 자가진단 제출 요청 타입
  */
 export interface SelfAssessmentSubmissionRequest {
-  answers: SelfAssessmentAnswerItem[]
+  companyName: string // 누락된 필드 추가
+  answers: SelfAssessmentAnswerRequest[]
 }
 
 /**
- * 자가진단 문항 단건 응답 타입
+ * 자가진단 문항 제출 요청 타입 (백엔드 DTO와 일치)
  */
-export interface SelfAssessmentAnswerItem {
+export interface SelfAssessmentAnswerRequest {
   questionId: string
-  answer: 'yes' | 'no'
   category: string
+  answer: 'yes' | 'no'
   weight: number
-  critical: boolean
+  critical?: boolean
   criticalGrade?: string
   remarks?: string
 }
 
 /**
- * 자가진단 제출 결과 응답 타입 (리스트 항목)
+ * 자가진단 문항 응답 타입 (백엔드에서 받는 데이터)
+ */
+export interface SelfAssessmentAnswerResponse {
+  id: number
+  questionId: string
+  category: string
+  answer: boolean // 백엔드에서는 boolean으로 응답
+  remarks?: string
+  weight: number
+  earnedScore: number
+  criticalViolation: boolean
+  hasCriticalViolation: boolean
+  criticalGrade?: string
+  createdAt: string
+  updatedAt: string
+}
+
+/**
+ * 자가진단 결과 응답 타입
  */
 export interface SelfAssessmentResponse {
+  // 기본 식별 정보
   id: number
+  companyName: string
+  userType: string
+
+  // 사용자 식별 정보
   headquartersId: number
-  partnerId: number | null
+  partnerId?: number | null
   treePath: string
-  companyName: string // 추가 필요할 수 있음
+
+  // 평가 점수 정보
   score: number
   actualScore: number
   totalPossibleScore: number
-  criticalViolationCount: number
   completionRate: number
-  finalGrade: string
-  summary: string
-  recommendations: string
-  answers?: SelfAssessmentAnswerItem[] // 상세 조회 시에만 포함될 수 있음
+
+  // 평가 상태 및 결과 정보
+  status: string
+  finalGrade?: string
+  criticalViolationCount: number
+  isHighRisk: boolean
+  summary?: string
+  recommendations?: string
+
+  // 타임스탬프
   createdAt: string
   updatedAt: string
-  completedAt: string
+  completedAt?: string
+
+  // 상세 정보 (상세 조회 시에만)
+  answers?: SelfAssessmentAnswerResponse[]
+  categoryAnalysis?: CategoryAnalysisDto[]
+  strengths?: string[]
+  actionPlan?: ActionPlanDto[]
 }
 
 /**
- * 자가진단 상세 결과 응답 타입
+ * 카테고리별 분석 결과 타입
  */
-export interface SelfAssessmentFullResponse {
-  result: SelfAssessmentResponse
-  answers: SelfAssessmentAnswerItem[]
+export interface CategoryAnalysisDto {
+  category: string
+  score: number
+  status: string
+  color: string
 }
 
 /**
- * 리스트 조회 시 페이징 응답 타입
+ * 개선 계획 제안 타입
+ */
+export interface ActionPlanDto {
+  issue: string
+  priority: string
+  recommendation: string
+}
+
+/**
+ * 페이징 응답 타입
  */
 export interface PaginatedSelfAssessmentResponse {
   content: SelfAssessmentResponse[]
   totalPages: number
   totalElements: number
-  number: number // 현재 페이지 번호
-  size: number // 페이지당 개수
+  number: number
+  size: number
+  first: boolean
+  last: boolean
+  empty: boolean
 }
+
+/**
+ * 중대위반 메타데이터 타입
+ */
+export interface ViolationMeta {
+  category: string
+  penaltyInfo: string
+  legalBasis: string
+}
+
+/**
+ * API 응답 공통 타입
+ */
+export interface ApiResponse<T> {
+  success: boolean
+  message: string
+  data: T
+  errorCode?: string
+  errors?: string[]
+  timestamp: string
+}
+
+/**
+ * 자가진단 관련 타입 별칭 (하위 호환성)
+ */
+export type SelfAssessmentAnswerItem = SelfAssessmentAnswerRequest
+export type SelfAssessmentFullResponse = SelfAssessmentResponse

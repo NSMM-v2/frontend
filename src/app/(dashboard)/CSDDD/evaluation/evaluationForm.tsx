@@ -71,8 +71,7 @@ export default function EvaluationForm() {
   const handleViolationClick = async (questionId: string) => {
     setSelectedViolationId(questionId)
     try {
-      if (!userInfo) return
-      const meta = await getViolationMeta(questionId, userInfo)
+      const meta = await getViolationMeta(questionId) // Remove userInfo parameter
       setViolationMeta(meta)
     } catch (error) {
       console.error('Violation meta 불러오기 실패:', error)
@@ -81,11 +80,10 @@ export default function EvaluationForm() {
 
   // 위반 항목들을 카테고리별로 그룹화
   const groupViolationsByCategory = (answers: any[]) => {
-    const violations = answers.filter(a => a.answer === 'no')
+    const violations = answers.filter(a => a.answer === false) // boolean 비교로 수정
     const grouped: {[key: string]: any[]} = {}
 
     violations.forEach(violation => {
-      // questionId에서 카테고리 추출 (예: "1.1" -> "1", "2.3" -> "2")
       const category = violation.questionId.split('.')[0]
       if (!grouped[category]) {
         grouped[category] = []
@@ -119,20 +117,14 @@ export default function EvaluationForm() {
 
         let response: PaginatedSelfAssessmentResponse
 
+        // evaluationForm.tsx의 fetchResults 함수 수정
         if (userInfo.userType === 'HEADQUARTERS') {
           response = await getSelfAssessmentResults({
-            userType: userInfo.userType,
-            headquartersId: userInfo.headquartersId!,
-            partnerId: undefined,
-            treePath: undefined
+            onlyPartners: false
           })
         } else if (userInfo.userType === 'PARTNER') {
           response = await getSelfAssessmentResults({
-            userType: userInfo.userType,
-            headquartersId: userInfo.headquartersId!,
-            partnerId: userInfo.partnerId,
-            treePath: userInfo.treePath,
-            forPartnerEvaluation: false
+            onlyPartners: true
           })
         } else {
           throw new Error('Unknown user type')
@@ -141,7 +133,8 @@ export default function EvaluationForm() {
         setResults(
           (response.content || []).sort(
             (a, b) =>
-              new Date(b.completedAt).getTime() - new Date(a.completedAt).getTime()
+              new Date(b.completedAt ?? new Date()).getTime() -
+              new Date(a.completedAt ?? new Date()).getTime()
           )
         )
 
@@ -162,12 +155,7 @@ export default function EvaluationForm() {
     setDetailLoading(true)
     try {
       if (!userInfo) return
-      const result = await getSelfAssessmentResult(resultId, {
-        userType: userInfo.userType,
-        headquartersId: userInfo.headquartersId!,
-        partnerId: userInfo.partnerId,
-        treePath: userInfo.treePath!
-      })
+      const result = await getSelfAssessmentResult(resultId)
       setSelectedResults(prev => ({...prev, [resultId]: result}))
     } catch (error: any) {
       console.error('상세 결과 조회 실패:', error)
@@ -225,11 +213,11 @@ export default function EvaluationForm() {
     <div className="flex flex-col w-full min-h-screen">
       {/* 브레드크럼 영역 */}
       <div className="p-4 pb-0">
-        <div className="flex flex-row items-center p-3 mb-6 text-sm text-gray-600 border shadow-sm rounded-xl backdrop-blur-sm bg-white/80 border-white/50">
+        <div className="flex flex-row items-center p-3 mb-6 text-sm text-gray-600 rounded-xl border shadow-sm backdrop-blur-sm bg-white/80 border-white/50">
           <Breadcrumb>
             <BreadcrumbList>
               <BreadcrumbItem>
-                <Home className="w-4 h-4 mr-1" />
+                <Home className="mr-1 w-4 h-4" />
                 <BreadcrumbLink
                   href="/dashboard"
                   className="transition-colors hover:text-blue-600">
@@ -255,10 +243,10 @@ export default function EvaluationForm() {
 
       {/* 페이지 헤더 영역 */}
       <div className="px-4 pb-0">
-        <div className="flex flex-row w-full mb-6">
+        <div className="flex flex-row mb-6 w-full">
           <Link
             href="/CSDDD"
-            className="flex flex-row items-center p-4 space-x-4 transition-all rounded-xl backdrop-blur-sm hover:bg-white/30 group">
+            className="flex flex-row items-center p-4 space-x-4 rounded-xl backdrop-blur-sm transition-all hover:bg-white/30 group">
             <ArrowLeft className="w-6 h-6 text-gray-500 transition-colors group-hover:text-blue-600" />
             <PageHeader
               icon={<Shield className="w-6 h-6 text-blue-600" />}
@@ -274,21 +262,21 @@ export default function EvaluationForm() {
       {/* 메인 컨텐츠 */}
       <div className="flex-1 px-4 pb-8">
         <div className="lg:col-span-3">
-          <div className="border shadow-xl rounded-xl backdrop-blur-sm bg-white/95 border-white/50">
+          <div className="rounded-xl border shadow-xl backdrop-blur-sm bg-white/95 border-white/50">
             <div className="px-6 py-5 border-b border-gray-100">
-              <div className="flex items-center justify-between">
+              <div className="flex justify-between items-center">
                 <div className="flex items-center space-x-2">
                   <h2 className="text-xl font-bold text-gray-900">진단 결과 목록</h2>
                   <div className="relative group">
                     <AlertCircle className="w-4 h-4 text-orange-500 cursor-pointer" />
-                    <div className="absolute z-10 hidden p-3 text-sm text-orange-800 transform -translate-x-1/2 bg-white border border-orange-200 rounded shadow-lg left-1/2 top-full group-hover:block whitespace-nowrap max-w-none">
+                    <div className="hidden absolute top-full left-1/2 z-10 p-3 max-w-none text-sm text-orange-800 whitespace-nowrap bg-white rounded border border-orange-200 shadow-lg transform -translate-x-1/2 group-hover:block">
                       <p>• 위반 항목은 펼쳐서 상세 내용을 확인하세요</p>
                       <p>• 위반 항목을 클릭하면 법적 근거를 볼 수 있습니다</p>
                     </div>
                   </div>
                   <div className="relative group">
                     <AlertCircle className="w-4 h-4 text-blue-500 cursor-pointer" />
-                    <div className="absolute z-10 hidden p-3 text-sm text-blue-800 transform -translate-x-1/2 bg-white border border-blue-200 rounded shadow-lg left-1/2 top-full group-hover:block whitespace-nowrap max-w-none">
+                    <div className="hidden absolute top-full left-1/2 z-10 p-3 max-w-none text-sm text-blue-800 whitespace-nowrap bg-white rounded border border-blue-200 shadow-lg transform -translate-x-1/2 group-hover:block">
                       <p>
                         • 점수에 따라 등급이 부여됩니다: A (90↑), B (75↑), C (60↑), D (60
                         미만)
@@ -300,7 +288,7 @@ export default function EvaluationForm() {
                 <button
                   onClick={fetchResults}
                   disabled={loading}
-                  className="inline-flex items-center px-4 py-2 text-white transition-all bg-blue-600 rounded-lg hover:bg-blue-700 hover:shadow-lg disabled:opacity-50 disabled:cursor-not-allowed">
+                  className="inline-flex items-center px-4 py-2 text-white bg-blue-600 rounded-lg transition-all hover:bg-blue-700 hover:shadow-lg disabled:opacity-50 disabled:cursor-not-allowed">
                   <RefreshCw
                     className={`w-4 h-4 mr-2 ${loading ? 'animate-spin' : ''}`}
                   />
@@ -312,12 +300,12 @@ export default function EvaluationForm() {
             <div className="p-5">
               {loading ? (
                 <div className="py-12 text-center">
-                  <div className="w-8 h-8 mx-auto mb-4 border-4 border-blue-600 rounded-full animate-spin border-t-transparent"></div>
+                  <div className="mx-auto mb-4 w-8 h-8 rounded-full border-4 border-blue-600 animate-spin border-t-transparent"></div>
                   <p className="text-gray-600">데이터를 불러오는 중...</p>
                 </div>
               ) : results.length === 0 ? (
                 <div className="py-12 text-center">
-                  <BarChart3 className="w-12 h-12 mx-auto mb-4 text-gray-400" />
+                  <BarChart3 className="mx-auto mb-4 w-12 h-12 text-gray-400" />
                   <p className="font-medium text-gray-600">진단 결과가 없습니다.</p>
                   <p className="mt-1 text-sm text-gray-500">
                     새로운 자가진단을 실시해보세요.
@@ -326,13 +314,15 @@ export default function EvaluationForm() {
               ) : (
                 <div className="space-y-4">
                   {results.map((result, index) => {
-                    const gradeStyle = getGradeStyle(result.finalGrade)
+                    const gradeStyle = getGradeStyle(result.finalGrade ?? 'D')
                     const scorePercentage =
                       (result.actualScore / result.totalPossibleScore) * 100
                     const selectedResult = selectedResults[result.id]
                     const violationCount =
                       selectedResult && selectedResult.answers
-                        ? selectedResult.answers.filter(a => a.answer === 'no').length
+                        ? selectedResult.answers.filter(
+                            a => a.hasCriticalViolation === true
+                          ).length
                         : result.criticalViolationCount
 
                     const isExpanded = expandedViolations[result.id]
@@ -340,10 +330,10 @@ export default function EvaluationForm() {
                     return (
                       <div
                         key={result.id}
-                        className="p-5 transition-all border border-gray-200 rounded-xl bg-white/50 hover:border-gray-300 hover:shadow-lg">
+                        className="p-5 rounded-xl border border-gray-200 transition-all bg-white/50 hover:border-gray-300 hover:shadow-lg">
                         {/* 기본 정보 섹션 */}
                         <div className="">
-                          <div className="flex items-center justify-between mb-4">
+                          <div className="flex justify-between items-center mb-4">
                             <div className="flex items-center space-x-3">
                               <div className="p-2 bg-blue-100 rounded-lg">
                                 <FileText className="w-6 h-6 text-blue-600" />
@@ -359,19 +349,22 @@ export default function EvaluationForm() {
                             </div>
                             <span className="text-sm font-semibold text-gray-500">
                               완료 일시:{' '}
-                              {new Date(result.completedAt).toLocaleString('ko-KR', {
-                                month: '2-digit',
-                                day: '2-digit',
-                                hour: '2-digit',
-                                minute: '2-digit'
-                              })}
+                              {new Date(result.completedAt ?? new Date()).toLocaleString(
+                                'ko-KR',
+                                {
+                                  month: '2-digit',
+                                  day: '2-digit',
+                                  hour: '2-digit',
+                                  minute: '2-digit'
+                                }
+                              )}
                             </span>
                           </div>
                           {/* 점수 및 정보 - 4열 그리드, 각 항목 가로 정렬 (리팩토링) */}
                           <div className="grid grid-cols-4 gap-4 mb-4">
                             {/* 최종 등급 */}
-                            <div className="p-4 border border-blue-300 rounded-lg bg-gradient-to-br from-blue-50 to-white">
-                              <div className="flex items-center justify-between w-full">
+                            <div className="p-4 bg-gradient-to-br from-blue-50 to-white rounded-lg border border-blue-300">
+                              <div className="flex justify-between items-center w-full">
                                 <div className="flex flex-col">
                                   <span className="text-sm text-gray-500">최종 등급</span>
                                   <div className="flex items-center space-x-1">
@@ -384,8 +377,8 @@ export default function EvaluationForm() {
                               </div>
                             </div>
                             {/* 위반 건수 */}
-                            <div className="p-4 border border-blue-300 rounded-lg bg-gradient-to-br from-blue-50 to-white">
-                              <div className="flex items-center justify-between w-full">
+                            <div className="p-4 bg-gradient-to-br from-blue-50 to-white rounded-lg border border-blue-300">
+                              <div className="flex justify-between items-center w-full">
                                 <div className="flex flex-col">
                                   <span className="text-sm text-gray-500">위반 건수</span>
                                   <div className="flex items-center space-x-1">
@@ -398,8 +391,8 @@ export default function EvaluationForm() {
                               </div>
                             </div>
                             {/* 진단 점수 */}
-                            <div className="p-4 border border-blue-300 rounded-lg bg-gradient-to-br from-blue-50 to-white">
-                              <div className="flex items-center justify-between w-full">
+                            <div className="p-4 bg-gradient-to-br from-blue-50 to-white rounded-lg border border-blue-300">
+                              <div className="flex justify-between items-center w-full">
                                 <div className="flex flex-col">
                                   <span className="text-sm text-gray-500">진단 점수</span>
                                   <div className="flex items-center space-x-1">
@@ -412,8 +405,8 @@ export default function EvaluationForm() {
                               </div>
                             </div>
                             {/* 종합 점수 */}
-                            <div className="p-4 border border-blue-300 rounded-lg bg-gradient-to-br from-blue-50 to-white">
-                              <div className="flex items-center justify-between w-full">
+                            <div className="p-4 bg-gradient-to-br from-blue-50 to-white rounded-lg border border-blue-300">
+                              <div className="flex justify-between items-center w-full">
                                 <div className="flex flex-col">
                                   <span className="text-sm text-gray-500">종합 점수</span>
                                   <div className="flex items-center space-x-1">
@@ -435,7 +428,7 @@ export default function EvaluationForm() {
                                 toggleViolationExpansion(result.id)
                                 fetchDetailResult(result.id)
                               }}
-                              className="p-2 transition-colors rounded-full hover:bg-gray-100">
+                              className="p-2 rounded-full transition-colors hover:bg-gray-100">
                               {isExpanded ? (
                                 <ChevronUp className="w-5 h-5 text-gray-400" />
                               ) : (
@@ -454,16 +447,16 @@ export default function EvaluationForm() {
                               </span>
                               <span className="px-2 py-1 text-xs font-bold text-orange-800 bg-orange-100 rounded-full">
                                 {
-                                  selectedResult.answers.filter(a => a.answer === 'no')
+                                  selectedResult.answers.filter(a => a.answer === false)
                                     .length
                                 }
                                 건
                               </span>
                             </div>
                             <div className="mt-3">
-                              {selectedResult.answers.filter(a => a.answer === 'no')
+                              {selectedResult.answers.filter(a => a.answer === false)
                                 .length === 0 ? (
-                                <div className="p-4 border border-green-200 bg-gradient-to-br from-green-50 to-emerald-50 rounded-xl">
+                                <div className="p-4 bg-gradient-to-br from-green-50 to-emerald-50 rounded-xl border border-green-200">
                                   <div className="flex items-center space-x-3">
                                     <div className="p-2 bg-green-100 rounded-lg">
                                       <CheckCircle2 className="w-5 h-5 text-green-600" />
@@ -485,8 +478,8 @@ export default function EvaluationForm() {
                                   ).map(([categoryId, violations]) => (
                                     <div
                                       key={categoryId}
-                                      className="p-3 border border-red-200 rounded-lg bg-gradient-to-br from-red-50 to-pink-50">
-                                      <div className="flex items-center justify-between mb-2">
+                                      className="p-3 bg-gradient-to-br from-red-50 to-pink-50 rounded-lg border border-red-200">
+                                      <div className="flex justify-between items-center mb-2">
                                         <div className="flex items-center space-x-2">
                                           <h4 className="text-sm font-bold text-red-800">
                                             {getCategoryName(categoryId)}
@@ -503,7 +496,7 @@ export default function EvaluationForm() {
                                           {violations.map((violation, i) => (
                                             <button
                                               key={i}
-                                              className="inline-flex items-center px-2 py-1 text-xs font-medium text-red-700 transition-colors bg-white border border-red-300 rounded-md hover:bg-red-100 hover:border-red-400"
+                                              className="inline-flex items-center px-2 py-1 text-xs font-medium text-red-700 bg-white rounded-md border border-red-300 transition-colors hover:bg-red-100 hover:border-red-400"
                                               onClick={e => {
                                                 e.stopPropagation()
                                                 handleViolationClick(violation.questionId)
@@ -552,22 +545,22 @@ export default function EvaluationForm() {
 
           {violationMeta ? (
             <div className="space-y-4">
-              <div className="p-4 border border-blue-100 rounded-lg bg-gradient-to-br from-blue-50 to-white">
+              <div className="p-4 bg-gradient-to-br from-blue-50 to-white rounded-lg border border-blue-100">
                 <h4 className="mb-1 text-sm font-semibold text-gray-700">카테고리</h4>
                 <p className="text-base text-gray-900">{violationMeta.category}</p>
               </div>
-              <div className="p-4 border border-blue-100 rounded-lg bg-gradient-to-br from-blue-50 to-white">
+              <div className="p-4 bg-gradient-to-br from-blue-50 to-white rounded-lg border border-blue-100">
                 <h4 className="mb-1 text-sm font-semibold text-gray-700">벌칙 정보</h4>
                 <p className="text-base text-gray-900">{violationMeta.penaltyInfo}</p>
               </div>
-              <div className="p-4 border border-blue-100 rounded-lg bg-gradient-to-br from-blue-50 to-white">
+              <div className="p-4 bg-gradient-to-br from-blue-50 to-white rounded-lg border border-blue-100">
                 <h4 className="mb-1 text-sm font-semibold text-gray-700">법적 근거</h4>
                 <p className="text-base text-gray-900">{violationMeta.legalBasis}</p>
               </div>
             </div>
           ) : (
             <div className="py-12 text-center">
-              <div className="w-12 h-12 mx-auto mb-6 border-4 border-blue-500 rounded-full animate-spin border-t-transparent"></div>
+              <div className="mx-auto mb-6 w-12 h-12 rounded-full border-4 border-blue-500 animate-spin border-t-transparent"></div>
               <div className="space-y-2">
                 <p className="text-lg font-medium text-gray-900">
                   상세 정보를 불러오는 중...
