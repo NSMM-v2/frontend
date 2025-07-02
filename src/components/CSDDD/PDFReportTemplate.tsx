@@ -41,7 +41,7 @@ interface Question {
   text: string // 질문 내용
   weight: number // 가중치
   criticalViolation?: {
-    grade: 'D' | 'C' | 'B' | 'B/C' // 위반 시 등급
+    grade: 'D' | 'C' | 'B' // 위반 시 등급
     reason: string // 위반 사유
   }
 }
@@ -52,7 +52,7 @@ interface Question {
 interface CriticalViolation {
   question: Question // 위반 질문
   violation: {
-    grade: 'D' | 'C' | 'B' | 'B/C'
+    grade: 'D' | 'C' | 'B'
     reason: string
   }
 }

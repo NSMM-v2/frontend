@@ -61,7 +61,7 @@ interface Question {
   text: string // 질문 내용
   weight: number // 가중치
   criticalViolation?: {
-    grade: 'D' | 'C' | 'B' | 'B/C' // 위반 시 등급
+    grade: 'D' | 'C' | 'B' // 위반 시 등급
     reason: string // 위반 사유
   }
 }
@@ -72,7 +72,7 @@ interface Question {
 interface CriticalViolation {
   question: Question // 위반 질문
   violation: {
-    grade: 'D' | 'C' | 'B' | 'B/C'
+    grade: 'D' | 'C' | 'B'
     reason: string
   }
 }
@@ -89,7 +89,7 @@ interface GradeInfo {
 /**
  * PDF 보고서 생성기 Props 인터페이스
  */
-interface PDFReportGeneratorProps {
+export interface PDFReportGeneratorProps {
   answers: Record<string, string> // 사용자 응답 데이터
   questions: Question[] // 전체 질문 목록
   categories: string[] // 카테고리 목록

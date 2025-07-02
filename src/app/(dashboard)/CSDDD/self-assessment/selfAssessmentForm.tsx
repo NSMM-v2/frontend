@@ -1,7 +1,6 @@
 'use client'
-import {useState, useEffect} from 'react'
+import {useState, useEffect, useRef} from 'react'
 import {
-  CheckCircle,
   AlertTriangle,
   Send,
   Home,
@@ -9,13 +8,14 @@ import {
   Shield,
   Activity,
   TrendingUp,
-  Clock,
   Users,
   Globe,
   FileText,
-  Zap
+  Zap,
+  AlertCircle,
+  Eye
 } from 'lucide-react'
-import {motion} from 'framer-motion'
+import {motion, AnimatePresence} from 'framer-motion'
 
 import {
   Tooltip,
@@ -38,6 +38,7 @@ import {
 import authService from '@/services/authService'
 
 import {submitSelfAssessmentToBackend} from '@/services/csdddService'
+
 // 질문 데이터 타입 정의
 interface Question {
   id: string
@@ -57,6 +58,7 @@ interface Answer {
   remarks?: string
 }
 
+// 질문 데이터는 여기에 삽입하세요
 const questions: Question[] = [
   // 인권 및 노동 카테고리
   {
@@ -441,6 +443,10 @@ export default function CSAssessmentPage() {
   )
   const [isSubmitting, setIsSubmitting] = useState(false)
   const [currentCategoryIdx, setCurrentCategoryIdx] = useState(0)
+  const [showUnansweredModal, setShowUnansweredModal] = useState(false)
+  const [unansweredQuestions, setUnansweredQuestions] = useState<Question[]>([])
+  const questionRefs = useRef<Record<string, HTMLDivElement | null>>({})
+
   const currentCategory = categoryMeta[currentCategoryIdx].key
 
   useEffect(() => {
@@ -528,13 +534,48 @@ export default function CSAssessmentPage() {
     setAnswers(updatedAnswers)
   }
 
-  // 제출 핸들러
+  // 미답변 질문으로 이동하는 함수
+  const moveToUnansweredQuestion = (questionId: string) => {
+    const question = questions.find(q => q.id === questionId)
+    if (!question) return
+
+    // 해당 질문이 속한 카테고리로 이동
+    const categoryIdx = categoryMeta.findIndex(c => c.key === question.category)
+    if (categoryIdx !== -1) {
+      setCurrentCategoryIdx(categoryIdx)
+
+      // 약간의 딜레이 후 해당 질문으로 스크롤
+      setTimeout(() => {
+        const questionElement = questionRefs.current[questionId]
+        if (questionElement) {
+          questionElement.scrollIntoView({
+            behavior: 'smooth',
+            block: 'center'
+          })
+          // 하이라이트 효과
+          questionElement.classList.add('ring-4', 'ring-amber-300', 'ring-opacity-75')
+          setTimeout(() => {
+            questionElement.classList.remove(
+              'ring-4',
+              'ring-amber-300',
+              'ring-opacity-75'
+            )
+          }, 2000)
+        }
+      }, 500)
+    }
+    setShowUnansweredModal(false)
+  }
+
+  // 제출 핸들러 (개선됨)
   const handleSubmit = async () => {
-    const unansweredQuestions = questions.filter(
+    const unanswered = questions.filter(
       q => !answers[q.id] || answers[q.id].answer === ''
     )
-    if (unansweredQuestions.length > 0) {
-      alert(`모든 질문에 답변해주세요. (미답변: ${unansweredQuestions.length}개)`)
+
+    if (unanswered.length > 0) {
+      setUnansweredQuestions(unanswered)
+      setShowUnansweredModal(true)
       return
     }
 
@@ -559,7 +600,7 @@ export default function CSAssessmentPage() {
               remarks: answers[question.id].remarks || undefined
             }
           })
-          .filter((item): item is NonNullable<typeof item> => item !== null) // 타입 가드 사용
+          .filter((item): item is NonNullable<typeof item> => item !== null)
       }
 
       console.log('📦 제출 데이터:', submissionData)
@@ -584,6 +625,84 @@ export default function CSAssessmentPage() {
     if (idx !== -1) setCurrentCategoryIdx(idx)
   }
 
+  // 미답변 질문 모달
+  const UnansweredQuestionsModal = () => (
+    <AnimatePresence>
+      {showUnansweredModal && (
+        <motion.div
+          initial={{opacity: 0}}
+          animate={{opacity: 1}}
+          exit={{opacity: 0}}
+          className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black bg-opacity-50"
+          onClick={() => setShowUnansweredModal(false)}>
+          <motion.div
+            initial={{scale: 0.9, opacity: 0}}
+            animate={{scale: 1, opacity: 1}}
+            exit={{scale: 0.9, opacity: 0}}
+            className="bg-white rounded-2xl shadow-2xl max-w-2xl w-full max-h-[80vh] overflow-hidden"
+            onClick={e => e.stopPropagation()}>
+            <div className="p-6 border-b border-gray-100">
+              <div className="flex items-center space-x-3">
+                <div className="p-2 rounded-lg bg-amber-100">
+                  <AlertCircle className="w-6 h-6 text-amber-600" />
+                </div>
+                <div>
+                  <h3 className="text-xl font-bold text-slate-800">
+                    미답변 질문이 있습니다
+                  </h3>
+                  <p className="text-sm text-slate-600">
+                    {unansweredQuestions.length}개의 질문에 답변이 필요합니다
+                  </p>
+                </div>
+              </div>
+            </div>
+
+            <div className="p-6 overflow-y-auto max-h-96">
+              <div className="space-y-3">
+                {unansweredQuestions.map((question, index) => (
+                  <div
+                    key={question.id}
+                    className="flex items-start justify-between p-4 transition-colors border cursor-pointer bg-amber-50 border-amber-200 rounded-xl hover:bg-amber-100"
+                    onClick={() => moveToUnansweredQuestion(question.id)}>
+                    <div className="flex-1">
+                      <div className="flex items-center mb-2 space-x-2">
+                        <span className="px-2 py-1 text-xs font-bold rounded-lg text-amber-700 bg-amber-200">
+                          {question.id}
+                        </span>
+                        <span className="text-xs font-medium text-amber-600">
+                          {question.category}
+                        </span>
+                      </div>
+                      <p className="text-sm leading-relaxed text-slate-700">
+                        {question.text}
+                      </p>
+                    </div>
+                    <Eye className="flex-shrink-0 w-5 h-5 ml-3 text-amber-600" />
+                  </div>
+                ))}
+              </div>
+            </div>
+
+            <div className="p-6 border-t border-gray-100 bg-gray-50">
+              <div className="flex space-x-3">
+                <button
+                  onClick={() => setShowUnansweredModal(false)}
+                  className="flex-1 px-4 py-3 font-medium transition-colors bg-white border border-gray-300 text-slate-600 rounded-xl hover:bg-gray-50">
+                  닫기
+                </button>
+                <button
+                  onClick={() => moveToUnansweredQuestion(unansweredQuestions[0]?.id)}
+                  className="flex-1 px-4 py-3 font-medium text-white transition-colors bg-amber-500 rounded-xl hover:bg-amber-600">
+                  첫 번째 미답변으로 이동
+                </button>
+              </div>
+            </div>
+          </motion.div>
+        </motion.div>
+      )}
+    </AnimatePresence>
+  )
+
   // ============================================================================
   // 카테고리별 섹션 전환 구조 (한 번에 한 섹션만, Toss 스타일)
   // ============================================================================
@@ -604,51 +723,70 @@ export default function CSAssessmentPage() {
         exit={{opacity: 0, x: -40}}
         transition={{duration: 0.5}}
         className="mb-8">
-        {/* Toss 스타일 카테고리 헤더 카드 */}
-        <div
-          className={`flex items-center p-6 mb-6 text-white bg-gradient-to-br rounded-2xl shadow-md ${gradientClass}`}>
-          <div className="flex items-center justify-center w-12 h-12 mr-4 rounded-xl bg-white/20">
-            <CategoryIcon className="w-7 h-7" />
+        {/* 개선된 카테고리 헤더 카드 */}
+        <div className="relative flex items-center p-6 mb-6 overflow-hidden text-white bg-blue-500 shadow-lg rounded-3xl">
+          <div className="flex items-center justify-center w-16 h-16 mr-6 shadow-lg rounded-2xl bg-white/20 backdrop-blur-sm">
+            <CategoryIcon className="w-8 h-8" />
           </div>
-          <div>
-            <h3 className="mb-1 text-xl font-bold">{category}</h3>
-            <p className="text-sm opacity-90">
+          <div className="flex-1">
+            <h3 className="mb-2 text-2xl font-bold">{category}</h3>
+            <p className="text-lg opacity-90">
               {categoryQuestions.length}개 질문 • {answeredInCategory}개 답변 완료
             </p>
+            <div className="flex items-center mt-3 space-x-4">
+              <div className="flex items-center space-x-2">
+                <div className="w-2 h-2 bg-white rounded-full opacity-75"></div>
+                <span className="text-sm opacity-90">
+                  진행률:{' '}
+                  {Math.round((answeredInCategory / categoryQuestions.length) * 100)}%
+                </span>
+              </div>
+            </div>
           </div>
         </div>
-        {/* 카테고리별 질문 카드 */}
-        <div className="space-y-6">
+
+        {/* 개선된 질문 카드들 */}
+        <div className="space-y-5">
           {categoryQuestions.map((question, index) => {
             const answer = answers[question.id]
             const isCritical = !!question.criticalViolation
+            const isAnswered = answer?.answer !== '' && answer?.answer
+
             return (
               <motion.div
                 key={question.id}
+                ref={el => {
+                  questionRefs.current[question.id] = el
+                }}
                 initial={{opacity: 0, y: 20}}
                 animate={{opacity: 1, y: 0}}
                 transition={{delay: index * 0.05}}
-                className="p-4 transition-all bg-white border border-gray-100 shadow-sm rounded-2xl hover:shadow-lg">
-                <div className="flex items-start space-x-4">
+                className={`relative p-4 transition-all bg-white border-2 rounded-3xl shadow-lg hover:shadow-xl transform hover:-translate-y-1 ${
+                  isAnswered
+                    ? 'border-blue-200 bg-blue-50'
+                    : 'border-gray-200 hover:border-blue-300'
+                }`}>
+                <div className="flex items-start space-x-6">
                   <div className="flex-shrink-0">
-                    <div className="inline-flex items-center justify-center w-12 h-8 text-sm font-bold text-blue-600 bg-blue-100 border-2 border-blue-200 rounded-xl">
+                    <div className="inline-flex items-center justify-center h-10 text-sm font-bold text-blue-600 bg-blue-100 border-2 border-blue-200 shadow-sm w-14 rounded-2xl">
                       {question.id}
                     </div>
                   </div>
+
                   <div className="flex-1 space-y-4">
                     <div className="flex items-start justify-between w-full">
-                      <p className="flex-1 font-medium leading-relaxed text-left text-slate-800">
+                      <p className="flex-1 pr-4 text-base font-medium leading-relaxed text-left text-slate-800">
                         {question.text}
                       </p>
-                      <div className="flex items-center flex-shrink-0 ml-4 space-x-2">
-                        <div className="px-3 py-1 text-xs font-medium rounded-full text-slate-600 bg-slate-100">
+                      <div className="flex items-center flex-shrink-0 space-x-3">
+                        <div className="px-3 py-1 text-xs font-medium rounded-full shadow-sm text-slate-600 bg-slate-100">
                           가중치 {question.weight}
                         </div>
                         {question.criticalViolation && (
                           <TooltipProvider>
                             <Tooltip>
                               <TooltipTrigger asChild>
-                                <div className="flex-shrink-0 p-1 bg-red-100 rounded-full cursor-help">
+                                <div className="flex-shrink-0 p-1.5 bg-red-100 rounded-full shadow-sm cursor-help">
                                   <AlertTriangle className="w-4 h-4 text-red-500" />
                                 </div>
                               </TooltipTrigger>
@@ -663,8 +801,10 @@ export default function CSAssessmentPage() {
                         )}
                       </div>
                     </div>
-                    <div className="flex items-center space-x-6">
-                      <label className="flex items-center px-2 py-1 space-x-2 transition-colors cursor-pointer rounded-xl group hover:bg-green-50">
+
+                    {/* 개선된 답변 선택 버튼 */}
+                    <div className="flex items-center space-x-4">
+                      <label className="flex items-center px-3 py-1.5 space-x-3 transition-all border-2 border-transparent cursor-pointer rounded-2xl group hover:bg-blue-50 hover:border-blue-200">
                         <input
                           type="radio"
                           name={question.id}
@@ -680,13 +820,14 @@ export default function CSAssessmentPage() {
                               question.criticalViolation?.grade
                             )
                           }
-                          className="w-4 h-4 border-2 border-green-500 rounded-full appearance-none cursor-pointer checked:bg-green-500 checked:ring-2 checked:ring-green-600"
+                          className="w-5 h-5 border-2 border-blue-300 rounded-full shadow-sm appearance-none cursor-pointer checked:bg-blue-300 checked:ring-4 checked:ring-blue-100"
                         />
-                        <span className="font-medium text-green-700 transition-colors group-hover:text-green-800">
+                        <span className="text-sm font-medium text-blue-600 transition-colors group-hover:text-blue-700">
                           예
                         </span>
                       </label>
-                      <label className="flex items-center px-2 py-1 space-x-2 transition-colors cursor-pointer rounded-xl group hover:bg-red-50">
+
+                      <label className="flex items-center px-3 py-1.5 space-x-3 transition-all border-2 border-transparent cursor-pointer rounded-2xl group hover:bg-blue-50 hover:border-blue-200">
                         <input
                           type="radio"
                           name={question.id}
@@ -702,15 +843,16 @@ export default function CSAssessmentPage() {
                               question.criticalViolation?.grade
                             )
                           }
-                          className="w-4 h-4 border-2 border-red-500 rounded-full appearance-none cursor-pointer checked:bg-red-500 checked:ring-2 checked:ring-red-600"
+                          className="w-5 h-5 border-2 border-blue-300 rounded-full shadow-sm appearance-none cursor-pointer checked:bg-blue-300 checked:ring-4 checked:ring-blue-100"
                         />
-                        <span className="font-medium text-red-700 transition-colors group-hover:text-red-800">
+                        <span className="text-sm font-medium text-blue-600 transition-colors group-hover:text-blue-700">
                           아니오
                         </span>
                       </label>
                     </div>
-                    <div className="space-y-2">
-                      <label className="block text-sm font-medium text-slate-700">
+
+                    <div className="space-y-3">
+                      <label className="block text-sm font-semibold text-slate-700">
                         비고 (선택사항)
                       </label>
                       <textarea
@@ -718,42 +860,55 @@ export default function CSAssessmentPage() {
                         onChange={e => handleRemarksChange(question.id, e.target.value)}
                         placeholder="추가 설명이나 특이사항을 입력하세요"
                         rows={1}
-                        className="w-full px-3 py-2 text-sm transition-colors border-2 rounded-2xl backdrop-blur-sm border-slate-200 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent bg-white/80 hover:border-slate-300"
+                        className="w-full px-4 py-3 text-sm transition-all border-2 shadow-sm resize-none rounded-2xl backdrop-blur-sm border-slate-200 focus:outline-none focus:ring-4 focus:ring-blue-200 focus:border-blue-500 bg-white/90 hover:border-slate-300"
                       />
                     </div>
-                    {/* 완료 badge 및 하단 가중치 badge 제거됨, 가중치는 위로 이동 */}
                   </div>
                 </div>
               </motion.div>
             )
           })}
         </div>
-        {/* 하단 네비게이션 버튼 (이전/다음/제출) */}
-        <div className="flex items-center justify-between gap-4 mt-10">
+
+        {/* 개선된 하단 네비게이션 버튼 */}
+        <div className="flex items-center justify-between gap-6 p-6 mt-12 border shadow-sm bg-gradient-to-r from-slate-50 to-white rounded-2xl border-slate-200">
           <button
             onClick={() => setCurrentCategoryIdx(idx => Math.max(0, idx - 1))}
             disabled={isFirst}
-            className="px-8 py-4 text-lg font-semibold text-gray-700 transition-all duration-300 bg-gray-100 shadow-lg rounded-xl hover:shadow-xl disabled:opacity-50 disabled:transform-none hover:bg-gray-200">
-            이전
+            className="flex items-center px-8 py-4 space-x-3 text-lg font-semibold text-gray-700 transition-all duration-300 bg-white border-2 border-gray-300 shadow-lg rounded-2xl hover:shadow-xl disabled:opacity-50 disabled:transform-none hover:bg-gray-50 hover:-translate-y-1">
+            <ArrowLeft className="w-5 h-5" />
+            <span>이전</span>
           </button>
+
           {isLast ? (
             <button
               onClick={handleSubmit}
-              disabled={progress !== 100 || isSubmitting}
-              className={`px-8 py-4 text-lg font-semibold rounded-xl transition-all duration-300 shadow-lg hover:shadow-xl disabled:opacity-50 disabled:transform-none ${
-                progress === 100 && !isSubmitting
-                  ? 'bg-blue-500 text-white hover:bg-blue-600 hover:scale-105'
-                  : 'bg-slate-400 text-white cursor-not-allowed'
+              disabled={isSubmitting}
+              className={`flex items-center space-x-3 px-8 py-4 text-lg font-semibold rounded-2xl transition-all duration-300 shadow-lg hover:shadow-xl hover:-translate-y-1 ${
+                isSubmitting
+                  ? 'bg-slate-400 text-white cursor-not-allowed'
+                  : 'bg-blue-500 text-white hover:bg-blue-600'
               }`}>
-              {isSubmitting ? '제출 중...' : '자가진단 제출'}
+              {isSubmitting ? (
+                <>
+                  <div className="w-5 h-5 border-2 border-t-2 rounded-full animate-spin border-white/20 border-t-white"></div>
+                  <span>제출 중...</span>
+                </>
+              ) : (
+                <>
+                  <Send className="w-5 h-5" />
+                  <span>자가진단 제출</span>
+                </>
+              )}
             </button>
           ) : (
             <button
               onClick={() =>
                 setCurrentCategoryIdx(idx => Math.min(categoryMeta.length - 1, idx + 1))
               }
-              className="px-8 py-4 text-lg font-semibold text-white transition-all duration-300 bg-blue-500 shadow-lg rounded-xl hover:shadow-xl hover:bg-blue-600 hover:scale-105">
-              다음
+              className="flex items-center px-8 py-4 space-x-3 text-lg font-semibold text-white transition-all duration-300 bg-blue-500 shadow-lg rounded-2xl hover:shadow-xl hover:bg-blue-600 hover:-translate-y-1">
+              <span>다음</span>
+              <ArrowLeft className="w-5 h-5 rotate-180" />
             </button>
           )}
         </div>
@@ -763,9 +918,12 @@ export default function CSAssessmentPage() {
 
   return (
     <div className="flex flex-col w-full min-h-screen">
+      {/* 미답변 질문 모달 */}
+      <UnansweredQuestionsModal />
+
       {/* 브레드크럼 영역 */}
       <div className="p-4 pb-0">
-        <div className="flex flex-row items-center p-3 mb-6 text-sm text-gray-600 border shadow-sm rounded-xl backdrop-blur-sm bg-white/80 border-white/50">
+        <div className="flex flex-row items-center p-4 mb-6 text-sm text-gray-600 border shadow-sm rounded-2xl backdrop-blur-sm bg-white/90 border-white/50">
           <Breadcrumb>
             <BreadcrumbList>
               <BreadcrumbItem>
@@ -798,7 +956,7 @@ export default function CSAssessmentPage() {
         <div className="flex flex-row w-full mb-6">
           <Link
             href="/dashboard"
-            className="flex flex-row items-center p-4 space-x-4 transition-all rounded-xl backdrop-blur-sm hover:bg-white/30 group">
+            className="flex flex-row items-center p-4 space-x-4 transition-all rounded-2xl backdrop-blur-sm hover:bg-white/30 group">
             <ArrowLeft className="w-6 h-6 text-gray-500 transition-colors group-hover:text-blue-600" />
             <PageHeader
               icon={<Shield className="w-6 h-6 text-blue-600" />}
@@ -813,10 +971,10 @@ export default function CSAssessmentPage() {
 
       <div className="flex-1 px-4 pb-8">
         {/* 진행 현황 + 카테고리 프로그레스바 통합 */}
-        <div className="p-8 mb-8 border shadow-xl rounded-3xl backdrop-blur-xl bg-white/70 border-white/50 shadow-blue-500/10">
+        <div className="p-6 mb-6 border shadow-xl rounded-3xl backdrop-blur-xl bg-white/70 border-white/50 shadow-blue-500/10">
           <div className="flex items-center justify-between mb-6">
             <div className="flex items-center space-x-3">
-              <div className="p-3 shadow-lg bg-gradient-to-br from-blue-500 to-cyan-500 rounded-xl">
+              <div className="p-3 bg-blue-500 shadow-lg rounded-xl">
                 <TrendingUp className="w-6 h-6 text-white" />
               </div>
               <div>
@@ -825,9 +983,7 @@ export default function CSAssessmentPage() {
               </div>
             </div>
             <div className="text-right">
-              <div className="text-4xl font-bold text-transparent bg-clip-text bg-gradient-to-r from-blue-500 to-cyan-500">
-                {progress}%
-              </div>
+              <div className="text-4xl font-bold text-blue-600">{progress}%</div>
               <p className="mt-1 text-sm text-slate-500">완료율</p>
             </div>
           </div>
@@ -863,10 +1019,12 @@ export default function CSAssessmentPage() {
                   }`}
                   style={{minWidth: 0}}>
                   <div
-                    className={`flex items-center justify-center w-12 h-12 rounded-xl shadow-md mb-2 bg-gradient-to-br ${
-                      isActive ? cat.activeColor : cat.color
+                    className={`flex items-center justify-center w-12 h-12 rounded-xl shadow-md mb-2 ${
+                      isActive ? 'bg-blue-500' : 'bg-slate-200'
                     } transition-all`}>
-                    <Icon className={`w-6 h-6 ${cat.text}`} />
+                    <Icon
+                      className={`w-6 h-6 ${isActive ? 'text-white' : 'text-slate-600'}`}
+                    />
                   </div>
                   <span className={`text-xs font-semibold truncate ${cat.text}`}>
                     {cat.key}
@@ -879,49 +1037,6 @@ export default function CSAssessmentPage() {
 
         {/* 질문 카테고리별 섹션 */}
         {renderCurrentCategorySection()}
-
-        {/* 제출 섹션 */}
-        <div className="p-8 border shadow-xl bg-gradient-to-br rounded-3xl backdrop-blur-xl from-white/80 to-slate-50/80 border-white/50 shadow-blue-500/10">
-          <div className="flex items-center justify-between">
-            <div className="space-y-2">
-              <h3 className="text-xl font-bold text-slate-800">자가진단 완료</h3>
-              <div className="flex items-center space-x-4 text-sm text-slate-600">
-                <div className="flex items-center space-x-1">
-                  <Clock className="w-4 h-4" />
-                  <span>총 {questions.length}개 질문</span>
-                </div>
-                <div className="flex items-center space-x-1">
-                  <CheckCircle className="w-4 h-4 text-green-500" />
-                  <span className="font-medium text-green-600">
-                    {Object.values(answers).filter(a => a.answer !== '').length}개 답변
-                    완료
-                  </span>
-                </div>
-              </div>
-            </div>
-
-            <button
-              onClick={handleSubmit}
-              disabled={progress !== 100 || isSubmitting}
-              className={`flex items-center space-x-3 px-8 py-4 rounded-2xl font-semibold text-white transition-all duration-300 shadow-lg hover:shadow-xl transform hover:scale-105 ${
-                progress === 100 && !isSubmitting
-                  ? 'bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 shadow-blue-500/25 hover:shadow-blue-500/40'
-                  : 'bg-slate-400 cursor-not-allowed'
-              }`}>
-              {isSubmitting ? (
-                <>
-                  <div className="w-5 h-5 border-2 border-t-2 rounded-full animate-spin border-white/20 border-t-white"></div>
-                  <span>제출 중...</span>
-                </>
-              ) : (
-                <>
-                  <Send className="w-5 h-5" />
-                  <span>자가진단 제출</span>
-                </>
-              )}
-            </button>
-          </div>
-        </div>
       </div>
     </div>
   )
