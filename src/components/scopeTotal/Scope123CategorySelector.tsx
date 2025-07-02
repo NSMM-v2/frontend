@@ -183,7 +183,7 @@ export function CategorySelector<KeyType extends string>({
               onClick={() => onCategorySelect(key as KeyType)}>
               <CardHeader className="p-4">
                 {/* 카테고리 정보 컨테이너 */}
-                <div className="flex justify-between items-start">
+                <div className="flex items-start justify-between">
                   {/* 카테고리 메인 정보 */}
                   <div className="flex-1">
                     {/* 카테고리 번호 라벨 */}
@@ -201,7 +201,7 @@ export function CategorySelector<KeyType extends string>({
                 </div>
 
                 {/* 배출량 표시 섹션 */}
-                <div className="flex justify-between items-center pt-3 mt-3 border-t border-gray-200">
+                <div className="flex items-center justify-between pt-3 mt-3 border-t border-gray-200">
                   {/* 배출량 수치 */}
                   <div
                     className={`text-lg font-bold transition-colors ${
@@ -215,7 +215,7 @@ export function CategorySelector<KeyType extends string>({
                 </div>
 
                 {/* 데이터 상태 표시 섹션 */}
-                <div className="flex justify-between items-center pt-3 mt-3 border-t border-gray-200">
+                <div className="flex items-center justify-between pt-3 mt-3 border-t border-gray-200">
                   {/* 데이터 상태 인디케이터 */}
                   <div
                     className={`flex items-center text-xs ${
