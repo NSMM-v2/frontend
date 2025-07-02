@@ -36,10 +36,8 @@ import {
   ArrowLeft,
   BarChart3,
   CheckCircle2,
-  XCircle,
   ChevronDown,
-  ChevronUp,
-  AlertTriangle
+  ChevronUp
 } from 'lucide-react'
 
 export default function EvaluationForm() {
@@ -63,7 +61,6 @@ export default function EvaluationForm() {
     {}
   )
 
-  // Toggle function for expanding/collapsing violation details
   const toggleViolationExpansion = (resultId: number) => {
     setExpandedViolations(prev => ({
       ...prev,
@@ -141,7 +138,12 @@ export default function EvaluationForm() {
           throw new Error('Unknown user type')
         }
 
-        setResults(response.content || [])
+        setResults(
+          (response.content || []).sort(
+            (a, b) =>
+              new Date(b.completedAt).getTime() - new Date(a.completedAt).getTime()
+          )
+        )
 
         setAuthError(null)
       } else {
@@ -279,9 +281,19 @@ export default function EvaluationForm() {
                   <h2 className="text-xl font-bold text-gray-900">진단 결과 목록</h2>
                   <div className="relative group">
                     <AlertCircle className="w-4 h-4 text-orange-500 cursor-pointer" />
-                    <div className="absolute z-10 hidden w-64 p-3 text-sm text-orange-800 transform -translate-x-1/2 bg-white border border-orange-200 rounded shadow-lg left-1/2 top-full group-hover:block">
+                    <div className="absolute z-10 hidden p-3 text-sm text-orange-800 transform -translate-x-1/2 bg-white border border-orange-200 rounded shadow-lg left-1/2 top-full group-hover:block whitespace-nowrap max-w-none">
                       <p>• 위반 항목은 펼쳐서 상세 내용을 확인하세요</p>
                       <p>• 위반 항목을 클릭하면 법적 근거를 볼 수 있습니다</p>
+                    </div>
+                  </div>
+                  <div className="relative group">
+                    <AlertCircle className="w-4 h-4 text-blue-500 cursor-pointer" />
+                    <div className="absolute z-10 hidden p-3 text-sm text-blue-800 transform -translate-x-1/2 bg-white border border-blue-200 rounded shadow-lg left-1/2 top-full group-hover:block whitespace-nowrap max-w-none">
+                      <p>
+                        • 점수에 따라 등급이 부여됩니다: A (90↑), B (75↑), C (60↑), D (60
+                        미만)
+                      </p>
+                      <p>• 중대 위반이 있으면 점수와 관계없이 자동 강등됩니다</p>
                     </div>
                   </div>
                 </div>
@@ -297,7 +309,7 @@ export default function EvaluationForm() {
               </div>
             </div>
 
-            <div className="p-6">
+            <div className="p-5">
               {loading ? (
                 <div className="py-12 text-center">
                   <div className="w-8 h-8 mx-auto mb-4 border-4 border-blue-600 rounded-full animate-spin border-t-transparent"></div>
@@ -313,7 +325,7 @@ export default function EvaluationForm() {
                 </div>
               ) : (
                 <div className="space-y-4">
-                  {results.map(result => {
+                  {results.map((result, index) => {
                     const gradeStyle = getGradeStyle(result.finalGrade)
                     const scorePercentage =
                       (result.actualScore / result.totalPossibleScore) * 100
@@ -331,7 +343,7 @@ export default function EvaluationForm() {
                         className="p-5 transition-all border border-gray-200 rounded-xl bg-white/50 hover:border-gray-300 hover:shadow-lg">
                         {/* 기본 정보 섹션 */}
                         <div className="">
-                          <div className="flex items-center justify-between mb-6">
+                          <div className="flex items-center justify-between mb-4">
                             <div className="flex items-center space-x-3">
                               <div className="p-2 bg-blue-100 rounded-lg">
                                 <FileText className="w-6 h-6 text-blue-600" />
@@ -340,7 +352,9 @@ export default function EvaluationForm() {
                                 <h3 className="font-bold text-gray-900">
                                   {result.companyName}
                                 </h3>
-                                <p className="text-sm text-gray-600">자가진단 결과</p>
+                                <p className="text-sm text-gray-600">
+                                  {`${results.length - index}차 자가진단 결과`}
+                                </p>
                               </div>
                             </div>
                             <span className="text-sm font-semibold text-gray-500">
@@ -353,49 +367,67 @@ export default function EvaluationForm() {
                               })}
                             </span>
                           </div>
-
-                          {/* 점수 및 정보 - 깔끔한 4열 그리드 */}
+                          {/* 점수 및 정보 - 4열 그리드, 각 항목 가로 정렬 (리팩토링) */}
                           <div className="grid grid-cols-4 gap-4 mb-4">
-                            <div className="p-4 text-center border border-blue-300 rounded-lg bg-gradient-to-br from-blue-50 to-white">
-                              <span className="block mb-2 text-sm text-gray-500">
-                                최종 등급
-                              </span>
-                              <p className={`text-2xl font-bold ${gradeStyle.text}`}>
-                                {result.finalGrade}
-                              </p>
-                              <p className="text-xs text-gray-400">등급</p>
+                            {/* 최종 등급 */}
+                            <div className="p-4 border border-blue-300 rounded-lg bg-gradient-to-br from-blue-50 to-white">
+                              <div className="flex items-center justify-between w-full">
+                                <div className="flex flex-col">
+                                  <span className="text-sm text-gray-500">최종 등급</span>
+                                  <div className="flex items-center space-x-1">
+                                    <p className={`text-xl font-bold ${gradeStyle.text}`}>
+                                      {result.finalGrade}
+                                    </p>
+                                    <span className="text-xs text-gray-400">등급</span>
+                                  </div>
+                                </div>
+                              </div>
                             </div>
-                            <div className="p-4 text-center border border-blue-300 rounded-lg bg-gradient-to-br from-blue-50 to-white">
-                              <span className="block mb-2 text-sm text-gray-500">
-                                위반 건수
-                              </span>
-                              <p className={`text-2xl font-bold ${gradeStyle.text}`}>
-                                {violationCount}
-                              </p>
-                              <p className="text-xs text-gray-400">건</p>
+                            {/* 위반 건수 */}
+                            <div className="p-4 border border-blue-300 rounded-lg bg-gradient-to-br from-blue-50 to-white">
+                              <div className="flex items-center justify-between w-full">
+                                <div className="flex flex-col">
+                                  <span className="text-sm text-gray-500">위반 건수</span>
+                                  <div className="flex items-center space-x-1">
+                                    <p className={`text-xl font-bold ${gradeStyle.text}`}>
+                                      {violationCount}
+                                    </p>
+                                    <span className="text-xs text-gray-400">건</span>
+                                  </div>
+                                </div>
+                              </div>
                             </div>
-                            <div className="p-4 text-center border border-blue-300 rounded-lg bg-gradient-to-br from-blue-50 to-white">
-                              <span className="block mb-2 text-sm text-gray-500">
-                                진단 점수
-                              </span>
-                              <p className="text-2xl font-bold text-gray-900">
-                                {result.score}
-                              </p>
-                              <p className="text-xs text-gray-400">점</p>
+                            {/* 진단 점수 */}
+                            <div className="p-4 border border-blue-300 rounded-lg bg-gradient-to-br from-blue-50 to-white">
+                              <div className="flex items-center justify-between w-full">
+                                <div className="flex flex-col">
+                                  <span className="text-sm text-gray-500">진단 점수</span>
+                                  <div className="flex items-center space-x-1">
+                                    <p className="text-xl font-bold text-gray-900">
+                                      {result.score}
+                                    </p>
+                                    <span className="text-xs text-gray-400">점</span>
+                                  </div>
+                                </div>
+                              </div>
                             </div>
-                            <div className="p-4 text-center border border-blue-300 rounded-lg bg-gradient-to-br from-blue-50 to-white">
-                              <span className="block mb-2 text-sm text-gray-500">
-                                종합 점수
-                              </span>
-                              <p className="text-2xl font-bold text-gray-900">
-                                {result.actualScore.toFixed(1)}
-                              </p>
-                              <p className="text-xs text-gray-400">
-                                / {result.totalPossibleScore.toFixed(1)}
-                              </p>
+                            {/* 종합 점수 */}
+                            <div className="p-4 border border-blue-300 rounded-lg bg-gradient-to-br from-blue-50 to-white">
+                              <div className="flex items-center justify-between w-full">
+                                <div className="flex flex-col">
+                                  <span className="text-sm text-gray-500">종합 점수</span>
+                                  <div className="flex items-center space-x-1">
+                                    <p className="text-xl font-bold text-gray-900">
+                                      {result.actualScore.toFixed(1)}
+                                    </p>
+                                    <span className="text-xs text-gray-400">
+                                      / {result.totalPossibleScore.toFixed(1)}
+                                    </span>
+                                  </div>
+                                </div>
+                              </div>
                             </div>
                           </div>
-
                           {/* Chevron icon as toggle button */}
                           <div className="flex justify-center">
                             <button
@@ -456,7 +488,6 @@ export default function EvaluationForm() {
                                       className="p-3 border border-red-200 rounded-lg bg-gradient-to-br from-red-50 to-pink-50">
                                       <div className="flex items-center justify-between mb-2">
                                         <div className="flex items-center space-x-2">
-                                          <AlertTriangle className="w-4 h-4 text-red-600" />
                                           <h4 className="text-sm font-bold text-red-800">
                                             {getCategoryName(categoryId)}
                                           </h4>
@@ -477,7 +508,6 @@ export default function EvaluationForm() {
                                                 e.stopPropagation()
                                                 handleViolationClick(violation.questionId)
                                               }}>
-                                              <XCircle className="w-3 h-3 mr-1 text-red-500" />
                                               {violation.questionId}
                                             </button>
                                           ))}
@@ -509,9 +539,6 @@ export default function EvaluationForm() {
         <DialogContent className="max-w-2xl">
           <DialogHeader className="pb-6">
             <div className="flex items-center space-x-3">
-              <div className="p-3 bg-red-100 rounded-xl">
-                <AlertCircle className="w-6 h-6 text-red-600" />
-              </div>
               <div>
                 <DialogTitle className="text-xl font-bold text-gray-900">
                   위반 항목 상세 정보
