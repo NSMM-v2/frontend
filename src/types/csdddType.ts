@@ -61,6 +61,7 @@ export interface SelfAssessmentResponse {
   status: string
   finalGrade?: string
   criticalViolationCount: number
+  noAnswerCount: number
   isHighRisk: boolean
   summary?: string
   recommendations?: string
