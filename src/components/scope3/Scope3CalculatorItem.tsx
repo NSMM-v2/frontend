@@ -38,11 +38,16 @@ import {
 } from '@/components/ui/alert-dialog'
 import type {SelectorState} from '@/types/scopeTypes'
 import {showSuccess} from '@/util/toast'
+import {
+  scope3CategoryList,
+  Scope3CategoryKey
+} from '../scopeTotal/Scope123CategorySelector'
 
 /**
  * CalculatorItem 컴포넌트 Props 타입
  */
 interface CalculatorItemProps {
+  activeCategory: Scope3CategoryKey
   /** 계산기 고유 ID */
   id: number
   /** 계산기 순서 번호 (1부터 시작) */
@@ -70,6 +75,7 @@ interface CalculatorItemProps {
  * 개별 계산기를 관리하는 래퍼 컴포넌트
  */
 export function CalculatorItem({
+  activeCategory,
   id,
   index,
   state,
@@ -223,6 +229,7 @@ export function CalculatorItem({
         <div className="p-6">
           {mode ? (
             <ExcelCascadingSelector
+              activeCategory={activeCategory}
               id={id}
               state={state}
               onChangeState={handleStateChange}
