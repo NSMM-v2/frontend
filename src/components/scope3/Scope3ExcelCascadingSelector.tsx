@@ -17,7 +17,7 @@
  * @version 3.0
  */
 
-import React, {useState, useEffect, useRef} from 'react'
+import React, {useState, useEffect, useRef, useMemo} from 'react'
 import Papa from 'papaparse'
 import {motion} from 'framer-motion'
 import {Card, CardContent, CardHeader, CardTitle} from '@/components/ui/card'
@@ -32,6 +32,7 @@ import {
   TrendingUp
 } from 'lucide-react'
 import type {SelectorState} from '@/types/scopeTypes'
+import type {scope3CategoryList,Scope3CategoryKey} from '../scopeTotal/Scope123CategorySelector'
 
 export interface CO2Data {
   category: string
@@ -40,8 +41,14 @@ export interface CO2Data {
   unit: string
   kgCO2eq: number
 }
+type SeparateFilterRule =
+  | { include: string[] }
+  | { exclude: string[] }
+  | undefined
+
 
 interface ExcelCascadingSelectorProps {
+  activeCategory: Scope3CategoryKey
   id: number
   state: SelectorState
   onChangeState: (state: SelectorState) => void
@@ -49,6 +56,7 @@ interface ExcelCascadingSelectorProps {
 }
 
 export function ExcelCascadingSelector({
+  activeCategory,
   id,
   state,
   onChangeState,
@@ -57,12 +65,48 @@ export function ExcelCascadingSelector({
   // ========================================================================
   // 상태 관리 (State Management)
   // ========================================================================
-
+  
   const [data, setData] = useState<CO2Data[]>([])
   const [selectedItem, setSelectedItem] = useState<CO2Data | null>(null)
 
   const prevSelectedItemRef = useRef<CO2Data | null>(null)
   const isFirstRenderRef = useRef(true)
+  const categoryFilterMap: Record<Scope3CategoryKey, string[]> = {
+  list1: ["원료 및 에너지 생산"],  // 예: 구매한 상품 및 서비스
+  list2: ["원료 및 에너지 생산"],
+  list3: ["원료 및 에너지 생산","수송"],
+  list4: ["수송"],
+  list5: ["폐기물 처리"],
+  list6: [], // 예: 폐기물 처리
+  list7: [],
+  list8: [], // 예: 직원 통근
+  list9: [],
+  list10: [], // 예: 다운스트림 및 유통
+  list11: [],
+  list12: ["폐기물 처리"], // 예: 제품 사용  
+  list13: [], // 예: 제품 폐기
+  list14: [], // 예: 임대 자산
+  list15: []  // 예: 프랜차이즈
+
+  // 필요시 나머지 listN 추가
+};
+const separateFilterMap: Record<Scope3CategoryKey, SeparateFilterRule> = {
+  list1: {  exclude:["에너지"]},  // 예시
+  list2: {  exclude:["에너지"]},           // list2는 필터링 안 함 → 전체 표시
+  list3: {  include:["에너지","육상수송","항공수송","해상수송"]}, // list3는 에너지, 육상수송, 항공수송, 해상수송만 표시
+  list4: undefined,
+  list5: undefined,
+  list6: undefined,           // list6는 필터링 안 함 → 전체 표시
+  list7: undefined,           // list7는 필터링 안 함 → 전체 표시
+  list8: undefined,
+  list9: undefined,           // list9는 필터링 안 함 → 전체 표시
+  list10: undefined,
+  list11: undefined,          // list11는 필터링 안 함 → 전체 표시
+  list12: undefined,
+  list13: undefined,
+  list14: undefined,          // list14는 필터링 안 함 → 전체 표시
+  list15: undefined           // list15는 필터링 안 함 → 전체 표시
+};
 
   // ========================================================================
   // 데이터 로딩 및 선택 리스트 생성 (Data Loading & List Generation)
@@ -98,10 +142,7 @@ export function ExcelCascadingSelector({
 
   const unique = (arr: string[]) => [...new Set(arr.filter(Boolean))]
 
-  const categoryList = unique(data.map(d => d.category))
-  const separateList = unique(
-    data.filter(d => d.category === state.category).map(d => d.separate)
-  )
+
   const rawMaterialList = unique(
     data
       .filter(d => d.category === state.category && d.separate === state.separate)
@@ -111,6 +152,36 @@ export function ExcelCascadingSelector({
   // ========================================================================
   // 선택된 아이템 및 배출량 계산 (Selected Item & Emission Calculation)
   // ========================================================================
+
+    const filteredCategoryList = useMemo(() => {
+      const rawList = unique(data.map(d => d.category));
+      const allowedCategories = categoryFilterMap[activeCategory];
+      
+      if (!allowedCategories) return rawList;
+
+      return rawList.filter(category => allowedCategories.includes(category));
+    }, [data, activeCategory]);
+
+    const filteredSeparateList = useMemo(() => {
+      const rawList = unique(
+        data.filter(d => d.category === state.category).map(d => d.separate)
+      )
+
+      const rule = separateFilterMap[activeCategory]
+
+      if (!rule) return rawList
+
+      if ('include' in rule) {
+        return rawList.filter(sep => rule.include.includes(sep))
+      }
+
+      if ('exclude' in rule) {
+        return rawList.filter(sep => !rule.exclude.includes(sep))
+      }
+
+      return rawList
+    }, [data, state.category, activeCategory])
+
 
   useEffect(() => {
     const selected =
@@ -233,13 +304,14 @@ export function ExcelCascadingSelector({
   /**
    * 선택 단계 필드 (대분류, 구분, 원료/에너지)
    */
+  
   const selectionFields = [
     {
       step: '1',
       label: '대분류',
       type: 'select',
       value: state.category,
-      options: categoryList,
+      options: filteredCategoryList,
       placeholder: '대분류를 선택하세요',
       icon: Layers,
       description: 'ESG 데이터 카테고리를 선택하세요',
@@ -250,7 +322,7 @@ export function ExcelCascadingSelector({
       label: '구분',
       type: 'select',
       value: state.separate,
-      options: separateList,
+      options: filteredSeparateList,
       placeholder: '구분을 선택하세요',
       icon: Tag,
       description: '세부 구분을 선택하세요',

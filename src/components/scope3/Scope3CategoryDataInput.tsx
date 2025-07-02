@@ -484,6 +484,7 @@ export function CategoryDataInput({
           {calculators.length > 0 ? (
             calculators.map((calc, index) => (
               <CalculatorItem
+                activeCategory={activeCategory}
                 key={calc.id}
                 id={calc.id}
                 index={index + 1}
