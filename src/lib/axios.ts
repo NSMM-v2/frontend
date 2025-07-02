@@ -30,11 +30,18 @@ const getApiBaseUrl = () => {
  */
 const api = axios.create({
   baseURL: getApiBaseUrl(),
-  withCredentials: true, // JWT 쿠키 자동 전송
+  withCredentials: true, // JWT 쿠키 자동 전송 (인증의 핵심)
   timeout: 10000, // 10초 타임아웃
   headers: {
     'Content-Type': 'application/json'
   }
+})
+
+console.log('🔧 [Axios] API 인스턴스 초기화:', {
+  baseURL: getApiBaseUrl(),
+  withCredentials: true,
+  timeout: '10초',
+  headers: {'Content-Type': 'application/json'}
 })
 
 /**
@@ -44,11 +51,29 @@ api.interceptors.request.use(
   config => {
     const baseUrl = config.baseURL || ''
     const url = config.url || ''
-    console.log(`API 요청: ${config.method?.toUpperCase()} ${baseUrl}${url}`)
+    const method = config.method?.toUpperCase() || 'UNKNOWN'
+
+    console.log(`🌐 [Axios Request] ${method} ${baseUrl}${url}`, {
+      params: config.params,
+      dataSize: config.data ? JSON.stringify(config.data).length : 0,
+      hasData: !!config.data,
+      withCredentials: config.withCredentials,
+      timeout: config.timeout
+    })
+
+    // 쿠키 정보 로깅 (브라우저 환경에서만)
+    if (typeof window !== 'undefined' && document.cookie) {
+      const hasJwtCookie = document.cookie.includes('jwt=')
+      console.log(`🍪 [Axios Request] 쿠키 상태:`, {
+        hasJwtCookie,
+        cookieCount: document.cookie.split(';').length
+      })
+    }
+
     return config
   },
   error => {
-    console.error('API 요청 오류:', error)
+    console.error('❌ [Axios Request] 요청 설정 오류:', error)
     return Promise.reject(error)
   }
 )
@@ -58,24 +83,69 @@ api.interceptors.request.use(
  */
 api.interceptors.response.use(
   response => {
-    console.log(
-      `API 응답 성공: ${response.config.method?.toUpperCase()} ${response.config.url}`
-    )
+    const method = response.config.method?.toUpperCase() || 'UNKNOWN'
+    const url = response.config.url || ''
+    const status = response.status
+
+    console.log(`✅ [Axios Response] ${method} ${url} - ${status}`, {
+      status,
+      statusText: response.statusText,
+      dataSize: JSON.stringify(response.data).length,
+      responseTime: response.headers['x-response-time'] || 'unknown',
+      hasData: !!response.data,
+      success: response.data?.success
+    })
+
+    // API 응답 구조 확인
+    if (response.data) {
+      console.log(`📦 [Axios Response] 데이터 구조:`, {
+        hasSuccess: 'success' in response.data,
+        hasMessage: 'message' in response.data,
+        hasData: 'data' in response.data,
+        hasErrors: 'errors' in response.data
+      })
+    }
+
     return response
   },
   error => {
-    const status = error.response?.status
-    const url = error.config?.url
+    const status = error.response?.status || 'NETWORK_ERROR'
+    const method = error.config?.method?.toUpperCase() || 'UNKNOWN'
+    const url = error.config?.url || 'unknown'
 
-    // 클라이언트 에러(4xx)는 간단한 로그만 (토스트에서 처리됨)
+    console.log(`🚨 [Axios Response] ${method} ${url} - 오류 발생`, {
+      status,
+      statusText: error.response?.statusText || 'Network Error',
+      errorCode: error.response?.data?.errorCode || 'UNKNOWN',
+      message: error.response?.data?.message || error.message,
+      hasErrorData: !!error.response?.data
+    })
+
+    // 클라이언트 에러(4xx)는 간단한 로그만
     if (status >= 400 && status < 500) {
-      console.log(`클라이언트 요청 오류: ${status} ${url}`)
+      console.log(`⚠️ [Axios Response] 클라이언트 요청 오류: ${status} ${url}`, {
+        possibleCause:
+          status === 401
+            ? 'JWT 토큰 만료 또는 미인증'
+            : status === 403
+            ? '권한 없음'
+            : status === 404
+            ? '리소스 없음'
+            : '잘못된 요청'
+      })
     } else if (status >= 500) {
       // 서버 오류(5xx)만 상세 로그
-      console.error(`서버 오류: ${status} ${url}`, error.response?.data)
+      console.error(`💥 [Axios Response] 서버 오류: ${status} ${url}`, {
+        errorData: error.response?.data,
+        stack: error.stack
+      })
     } else {
       // 네트워크 오류 등
-      console.log(`요청 실패: ${url}`)
+      console.log(`🌐 [Axios Response] 네트워크 요청 실패: ${url}`, {
+        errorType: 'NETWORK_ERROR',
+        message: error.message,
+        code: error.code
+      })
     }
 
     return Promise.reject(error)

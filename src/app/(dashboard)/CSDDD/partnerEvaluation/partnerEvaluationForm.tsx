@@ -60,7 +60,7 @@ export default function PartnerEvaluationForm() {
     setSelectedViolationId(questionId)
     try {
       if (!userInfo) return
-      const meta = await getViolationMeta(questionId, userInfo)
+      const meta = await getViolationMeta(questionId)
       setViolationMeta(meta)
     } catch (error) {
       console.error('Violation meta 불러오기 실패:', error)
@@ -90,13 +90,10 @@ export default function PartnerEvaluationForm() {
         onlyPartners: true
       }
 
-      // 🔍 Log params before API call
-      // console.log('🔍 전송 파라미터:', {...userInfo, ...queryParams})
-
-      const response: PaginatedSelfAssessmentResponse = await getSelfAssessmentResults(
-        userInfo,
-        queryParams
-      )
+      const response: PaginatedSelfAssessmentResponse = await getSelfAssessmentResults({
+        ...userInfo,
+        ...queryParams
+      })
 
       const partnerRes = await authService.getAccessiblePartners()
       const partnerMap = new Map(
@@ -121,11 +118,6 @@ export default function PartnerEvaluationForm() {
       }
     } catch (error: any) {
       console.error('결과 조회 실패:', error)
-      // if (error.response?.status === 401 || error.response?.status === 403) {
-      //   setAuthError('접근 권한이 없습니다. 다시 로그인해주세요.')
-      // } else {
-      //   alert('결과를 불러오는데 실패했습니다.')
-      // }
       setResults([])
     } finally {
       setLoading(false)
@@ -158,24 +150,10 @@ export default function PartnerEvaluationForm() {
         params.partnerId = String(userInfo.partnerId ?? '')
       }
 
-      const result = await getSelfAssessmentResult(resultId, params)
+      const result = await getSelfAssessmentResult(resultId)
       setSelectedResult(result)
     } catch (error: any) {
       console.error('상세 결과 조회 실패:', error)
-
-      // if (error.response?.status === 401) {
-      //   setAuthError('로그인이 만료되었습니다. 다시 로그인해주세요.')
-      //   setSelectedResult(null)
-      // } else if (error.response?.status === 403) {
-      //   setAuthError('해당 결과에 대한 접근 권한이 없습니다.')
-      //   setSelectedResult(null)
-      // } else if (error.response?.status === 404) {
-      //   alert('요청한 결과를 찾을 수 없습니다.')
-      //   setSelectedResult(null)
-      // } else {
-      //   alert('상세 결과를 불러오는데 실패했습니다.')
-      //   setSelectedResult(null)
-      // }
       setSelectedResult(null)
     } finally {
       setDetailLoading(false)
@@ -241,26 +219,6 @@ export default function PartnerEvaluationForm() {
     return 'bg-red-500'
   }
 
-  // 인증 에러가 있는 경우
-  // if (authError) {
-  //   return (
-  //     <div className="flex justify-center items-center p-4 min-h-screen">
-  //       <Card className="w-full max-w-md shadow-xl backdrop-blur-sm bg-white/95">
-  //         <CardContent className="p-8 text-center">
-  //           <AlertCircle className="mx-auto mb-4 w-12 h-12 text-red-500" />
-  //           <h2 className="mb-2 text-xl font-semibold text-gray-900">접근 제한</h2>
-  //           <p className="mb-6 text-gray-600">{authError}</p>
-  //           <button
-  //             onClick={redirectToLogin}
-  //             className="px-4 py-2 w-full text-white bg-blue-600 rounded-lg transition-all hover:bg-blue-700 hover:shadow-lg">
-  //             로그인 페이지로 이동
-  //           </button>
-  //         </CardContent>
-  //       </Card>
-  //     </div>
-  //   )
-  // }
-
   return (
     <div className="flex flex-col w-full min-h-screen">
       {/* 브레드크럼 영역 */}
@@ -301,7 +259,7 @@ export default function PartnerEvaluationForm() {
       <div className="px-4 pb-0">
         <div className="flex flex-row mb-6 w-full">
           <Link
-            href="/dashboard"
+            href="/CSDDD"
             className="flex flex-row items-center p-4 space-x-4 rounded-xl backdrop-blur-sm transition-all hover:bg-white/30 group">
             <ArrowLeft className="w-6 h-6 text-gray-500 transition-colors group-hover:text-blue-600" />
             <PageHeader
@@ -374,7 +332,7 @@ export default function PartnerEvaluationForm() {
                   ) : (
                     <div className="space-y-4">
                       {results.map(result => {
-                        const gradeStyle = getGradeStyle(result.finalGrade)
+                        const gradeStyle = getGradeStyle(result.finalGrade ?? 'D')
                         const scorePercentage =
                           (result.actualScore / result.totalPossibleScore) * 100
                         const isSelected = selectedResult?.id === result.id
@@ -462,7 +420,9 @@ export default function PartnerEvaluationForm() {
                                   완료 일시
                                 </span>
                                 <p className="font-bold text-gray-900">
-                                  {new Date(result.completedAt).toLocaleString('ko-KR', {
+                                  {new Date(
+                                    result.completedAt ?? new Date()
+                                  ).toLocaleString('ko-KR', {
                                     year: 'numeric',
                                     month: '2-digit',
                                     day: '2-digit',
@@ -527,7 +487,7 @@ export default function PartnerEvaluationForm() {
                             </span>
                             <span
                               className={`px-3 py-1 rounded-full text-sm font-bold shadow-sm ${
-                                getGradeStyle(selectedResult.finalGrade).badge
+                                getGradeStyle(selectedResult.finalGrade ?? 'D').badge
                               }`}>
                               {selectedResult.finalGrade}
                             </span>
@@ -563,7 +523,7 @@ export default function PartnerEvaluationForm() {
                       {selectedResult.answers && (
                         <div>
                           <h4 className="mb-4 font-bold text-gray-900">위반 항목 요약</h4>
-                          {selectedResult.answers.filter(a => a.answer === 'no')
+                          {selectedResult.answers.filter(a => a.answer === false)
                             .length === 0 ? (
                             <div className="p-4 bg-gradient-to-br from-green-50 to-emerald-50 rounded-xl border border-green-200">
                               <div className="flex items-center space-x-3">
@@ -583,14 +543,14 @@ export default function PartnerEvaluationForm() {
                               <div className="p-3 bg-red-50 rounded-lg border border-red-200">
                                 <p className="text-sm font-bold text-red-700">
                                   {
-                                    selectedResult.answers.filter(a => a.answer === 'no')
+                                    selectedResult.answers.filter(a => a.answer === false)
                                       .length
                                   }
                                   개 항목 위반
                                 </p>
                               </div>
                               {selectedResult.answers
-                                .filter(a => a.answer === 'no')
+                                .filter(a => a.answer === false)
                                 .map((a, i) => (
                                   <div
                                     key={i}
