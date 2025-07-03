@@ -77,7 +77,6 @@ interface PDFReportTemplateProps {
   gradeInfo: GradeInfo // 등급 정보
   baseScore: number // 기본 점수
   criticalViolations: CriticalViolation[] // 중대위반 목록
-  calculateCategoryScore: (category: string) => number // 카테고리 점수 계산 함수
   isVisible?: boolean // 화면 표시 여부 (기본값: false)
 }
 
@@ -99,7 +98,6 @@ export const PDFReportTemplate: React.FC<PDFReportTemplateProps> = ({
   gradeInfo,
   baseScore,
   criticalViolations,
-  calculateCategoryScore,
   isVisible = false
 }) => {
   // ========================================================================
@@ -450,7 +448,7 @@ export const PDFReportTemplate: React.FC<PDFReportTemplateProps> = ({
           <div style={styles.scoreContainer}>
             <div style={{...styles.scoreValue, fontSize: '32px'}}>{baseScore}</div>
             <h3 style={styles.scoreLabel}>기본 점수</h3>
-            <p style={styles.scoreDescription}>100점 만점 기준</p>
+            <p style={styles.scoreDescription}>132.5점 만점 기준</p>
           </div>
 
           {/* 권장 조치 */}
@@ -478,20 +476,6 @@ export const PDFReportTemplate: React.FC<PDFReportTemplateProps> = ({
           </div>
 
           {/* 테이블 내용 */}
-          {categories.map((category, index) => {
-            const score = calculateCategoryScore(category)
-            return (
-              <div
-                key={category}
-                style={{
-                  ...styles.tableRow,
-                  ...(index % 2 === 0 ? styles.tableRowEven : styles.tableRowOdd)
-                }}>
-                <div style={{color: '#111827'}}>{category}</div>
-                <div style={styles.tableCellCenter}>{score}점</div>
-              </div>
-            )
-          })}
         </div>
       </div>
 

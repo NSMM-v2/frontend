@@ -40,6 +40,11 @@ import {
   ChevronUp
 } from 'lucide-react'
 
+import {
+  generatePDFReport,
+  transformToPDFProps
+} from '@/components/CSDDD/PDFReportGenerator'
+
 export default function EvaluationForm() {
   const [results, setResults] = useState<SelfAssessmentResponse[]>([])
   const [selectedResults, setSelectedResults] = useState<{
@@ -359,6 +364,23 @@ export default function EvaluationForm() {
                                 }
                               )}
                             </span>
+                          </div>
+                          <div className="flex justify-end mt-2">
+                            <button
+                              onClick={async () => {
+                                if (!selectedResults[result.id]) {
+                                  await fetchDetailResult(result.id)
+                                }
+                                const detail = selectedResults[result.id]
+                                if (detail) {
+                                  generatePDFReport(transformToPDFProps(detail))
+                                } else {
+                                  alert('상세 결과를 불러오는 데 실패했습니다.')
+                                }
+                              }}
+                              className="px-4 py-2 text-sm font-medium text-white bg-blue-600 rounded-md hover:bg-blue-700">
+                              PDF 다운로드
+                            </button>
                           </div>
                           {/* 점수 및 정보 - 5열 그리드로 확장 */}
                           <div className="grid grid-cols-5 gap-4 mb-4">

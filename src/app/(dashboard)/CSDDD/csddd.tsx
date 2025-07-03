@@ -4,30 +4,29 @@
 // 외부 라이브러리 임포트 (External Library Imports)
 // ============================================================================
 
-import Link from 'next/link' // Next.js 라우팅을 위한 Link 컴포넌트
-import {useState} from 'react' // React 상태 관리 훅
-import {motion} from 'framer-motion' // 애니메이션 효과를 위한 Framer Motion
+import Link from 'next/link'
+import {useState} from 'react'
+import {Dialog, DialogContent} from '@/components/ui/dialog'
+import {DialogTitle} from '@/components/ui/dialog'
+import {VisuallyHidden} from '@radix-ui/react-visually-hidden'
+import {motion} from 'framer-motion'
 // ============================================================================
 // 아이콘 라이브러리 임포트 (Icon Library Imports)
 // ============================================================================
 
 import {
-  Home, // 홈 아이콘 - 브레드크럼 네비게이션
-  ArrowLeft, // 왼쪽 화살표 - 뒤로가기 버튼
-  Check, // 체크 아이콘 - 평가 특징 섹션
-  Database, // 데이터베이스 아이콘 - 사전 준비 단계
-  Shield, // 방패 아이콘 - CSDDD 메인 아이콘, 윤리경영 영역
-  Leaf, // 나뭇잎 아이콘 - 환경경영 영역
-  Users, // 사용자 그룹 아이콘 - 인권 및 노동 영역
-  FileText, // 파일 텍스트 아이콘 - 평가 항목 통계, 공급망 영역
-  AlertTriangle, // 경고 삼각형 아이콘 - 산업안전보건 영역, 중요 안내사항
-  Clock, // 시계 아이콘 - 예상 소요시간 통계
-  TrendingUp, // 상승 트렌드 아이콘 - 완료율 통계
-  Award, // 수상 아이콘 - 인증 등급 통계
-  BarChart3, // 막대 차트 아이콘 - 결과 분석, 결과 보기 버튼
-  Download, // 다운로드 아이콘 - 가이드라인 다운로드 버튼
-  Play, // 재생 아이콘 - 자가진단 시작 버튼, 진단 절차 섹션
-  Target // 타겟 아이콘 - 자가진단 수행 단계
+  Home,
+  ArrowLeft,
+  Check,
+  Database,
+  Shield,
+  Leaf,
+  Users,
+  FileText,
+  AlertTriangle,
+  BarChart3,
+  Play,
+  Target
 } from 'lucide-react'
 
 // ============================================================================
@@ -36,78 +35,15 @@ import {
 
 // 브레드크럼 네비게이션 컴포넌트들
 import {
-  Breadcrumb, // 브레드크럼 컨테이너
-  BreadcrumbItem, // 개별 브레드크럼 항목
-  BreadcrumbLink, // 브레드크럼 링크
-  BreadcrumbList, // 브레드크럼 목록
-  BreadcrumbSeparator // 브레드크럼 구분자
+  Breadcrumb,
+  BreadcrumbItem,
+  BreadcrumbLink,
+  BreadcrumbList,
+  BreadcrumbSeparator
 } from '@/components/ui/breadcrumb'
 
-// 카드 컴포넌트들 (scope2 스타일과 동일한 디자인)
-import {Card, CardContent} from '@/components/ui/card'
-
-// 페이지 헤더 컴포넌트 (통일된 헤더 디자인)
 import {PageHeader} from '@/components/layout/PageHeader'
 
-// ============================================================================
-// 상수 정의 및 데이터 구조 (Constants and Data Structures)
-// ============================================================================
-
-/**
- * CSDDD 자가진단 통계 정보
- * scope2Form.tsx의 "총 Scope 2 배출량" 카드와 동일한 디자인 패턴 적용
- *
- * 각 통계 항목은 다음 구조를 가짐:
- * - label: 통계 항목명 (예: '평가 항목')
- * - value: 통계 값 (예: '40개')
- * - icon: Lucide React 아이콘 컴포넌트
- * - color: Tailwind CSS 색상 클래스 (아이콘 및 배경색)
- */
-const ASSESSMENT_STATS = [
-  {
-    label: '평가 항목', // CSDDD 평가 총 문항 수
-    value: '40개',
-    icon: FileText, // 문서 아이콘으로 평가 항목 표현
-    color: 'text-blue-600 bg-blue-100' // 블루 계열로 통일
-  },
-  {
-    label: '예상 소요시간', // 자가진단 완료에 필요한 시간
-    value: '15-20분',
-    icon: Clock, // 시계 아이콘으로 시간 표현
-    color: 'text-blue-600 bg-blue-100' // 블루 계열로 통일
-  },
-  {
-    label: '완료율', // 기업들의 평균 진단 완료율
-    value: '94%',
-    icon: TrendingUp, // 상승 트렌드로 높은 완료율 표현
-    color: 'text-blue-600 bg-blue-100' // 블루 계열로 통일
-  },
-  {
-    label: '인증 등급', // 예상 획득 가능한 등급
-    value: 'A-Grade',
-    icon: Award, // 수상 아이콘으로 등급 표현
-    color: 'text-blue-600 bg-blue-100' // 블루 계열로 통일
-  }
-]
-
-/**
- * CSDDD 5개 주요 평가 영역 정보
- *
- * 유럽연합 CSDDD 지침에 따른 핵심 평가 카테고리들:
- * 1. 인권 및 노동 (Human Rights & Labor)
- * 2. 산업안전·보건 (Occupational Health & Safety)
- * 3. 환경경영 (Environmental Management)
- * 4. 공급망 및 조달 (Supply Chain & Procurement)
- * 5. 윤리경영 및 정보보호 (Ethics & Information Security)
- *
- * 각 영역은 다음 구조를 가짐:
- * - icon: 영역을 대표하는 Lucide React 아이콘
- * - title: 영역명
- * - description: 영역 설명 (포함되는 세부 항목들)
- * - items: 해당 영역의 평가 항목 수
- * - iconColor: 아이콘 색상 (영역별 색상 구분)
- * - bgColor: 배경 색상 (아이콘 컨테이너 배경)
- */
 const COMPLIANCE_AREAS = [
   {
     icon: Users, // 사람들 아이콘 - 인권 및 노동 표현
@@ -167,36 +103,6 @@ const COMPLIANCE_AREAS = [
  * @param stat - ASSESSMENT_STATS 배열의 개별 통계 객체
  * @param index - 배열 인덱스 (key prop 용)
  * @returns JSX.Element - 렌더링된 통계 카드
- */
-function renderAssessmentStat(stat: (typeof ASSESSMENT_STATS)[number], index: number) {
-  const Icon = stat.icon // 동적 아이콘 컴포넌트 할당
-
-  return (
-    <Card
-      key={index}
-      className="justify-center h-24 border-blue-100 bg-gradient-to-br from-blue-50 to-white">
-      <CardContent className="flex items-center p-4">
-        {/* 아이콘 컨테이너 - 원형 배경 */}
-        <div className={`p-2 mr-3 rounded-full ${stat.color}`}>
-          <Icon className="w-5 h-5" /> {/* scope2와 동일한 아이콘 크기 */}
-        </div>
-
-        {/* 텍스트 정보 영역 */}
-        <div>
-          <p className="text-sm font-medium text-gray-500">{stat.label}</p> {/* 라벨 */}
-          <h3 className="text-2xl font-bold">
-            {' '}
-            {/* 메인 값 */}
-            {stat.value}
-            <span className="ml-1 text-sm font-normal text-gray-500">
-              {stat.label === '예상 소요시간' ? '' : ''} {/* 필요시 단위 추가 가능 */}
-            </span>
-          </h3>
-        </div>
-      </CardContent>
-    </Card>
-  )
-}
 
 /**
  * 진단 절차 단계별 안내 컴포넌트
@@ -232,7 +138,7 @@ function DiagnosisProcedure() {
     {
       number: 3,
       title: '결과 분석',
-      description: '등급 산정, 위험도 평가, 개선계획 수립 및 보고서 생성',
+      description: '등급 산정, 위험도 평가, 개선계획 수립',
       icon: BarChart3 // 차트 아이콘 - 분석 결과 의미
     }
   ]
@@ -279,30 +185,28 @@ function DiagnosisProcedure() {
  */
 function ComplianceAreaCard({
   area,
-  index
+  index,
+  onClick
 }: {
   area: (typeof COMPLIANCE_AREAS)[number]
   index: number
+  onClick: (index: number) => void
 }) {
-  const Icon = area.icon // 동적 아이콘 컴포넌트 할당
+  const Icon = area.icon
 
   return (
-    <div className="p-8 transition-all duration-500 bg-white border border-gray-100 shadow-sm rounded-2xl hover:shadow-lg hover:transform hover:scale-105">
-      {/* 카드 헤더 - 아이콘과 항목 수 */}
+    <div
+      onClick={() => onClick(index)}
+      className="p-8 transition-all duration-500 bg-white border border-gray-100 shadow-sm cursor-pointer rounded-2xl hover:shadow-lg hover:transform hover:scale-105">
       <div className="flex items-center justify-between mb-6">
-        {/* 영역 아이콘 컨테이너 */}
         <div
           className={`w-14 h-14 rounded-2xl flex items-center justify-center ${area.bgColor}`}>
           <Icon className={`w-7 h-7 ${area.iconColor}`} />
         </div>
-
-        {/* 평가 항목 수 표시 */}
         <span className="px-3 py-1 text-sm font-medium text-gray-500 bg-gray-100 rounded-full">
           {area.items}개 항목
         </span>
       </div>
-
-      {/* 카드 콘텐츠 - 제목과 설명 */}
       <h4 className="mb-3 text-xl font-bold text-gray-900">{area.title}</h4>
       <p className="mb-4 text-sm leading-relaxed text-gray-600">{area.description}</p>
     </div>
@@ -319,10 +223,13 @@ function ComplianceAreaCard({
  *
  * @returns JSX.Element - 평가 영역 그리드 컴포넌트
  */
-function ComplianceAreasGrid() {
+function ComplianceAreasGrid({
+  handleCardClick
+}: {
+  handleCardClick: (index: number) => void
+}) {
   return (
     <div className="mb-16">
-      {' '}
       {/* 하단 여백 */}
       {/* 섹션 제목 */}
       <h3 className="mb-8 text-3xl font-bold text-center text-gray-900">
@@ -331,7 +238,12 @@ function ComplianceAreasGrid() {
       {/* 반응형 그리드 레이아웃 */}
       <div className="grid grid-cols-1 gap-8 md:grid-cols-2 lg:grid-cols-3">
         {COMPLIANCE_AREAS.map((area, index) => (
-          <ComplianceAreaCard key={index} area={area} index={index} />
+          <ComplianceAreaCard
+            key={index}
+            area={area}
+            index={index}
+            onClick={handleCardClick}
+          />
         ))}
       </div>
     </div>
@@ -364,7 +276,228 @@ export function CSDDDLayout() {
   // ========================================================================
   // 상태 관리 (State Management)
   // ========================================================================
-  // 애니메이션 트리거용 상태 (불필요하므로 제거 가능)
+  const [openDialogIndex, setOpenDialogIndex] = useState<number | null>(null)
+  const handleCardClick = (index: number) => setOpenDialogIndex(index)
+  const closeDialog = () => setOpenDialogIndex(null)
+
+  // ========================================================================
+  // 평가 항목 미리보기 데이터 (엑셀 기반 실제 데이터)
+  // ========================================================================
+  const groupedPreviews: Record<
+    string,
+    {항목: string; 설명: string; 관련기준: string}[]
+  > = {
+    '인권 및 노동': [
+      {
+        항목: '아동노동 금지',
+        설명: '18세 미만 아동의 노동을 금지하고, 연령 확인 절차를 운영한다.',
+        관련기준: 'ILO 협약 138/182, UNGC 5원칙'
+      },
+      {
+        항목: '강제노동 금지',
+        설명: '모든 형태의 강제노동, 인신매매, 노예노동을 금지한다.',
+        관련기준: 'ILO 협약 29/105, UNGC 4원칙'
+      },
+      {
+        항목: '차별 금지',
+        설명: '고용, 승진, 임금, 복지 등에서 차별을 금지하고 다양성을 존중한다.',
+        관련기준: 'ILO 협약 100/111, UNGC 6원칙'
+      },
+      {
+        항목: '결사의 자유 및 단체교섭권 보장',
+        설명: '노동자들의 결사의 자유와 단체교섭권을 인정한다.',
+        관련기준: 'ILO 협약 87/98, UNGC 3원칙'
+      },
+      {
+        항목: '적정 임금 지급',
+        설명: '법정 최저임금 이상을 지급하고, 임금 지급의 투명성을 보장한다.',
+        관련기준: 'ILO 협약 131, 국내 근로기준법'
+      },
+      {
+        항목: '근로시간 준수',
+        설명: '법정 근로시간, 휴게, 휴일 규정을 준수한다.',
+        관련기준: 'ILO 협약 1, 국내 근로기준법'
+      },
+      {
+        항목: '괴롭힘 및 폭력 예방',
+        설명: '직장 내 괴롭힘, 성희롱, 폭력을 예방하고 신고 절차를 마련한다.',
+        관련기준: 'ILO 협약 190, 국내 근로기준법'
+      },
+      {
+        항목: '인권경영 정책 수립',
+        설명: '인권경영 방침을 제정·공개하고, 정기적으로 교육한다.',
+        관련기준: 'UNGP, 국내 인권경영 가이드라인'
+      },
+      {
+        항목: '고충처리 및 피해구제 절차',
+        설명: '고충처리 창구를 운영하고, 피해자 보호 및 구제 절차를 마련한다.',
+        관련기준: 'UNGP, 국내 인권경영 가이드라인'
+      }
+    ],
+    '산업안전·보건': [
+      {
+        항목: '작업장 안전관리',
+        설명: '작업장 위험요소를 파악·개선하고, 안전장비를 제공한다.',
+        관련기준: '산업안전보건법, ILO 협약 155'
+      },
+      {
+        항목: '화학물질 및 유해인자 관리',
+        설명: '유해화학물질의 안전한 취급 및 저장, 노출 저감 조치를 실시한다.',
+        관련기준: '산업안전보건법, REACH'
+      },
+      {
+        항목: '정기적 건강검진',
+        설명: '근로자 대상 건강검진을 정기적으로 실시한다.',
+        관련기준: '산업안전보건법'
+      },
+      {
+        항목: '비상대응 체계 구축',
+        설명: '화재, 재해 등 비상상황에 대비한 대응계획 및 훈련을 실시한다.',
+        관련기준: '산업안전보건법'
+      },
+      {
+        항목: '산업재해 보고 및 재발방지',
+        설명: '산재 발생 시 신속 보고하고, 재발방지 대책을 수립한다.',
+        관련기준: '산업안전보건법'
+      },
+      {
+        항목: '협력업체 안전관리',
+        설명: '협력업체 작업장 안전관리 및 교육을 지원한다.',
+        관련기준: '산업안전보건법, CSDDD'
+      }
+    ],
+    환경경영: [
+      {
+        항목: '온실가스 배출 관리',
+        설명: '직접·간접 온실가스 배출량을 측정·관리한다.',
+        관련기준: 'ISO 14064, EU CSRD'
+      },
+      {
+        항목: '에너지 사용 및 절감',
+        설명: '에너지 사용량을 모니터링하고, 절감 노력을 추진한다.',
+        관련기준: 'ISO 50001'
+      },
+      {
+        항목: '물 사용 및 오염 관리',
+        설명: '물 사용량을 관리하고, 오염물질 배출을 최소화한다.',
+        관련기준: 'ISO 14001'
+      },
+      {
+        항목: '폐기물 관리',
+        설명: '폐기물의 분리배출, 재활용, 안전한 처리를 실시한다.',
+        관련기준: '폐기물관리법, ISO 14001'
+      },
+      {
+        항목: '생태계 및 생물다양성 보호',
+        설명: '사업장 주변 생태계 훼손을 방지하고 복원에 기여한다.',
+        관련기준: 'ISO 14001, EU CSDDD'
+      },
+      {
+        항목: '환경법규 준수',
+        설명: '모든 관련 환경법규를 준수하고, 위반 시 즉시 시정한다.',
+        관련기준: '환경관련 국내법, ISO 14001'
+      },
+      {
+        항목: '환경경영 방침 수립',
+        설명: '환경경영 방침을 제정·공개하고, 임직원 교육을 실시한다.',
+        관련기준: 'ISO 14001'
+      },
+      {
+        항목: '공급망 환경관리',
+        설명: '주요 협력사에 환경기준을 요구하고, 이행 여부를 점검한다.',
+        관련기준: 'EU CSDDD'
+      }
+    ],
+    '공급망 및 조달': [
+      {
+        항목: 'ESG 조항 포함 계약',
+        설명: '공급계약서에 인권, 환경, 윤리 등 ESG 조항을 포함한다.',
+        관련기준: 'EU CSDDD 6조'
+      },
+      {
+        항목: '공급업체 실사',
+        설명: '주요 공급업체에 대해 정기적으로 ESG 실사를 실시한다.',
+        관련기준: 'EU CSDDD 6조'
+      },
+      {
+        항목: '강제노동·아동노동 점검',
+        설명: '공급망 내 강제노동, 아동노동 발생 여부를 점검한다.',
+        관련기준: 'ILO 협약, EU CSDDD'
+      },
+      {
+        항목: '공급망 리스크 평가',
+        설명: '공급망별 리스크 수준을 평가하고, 개선계획을 수립한다.',
+        관련기준: 'EU CSDDD'
+      },
+      {
+        항목: '공급망 고충처리 시스템',
+        설명: '공급업체 및 이해관계자를 위한 고충처리 시스템을 운영한다.',
+        관련기준: 'EU CSDDD, UNGP'
+      },
+      {
+        항목: '공급망 정보공개',
+        설명: '주요 공급망 정보를 외부에 투명하게 공개한다.',
+        관련기준: 'EU CSRD'
+      },
+      {
+        항목: '공급업체 교육 및 지원',
+        설명: '공급업체 대상 ESG 교육 및 역량강화 지원을 실시한다.',
+        관련기준: 'EU CSDDD'
+      },
+      {
+        항목: '공급망 모니터링 체계',
+        설명: '공급망 이슈 발생 시 신속히 모니터링하고 대응한다.',
+        관련기준: 'EU CSDDD'
+      },
+      {
+        항목: '공급망 실적 평가 및 피드백',
+        설명: '공급업체의 ESG 실적을 평가하고 피드백한다.',
+        관련기준: 'EU CSDDD'
+      }
+    ],
+    '윤리경영 및 정보보호': [
+      {
+        항목: '반부패 정책 수립',
+        설명: '뇌물, 금품수수, 부정청탁 등 부패행위를 금지한다.',
+        관련기준: 'UNGC 10원칙, ISO 37001'
+      },
+      {
+        항목: '임직원 윤리교육',
+        설명: '임직원 대상 윤리 및 준법 교육을 정기적으로 실시한다.',
+        관련기준: 'ISO 37301'
+      },
+      {
+        항목: '내부고발 및 보호제도',
+        설명: '내부고발자 보호제도를 마련하고, 익명신고를 허용한다.',
+        관련기준: 'ISO 37002'
+      },
+      {
+        항목: '정보보호 정책 수립',
+        설명: '정보보호 방침을 수립·공개하고, 보안 교육을 실시한다.',
+        관련기준: 'ISO 27001'
+      },
+      {
+        항목: '개인정보 보호',
+        설명: '개인정보 수집·이용·파기에 대한 내부 규정을 마련한다.',
+        관련기준: '개인정보보호법, GDPR'
+      },
+      {
+        항목: '정보보안 시스템 운영',
+        설명: '정보보안 시스템을 구축·운영하고, 접근권한을 관리한다.',
+        관련기준: 'ISO 27001'
+      },
+      {
+        항목: '윤리경영 전담조직 지정',
+        설명: '윤리경영 및 정보보호 책임자를 지정한다.',
+        관련기준: 'ISO 37301'
+      },
+      {
+        항목: '협력사 윤리기준 적용',
+        설명: '협력사에도 윤리경영, 정보보호 기준을 적용한다.',
+        관련기준: 'EU CSDDD'
+      }
+    ]
+  }
 
   // ========================================================================
   // 렌더링 (Rendering)
@@ -482,10 +615,7 @@ export function CSDDDLayout() {
                       title: '가중치 기반 점수',
                       description: '항목별 중요도에 따른 정밀 평가'
                     },
-                    {
-                      title: '개선방안 제시',
-                      description: '카테고리별 맞춤형 액션플랜 제공'
-                    },
+
                     {
                       title: '결과 다운로드',
                       description: '상세 보고서 및 분석 결과 제공'
@@ -551,7 +681,7 @@ export function CSDDDLayout() {
             - 각 영역별 고유 아이콘과 색상으로 구분
             - 반응형 그리드 레이아웃
             ==================================================================== */}
-        <ComplianceAreasGrid />
+        <ComplianceAreasGrid handleCardClick={handleCardClick} />
         {/* ====================================================================
             중요 안내사항 섹션 (Important Notice Section)
             - CSDDD 관련 필수 공지사항 및 주의사항
@@ -589,6 +719,58 @@ export function CSDDDLayout() {
             </div>
           </div>
         </div>
+        {/* Dialog for ComplianceAreaCard */}
+        <Dialog open={openDialogIndex !== null} onOpenChange={closeDialog}>
+          <DialogContent className="w-full max-w-[90vw] p-6">
+            {/* Visually hidden dialog title for accessibility */}
+            <VisuallyHidden>
+              <DialogTitle>평가 항목 상세 정보</DialogTitle>
+            </VisuallyHidden>
+            {openDialogIndex !== null && (
+              <div className="overflow-hidden bg-white border border-gray-100 shadow-sm rounded-xl">
+                <div className="overflow-x-auto max-h-[75vh] px-1">
+                  <table className="w-full border-separate table-auto border-spacing-y-1">
+                    <thead className="sticky top-0 z-10 border-b border-gray-200 bg-gray-50/80 backdrop-blur-sm">
+                      <tr>
+                        <th className="w-[240px] px-6 py-4 text-sm font-semibold text-left text-gray-900">
+                          항목
+                        </th>
+                        <th className="w-[60%] px-6 py-4 text-sm font-semibold text-left text-gray-900">
+                          설명
+                        </th>
+                        <th className="w-[25%] px-6 py-4 text-sm font-semibold text-left text-gray-900">
+                          관련 기준
+                        </th>
+                      </tr>
+                    </thead>
+                    <tbody className="divide-y divide-gray-100">
+                      {groupedPreviews[COMPLIANCE_AREAS[openDialogIndex].title].map(
+                        (
+                          item: {항목: string; 설명: string; 관련기준: string},
+                          idx: number
+                        ) => (
+                          <tr
+                            key={idx}
+                            className="transition-colors duration-150 hover:bg-gray-50/50">
+                            <td className="px-6 py-4 text-sm text-gray-900 whitespace-pre-line align-top break-keep">
+                              {item.항목}
+                            </td>
+                            <td className="px-6 py-4 text-sm text-gray-700 whitespace-pre-line align-top break-keep">
+                              {item.설명}
+                            </td>
+                            <td className="px-6 py-4 text-sm text-gray-600 whitespace-pre-line align-top break-keep">
+                              {item.관련기준}
+                            </td>
+                          </tr>
+                        )
+                      )}
+                    </tbody>
+                  </table>
+                </div>
+              </div>
+            )}
+          </DialogContent>
+        </Dialog>
       </motion.div>
     </div>
   )
