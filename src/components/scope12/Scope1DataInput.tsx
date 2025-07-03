@@ -431,6 +431,7 @@ export function Scope1DataInput({
                         {mode ? (
                           /* LCA 기반 자동 계산 모드 */
                           <ExcelCascadingSelector
+                            activeCategory={activeCategory}
                             key={`auto-${calculator.id}`}
                             id={calculator.id}
                             state={calculator.state}
