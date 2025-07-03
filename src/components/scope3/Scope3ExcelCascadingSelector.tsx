@@ -126,7 +126,7 @@ const separateFilterMap: Record<Scope3CategoryKey, SeparateFilterRule> = {
             separate: row['구분'].trim(),
             RawMaterial: row['원료/에너지'].trim(),
             unit: row['단위']?.trim() || '',
-            kgCO2eq: parseFloat(row['탄소발자국']) || 0
+            kgCO2eq: parseFloat((row['탄소발자국'] as string).replace(/(\.\d+)\.(?=E)/, '$1')) || 0
           }))
 
         console.log(`CSV 데이터 로딩 완료: ${parsed.length}개 항목`)

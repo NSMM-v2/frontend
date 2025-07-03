@@ -45,7 +45,9 @@ import {
   scope1PotentialCategoryList,
   scope1KineticCategoryList,
   scope1ProcessCategoryList,
-  scope1LeakCategoryList
+  scope1LeakCategoryList,
+  Scope2ElectricCategoryKey,
+  Scope2SteamCategoryKey
 } from '@/components/scopeTotal/Scope123CategorySelector'
 import {SelfInputScope12Calculator} from '@/components/scope12/Scope12SelfInputCaculator'
 import {ExcelCascadingSelector} from '@/components/scope12/Scope12ExcelCascadingSelector'
@@ -75,7 +77,8 @@ interface Scope1DataInputProps {
     | Scope1KineticCategoryKey
     | Scope1ProcessCategoryKey
     | Scope1LeakCategoryKey
-    | null
+
+  
   calculators: Scope1CalculatorData[]
   getTotalEmission: (
     category:
@@ -83,6 +86,7 @@ interface Scope1DataInputProps {
       | Scope1KineticCategoryKey
       | Scope1ProcessCategoryKey
       | Scope1LeakCategoryKey
+
   ) => number
   onAddCalculator: () => void
   onRemoveCalculator: (id: number) => void
