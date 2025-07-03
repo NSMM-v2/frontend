@@ -17,7 +17,7 @@
  * @version 3.0
  */
 
-import React, {useState, useEffect, useRef} from 'react'
+import React, {useState, useEffect, useRef, useMemo} from 'react'
 import Papa from 'papaparse'
 import {motion} from 'framer-motion'
 import {Card, CardContent, CardHeader, CardTitle} from '@/components/ui/card'
@@ -35,6 +35,18 @@ import {
 import type {SelectorState} from '@/types/scopeTypes'
 import {Switch} from '../ui/switch'
 import {Input} from '../ui/input'
+import {
+  Scope1PotentialCategoryKey,
+  Scope1KineticCategoryKey,
+  Scope1ProcessCategoryKey,
+  Scope1LeakCategoryKey,
+  scope1PotentialCategoryList,
+  scope1KineticCategoryList,
+  scope1ProcessCategoryList,
+  scope1LeakCategoryList,
+  Scope2ElectricCategoryKey,
+  Scope2SteamCategoryKey
+} from '@/components/scopeTotal/Scope123CategorySelector'
 
 export interface CO2Data {
   category: string
@@ -43,8 +55,18 @@ export interface CO2Data {
   unit: string
   kgCO2eq: number
 }
-
+type SeparateFilterRule =
+  | { include: string[] }
+  | { exclude: string[] }
+  | undefined
 interface ExcelCascadingSelectorProps {
+  activeCategory: 
+      | Scope1PotentialCategoryKey
+      | Scope1KineticCategoryKey
+      | Scope1ProcessCategoryKey
+      | Scope1LeakCategoryKey
+      | Scope2ElectricCategoryKey
+      | Scope2SteamCategoryKey
   id: number
   state: SelectorState
   onChangeState: (state: SelectorState) => void
@@ -52,6 +74,7 @@ interface ExcelCascadingSelectorProps {
 }
 
 export function ExcelCascadingSelector({
+  activeCategory,
   id,
   state,
   onChangeState,
@@ -85,7 +108,7 @@ export function ExcelCascadingSelector({
             separate: row['구분'].trim(),
             RawMaterial: row['원료/에너지'].trim(),
             unit: row['단위']?.trim() || '',
-            kgCO2eq: parseFloat(row['탄소발자국']) || 0
+            kgCO2eq: parseFloat((row['탄소발자국'] as string).replace(/(\.\d+)\.(?=E)/, '$1')) || 0
           }))
 
         console.log(`CSV 데이터 로딩 완료: ${parsed.length}개 항목`)
@@ -101,13 +124,43 @@ export function ExcelCascadingSelector({
 
   const unique = (arr: string[]) => [...new Set(arr.filter(Boolean))]
 
-  const categoryList = unique(data.map(d => d.category))
-  const separateList = unique(
-    data.filter(d => d.category === state.category).map(d => d.separate)
-  )
+  const separateFilterMap: Record<typeof activeCategory, SeparateFilterRule> = {
+    list1: {  include:["에너지"]},  // 예시
+    list2: {  exclude:["에너지"]},           // list2는 필터링 안 함 → 전체 표시
+    list3: {  include:["에너지","육상수송","항공수송","해상수송"]}, // list3는 에너지, 육상수송, 항공수송, 해상수송만 표시
+    list4: undefined,
+    list5: undefined,
+    list6: undefined,           // list6는 필터링 안 함 → 전체 표시
+    list7: undefined,           // list7는 필터링 안 함 → 전체 표시
+    list8: undefined,
+    list9: undefined,           // list9는 필터링 안 함 → 전체 표시
+    list10: undefined,      // list15는 필터링 안 함 → 전체 표시
+    list11: undefined,
+    list12: undefined,
+  };
+  // const categoryList = unique(data.map(d => d.category))
+    const filteredSeparateList = useMemo(() => {
+      const rawList = unique(
+        data.map(d => d.separate)
+      )
+
+      const rule = separateFilterMap[activeCategory]
+
+      if (!rule) return rawList
+
+      if ('include' in rule) {
+        return rawList.filter(sep => rule.include.includes(sep))
+      }
+
+      if ('exclude' in rule) {
+        return rawList.filter(sep => !rule.exclude.includes(sep))
+      }
+
+      return rawList
+    }, [data, state.category, activeCategory])
   const rawMaterialList = unique(
     data
-      .filter(d => d.category === state.category && d.separate === state.separate)
+      .filter(d => d.separate === state.separate)
       .map(d => d.RawMaterial)
   )
 
@@ -119,7 +172,6 @@ export function ExcelCascadingSelector({
     const selected =
       data.find(
         d =>
-          d.category === state.category &&
           d.separate === state.separate &&
           d.RawMaterial === state.rawMaterial
       ) || null
@@ -262,7 +314,7 @@ export function ExcelCascadingSelector({
       label: '구분',
       type: 'select',
       value: state.separate,
-      options: separateList,
+      options: filteredSeparateList,
       placeholder: '구분을 선택하세요',
       icon: Tag,
       description: '세부 구분을 선택하세요',

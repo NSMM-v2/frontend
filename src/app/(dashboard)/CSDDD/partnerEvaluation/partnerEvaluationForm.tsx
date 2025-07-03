@@ -113,50 +113,49 @@ export default function PartnerEvaluationForm() {
   }
 
   // 결과 목록 조회 (본사용 - 협력사 결과만 조회)
+  // fetchResults 함수 수정 (line 68-125)
+  // ====================================================================
+  // 결과 목록 조회 함수 수정 (line 97-138)
+  // ====================================================================
+  // line 67-90 수정
   const fetchResults = async () => {
     setLoading(true)
     try {
       const user = await authService.getCurrentUserByType()
-      if (!user || !user.success) {
-        setResults([])
-        return
-      }
 
-      setUserInfo(user.data)
+      if (user && user.success) {
+        const userInfo = user.data
+        setUserInfo(userInfo)
 
-      const queryParams = {
-        onlyPartners: true
-      }
+        let response: PaginatedSelfAssessmentResponse
 
-      const response: PaginatedSelfAssessmentResponse = await getSelfAssessmentResults({
-        ...queryParams
-      })
+        if (userInfo.userType === 'HEADQUARTERS') {
+          // 본사: 모든 협력사 결과만 조회
+          response = await getSelfAssessmentResults({
+            onlyPartners: true // 협력사만 조회
+          })
+        } else if (userInfo.userType === 'PARTNER') {
+          // 협력사: 하위 협력사 결과만 조회 (본인 제외)
+          response = await getSelfAssessmentResults({
+            onlyPartners: true // 하위 협력사만 조회
+          })
+        } else {
+          setResults([])
+          return
+        }
 
-      const partnerRes = await authService.getAccessiblePartners()
-      const partnerMap = new Map(
-        partnerRes.data.map((p: any) => [p.partnerId, p.companyName])
-      )
-
-      const enriched = (response.content || []).map(result => ({
-        ...result,
-        companyName: String(partnerMap.get(result.partnerId) ?? '알 수 없음')
-      }))
-
-      // 본사의 경우 본사 자체 결과는 제외하고 협력사 결과만 표시
-      const filteredResults =
-        user.data.userType === 'HEADQUARTERS'
-          ? enriched.filter(result => result.partnerId !== 0 && result.partnerId !== null)
-          : enriched
-
-      setResults(
-        filteredResults.sort(
-          (a, b) =>
-            new Date(b.completedAt ?? new Date()).getTime() -
-            new Date(a.completedAt ?? new Date()).getTime()
+        setResults(
+          (response.content || []).sort(
+            (a, b) =>
+              new Date(b.completedAt ?? new Date()).getTime() -
+              new Date(a.completedAt ?? new Date()).getTime()
+          )
         )
-      )
 
-      setAuthError(null)
+        setAuthError(null)
+      } else {
+        setResults([])
+      }
     } catch (error: any) {
       console.error('결과 조회 실패:', error)
       setResults([])
