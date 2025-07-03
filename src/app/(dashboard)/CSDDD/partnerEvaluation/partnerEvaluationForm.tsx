@@ -1,6 +1,5 @@
 'use client'
 import {useState, useEffect} from 'react'
-import {Card, CardContent} from '@/components/ui/card'
 import {
   getSelfAssessmentResults,
   getSelfAssessmentResult,
@@ -37,14 +36,21 @@ import {
   Building2,
   BarChart3,
   CheckCircle2,
-  XCircle
+  XCircle,
+  ChevronDown,
+  ChevronUp
 } from 'lucide-react'
+
+import {
+  generatePDFReport,
+  transformToPDFProps
+} from '@/components/CSDDD/PDFReportGenerator'
 
 export default function PartnerEvaluationForm() {
   const [results, setResults] = useState<SelfAssessmentResponse[]>([])
-  const [selectedResult, setSelectedResult] = useState<SelfAssessmentResponse | null>(
-    null
-  )
+  const [selectedResults, setSelectedResults] = useState<{
+    [key: number]: SelfAssessmentResponse
+  }>({})
   const [loading, setLoading] = useState(false)
   const [detailLoading, setDetailLoading] = useState(false)
   const [authError, setAuthError] = useState<string | null>(null)
@@ -56,15 +62,54 @@ export default function PartnerEvaluationForm() {
     legalBasis: string
   } | null>(null)
   const [selectedViolationId, setSelectedViolationId] = useState<string | null>(null)
+
+  const [expandedViolations, setExpandedViolations] = useState<{[key: number]: boolean}>(
+    {}
+  )
+
+  const toggleViolationExpansion = (resultId: number) => {
+    setExpandedViolations(prev => ({
+      ...prev,
+      [resultId]: !prev[resultId]
+    }))
+  }
+
   const handleViolationClick = async (questionId: string) => {
     setSelectedViolationId(questionId)
     try {
-      if (!userInfo) return
-      const meta = await getViolationMeta(questionId)
+      const meta = await getViolationMeta(questionId) // Remove userInfo parameter
       setViolationMeta(meta)
     } catch (error) {
       console.error('Violation meta 불러오기 실패:', error)
     }
+  }
+
+  // 위반 항목들을 카테고리별로 그룹화
+  const groupViolationsByCategory = (answers: any[]) => {
+    const violations = answers.filter(a => a.answer === false) // boolean 비교로 수정
+    const grouped: {[key: string]: any[]} = {}
+
+    violations.forEach(violation => {
+      const category = violation.questionId.split('.')[0]
+      if (!grouped[category]) {
+        grouped[category] = []
+      }
+      grouped[category].push(violation)
+    })
+
+    return grouped
+  }
+
+  // 카테고리 이름 매핑
+  const getCategoryName = (categoryId: string) => {
+    const categoryNames: {[key: string]: string} = {
+      '1': '인권 및 노동',
+      '2': '산업안전 및 보건',
+      '3': '환경 경영',
+      '4': '공급망 및 조달',
+      '5': '윤리경영 및 정보보호'
+    }
+    return categoryNames[categoryId] || `카테고리 ${categoryId}`
   }
 
   // 결과 목록 조회 (본사용 - 협력사 결과만 조회)
@@ -73,25 +118,17 @@ export default function PartnerEvaluationForm() {
     try {
       const user = await authService.getCurrentUserByType()
       if (!user || !user.success) {
-        // setAuthError('로그인이 필요합니다.')
         setResults([])
         return
       }
 
       setUserInfo(user.data)
 
-      // HQ ID 1 전체 결과 조회 (treePath, partnerId 미사용)
-      const userInfo = {
-        userType: user.data.userType,
-        headquartersId: String(user.data.headquartersId)
-      }
-
       const queryParams = {
         onlyPartners: true
       }
 
       const response: PaginatedSelfAssessmentResponse = await getSelfAssessmentResults({
-        ...userInfo,
         ...queryParams
       })
 
@@ -111,11 +148,15 @@ export default function PartnerEvaluationForm() {
           ? enriched.filter(result => result.partnerId !== 0 && result.partnerId !== null)
           : enriched
 
-      setResults(filteredResults)
+      setResults(
+        filteredResults.sort(
+          (a, b) =>
+            new Date(b.completedAt ?? new Date()).getTime() -
+            new Date(a.completedAt ?? new Date()).getTime()
+        )
+      )
 
-      if (filteredResults.length === 0 && user.data.userType === 'HEADQUARTERS') {
-        // console.log('📋 관할 협력사의 진단 결과가 없습니다.')
-      }
+      setAuthError(null)
     } catch (error: any) {
       console.error('결과 조회 실패:', error)
       setResults([])
@@ -124,46 +165,19 @@ export default function PartnerEvaluationForm() {
     }
   }
 
-  // 상세 결과 조회
+  // 상세 결과 조회 (여러 개를 누적 저장)
   const fetchDetailResult = async (resultId: number) => {
     setDetailLoading(true)
-    // setAuthError(null)
-
     try {
-      const params: {
-        userType: string
-        headquartersId: string
-        treePath: string
-        partnerId?: string
-      } = {
-        userType: userInfo.userType,
-        headquartersId: userInfo.headquartersId,
-        treePath: String(
-          (userInfo as any).treePath ??
-            (userInfo as any).partner?.treePath ??
-            (userInfo as any).headquarters?.treePath ??
-            ''
-        )
-      }
-
-      if (userInfo.userType === 'PARTNER') {
-        params.partnerId = String(userInfo.partnerId ?? '')
-      }
-
+      if (!userInfo) return
       const result = await getSelfAssessmentResult(resultId)
-      setSelectedResult(result)
+      setSelectedResults(prev => ({...prev, [resultId]: result}))
     } catch (error: any) {
       console.error('상세 결과 조회 실패:', error)
-      setSelectedResult(null)
     } finally {
       setDetailLoading(false)
     }
   }
-
-  // 로그인 페이지로 이동
-  // const redirectToLogin = () => {
-  //   window.location.href = '/login'
-  // }
 
   useEffect(() => {
     fetchResults()
@@ -174,35 +188,35 @@ export default function PartnerEvaluationForm() {
     switch (grade) {
       case 'A':
         return {
-          text: 'text-emerald-700',
+          text: 'text-emerald-500',
           bg: 'bg-emerald-50',
           border: 'border-emerald-200',
           badge: 'bg-emerald-500 text-white'
         }
       case 'B':
         return {
-          text: 'text-blue-700',
+          text: 'text-blue-500',
           bg: 'bg-blue-50',
           border: 'border-blue-200',
           badge: 'bg-blue-500 text-white'
         }
       case 'C':
         return {
-          text: 'text-yellow-700',
+          text: 'text-yellow-500',
           bg: 'bg-yellow-50',
           border: 'border-yellow-200',
           badge: 'bg-yellow-500 text-white'
         }
       case 'D':
         return {
-          text: 'text-red-700',
+          text: 'text-red-500',
           bg: 'bg-red-50',
           border: 'border-red-200',
           badge: 'bg-red-500 text-white'
         }
       default:
         return {
-          text: 'text-gray-700',
+          text: 'text-gray-500',
           bg: 'bg-gray-50',
           border: 'border-gray-200',
           badge: 'bg-gray-500 text-white'
@@ -210,24 +224,15 @@ export default function PartnerEvaluationForm() {
     }
   }
 
-  // 점수별 진행바 색상
-  const getScoreColor = (score: number, total: number) => {
-    const percentage = (score / total) * 100
-    if (percentage >= 90) return 'bg-emerald-500'
-    if (percentage >= 80) return 'bg-blue-500'
-    if (percentage >= 70) return 'bg-yellow-500'
-    return 'bg-red-500'
-  }
-
   return (
     <div className="flex flex-col w-full min-h-screen">
       {/* 브레드크럼 영역 */}
       <div className="p-4 pb-0">
-        <div className="flex flex-row items-center p-3 mb-6 text-sm text-gray-600 rounded-xl border shadow-sm backdrop-blur-sm bg-white/80 border-white/50">
+        <div className="flex flex-row items-center p-3 mb-6 text-sm text-gray-600 border shadow-sm rounded-xl backdrop-blur-sm bg-white/80 border-white/50">
           <Breadcrumb>
             <BreadcrumbList>
               <BreadcrumbItem>
-                <Home className="mr-1 w-4 h-4" />
+                <Home className="w-4 h-4 mr-1" />
                 <BreadcrumbLink
                   href="/dashboard"
                   className="transition-colors hover:text-blue-600">
@@ -257,10 +262,10 @@ export default function PartnerEvaluationForm() {
 
       {/* 페이지 헤더 영역 */}
       <div className="px-4 pb-0">
-        <div className="flex flex-row mb-6 w-full">
+        <div className="flex flex-row w-full mb-6">
           <Link
             href="/CSDDD"
-            className="flex flex-row items-center p-4 space-x-4 rounded-xl backdrop-blur-sm transition-all hover:bg-white/30 group">
+            className="flex flex-row items-center p-4 space-x-4 transition-all rounded-xl backdrop-blur-sm hover:bg-white/30 group">
             <ArrowLeft className="w-6 h-6 text-gray-500 transition-colors group-hover:text-blue-600" />
             <PageHeader
               icon={<Shield className="w-6 h-6 text-blue-600" />}
@@ -279,334 +284,367 @@ export default function PartnerEvaluationForm() {
 
       {/* 메인 컨텐츠 */}
       <div className="flex-1 px-4 pb-8">
-        <div className="mx-auto max-w-7xl">
-          <div className="grid grid-cols-1 gap-6 lg:grid-cols-3">
-            {/* 결과 목록 */}
-            <div className="lg:col-span-2">
-              <div className="rounded-xl border shadow-xl backdrop-blur-sm bg-white/95 border-white/50">
-                <div className="px-6 py-5 border-b border-gray-100">
-                  <div className="flex justify-between items-center">
-                    <h2 className="text-xl font-bold text-gray-900">
-                      {userInfo?.userType === 'HEADQUARTERS'
-                        ? '협력사 진단 결과 목록'
-                        : '진단 결과 목록'}
-                    </h2>
-                    <button
-                      onClick={fetchResults}
-                      disabled={loading}
-                      className="inline-flex items-center px-4 py-2 text-white bg-blue-600 rounded-lg transition-all hover:bg-blue-700 hover:shadow-lg disabled:opacity-50 disabled:cursor-not-allowed">
-                      <RefreshCw
-                        className={`w-4 h-4 mr-2 ${loading ? 'animate-spin' : ''}`}
-                      />
-                      {loading ? '새로고침 중...' : '새로고침'}
-                    </button>
+        <div className="lg:col-span-3">
+          <div className="border shadow-xl rounded-xl backdrop-blur-sm bg-white/95 border-white/50">
+            <div className="px-6 py-5 border-b border-gray-100">
+              <div className="flex items-center justify-between">
+                <div className="flex items-center space-x-2">
+                  <h2 className="text-xl font-bold text-gray-900">
+                    {userInfo?.userType === 'HEADQUARTERS'
+                      ? '협력사 진단 결과 목록'
+                      : '진단 결과 목록'}
+                  </h2>
+                  <div className="relative group">
+                    <AlertCircle className="w-4 h-4 text-orange-500 cursor-pointer" />
+                    <div className="absolute z-10 hidden p-3 text-sm text-orange-800 transform -translate-x-1/2 bg-white border border-orange-200 rounded shadow-lg top-full left-1/2 max-w-none whitespace-nowrap group-hover:block">
+                      <p>• 위반 항목은 펼쳐서 상세 내용을 확인하세요</p>
+                      <p>• 위반 항목을 클릭하면 법적 근거를 볼 수 있습니다</p>
+                    </div>
                   </div>
-                  {/* 본사용 안내 메시지 */}
-                  {userInfo?.userType === 'HEADQUARTERS' && (
-                    <p className="mt-2 text-sm text-gray-600">
-                      관할 협력사들의 CSDDD 자가진단 결과를 확인할 수 있습니다.
-                    </p>
-                  )}
-                </div>
-
-                <div className="p-6">
-                  {loading ? (
-                    <div className="py-12 text-center">
-                      <div className="mx-auto mb-4 w-8 h-8 rounded-full border-4 border-blue-600 animate-spin border-t-transparent"></div>
-                      <p className="text-gray-600">데이터를 불러오는 중...</p>
-                    </div>
-                  ) : results.length === 0 ? (
-                    <div className="py-12 text-center">
-                      <BarChart3 className="mx-auto mb-4 w-12 h-12 text-gray-400" />
-                      <p className="font-medium text-gray-600">
-                        {userInfo?.userType === 'HEADQUARTERS'
-                          ? '관할 협력사의 진단 결과가 없습니다.'
-                          : '진단 결과가 없습니다.'}
+                  <div className="relative group">
+                    <AlertCircle className="w-4 h-4 text-blue-500 cursor-pointer" />
+                    <div className="absolute z-10 hidden p-3 text-sm text-blue-800 transform -translate-x-1/2 bg-white border border-blue-200 rounded shadow-lg top-full left-1/2 max-w-none whitespace-nowrap group-hover:block">
+                      <p>
+                        • 점수에 따라 등급이 부여됩니다: A (90↑), B (75↑), C (60↑), D (60
+                        미만)
                       </p>
-                      <p className="mt-1 text-sm text-gray-500">
-                        {userInfo?.userType === 'HEADQUARTERS'
-                          ? '협력사들이 자가진단을 완료하면 결과가 표시됩니다.'
-                          : '새로운 자가진단을 실시해보세요.'}
-                      </p>
+                      <p>• 중대 위반이 있으면 점수와 관계없이 자동 강등됩니다</p>
                     </div>
-                  ) : (
-                    <div className="space-y-4">
-                      {results.map(result => {
-                        const gradeStyle = getGradeStyle(result.finalGrade ?? 'D')
-                        const scorePercentage =
-                          (result.actualScore / result.totalPossibleScore) * 100
-                        const isSelected = selectedResult?.id === result.id
-
-                        return (
-                          <div
-                            key={result.id}
-                            onClick={() => fetchDetailResult(result.id)}
-                            className={`border rounded-xl p-5 cursor-pointer transition-all hover:shadow-lg ${
-                              isSelected
-                                ? 'border-blue-400 shadow-lg bg-blue-50/50'
-                                : 'border-gray-200 hover:border-gray-300 bg-white/50'
-                            }`}>
-                            <div className="flex justify-between items-center mb-4">
-                              <div className="flex items-center space-x-3">
-                                <div className="p-2 bg-blue-100 rounded-lg">
-                                  <Building2 className="w-6 h-6 text-blue-600" />
-                                </div>
-                                <div>
-                                  <h3 className="font-bold text-gray-900">
-                                    {result.companyName}
-                                  </h3>
-                                  <p className="text-sm text-gray-600">
-                                    {userInfo?.userType === 'HEADQUARTERS'
-                                      ? '협력사 진단 결과'
-                                      : '자가진단 결과'}
-                                  </p>
-                                </div>
-                              </div>
-                              <span
-                                className={`px-4 py-2 rounded-full text-sm font-bold shadow-sm ${gradeStyle.badge}`}>
-                                등급 {result.finalGrade}
-                              </span>
-                            </div>
-
-                            {/* 점수 진행바 */}
-                            <div className="mb-4">
-                              <div className="flex justify-between items-center mb-2 text-sm">
-                                <span className="font-medium text-gray-700">
-                                  종합 점수
-                                </span>
-                                <span className="font-bold text-gray-900">
-                                  {result.actualScore.toFixed(1)} /{' '}
-                                  {result.totalPossibleScore.toFixed(1)}
-                                  <span className="ml-1 text-blue-600">
-                                    ({scorePercentage.toFixed(1)}%)
-                                  </span>
-                                </span>
-                              </div>
-                              <div className="overflow-hidden w-full h-3 bg-gray-200 rounded-full">
-                                <div
-                                  className={`h-3 rounded-full transition-all duration-500 ${getScoreColor(
-                                    result.actualScore,
-                                    result.totalPossibleScore
-                                  )}`}
-                                  style={{width: `${Math.min(scorePercentage, 100)}%`}}
-                                />
-                              </div>
-                            </div>
-
-                            <div className="grid grid-cols-3 gap-4 text-sm">
-                              <div className="p-3 text-center bg-gray-50 rounded-lg">
-                                <span className="block mb-1 text-gray-500">
-                                  진단 점수
-                                </span>
-                                <p className="text-lg font-bold text-gray-900">
-                                  {result.score}점
-                                </p>
-                              </div>
-                              <div className="p-3 text-center bg-gray-50 rounded-lg">
-                                <span className="block mb-1 text-gray-500">
-                                  위반 건수
-                                </span>
-                                <p
-                                  className={`font-bold text-lg ${
-                                    result.criticalViolationCount > 0
-                                      ? 'text-red-600'
-                                      : 'text-green-600'
-                                  }`}>
-                                  {result.criticalViolationCount}건
-                                </p>
-                              </div>
-                              <div className="p-3 text-center bg-gray-50 rounded-lg">
-                                <span className="block mb-1 text-gray-500">
-                                  완료 일시
-                                </span>
-                                <p className="font-bold text-gray-900">
-                                  {new Date(
-                                    result.completedAt ?? new Date()
-                                  ).toLocaleString('ko-KR', {
-                                    year: 'numeric',
-                                    month: '2-digit',
-                                    day: '2-digit',
-                                    hour: '2-digit',
-                                    minute: '2-digit'
-                                  })}
-                                </p>
-                              </div>
-                            </div>
-                          </div>
-                        )
-                      })}
-                    </div>
-                  )}
+                  </div>
                 </div>
+                <button
+                  onClick={fetchResults}
+                  disabled={loading}
+                  className="inline-flex items-center px-4 py-2 text-white transition-all bg-blue-600 rounded-lg hover:bg-blue-700 hover:shadow-lg disabled:opacity-50 disabled:cursor-not-allowed">
+                  <RefreshCw
+                    className={`w-4 h-4 mr-2 ${loading ? 'animate-spin' : ''}`}
+                  />
+                  {loading ? '새로고침 중...' : '새로고침'}
+                </button>
               </div>
+              {/* 본사용 안내 메시지 */}
+              {userInfo?.userType === 'HEADQUARTERS' && (
+                <p className="mt-2 text-sm text-gray-600">
+                  관할 협력사들의 CSDDD 자가진단 결과를 확인할 수 있습니다.
+                </p>
+              )}
             </div>
 
-            {/* 상세 결과 */}
-            <div className="lg:col-span-1">
-              <div className="sticky top-6 rounded-xl border shadow-xl backdrop-blur-sm bg-white/95 border-white/50">
-                <div className="px-6 py-5 border-b border-gray-100">
-                  <h2 className="text-xl font-bold text-gray-900">상세 결과</h2>
+            <div className="p-5">
+              {loading ? (
+                <div className="py-12 text-center">
+                  <div className="w-8 h-8 mx-auto mb-4 border-4 border-blue-600 rounded-full animate-spin border-t-transparent"></div>
+                  <p className="text-gray-600">데이터를 불러오는 중...</p>
                 </div>
+              ) : results.length === 0 ? (
+                <div className="py-12 text-center">
+                  <BarChart3 className="w-12 h-12 mx-auto mb-4 text-gray-400" />
+                  <p className="font-medium text-gray-600">
+                    {userInfo?.userType === 'HEADQUARTERS'
+                      ? '관할 협력사의 진단 결과가 없습니다.'
+                      : '진단 결과가 없습니다.'}
+                  </p>
+                  <p className="mt-1 text-sm text-gray-500">
+                    {userInfo?.userType === 'HEADQUARTERS'
+                      ? '협력사들이 자가진단을 완료하면 결과가 표시됩니다.'
+                      : '새로운 자가진단을 실시해보세요.'}
+                  </p>
+                </div>
+              ) : (
+                <div className="space-y-4">
+                  {results.map((result, index) => {
+                    const gradeStyle = getGradeStyle(result.finalGrade ?? 'D')
+                    const scorePercentage =
+                      (result.actualScore / result.totalPossibleScore) * 100
+                    const selectedResult = selectedResults[result.id]
+                    const violationCount =
+                      selectedResult && selectedResult.answers
+                        ? selectedResult.answers.filter(
+                            a => a.hasCriticalViolation === true
+                          ).length
+                        : result.criticalViolationCount
 
-                <div className="p-6">
-                  {detailLoading ? (
-                    <div className="py-8 text-center">
-                      <div className="mx-auto mb-4 w-8 h-8 rounded-full border-4 border-blue-600 animate-spin border-t-transparent"></div>
-                      <p className="text-gray-600">상세 정보 로딩 중...</p>
-                    </div>
-                  ) : !selectedResult ? (
-                    <div className="py-8 text-center">
-                      <div className="p-4 mx-auto mb-4 bg-blue-50 rounded-full w-fit">
-                        <FileText className="w-8 h-8 text-blue-500" />
-                      </div>
-                      <p className="mb-2 font-medium text-gray-700">
-                        상세 정보를 확인하세요
-                      </p>
-                      <p className="text-sm leading-relaxed text-gray-500">
-                        좌측에서 진단 결과를 선택하면
-                        <br />
-                        상세 정보를 확인할 수 있습니다.
-                      </p>
-                    </div>
-                  ) : (
-                    <div className="space-y-6">
-                      {/* 기업 정보 */}
-                      <div className="p-5 bg-gradient-to-br from-blue-50 to-indigo-50 rounded-xl border border-blue-100">
-                        <div className="mb-4">
-                          <h3 className="text-lg font-bold text-gray-900">
-                            {userInfo?.userType === 'HEADQUARTERS'
-                              ? '협력사 진단 상세 결과'
-                              : '자가진단 상세 결과'}
-                          </h3>
-                        </div>
+                    const isExpanded = expandedViolations[result.id]
 
-                        <div className="space-y-4">
-                          <div className="flex justify-between items-center p-3 rounded-lg bg-white/70">
-                            <span className="text-sm font-medium text-gray-700">
-                              최종 등급
-                            </span>
-                            <span
-                              className={`px-3 py-1 rounded-full text-sm font-bold shadow-sm ${
-                                getGradeStyle(selectedResult.finalGrade ?? 'D').badge
-                              }`}>
-                              {selectedResult.finalGrade}
-                            </span>
-                          </div>
-
-                          <div className="flex justify-between items-center p-3 rounded-lg bg-white/70">
-                            <span className="text-sm font-medium text-gray-700">
-                              총점
-                            </span>
-                            <span className="font-bold text-gray-900">
-                              {selectedResult.actualScore.toFixed(1)} /{' '}
-                              {selectedResult.totalPossibleScore.toFixed(1)}
-                            </span>
-                          </div>
-
-                          <div className="flex justify-between items-center p-3 rounded-lg bg-white/70">
-                            <span className="text-sm font-medium text-gray-700">
-                              위반 건수
-                            </span>
-                            <span
-                              className={`font-bold ${
-                                selectedResult.criticalViolationCount > 0
-                                  ? 'text-red-600'
-                                  : 'text-green-600'
-                              }`}>
-                              {selectedResult.criticalViolationCount}건
-                            </span>
-                          </div>
-                        </div>
-                      </div>
-
-                      {/* 위반 항목 요약 */}
-                      {selectedResult.answers && (
-                        <div>
-                          <h4 className="mb-4 font-bold text-gray-900">위반 항목 요약</h4>
-                          {selectedResult.answers.filter(a => a.answer === false)
-                            .length === 0 ? (
-                            <div className="p-4 bg-gradient-to-br from-green-50 to-emerald-50 rounded-xl border border-green-200">
-                              <div className="flex items-center space-x-3">
-                                <div className="p-2 bg-green-100 rounded-lg">
-                                  <CheckCircle2 className="w-5 h-5 text-green-600" />
-                                </div>
-                                <div>
-                                  <p className="font-bold text-green-800">완벽한 준수</p>
-                                  <p className="text-sm text-green-600">
-                                    모든 항목을 준수했습니다.
-                                  </p>
-                                </div>
+                    return (
+                      <div
+                        key={result.id}
+                        className="p-5 transition-all border border-gray-200 rounded-xl bg-white/50 hover:border-gray-300 hover:shadow-lg">
+                        {/* 기본 정보 섹션 */}
+                        <div className="">
+                          <div className="flex items-center justify-between mb-4">
+                            <div className="flex items-center space-x-3">
+                              <div className="p-2 bg-blue-100 rounded-lg">
+                                <Building2 className="w-6 h-6 text-blue-600" />
                               </div>
-                            </div>
-                          ) : (
-                            <div className="space-y-3">
-                              <div className="p-3 bg-red-50 rounded-lg border border-red-200">
-                                <p className="text-sm font-bold text-red-700">
-                                  {
-                                    selectedResult.answers.filter(a => a.answer === false)
-                                      .length
-                                  }
-                                  개 항목 위반
+                              <div>
+                                <h3 className="font-bold text-gray-900">
+                                  {result.companyName}
+                                </h3>
+                                <p className="text-sm text-gray-600">
+                                  {userInfo?.userType === 'HEADQUARTERS'
+                                    ? `${results.length - index}차 협력사 진단 결과`
+                                    : `${results.length - index}차 자가진단 결과`}
                                 </p>
                               </div>
-                              {selectedResult.answers
-                                .filter(a => a.answer === false)
-                                .map((a, i) => (
-                                  <div
-                                    key={i}
-                                    className="p-3 bg-red-50 rounded-lg border border-red-200"
-                                    onClick={() => handleViolationClick(a.questionId)}>
-                                    <div className="flex items-center space-x-2">
-                                      <XCircle className="w-4 h-4 text-red-500" />
-                                      <span className="text-sm font-medium text-red-700">
-                                        {a.questionId} 항목 위반
-                                      </span>
+                            </div>
+                            <span className="text-sm font-semibold text-gray-500">
+                              완료 일시:{' '}
+                              {new Date(result.completedAt ?? new Date()).toLocaleString(
+                                'ko-KR',
+                                {
+                                  month: '2-digit',
+                                  day: '2-digit',
+                                  hour: '2-digit',
+                                  minute: '2-digit'
+                                }
+                              )}
+                            </span>
+                          </div>
+                          <div className="flex justify-end mt-2">
+                            <button
+                              onClick={async () => {
+                                if (!selectedResults[result.id]) {
+                                  await fetchDetailResult(result.id)
+                                }
+                                const detail = selectedResults[result.id]
+                                if (detail) {
+                                  const props = await transformToPDFProps(detail)
+                                  generatePDFReport(props)
+                                } else {
+                                  alert('상세 결과를 불러오는 데 실패했습니다.')
+                                }
+                              }}
+                              className="px-4 py-2 mb-6 text-sm font-medium text-white bg-blue-600 rounded-md hover:bg-blue-700">
+                              PDF 다운로드
+                            </button>
+                          </div>
+                          {/* 점수 및 정보 - 5열 그리드로 확장 */}
+                          <div className="grid grid-cols-5 gap-4 mb-4">
+                            {/* 최종 등급 */}
+                            <div className="p-4 border border-blue-300 rounded-lg bg-gradient-to-br from-blue-50 to-white">
+                              <div className="flex items-center justify-between w-full">
+                                <div className="flex flex-col">
+                                  <span className="text-gray-500 text-m">최종 등급</span>
+                                  <div className="flex items-center space-x-1">
+                                    <p className={`text-xl font-bold ${gradeStyle.text}`}>
+                                      {result.finalGrade}
+                                    </p>
+                                    <span className="text-gray-400 text-m">등급</span>
+                                  </div>
+                                </div>
+                              </div>
+                            </div>
+                            {/* 총 위반 건수 */}
+                            <div className="p-4 border border-blue-300 rounded-lg bg-gradient-to-br from-blue-50 to-white">
+                              <div className="flex items-center justify-between w-full">
+                                <div className="flex flex-col">
+                                  <span className="text-gray-500 text-m">
+                                    총 위반 건수
+                                  </span>
+                                  <div className="flex items-center space-x-1">
+                                    <p className={`text-xl font-bold ${gradeStyle.text}`}>
+                                      {result.noAnswerCount ?? 0}
+                                    </p>
+                                    <span className="text-gray-400 text-m">건</span>
+                                  </div>
+                                </div>
+                              </div>
+                            </div>
+                            {/* 중대 위반 건수 */}
+                            <div className="p-4 border border-blue-300 rounded-lg bg-gradient-to-br from-blue-50 to-white">
+                              <div className="flex items-center justify-between w-full">
+                                <div className="flex flex-col">
+                                  <span className="text-gray-500 text-m">
+                                    중대 위반 건수
+                                  </span>
+                                  <div className="flex items-center space-x-1">
+                                    <p className={`text-xl font-bold ${gradeStyle.text}`}>
+                                      {violationCount}
+                                    </p>
+                                    <span className="text-gray-400 text-m">건</span>
+                                  </div>
+                                </div>
+                              </div>
+                            </div>
+                            {/* 진단 점수 */}
+                            <div className="p-4 border border-blue-300 rounded-lg bg-gradient-to-br from-blue-50 to-white">
+                              <div className="flex items-center justify-between w-full">
+                                <div className="flex flex-col">
+                                  <span className="text-gray-500 text-m">진단 점수</span>
+                                  <div className="flex items-center space-x-1">
+                                    <p className="text-xl font-bold text-gray-900">
+                                      {result.score}
+                                    </p>
+                                    <span className="text-gray-400 text-m">점</span>
+                                  </div>
+                                </div>
+                              </div>
+                            </div>
+                            {/* 종합 점수 */}
+                            <div className="p-4 border border-blue-300 rounded-lg bg-gradient-to-br from-blue-50 to-white">
+                              <div className="flex items-center justify-between w-full">
+                                <div className="flex flex-col">
+                                  <span className="text-gray-500 text-m">종합 점수</span>
+                                  <div className="flex items-center space-x-1">
+                                    <p className="text-xl font-bold text-gray-900">
+                                      {result.actualScore.toFixed(1)}
+                                    </p>
+                                    <span className="text-gray-400 text-m">
+                                      / {result.totalPossibleScore.toFixed(1)}
+                                    </span>
+                                  </div>
+                                </div>
+                              </div>
+                            </div>
+                          </div>
+                          {/* Chevron icon as toggle button */}
+                          <div className="flex justify-center">
+                            <button
+                              onClick={() => {
+                                toggleViolationExpansion(result.id)
+                                fetchDetailResult(result.id)
+                              }}
+                              className="p-2 transition-colors rounded-full hover:bg-gray-100">
+                              {isExpanded ? (
+                                <ChevronUp className="w-5 h-5 text-gray-400" />
+                              ) : (
+                                <ChevronDown className="w-5 h-5 text-gray-400" />
+                              )}
+                            </button>
+                          </div>
+                        </div>
+
+                        {isExpanded && selectedResult?.answers && (
+                          <div className="pt-4 mt-4 border-t border-gray-200">
+                            <div className="flex items-center mb-3 space-x-2">
+                              <AlertCircle className="w-5 h-5 text-orange-500" />
+                              <span className="font-medium text-gray-900">
+                                위반 항목 상세 정보
+                              </span>
+                              <span className="px-2 py-1 text-xs font-bold text-orange-800 bg-orange-100 rounded-full">
+                                {
+                                  selectedResult.answers.filter(a => a.answer === false)
+                                    .length
+                                }
+                                건
+                              </span>
+                            </div>
+                            <div className="mt-3">
+                              {selectedResult.answers.filter(a => a.answer === false)
+                                .length === 0 ? (
+                                <div className="p-4 border border-green-200 bg-gradient-to-br from-green-50 to-emerald-50 rounded-xl">
+                                  <div className="flex items-center space-x-3">
+                                    <div className="p-2 bg-green-100 rounded-lg">
+                                      <CheckCircle2 className="w-5 h-5 text-green-600" />
+                                    </div>
+                                    <div>
+                                      <p className="font-bold text-green-800">
+                                        완벽한 준수
+                                      </p>
+                                      <p className="text-sm text-green-600">
+                                        모든 항목을 준수했습니다.
+                                      </p>
                                     </div>
                                   </div>
-                                ))}
+                                </div>
+                              ) : (
+                                <div className="space-y-3">
+                                  {Object.entries(
+                                    groupViolationsByCategory(selectedResult.answers)
+                                  ).map(([categoryId, violations]) => (
+                                    <div
+                                      key={categoryId}
+                                      className="p-3 border border-red-200 rounded-lg bg-gradient-to-br from-red-50 to-pink-50">
+                                      <div className="flex items-center justify-between mb-2">
+                                        <div className="flex items-center space-x-2">
+                                          <h4 className="text-sm font-bold text-red-800">
+                                            {getCategoryName(categoryId)}
+                                          </h4>
+                                        </div>
+                                        <div className="px-2 py-1 text-xs font-bold text-red-800 bg-red-200 rounded-full">
+                                          {violations.length}건
+                                        </div>
+                                      </div>
+
+                                      {/* 위반 항목들을 가로로 배치하고 높이 제한 */}
+                                      <div className="overflow-y-auto max-h-20">
+                                        <div className="flex flex-wrap gap-1">
+                                          {violations.map((violation, i) => (
+                                            <button
+                                              key={i}
+                                              className="inline-flex items-center px-2 py-1 text-xs font-medium text-red-700 transition-colors bg-white border border-red-300 rounded-md hover:bg-red-100 hover:border-red-400"
+                                              onClick={e => {
+                                                e.stopPropagation()
+                                                handleViolationClick(violation.questionId)
+                                              }}>
+                                              {violation.questionId}
+                                            </button>
+                                          ))}
+                                        </div>
+                                      </div>
+                                    </div>
+                                  ))}
+                                </div>
+                              )}
                             </div>
-                          )}
-                        </div>
-                      )}
-                    </div>
-                  )}
+                          </div>
+                        )}
+                      </div>
+                    )
+                  })}
                 </div>
-              </div>
+              )}
             </div>
           </div>
         </div>
       </div>
-      {/* 위반 상세 정보 Dialog */}
+
       <Dialog
         open={!!selectedViolationId}
         onOpenChange={() => {
           setSelectedViolationId(null)
           setViolationMeta(null)
         }}>
-        <DialogContent>
-          <DialogHeader>
-            <DialogTitle>위반 상세 정보</DialogTitle>
-            <DialogDescription>
-              선택한 위반 항목의 세부 정보를 보여줍니다.
-            </DialogDescription>
+        <DialogContent className="max-w-2xl">
+          <DialogHeader className="pb-6">
+            <div className="flex items-center space-x-3">
+              <div>
+                <DialogTitle className="text-xl font-bold text-gray-900">
+                  위반 항목 상세 정보
+                </DialogTitle>
+                <DialogDescription className="mt-1 text-gray-600">
+                  선택한 위반 항목의 세부 정보 및 법적 근거를 확인하세요.
+                </DialogDescription>
+              </div>
+            </div>
           </DialogHeader>
+
           {violationMeta ? (
-            <div className="space-y-2">
-              <p>
-                <strong>질문 ID:</strong> {selectedViolationId}
-              </p>
-              <p>
-                <strong>카테고리:</strong> {violationMeta.category}
-              </p>
-              <p>
-                <strong>벌칙 정보:</strong> {violationMeta.penaltyInfo}
-              </p>
-              <p>
-                <strong>법적 근거:</strong> {violationMeta.legalBasis}
-              </p>
+            <div className="space-y-4">
+              <div className="p-4 border border-blue-100 rounded-lg bg-gradient-to-br from-blue-50 to-white">
+                <h4 className="mb-1 text-sm font-semibold text-gray-700">카테고리</h4>
+                <p className="text-base text-gray-900">{violationMeta.category}</p>
+              </div>
+              <div className="p-4 border border-blue-100 rounded-lg bg-gradient-to-br from-blue-50 to-white">
+                <h4 className="mb-1 text-sm font-semibold text-gray-700">벌칙 정보</h4>
+                <p className="text-base text-gray-900">{violationMeta.penaltyInfo}</p>
+              </div>
+              <div className="p-4 border border-blue-100 rounded-lg bg-gradient-to-br from-blue-50 to-white">
+                <h4 className="mb-1 text-sm font-semibold text-gray-700">법적 근거</h4>
+                <p className="text-base text-gray-900">{violationMeta.legalBasis}</p>
+              </div>
             </div>
           ) : (
-            <p>로딩 중...</p>
+            <div className="py-12 text-center">
+              <div className="w-12 h-12 mx-auto mb-6 border-4 border-blue-500 rounded-full animate-spin border-t-transparent"></div>
+              <div className="space-y-2">
+                <p className="text-lg font-medium text-gray-900">
+                  상세 정보를 불러오는 중...
+                </p>
+                <p className="text-sm text-gray-500">잠시만 기다려주세요.</p>
+              </div>
+            </div>
           )}
         </DialogContent>
       </Dialog>

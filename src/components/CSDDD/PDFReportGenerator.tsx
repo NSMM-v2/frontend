@@ -1,12 +1,13 @@
 'use client'
 import type {SelfAssessmentResponse} from '@/types/csdddType'
 import {questions as questionMeta} from '@/app/(dashboard)/CSDDD/self-assessment/selfAssessmentForm'
+import {getViolationMeta} from '@/services/csdddService'
 
 // ============================================================================
 // 외부 라이브러리 임포트 (External Library Imports)
 // ============================================================================
 
-import React, {useState, useRef} from 'react' // React 라이브러리
+import React from 'react' // React 라이브러리
 import jsPDF from 'jspdf' // PDF 생성 라이브러리
 import html2canvas from 'html2canvas' // HTML을 Canvas로 변환하는 라이브러리
 
@@ -235,17 +236,21 @@ const isValidCriticalGrade = (grade: string | undefined): grade is 'D' | 'C' | '
   return grade === 'D' || grade === 'C' || grade === 'B'
 }
 
-export function transformToPDFProps(result: SelfAssessmentResponse) {
-  const answersArray =
-    result.answers?.map(ans => ({
-      questionId: ans.questionId,
-      answer: ans.answer,
-      hasCriticalViolation: ans.hasCriticalViolation,
-      penaltyInfo: ans.penaltyInfo,
-      legalBasis: ans.legalBasis,
-      categoryName: ans.category,
-      questionText: questionMeta.find(q => q.id === ans.questionId)?.text ?? ''
-    })) ?? []
+export async function transformToPDFProps(result: SelfAssessmentResponse) {
+  const answersArray = await Promise.all(
+    result.answers?.map(async ans => {
+      const meta = await getViolationMeta(ans.questionId)
+      return {
+        questionId: ans.questionId,
+        answer: ans.answer,
+        hasCriticalViolation: ans.hasCriticalViolation,
+        penaltyInfo: meta.penaltyInfo ?? '',
+        legalBasis: meta.legalBasis ?? '',
+        categoryName: meta.category ?? '',
+        questionText: questionMeta.find(q => q.id === ans.questionId)?.text ?? ''
+      }
+    }) ?? []
+  )
 
   const categories = result.categoryAnalysis?.map(c => c.category) || []
 
@@ -258,15 +263,16 @@ export function transformToPDFProps(result: SelfAssessmentResponse) {
 
   const gradeInfo = gradeMap[result.finalGrade ?? 'D']
 
-  const criticalViolations =
+  const criticalViolations = await Promise.all(
     result.answers
       ?.filter(ans => ans.hasCriticalViolation)
-      .map(ans => {
+      .map(async ans => {
         const q = questionMeta.find(q => q.id === ans.questionId)
+        const meta = await getViolationMeta(ans.questionId)
         return {
           question: {
             id: ans.questionId,
-            category: ans.category,
+            category: meta.category ?? '',
             text: q?.text ?? '',
             weight: ans.weight,
             criticalViolation: q?.criticalViolation
@@ -282,10 +288,11 @@ export function transformToPDFProps(result: SelfAssessmentResponse) {
             grade: isValidCriticalGrade(ans.criticalGrade) ? ans.criticalGrade : 'D',
             reason: '중대 위반 사항'
           },
-          penaltyInfo: ans.penaltyInfo,
-          legalBasis: ans.legalBasis
+          penaltyInfo: meta.penaltyInfo ?? '',
+          legalBasis: meta.legalBasis ?? ''
         }
       }) ?? []
+  )
 
   return {
     answers: answersArray,

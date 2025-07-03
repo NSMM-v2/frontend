@@ -373,12 +373,13 @@ export default function EvaluationForm() {
                                 }
                                 const detail = selectedResults[result.id]
                                 if (detail) {
-                                  generatePDFReport(transformToPDFProps(detail))
+                                  const props = await transformToPDFProps(detail)
+                                  generatePDFReport(props)
                                 } else {
                                   alert('상세 결과를 불러오는 데 실패했습니다.')
                                 }
                               }}
-                              className="px-4 py-2 text-sm font-medium text-white bg-blue-600 rounded-md hover:bg-blue-700">
+                              className="px-4 py-2 mb-6 text-sm font-medium text-white bg-blue-600 rounded-md hover:bg-blue-700">
                               PDF 다운로드
                             </button>
                           </div>
