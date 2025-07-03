@@ -248,7 +248,7 @@ class AuthService {
     temporaryPassword: string,
     newPassword: string
   ): Promise<ApiResponse<any>> {
-    const response = await api.put('/api/v1/auth/partners/initial-password', {
+    const response = await api.patch('/api/v1/auth/partners/initial-password', {
       accountNumber,
       email,
       temporaryPassword,
