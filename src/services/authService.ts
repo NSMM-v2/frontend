@@ -96,102 +96,49 @@ class AuthService {
   }
 
   /**
-   * 현재 사용자 정보 조회 (사용자 타입별 자동 분기)
-   * JWT Claims에서 userType을 확인하여 적절한 API 호출
-   * 인증 실패 시 에러를 throw하지 않고 null 반환
+   * 현재 사용자 정보 조회 (폴백 방식)
+   * JWT 쿠키가 HttpOnly로 설정되어 클라이언트에서 파싱 불가
+   * 협력사 API → 본사 API 순으로 시도하여 사용자 타입 자동 판별
    */
   async getCurrentUserByType(): Promise<ApiResponse<UserInfo> | null> {
     try {
-      // JWT에서 사용자 타입 먼저 확인
-      const userType = this.getUserTypeFromJWT()
+      console.log('[AuthService] 사용자 정보 조회 시작 - 폴백 모드')
 
-      if (userType === 'PARTNER') {
-        // 협력사 사용자인 경우 협력사 API 먼저 시도
-        try {
-          const partnerResponse = await api.get('/api/v1/auth/partners/me', {
-            validateStatus: status => status < 500
-          })
+      // 1. 협력사 API 시도 (권한 오류 발생 안함)
+      try {
+        console.log('[AuthService] 협력사 API 시도')
+        const partnerResponse = await api.get('/api/v1/auth/partners/me', {
+          validateStatus: status => status < 500
+        })
 
-          if (partnerResponse.status === 200) {
-            return partnerResponse.data
-          }
-        } catch (error: any) {
-          console.warn('협력사 API 호출 실패:', error.response?.status)
+        if (partnerResponse.status === 200) {
+          console.log('[AuthService] 협력사 API 성공')
+          return partnerResponse.data
         }
-      } else if (userType === 'HEADQUARTERS') {
-        // 본사 사용자인 경우 본사 API 먼저 시도
-        try {
-          const headquartersResponse = await api.get('/api/v1/auth/headquarters/me', {
-            validateStatus: status => status < 500
-          })
-
-          if (headquartersResponse.status === 200) {
-            return headquartersResponse.data
-          }
-        } catch (error: any) {
-          console.warn('본사 API 호출 실패:', error.response?.status)
-        }
+      } catch (error: any) {
+        console.log('[AuthService] 협력사 API 실패')
       }
 
-      // JWT 타입이 없거나 첫 번째 시도가 실패한 경우 폴백 시도
-      if (userType !== 'HEADQUARTERS') {
-        // 본사 API 시도
-        try {
-          const headquartersResponse = await api.get('/api/v1/auth/headquarters/me', {
-            validateStatus: status => status < 500
-          })
+      // 2. 본사 API 시도
+      try {
+        console.log('[AuthService] 본사 API 시도')
+        const headquartersResponse = await api.get('/api/v1/auth/headquarters/me', {
+          validateStatus: status => status < 500
+        })
 
-          if (headquartersResponse.status === 200) {
-            return headquartersResponse.data
-          }
-        } catch (error: any) {
-          // 조용히 실패 처리
+        if (headquartersResponse.status === 200) {
+          console.log('[AuthService] 본사 API 성공')
+          return headquartersResponse.data
         }
-      }
-
-      if (userType !== 'PARTNER') {
-        // 협력사 API 시도
-        try {
-          const partnerResponse = await api.get('/api/v1/auth/partners/me', {
-            validateStatus: status => status < 500
-          })
-
-          if (partnerResponse.status === 200) {
-            return partnerResponse.data
-          }
-        } catch (error: any) {
-          // 조용히 실패 처리
-        }
+      } catch (error: any) {
+        console.log('[AuthService] 본사 API 실패')
       }
 
       // 모든 시도 실패 - 인증되지 않은 상태
+      console.log('[AuthService] 모든 API 호출 실패 - 인증되지 않은 상태')
       return null
     } catch (error: any) {
-      // 예상치 못한 에러는 로그만 출력하고 null 반환 (에러 throw 안함)
-      console.warn('사용자 정보 조회 중 예상치 못한 오류:', error)
-      return null
-    }
-  }
-
-  /**
-   * JWT Claims에서 사용자 타입 추출 (클라이언트 사이드용)
-   * 주의: 보안상 서버 검증이 필요하므로 참조용으로만 사용
-   */
-  getUserTypeFromJWT(): 'HEADQUARTERS' | 'PARTNER' | null {
-    if (typeof window === 'undefined') return null
-
-    const jwtCookie = document.cookie
-      .split(';')
-      .find(cookie => cookie.trim().startsWith('jwt='))
-
-    if (!jwtCookie) return null
-
-    try {
-      const token = jwtCookie.split('=')[1]
-      const payload = JSON.parse(atob(token.split('.')[1]))
-      return payload.userType || null
-    } catch (error) {
-      console.warn('JWT 파싱 실패:', error)
+      console.warn('[AuthService] 예상치 못한 오류:', error)
       return null
     }
   }
@@ -363,7 +310,6 @@ export const {
   loginPartner,
   logout,
   getCurrentUserByType,
-  getUserTypeFromJWT,
   checkEmailExists,
   changeHeadquartersPassword,
   createPartner,

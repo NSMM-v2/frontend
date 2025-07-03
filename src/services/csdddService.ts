@@ -14,7 +14,7 @@ import type {
 export const submitSelfAssessmentToBackend = async (
   request: SelfAssessmentSubmissionRequest
 ): Promise<ApiResponse<void>> => {
-  console.log('🚀 [CSDDD Service] 자가진단 제출 요청:', {
+  console.log('[CSDDD Service] 자가진단 제출 요청:', {
     companyName: request.companyName,
     answersCount: request.answers.length,
     endpoint: '/api/v1/csddd/submit'
@@ -23,7 +23,7 @@ export const submitSelfAssessmentToBackend = async (
   try {
     const response = await api.post<ApiResponse<void>>('/api/v1/csddd/submit', request)
 
-    console.log('✅ [CSDDD Service] 자가진단 제출 성공:', {
+    console.log('[CSDDD Service] 자가진단 제출 성공:', {
       success: response.data.success,
       message: response.data.message,
       timestamp: response.data.timestamp
@@ -31,7 +31,7 @@ export const submitSelfAssessmentToBackend = async (
 
     return response.data
   } catch (error: any) {
-    console.error('❌ [CSDDD Service] 자가진단 제출 실패:', {
+    console.error('[CSDDD Service] 자가진단 제출 실패:', {
       companyName: request.companyName,
       error: error.response?.data || error.message,
       status: error.response?.status
@@ -57,7 +57,7 @@ export const getSelfAssessmentResult = async (
       `/api/v1/csddd/${resultId}`
     )
 
-    console.log('✅ [CSDDD Service] 자가진단 결과 단건 조회 성공:', {
+    console.log('[CSDDD Service] 자가진단 결과 단건 조회 성공:', {
       resultId: response.data.data.id,
       companyName: response.data.data.companyName,
       score: response.data.data.score,
@@ -68,7 +68,7 @@ export const getSelfAssessmentResult = async (
 
     return response.data.data
   } catch (error: any) {
-    console.error('❌ [CSDDD Service] 자가진단 결과 단건 조회 실패:', {
+    console.error('[CSDDD Service] 자가진단 결과 단건 조회 실패:', {
       resultId,
       error: error.response?.data || error.message,
       status: error.response?.status
@@ -90,7 +90,7 @@ export const getSelfAssessmentResults = async (params?: {
   size?: number
   onlyPartners?: boolean
 }): Promise<PaginatedSelfAssessmentResponse> => {
-  console.log('📋 [CSDDD Service] 자가진단 결과 목록 조회 요청:', {
+  console.log('[CSDDD Service] 자가진단 결과 목록 조회 요청:', {
     params,
     endpoint: '/api/v1/csddd/results'
   })
@@ -101,7 +101,7 @@ export const getSelfAssessmentResults = async (params?: {
       {params}
     )
 
-    console.log('✅ [CSDDD Service] 자가진단 결과 목록 조회 성공:', {
+    console.log('[CSDDD Service] 자가진단 결과 목록 조회 성공:', {
       totalElements: response.data.data.totalElements,
       totalPages: response.data.data.totalPages,
       currentPage: response.data.data.number,
@@ -112,7 +112,7 @@ export const getSelfAssessmentResults = async (params?: {
 
     return response.data.data
   } catch (error: any) {
-    console.error('❌ [CSDDD Service] 자가진단 결과 목록 조회 실패:', {
+    console.error('[CSDDD Service] 자가진단 결과 목록 조회 실패:', {
       params,
       error: error.response?.data || error.message,
       status: error.response?.status
@@ -128,7 +128,7 @@ export const getSelfAssessmentResults = async (params?: {
 export const fetchSelfAssessmentAnswers = async (
   resultId: number
 ): Promise<Record<string, string>> => {
-  console.log('📝 [CSDDD Service] 자가진단 답변 추출 요청:', {
+  console.log('[CSDDD Service] 자가진단 답변 추출 요청:', {
     resultId,
     purpose: 'questionId -> answer mapping'
   })
@@ -143,7 +143,7 @@ export const fetchSelfAssessmentAnswers = async (
       answerMap[item.questionId] = item.answer ? 'yes' : 'no'
     })
 
-    console.log('✅ [CSDDD Service] 자가진단 답변 추출 성공:', {
+    console.log('[CSDDD Service] 자가진단 답변 추출 성공:', {
       resultId,
       totalAnswers: answersArray.length,
       mappedAnswers: Object.keys(answerMap).length,
@@ -153,7 +153,7 @@ export const fetchSelfAssessmentAnswers = async (
 
     return answerMap
   } catch (error: any) {
-    console.error('❌ [CSDDD Service] 자가진단 답변 추출 실패:', {
+    console.error('[CSDDD Service] 자가진단 답변 추출 실패:', {
       resultId,
       error: error.response?.data || error.message
     })
@@ -166,7 +166,7 @@ export const fetchSelfAssessmentAnswers = async (
  * 특정 문항의 법적 근거 및 처벌 정보 조회
  */
 export const getViolationMeta = async (questionId: string): Promise<ViolationMeta> => {
-  console.log('⚖️ [CSDDD Service] 중대위반 메타데이터 조회 요청:', {
+  console.log('[CSDDD Service] 중대위반 메타데이터 조회 요청:', {
     questionId,
     endpoint: `/api/v1/csddd/violation-meta/${questionId}`
   })
@@ -176,7 +176,7 @@ export const getViolationMeta = async (questionId: string): Promise<ViolationMet
       `/api/v1/csddd/violation-meta/${questionId}`
     )
 
-    console.log('✅ [CSDDD Service] 중대위반 메타데이터 조회 성공:', {
+    console.log('[CSDDD Service] 중대위반 메타데이터 조회 성공:', {
       questionId,
       category: response.data.data.category,
       hasPenaltyInfo: !!response.data.data.penaltyInfo,
@@ -187,7 +187,7 @@ export const getViolationMeta = async (questionId: string): Promise<ViolationMet
 
     return response.data.data
   } catch (error: any) {
-    console.error('❌ [CSDDD Service] 중대위반 메타데이터 조회 실패:', {
+    console.error('[CSDDD Service] 중대위반 메타데이터 조회 실패:', {
       questionId,
       error: error.response?.data || error.message,
       status: error.response?.status
@@ -201,7 +201,7 @@ export const getViolationMeta = async (questionId: string): Promise<ViolationMet
  * 자가진단 제출 전 회사명 중복 여부 확인
  */
 export const checkCompanyName = async (companyName: string): Promise<boolean> => {
-  console.log('🏢 [CSDDD Service] 회사명 중복 확인 요청:', {
+  console.log('[CSDDD Service] 회사명 중복 확인 요청:', {
     companyName,
     endpoint: '/api/v1/csddd/check-company'
   })
@@ -211,7 +211,7 @@ export const checkCompanyName = async (companyName: string): Promise<boolean> =>
       params: {companyName}
     })
 
-    console.log('✅ [CSDDD Service] 회사명 중복 확인 성공:', {
+    console.log('[CSDDD Service] 회사명 중복 확인 성공:', {
       companyName,
       available: response.data.data,
       message: response.data.message,
@@ -220,7 +220,7 @@ export const checkCompanyName = async (companyName: string): Promise<boolean> =>
 
     return response.data.data
   } catch (error: any) {
-    console.error('❌ [CSDDD Service] 회사명 중복 확인 실패:', {
+    console.error('[CSDDD Service] 회사명 중복 확인 실패:', {
       companyName,
       error: error.response?.data || error.message,
       status: error.response?.status

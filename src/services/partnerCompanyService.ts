@@ -25,7 +25,7 @@ export async function searchCompaniesFromDart(
   params: SearchCorpParams
 ): Promise<DartApiResponse> {
   try {
-    console.log('🔍 DART 검색 호출됨:', params)
+    console.log('DART 검색 호출됨:', params)
 
     // 입력 파라미터 검증
     if (!params || typeof params !== 'object') {
@@ -214,7 +214,7 @@ export async function fetchPartnerCompanies(
   companyNameFilter?: string
 ): Promise<PartnerCompanyResponse> {
   try {
-    console.log('🔍 fetchPartnerCompanies 호출됨:', {page, pageSize, companyNameFilter})
+    console.log('fetchPartnerCompanies 호출됨:', {page, pageSize, companyNameFilter})
 
     // 안전한 페이지 값 계산
     let safePage = 1
@@ -435,7 +435,7 @@ export async function checkCompanyNameDuplicate(
   excludeId?: string
 ): Promise<CompanyNameDuplicateCheckResult> {
   try {
-    console.log('🔍 협력사 회사명 중복 검사:', {companyName, excludeId})
+    console.log('협력사 회사명 중복 검사:', {companyName, excludeId})
 
     const params = new URLSearchParams()
     params.append('companyName', companyName)
