@@ -18,7 +18,7 @@ import {
 } from 'chart.js'
 import {Bar} from 'react-chartjs-2'
 import {useState, useEffect} from 'react'
-import authService from '@/services/authService'
+import authService, {UserInfo} from '@/services/authService'
 
 // ============================================================================
 // Chart.js 설정 (Chart.js Configuration)
@@ -81,17 +81,6 @@ interface PartnerInfo {
   createdAt: string // 생성일시
 }
 
-/**
- * 사용자 정보 인터페이스
- */
-interface UserInfo {
-  userType: 'HEADQUARTERS' | 'PARTNER'
-  companyName: string
-  level?: number
-  headquartersId?: number
-  partnerId?: number
-}
-
 export default function ScopeDashboard() {
   // ========================================================================
   // 상태 관리 (State Management)
@@ -130,16 +119,18 @@ export default function ScopeDashboard() {
         throw new Error('사용자 정보를 가져올 수 없습니다')
       }
 
-      // line 133 수정
       setUserInfo({
-        ...userResponse.data,
+        userType: userResponse.data.userType,
+        companyName: userResponse.data.companyName,
+        level: userResponse.data.level,
         headquartersId: userResponse.data.headquartersId
           ? Number(userResponse.data.headquartersId)
           : undefined,
         partnerId: userResponse.data.partnerId
           ? Number(userResponse.data.partnerId)
-          : undefined
-      })
+          : undefined,
+        accountNumber: userResponse.data.accountNumber // 추가 필드들도 포함
+      } as UserInfo)
 
       // 접근 가능한 협력사 목록 조회
       const partnersResponse = await authService.getAccessiblePartners()
