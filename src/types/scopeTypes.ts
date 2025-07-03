@@ -24,8 +24,8 @@ export interface Scope3EmissionRequest {
   totalEmission: number // 총 배출량 (계산된 값)
   reportingYear: number // 보고년도
   reportingMonth: number // 보고월
-  categoryNumber: number // 카테고리 번호 (1~15)
-  categoryName: string // 카테고리명
+  scope3CategoryNumber: number // 카테고리 번호 (1~15)
+  scope3CategoryName: string // 카테고리명
   isManualInput: boolean // 수동 입력 여부 (true: 수동, false: 자동)
 }
 
@@ -46,8 +46,8 @@ export interface Scope3EmissionResponse {
   totalEmission: number // 총 배출량
   reportingYear: number // 보고년도
   reportingMonth: number // 보고월
-  categoryNumber: number // 카테고리 번호
-  categoryName: string // 카테고리명
+  scope3CategoryNumber: number // 카테고리 번호
+  scope3CategoryName: string // 카테고리명
   isManualInput: boolean // 수동 입력 여부 (true: 수동, false: 자동)
   createdAt: string // 생성일시
   updatedAt: string // 수정일시
@@ -68,8 +68,8 @@ export interface Scope3EmissionUpdateRequest {
   totalEmission?: number
   reportingYear?: number
   reportingMonth?: number
-  categoryNumber?: number
-  categoryName?: string
+  scope3CategoryNumber?: number
+  scope3CategoryName?: string
   isManualInput?: boolean // 수동 입력 여부 (true: 수동, false: 자동)
 }
 
@@ -88,5 +88,5 @@ export interface ApiResponse<T> {
  * Map<categoryNumber, totalEmission> 형식
  */
 export interface Scope3CategorySummary {
-  [categoryNumber: number]: number
+  [scope3CategoryNumber: number]: number
 }

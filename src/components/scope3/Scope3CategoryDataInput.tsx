@@ -94,7 +94,7 @@ export function CategoryDataInput({
   onDataChange
 }: CategoryDataInputProps) {
   const categoryTitle = scope3CategoryList[activeCategory]
-  const categoryNumber = activeCategory.replace('list', '')
+  const scope3CategoryNumber = activeCategory.replace('list', '')
   const totalEmission = getTotalEmission(activeCategory)
 
   const handleAddCalculator = useCallback(() => {
@@ -385,8 +385,8 @@ export function CategoryDataInput({
       totalEmission: totalEmission,
       reportingYear: selectedYear || new Date().getFullYear(),
       reportingMonth: selectedMonth || new Date().getMonth() + 1,
-      categoryNumber: Number(categoryNumber) || 1,
-      categoryName: categoryTitle,
+      scope3CategoryNumber: Number(scope3CategoryNumber) || 1,
+      scope3CategoryName: categoryTitle,
       isManualInput: isManualInput
     }
   }
@@ -424,15 +424,15 @@ export function CategoryDataInput({
           헤더 섹션 (Header Section)
           - 카테고리 제목 및 목록으로 돌아가기 버튼
           ======================================================================== */}
-      <div className="overflow-hidden bg-white rounded-3xl border-0 shadow-sm">
+      <div className="overflow-hidden bg-white border-0 shadow-sm rounded-3xl">
         <div className="p-6 bg-white">
-          <div className="flex flex-row justify-between items-center">
+          <div className="flex flex-row items-center justify-between">
             <motion.div
               initial={{opacity: 0, x: -20}}
               animate={{opacity: 1, x: 0}}
               transition={{delay: 0.1, duration: 0.5}}
               onClick={handleBackToList}
-              className="flex flex-row items-center p-4 rounded-xl transition-all duration-200 hover:cursor-pointer hover:bg-blue-50">
+              className="flex flex-row items-center p-4 transition-all duration-200 rounded-xl hover:cursor-pointer hover:bg-blue-50">
               <div className="mr-4 text-2xl text-blue-500">←</div>
               <div>
                 <h1 className="text-3xl font-bold text-gray-900">{categoryTitle}</h1>
@@ -450,8 +450,8 @@ export function CategoryDataInput({
               initial={{opacity: 0, x: 20}}
               animate={{opacity: 1, x: 0}}
               transition={{delay: 0.1, duration: 0.5}}>
-              <Card className="bg-white rounded-2xl border-2 border-blue-200 shadow-sm min-w-md">
-                <CardContent className="flex justify-between items-center p-6">
+              <Card className="bg-white border-2 border-blue-200 shadow-sm rounded-2xl min-w-md">
+                <CardContent className="flex items-center justify-between p-6">
                   <div>
                     <span className="text-lg font-semibold text-gray-900">
                       현재 카테고리 소계:
@@ -479,7 +479,7 @@ export function CategoryDataInput({
           계산기 목록 (Calculator List)
           - 현재 카테고리의 모든 계산기 표시
           ======================================================================== */}
-      <div className="flex flex-col items-center space-y-8 w-full">
+      <div className="flex flex-col items-center w-full space-y-8">
         <AnimatePresence mode="popLayout" initial={false}>
           {calculators.length > 0 ? (
             calculators.map((calc, index) => (
@@ -516,7 +516,7 @@ export function CategoryDataInput({
                     transition={{delay: 0.5, duration: 0.4}}
                     className="mb-6 text-gray-400">
                     <svg
-                      className="mx-auto w-16 h-16"
+                      className="w-16 h-16 mx-auto"
                       fill="none"
                       stroke="currentColor"
                       viewBox="0 0 24 24">
@@ -546,8 +546,8 @@ export function CategoryDataInput({
                     {/* 첫 번째 항목 추가 버튼 */}
                     <Button
                       onClick={handleAddCalculator}
-                      className="px-8 py-3 text-lg font-semibold text-white bg-blue-500 rounded-xl shadow-sm transition-all duration-200 hover:bg-blue-600 hover:shadow-sm">
-                      <Plus className="mr-2 w-5 h-5" />
+                      className="px-8 py-3 text-lg font-semibold text-white transition-all duration-200 bg-blue-500 shadow-sm rounded-xl hover:bg-blue-600 hover:shadow-sm">
+                      <Plus className="w-5 h-5 mr-2" />
                       항목 추가하기
                     </Button>
                   </motion.div>
@@ -567,21 +567,21 @@ export function CategoryDataInput({
           initial={{opacity: 0, y: 20}}
           animate={{opacity: 1, y: 0}}
           transition={{delay: 0.7, duration: 0.5}}
-          className="flex gap-4 justify-center items-center pt-8 border-t border-gray-200">
+          className="flex items-center justify-center gap-4 pt-8 border-t border-gray-200">
           {/* 항목 추가 버튼 */}
           <Button
             onClick={handleAddCalculator}
             variant="outline"
-            className="px-8 py-4 text-lg font-semibold text-white bg-blue-500 rounded-xl shadow-lg transition-all duration-300 transform hover:bg-blue-600 hover:scale-105 hover:shadow-xl">
-            <Plus className="mr-2 w-5 h-5" />
+            className="px-8 py-4 text-lg font-semibold text-white transition-all duration-300 transform bg-blue-500 shadow-lg rounded-xl hover:bg-blue-600 hover:scale-105 hover:shadow-xl">
+            <Plus className="w-5 h-5 mr-2" />
             계산기 추가
           </Button>
 
           {/* 입력 완료 버튼 */}
           <Button
             onClick={handleCompleteAsync}
-            className="px-8 py-4 text-lg font-semibold text-green-700 bg-white rounded-xl border-2 border-green-500 shadow-lg transition-all duration-300 hover:bg-green-50 hover:scale-105 hover:shadow-xl">
-            <Save className="mr-2 w-5 h-5" />
+            className="px-8 py-4 text-lg font-semibold text-green-700 transition-all duration-300 bg-white border-2 border-green-500 shadow-lg rounded-xl hover:bg-green-50 hover:scale-105 hover:shadow-xl">
+            <Save className="w-5 h-5 mr-2" />
             입력 완료
           </Button>
         </motion.div>

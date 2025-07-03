@@ -308,6 +308,7 @@ export function ExcelCascadingSelector({
       description: '제품 코드를 입력하세요'
     }
   ]
+
   const selectionFields = [
     {
       step: '1',

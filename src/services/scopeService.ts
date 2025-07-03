@@ -467,17 +467,17 @@ export const deleteScope3Emission = async (id: number): Promise<boolean> => {
  *
  * @param year 보고년도
  * @param month 보고월
- * @param categoryNumber 카테고리 번호 (1~15)
+ * @param scope3CategoryNumber 카테고리 번호 (1~15)
  * @returns Promise<Scope3EmissionResponse[]> 특정 카테고리의 배출량 데이터
  */
 export const fetchScope3EmissionsByCategory = async (
   year: number,
   month: number,
-  categoryNumber: number
+  scope3CategoryNumber: number
 ): Promise<Scope3EmissionResponse[]> => {
   try {
     const response = await api.get<ApiResponse<Scope3EmissionResponse[]>>(
-      `/api/v1/scope3/emissions/year/${year}/month/${month}/category/${categoryNumber}`
+      `/api/v1/scope3/emissions/year/${year}/month/${month}/category/${scope3CategoryNumber}`
     )
 
     if (response.data.success && response.data.data) {
