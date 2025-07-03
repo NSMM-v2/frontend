@@ -88,7 +88,7 @@ interface Scope2CalculatorData {
  * 컴포넌트 Props 정의
  */
 interface Scope2DataInputProps {
-  activeCategory: Scope2ElectricCategoryKey | Scope2SteamCategoryKey | null
+  activeCategory: Scope2ElectricCategoryKey | Scope2SteamCategoryKey 
   calculators: Scope2CalculatorData[]
   getTotalEmission: (
     category: Scope2ElectricCategoryKey | Scope2SteamCategoryKey
@@ -417,6 +417,7 @@ export function Scope2DataInput({
                         {mode ? (
                           /* LCA 기반 자동 계산 모드 */
                           <ExcelCascadingSelector
+                            activeCategory={activeCategory}
                             key={`auto-${calculator.id}`}
                             id={calculator.id}
                             state={calculator.state}

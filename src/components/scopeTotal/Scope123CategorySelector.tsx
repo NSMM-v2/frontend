@@ -52,11 +52,11 @@ export const scope1LeakCategoryList = {
 
 // Scope 2 - 전력 카테고리 (Electricity Categories)================================================================================
 export const scope2ElectricCategoryList = {
-  list1: '전력' // 전력 사용량 (일반전력, 재생에너지)
+  list11: '전력' // 전력 사용량 (일반전력, 재생에너지)
 } as const
 // Scope 2 - 스팀 카테고리 (Steam Categories)
 export const scope2SteamCategoryList = {
-  list2: '스팀' // 스팀 사용량 (A타입, B타입, C타입)
+  list12: '스팀' // 스팀 사용량 (A타입, B타입, C타입)
 } as const
 
 // Scope 3 - 간접배출 카테고리 (Indirect Emissions Categories)======================================================================

@@ -43,7 +43,9 @@ import {
   scope1PotentialCategoryList,
   scope1KineticCategoryList,
   scope1ProcessCategoryList,
-  scope1LeakCategoryList
+  scope1LeakCategoryList,
+  Scope2ElectricCategoryKey,
+  Scope2SteamCategoryKey
 } from '@/components/scopeTotal/Scope123CategorySelector'
 
 export interface CO2Data {
@@ -63,6 +65,8 @@ interface ExcelCascadingSelectorProps {
       | Scope1KineticCategoryKey
       | Scope1ProcessCategoryKey
       | Scope1LeakCategoryKey
+      | Scope2ElectricCategoryKey
+      | Scope2SteamCategoryKey
   id: number
   state: SelectorState
   onChangeState: (state: SelectorState) => void
@@ -130,7 +134,9 @@ export function ExcelCascadingSelector({
     list7: undefined,           // list7는 필터링 안 함 → 전체 표시
     list8: undefined,
     list9: undefined,           // list9는 필터링 안 함 → 전체 표시
-    list10: undefined      // list15는 필터링 안 함 → 전체 표시
+    list10: undefined,      // list15는 필터링 안 함 → 전체 표시
+    list11: undefined,
+    list12: undefined,
   };
   const categoryList = unique(data.map(d => d.category))
     const filteredSeparateList = useMemo(() => {
