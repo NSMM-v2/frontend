@@ -35,6 +35,8 @@ export interface SelfAssessmentAnswerResponse {
   criticalGrade?: string
   createdAt: string
   updatedAt: string
+  penaltyInfo?: string
+  legalBasis?: string
 }
 
 /**

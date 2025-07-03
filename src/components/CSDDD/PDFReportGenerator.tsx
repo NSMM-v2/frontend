@@ -1,29 +1,6 @@
 'use client'
 import type {SelfAssessmentResponse} from '@/types/csdddType'
 import {questions as questionMeta} from '@/app/(dashboard)/CSDDD/self-assessment/selfAssessmentForm'
-/**
- * CSDDD PDF 보고서 생성 컴포넌트 - 한글 지원 PDF 생성
- *
- * html2canvas와 jsPDF를 조합하여 한글이 완벽히 지원되는 PDF 보고서를 생성
- * HTML 템플릿을 이미지로 변환한 후 PDF에 삽입하는 방식으로 한글 깨짐 문제 해결
- *
- * 주요 기능:
- * - 한글 완벽 지원 (브라우저 폰트 사용)
- * - 토스 스타일 PDF 버튼
- * - 고화질 PDF 생성
- * - A4 용지 비율 최적화
- * - 로딩 상태 표시
- * - OKLCH 색상 호환성 문제 해결
- *
- * 사용된 기술:
- * - html2canvas (HTML → Canvas 변환)
- * - jsPDF (PDF 생성)
- * - React 18 컴포넌트
- * - TypeScript 타입 안전성
- *
- * @author ESG Project Team
- * @version 2.1
- */
 
 // ============================================================================
 // 외부 라이브러리 임포트 (External Library Imports)
@@ -32,22 +9,12 @@ import {questions as questionMeta} from '@/app/(dashboard)/CSDDD/self-assessment
 import React, {useState, useRef} from 'react' // React 라이브러리
 import jsPDF from 'jspdf' // PDF 생성 라이브러리
 import html2canvas from 'html2canvas' // HTML을 Canvas로 변환하는 라이브러리
-import {Button} from '@/components/ui/button' // 토스 스타일 버튼 컴포넌트
 
 // ============================================================================
 // 내부 컴포넌트 임포트 (Internal Component Imports)
 // ============================================================================
 
 import PDFReportTemplate from './PDFReportTemplate' // PDF 보고서 HTML 템플릿
-
-// ============================================================================
-// 아이콘 라이브러리 임포트 (Icon Library Imports)
-// ============================================================================
-
-import {
-  Download, // 다운로드 아이콘 - PDF 다운로드 버튼
-  Loader2 // 로딩 스피너 아이콘 - 생성 중 표시
-} from 'lucide-react'
 
 // ============================================================================
 // 타입 정의 (Type Definitions)
@@ -65,6 +32,16 @@ interface Question {
     grade: 'D' | 'C' | 'B'
     reason: string
   }
+}
+
+interface Answer {
+  questionId: string
+  answer: boolean
+  hasCriticalViolation?: boolean
+  penaltyInfo?: string
+  legalBasis?: string
+  categoryName?: string
+  questionText?: string
 }
 
 /**
@@ -91,37 +68,29 @@ interface GradeInfo {
  * PDF 보고서 생성기 Props 인터페이스
  */
 export interface PDFReportGeneratorProps {
-  answers: Record<string, string> // 사용자 응답 데이터
-  questions: Question[] // 전체 질문 목록
-  categories: string[] // 카테고리 목록
-  finalGrade: string // 최종 등급
-  gradeInfo: GradeInfo // 등급 정보
-  baseScore: number // 기본 점수
-  criticalViolations: CriticalViolation[] // 중대위반 목록
-  className?: string // 추가 CSS 클래스
-  children?: React.ReactNode // 커스텀 버튼 콘텐츠
+  answers: Answer[] // Record<string, string> → Answer[]로 변경
+  questions: Question[]
+  categories: string[]
+  finalGrade: string
+  gradeInfo: GradeInfo
+  baseScore: number
+  criticalViolations: CriticalViolation[]
+  companyName: string
+  noAnswerCount: number
+  score: number
+  actualScore: number
+  totalPossibleScore: number
+  criticalViolationCount: number // 추가 필요
+  completedAt?: string // 추가 필요
+  className?: string
+  children?: React.ReactNode
 }
 
 // ============================================================================
 // PDF 보고서 생성 컴포넌트 (PDF Report Generator Component)
 // ============================================================================
 
-/**
- * CSDDD PDF 보고서 생성 컴포넌트
- *
- * html2canvas로 HTML 템플릿을 이미지 변환 후 jsPDF로 PDF 생성
- * 한글 폰트가 완벽히 지원되는 고품질 PDF 보고서 생성
- * OKLCH 색상 호환성 문제 해결을 위해 템플릿과 버튼을 분리
- */
-/**
- * PDF 보고서 생성 및 다운로드 함수
- *
- * html2canvas로 HTML 템플릿을 고화질 이미지로 변환 후
- * jsPDF를 사용해 A4 용지에 맞춰 PDF 생성
- * OKLCH 색상 문제 해결을 위해 Button 컴포넌트는 캡처에서 제외
- */
 export async function generatePDFReport(props: PDFReportGeneratorProps): Promise<void> {
-  // 임시 DOM 생성
   const container = document.createElement('div')
   container.style.position = 'absolute'
   container.style.top = '-9999px'
@@ -132,15 +101,18 @@ export async function generatePDFReport(props: PDFReportGeneratorProps): Promise
   container.style.pointerEvents = 'none'
   document.body.appendChild(container)
 
-  // React 18의 createRoot 사용 (SSR 환경에서는 동작하지 않음)
-  // @ts-ignore
   const ReactDOM = await import('react-dom/client')
   const root = ReactDOM.createRoot(container)
   await new Promise<void>(resolve => {
     root.render(
       React.createElement(PDFReportTemplate, {
         ...props,
-        isVisible: true
+        isVisible: true,
+        companyName: props.companyName,
+        noAnswerCount: props.noAnswerCount,
+        score: props.score,
+        actualScore: props.actualScore,
+        totalPossibleScore: props.totalPossibleScore
       })
     )
     resolve()
@@ -263,14 +235,17 @@ const isValidCriticalGrade = (grade: string | undefined): grade is 'D' | 'C' | '
   return grade === 'D' || grade === 'C' || grade === 'B'
 }
 
-/**
- * SelfAssessmentResponse를 PDFReportGeneratorProps 형태로 변환
- */
 export function transformToPDFProps(result: SelfAssessmentResponse) {
-  const answers: Record<string, string> = {}
-  result.answers?.forEach(ans => {
-    answers[ans.questionId] = ans.answer ? 'yes' : 'no'
-  })
+  const answersArray =
+    result.answers?.map(ans => ({
+      questionId: ans.questionId,
+      answer: ans.answer,
+      hasCriticalViolation: ans.hasCriticalViolation,
+      penaltyInfo: ans.penaltyInfo,
+      legalBasis: ans.legalBasis,
+      categoryName: ans.category,
+      questionText: questionMeta.find(q => q.id === ans.questionId)?.text ?? ''
+    })) ?? []
 
   const categories = result.categoryAnalysis?.map(c => c.category) || []
 
@@ -283,7 +258,6 @@ export function transformToPDFProps(result: SelfAssessmentResponse) {
 
   const gradeInfo = gradeMap[result.finalGrade ?? 'D']
 
-  // 수정된 코드
   const criticalViolations =
     result.answers
       ?.filter(ans => ans.hasCriticalViolation)
@@ -307,17 +281,26 @@ export function transformToPDFProps(result: SelfAssessmentResponse) {
           violation: {
             grade: isValidCriticalGrade(ans.criticalGrade) ? ans.criticalGrade : 'D',
             reason: '중대 위반 사항'
-          }
+          },
+          penaltyInfo: ans.penaltyInfo,
+          legalBasis: ans.legalBasis
         }
       }) ?? []
 
   return {
-    answers,
-    questions: questionMeta as Question[], // 타입 캐스팅 추가
+    answers: answersArray,
+    questions: questionMeta as Question[],
     categories,
     finalGrade: result.finalGrade ?? 'D',
     gradeInfo,
     baseScore: result.actualScore,
-    criticalViolations
+    criticalViolations,
+    companyName: result.companyName,
+    noAnswerCount: result.noAnswerCount ?? 0,
+    score: result.score ?? 0,
+    actualScore: result.actualScore ?? 0,
+    totalPossibleScore: result.totalPossibleScore ?? 132.5,
+    criticalViolationCount: criticalViolations.length,
+    completedAt: result.completedAt
   }
 }

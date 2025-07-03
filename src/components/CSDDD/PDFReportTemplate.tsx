@@ -1,25 +1,3 @@
-/**
- * CSDDD PDF 보고서 HTML 템플릿 컴포넌트 - 한글 지원 PDF 생성용
- *
- * html2canvas를 사용하여 HTML을 이미지로 변환한 후 PDF에 삽입하기 위한
- * 전용 템플릿 컴포넌트. 브라우저 폰트를 사용하므로 한글이 완벽히 지원됨
- *
- * 주요 기능:
- * - 한글 완벽 지원 (브라우저 폰트 사용)
- * - 토스 스타일 디자인 적용
- * - A4 용지 비율에 맞춘 레이아웃
- * - 등급별 색상 구분
- * - 중대위반 항목 강조 표시
- *
- * 사용된 기술:
- * - React 18 컴포넌트
- * - Tailwind CSS (스타일링)
- * - TypeScript 타입 안전성
- *
- * @author ESG Project Team
- * @version 1.0
- */
-
 'use client'
 
 // ============================================================================
@@ -31,6 +9,19 @@ import React from 'react' // React 라이브러리
 // ============================================================================
 // 타입 정의 (Type Definitions)
 // ============================================================================
+
+/**
+ * 자가진단 답변 인터페이스
+ */
+interface Answer {
+  questionId: string
+  answer: boolean
+  hasCriticalViolation?: boolean
+  penaltyInfo?: string
+  legalBasis?: string
+  categoryName?: string
+  questionText?: string
+}
 
 /**
  * 자가진단 질문 인터페이스
@@ -55,56 +46,47 @@ interface CriticalViolation {
     grade: 'D' | 'C' | 'B'
     reason: string
   }
-}
-
-/**
- * 등급 정보 인터페이스
- */
-interface GradeInfo {
-  color: string // CSS 클래스명
-  description: string // 위험 수준 설명
-  action: string // 권장 조치사항
+  penaltyInfo?: string
+  legalBasis?: string
 }
 
 /**
  * PDF 보고서 템플릿 Props 인터페이스
  */
 interface PDFReportTemplateProps {
-  answers: Record<string, string> // 사용자 응답 데이터
+  answers: Answer[] // 사용자 응답 데이터 (배열로 변경)
   questions: Question[] // 전체 질문 목록
   categories: string[] // 카테고리 목록
   finalGrade: string // 최종 등급
-  gradeInfo: GradeInfo // 등급 정보
   baseScore: number // 기본 점수
   criticalViolations: CriticalViolation[] // 중대위반 목록
+  companyName: string // 회사명
   isVisible?: boolean // 화면 표시 여부 (기본값: false)
+  noAnswerCount: number
+  score: number
+  actualScore: number
+  totalPossibleScore: number
+  criticalViolationCount: number
+  completedAt?: string // 완료 일시
 }
 
 // ============================================================================
 // PDF 보고서 HTML 템플릿 컴포넌트 (PDF Report HTML Template Component)
 // ============================================================================
 
-/**
- * CSDDD PDF 보고서 HTML 템플릿 컴포넌트
- *
- * html2canvas로 변환되어 PDF에 삽입될 HTML 구조를 렌더링
- * A4 용지 비율에 맞춘 레이아웃과 한글 폰트 지원
- */
 export const PDFReportTemplate: React.FC<PDFReportTemplateProps> = ({
   answers,
-  questions,
-  categories,
   finalGrade,
-  gradeInfo,
-  baseScore,
   criticalViolations,
-  isVisible = false
+  companyName,
+  isVisible = false,
+  noAnswerCount,
+  score,
+  actualScore,
+  totalPossibleScore,
+  criticalViolationCount,
+  completedAt
 }) => {
-  // ========================================================================
-  // 인라인 스타일 정의 (Inline Styles Definitions)
-  // html2canvas oklch 색상 문제 방지를 위해 모든 스타일을 hex/rgb로 정의
-  // ========================================================================
-
   const styles = {
     // 컨테이너 스타일
     container: {
@@ -152,7 +134,8 @@ export const PDFReportTemplate: React.FC<PDFReportTemplateProps> = ({
       padding: '24px',
       marginBottom: '32px',
       backgroundColor: '#f9fafb',
-      borderRadius: '8px'
+      borderRadius: '8px',
+      border: '1px solid #e5e7eb'
     },
     cardTitle: {
       marginBottom: '16px',
@@ -174,46 +157,68 @@ export const PDFReportTemplate: React.FC<PDFReportTemplateProps> = ({
       gap: '24px',
       marginBottom: '24px'
     },
+    grid5: {
+      display: 'grid',
+      gridTemplateColumns: '1fr 1fr 1fr 1fr 1fr',
+      gap: '16px',
+      marginBottom: '24px'
+    },
 
-    // 등급 스타일
+    // 등급 스타일 (등급별 정확한 색상)
     gradeA: {
-      display: 'inline-block',
-      padding: '32px',
+      display: 'flex',
+      alignItems: 'center',
+      justifyContent: 'center',
+      padding: '24px',
       borderRadius: '12px',
-      backgroundColor: '#22c55e',
-      color: '#ffffff'
+      backgroundColor: '#10b981', // 에메랄드 색상
+      color: '#ffffff',
+      minHeight: '80px'
     },
     gradeB: {
-      display: 'inline-block',
-      padding: '32px',
+      display: 'flex',
+      alignItems: 'center',
+      justifyContent: 'center',
+      padding: '24px',
       borderRadius: '12px',
-      backgroundColor: '#3b82f6',
-      color: '#ffffff'
+      backgroundColor: '#3b82f6', // 파랑 색상
+      color: '#ffffff',
+      minHeight: '80px'
     },
     gradeC: {
-      display: 'inline-block',
-      padding: '32px',
+      display: 'flex',
+      alignItems: 'center',
+      justifyContent: 'center',
+      padding: '24px',
       borderRadius: '12px',
-      backgroundColor: '#f97316',
-      color: '#ffffff'
+      backgroundColor: '#f59e0b', // 황색 색상
+      color: '#ffffff',
+      minHeight: '80px'
     },
     gradeD: {
-      display: 'inline-block',
-      padding: '32px',
+      display: 'flex',
+      alignItems: 'center',
+      justifyContent: 'center',
+      padding: '24px',
       borderRadius: '12px',
-      backgroundColor: '#ef4444',
-      color: '#ffffff'
+      backgroundColor: '#ef4444', // 빨강 색상
+      color: '#ffffff',
+      minHeight: '80px'
     },
     gradeDefault: {
-      display: 'inline-block',
-      padding: '32px',
+      display: 'flex',
+      alignItems: 'center',
+      justifyContent: 'center',
+      padding: '24px',
       borderRadius: '12px',
       backgroundColor: '#6b7280',
-      color: '#ffffff'
+      color: '#ffffff',
+      minHeight: '80px'
     },
     gradeText: {
-      fontSize: '32px',
-      fontWeight: 'bold'
+      fontSize: '36px',
+      fontWeight: 'bold',
+      color: '#ffffff'
     },
 
     // 점수 스타일
@@ -236,74 +241,79 @@ export const PDFReportTemplate: React.FC<PDFReportTemplateProps> = ({
       color: '#6b7280'
     },
 
-    // 테이블 스타일
-    table: {
-      overflow: 'hidden',
-      borderRadius: '8px',
-      border: '1px solid #e5e7eb'
-    },
-    tableHeader: {
-      display: 'grid',
-      gridTemplateColumns: '1fr 1fr',
-      padding: '12px 16px',
-      fontWeight: 'bold',
-      color: '#111827',
-      backgroundColor: '#f3f4f6'
-    },
-    tableRow: {
-      display: 'grid',
-      gridTemplateColumns: '1fr 1fr',
-      padding: '12px 16px',
-      fontSize: '14px',
-      borderTop: '1px solid #f3f4f6'
-    },
-    tableRowEven: {
-      backgroundColor: '#ffffff'
-    },
-    tableRowOdd: {
-      backgroundColor: '#f9fafb'
-    },
-    tableCellCenter: {
-      textAlign: 'center' as const,
-      fontWeight: 'bold',
-      color: '#2563eb'
-    },
-
     // 경고 스타일
     alertCritical: {
       padding: '24px',
       marginBottom: '32px',
       backgroundColor: '#fef2f2',
       borderRadius: '8px',
-      border: '2px solid #fca5a5'
+      border: '2px solid #f87171'
     },
     alertTitle: {
       marginBottom: '16px',
       fontSize: '20px',
       fontWeight: 'bold',
-      color: '#b91c1c'
+      color: '#dc2626'
     },
     alertText: {
       marginBottom: '16px',
       fontSize: '14px',
-      color: '#dc2626'
+      color: '#7f1d1d'
     },
     alertItem: {
-      padding: '12px',
+      padding: '16px',
       backgroundColor: '#fee2e2',
-      borderRadius: '4px',
+      borderRadius: '6px',
       border: '1px solid #fca5a5',
-      marginBottom: '8px'
+      marginBottom: '12px'
     },
     alertItemTitle: {
       fontSize: '14px',
       fontWeight: 'bold',
-      color: '#7f1d1d'
+      color: '#991b1b',
+      marginBottom: '8px'
     },
     alertItemDetail: {
-      marginTop: '4px',
       fontSize: '12px',
-      color: '#dc2626'
+      color: '#7f1d1d',
+      lineHeight: '1.6'
+    },
+
+    // 위반 항목 스타일
+    violationSection: {
+      padding: '24px',
+      marginBottom: '32px',
+      backgroundColor: '#fef7f0',
+      borderRadius: '8px',
+      border: '1px solid #fed7aa'
+    },
+    violationTitle: {
+      marginBottom: '16px',
+      fontSize: '20px',
+      fontWeight: 'bold',
+      color: '#ea580c'
+    },
+    violationCategory: {
+      marginBottom: '16px',
+      padding: '12px',
+      backgroundColor: '#fff7ed',
+      borderRadius: '6px',
+      border: '1px solid #fdba74'
+    },
+    violationCategoryTitle: {
+      fontSize: '16px',
+      fontWeight: 'bold',
+      color: '#c2410c',
+      marginBottom: '8px'
+    },
+    violationItem: {
+      padding: '8px 12px',
+      backgroundColor: '#ffffff',
+      borderRadius: '4px',
+      border: '1px solid #fed7aa',
+      fontSize: '12px',
+      color: '#9a3412',
+      marginBottom: '4px'
     },
 
     // 개선 권장사항 스타일
@@ -363,6 +373,15 @@ export const PDFReportTemplate: React.FC<PDFReportTemplateProps> = ({
    * 현재 날짜를 한국어 형식으로 반환
    */
   const getCurrentDate = () => {
+    if (completedAt) {
+      return new Date(completedAt).toLocaleDateString('ko-KR', {
+        year: 'numeric',
+        month: 'long',
+        day: 'numeric',
+        hour: '2-digit',
+        minute: '2-digit'
+      })
+    }
     return new Date().toLocaleDateString('ko-KR', {
       year: 'numeric',
       month: 'long',
@@ -371,19 +390,47 @@ export const PDFReportTemplate: React.FC<PDFReportTemplateProps> = ({
   }
 
   /**
+   * 카테고리 이름 매핑
+   */
+  const getCategoryName = (categoryId: string) => {
+    const categoryNames: {[key: string]: string} = {
+      '1': '인권 및 노동',
+      '2': '산업안전 및 보건',
+      '3': '환경 경영',
+      '4': '공급망 및 조달',
+      '5': '윤리경영 및 정보보호'
+    }
+    return categoryNames[categoryId] || `카테고리 ${categoryId}`
+  }
+
+  /**
+   * 위반 항목들을 카테고리별로 그룹화
+   */
+  const groupViolationsByCategory = () => {
+    const violations = answers.filter(a => a.answer === false)
+    const grouped: {[key: string]: Answer[]} = {}
+
+    violations.forEach(violation => {
+      const category = violation.questionId.split('.')[0]
+      if (!grouped[category]) {
+        grouped[category] = []
+      }
+      grouped[category].push(violation)
+    })
+
+    return grouped
+  }
+
+  /**
    * 개선 권장사항 목록 생성
    */
   const getImprovementItems = () => {
-    return categories
-      .map(category => {
-        const categoryQuestions = questions.filter(q => q.category === category)
-        const noAnswers = categoryQuestions.filter(q => answers[q.id] === 'no')
-        return {
-          category,
-          count: noAnswers.filter(q => !q.criticalViolation).length
-        }
-      })
-      .filter(item => item.count > 0)
+    const violationsByCategory = groupViolationsByCategory()
+    return Object.entries(violationsByCategory).map(([categoryId, violations]) => ({
+      category: getCategoryName(categoryId),
+      count: violations.length,
+      items: violations
+    }))
   }
 
   // ========================================================================
@@ -402,7 +449,6 @@ export const PDFReportTemplate: React.FC<PDFReportTemplateProps> = ({
         </p>
         <p style={styles.headerDate}>생성일: {getCurrentDate()}</p>
       </div>
-
       {/* ======================================================================
           평가 기본 정보 (Basic Assessment Information)
           ====================================================================== */}
@@ -419,7 +465,7 @@ export const PDFReportTemplate: React.FC<PDFReportTemplateProps> = ({
           </div>
           <div>
             <span style={{fontWeight: 'bold', color: '#374151'}}>평가 대상:</span>
-            <span style={{marginLeft: '8px'}}>[회사명]</span>
+            <span style={{marginLeft: '8px'}}>{companyName}</span>
           </div>
           <div>
             <span style={{fontWeight: 'bold', color: '#374151'}}>평가 기준:</span>
@@ -427,110 +473,225 @@ export const PDFReportTemplate: React.FC<PDFReportTemplateProps> = ({
           </div>
         </div>
       </div>
-
       {/* ======================================================================
           종합 평가 결과 (Overall Assessment Results)
           ====================================================================== */}
       <div style={styles.card}>
         <h2 style={styles.cardTitle}>종합 평가 결과</h2>
 
-        <div style={styles.grid3}>
+        {/* 5개 항목 그리드 */}
+        <div style={styles.grid5}>
           {/* 최종 등급 */}
           <div style={styles.scoreContainer}>
             <div style={getGradeStyle(finalGrade)}>
               <div style={styles.gradeText}>{finalGrade}</div>
             </div>
             <h3 style={styles.scoreLabel}>최종 등급</h3>
-            <p style={styles.scoreDescription}>{gradeInfo.description}</p>
           </div>
 
-          {/* 기본 점수 */}
+          {/* 총 위반 건수 */}
           <div style={styles.scoreContainer}>
-            <div style={{...styles.scoreValue, fontSize: '32px'}}>{baseScore}</div>
-            <h3 style={styles.scoreLabel}>기본 점수</h3>
-            <p style={styles.scoreDescription}>132.5점 만점 기준</p>
-          </div>
-
-          {/* 권장 조치 */}
-          <div style={styles.scoreContainer}>
-            <div style={{fontSize: '18px', fontWeight: 'bold', color: '#374151'}}>
-              {gradeInfo.action}
+            <div style={{...styles.scoreValue, fontSize: '32px', color: '#dc2626'}}>
+              {noAnswerCount}
             </div>
-            <h3 style={styles.scoreLabel}>권장 조치</h3>
-            <p style={styles.scoreDescription}>등급 기반 대응</p>
+            <h3 style={styles.scoreLabel}>총 위반 건수</h3>
+            <p style={styles.scoreDescription}>위반 항목 수</p>
+          </div>
+
+          {/* 중대 위반 건수 */}
+          <div style={styles.scoreContainer}>
+            <div style={{...styles.scoreValue, fontSize: '32px', color: '#dc2626'}}>
+              {criticalViolationCount}
+            </div>
+            <h3 style={styles.scoreLabel}>중대 위반 건수</h3>
+            <p style={styles.scoreDescription}>등급 영향 항목</p>
+          </div>
+
+          {/* 진단 점수 */}
+          <div style={styles.scoreContainer}>
+            <div style={{...styles.scoreValue, fontSize: '32px'}}>{score}</div>
+            <h3 style={styles.scoreLabel}>진단 점수</h3>
+            <p style={styles.scoreDescription}>기본 점수</p>
+          </div>
+
+          {/* 종합 점수 */}
+          <div style={styles.scoreContainer}>
+            <div style={{...styles.scoreValue, fontSize: '24px'}}>
+              {actualScore.toFixed(1)} / {totalPossibleScore.toFixed(1)}
+            </div>
+            <h3 style={styles.scoreLabel}>종합 점수</h3>
+            <p style={styles.scoreDescription}>최종 계산 점수</p>
           </div>
         </div>
       </div>
-
-      {/* ======================================================================
-          카테고리별 점수 (Category Scores)
-          ====================================================================== */}
-      <div style={styles.card}>
-        <h2 style={styles.cardTitle}>카테고리별 점수</h2>
-
-        <div style={styles.table}>
-          {/* 테이블 헤더 */}
-          <div style={styles.tableHeader}>
-            <div>평가 카테고리</div>
-            <div style={{textAlign: 'center'}}>점수</div>
-          </div>
-
-          {/* 테이블 내용 */}
-        </div>
-      </div>
-
       {/* ======================================================================
           중대위반 항목 (Critical Violations)
           ====================================================================== */}
+
       {criticalViolations.length > 0 && (
         <div style={styles.alertCritical}>
-          <h2 style={styles.alertTitle}>중대 위반 항목 발견</h2>
+          <h2 style={styles.alertTitle}>⚠️ 중대 위반 항목 발견</h2>
           <p style={styles.alertText}>
-            다음 중대 위반 항목들로 인해 등급이 조정되었습니다:
+            다음 중대 위반 항목들로 인해 등급이 조정되었습니다 (
+            {criticalViolations.length}건):
           </p>
 
-          <div style={{marginTop: '12px'}}>
-            {criticalViolations.slice(0, 6).map(cv => (
-              <div key={cv.question.id} style={styles.alertItem}>
-                <div style={styles.alertItemTitle}>
-                  {cv.question.id}: {cv.question.text}
+          <div style={{marginTop: '16px'}}>
+            {criticalViolations.map(cv => {
+              // answers 배열에서 해당 질문의 상세 정보 찾기
+              const answerDetail = answers.find(a => a.questionId === cv.question.id)
+
+              return (
+                <div key={cv.question.id} style={styles.alertItem}>
+                  <div style={styles.alertItemTitle}>
+                    📋 {cv.question.id}: {cv.question.text}
+                  </div>
+                  <div style={styles.alertItemDetail}>
+                    <div style={{marginBottom: '4px'}}>
+                      <strong>위반 시 등급:</strong> {cv.violation.grade}등급
+                    </div>
+                    <div style={{marginBottom: '4px'}}>
+                      <strong>위반 사유:</strong> {cv.violation.reason}
+                    </div>
+                    <div style={{marginBottom: '4px'}}>
+                      <strong>벌금 및 패널티:</strong>{' '}
+                      {answerDetail?.penaltyInfo ?? '정보 없음'}
+                    </div>
+                    <div>
+                      <strong>법적 근거:</strong>{' '}
+                      {answerDetail?.legalBasis ?? '정보 없음'}
+                    </div>
+                  </div>
                 </div>
-                <div style={styles.alertItemDetail}>
-                  <span style={{fontWeight: 'bold'}}>
-                    위반 시 등급: {cv.violation.grade}
-                  </span>
-                  <span style={{marginLeft: '16px'}}>사유: {cv.violation.reason}</span>
-                </div>
-              </div>
-            ))}
+              )
+            })}
           </div>
         </div>
       )}
+      {/* ======================================================================
+          위반 항목 상세 정보 (Violation Details by Category)
+          ====================================================================== */}
+      {/* ======================================================================
+          위반 항목 상세 정보 (Violation Details by Category)
+          ====================================================================== */}
+      {Object.keys(groupViolationsByCategory()).length > 0 && (
+        <div style={styles.violationSection}>
+          <h2 style={styles.violationTitle}>📊 위반 항목 상세 정보</h2>
+          <p style={{fontSize: '14px', color: '#9a3412', marginBottom: '20px'}}>
+            카테고리별 위반 항목 분석 결과입니다.
+          </p>
 
+          {Object.entries(groupViolationsByCategory()).map(([categoryId, violations]) => (
+            <div key={categoryId} style={styles.violationCategory}>
+              <div style={styles.violationCategoryTitle}>
+                {getCategoryName(categoryId)} ({violations.length}건)
+              </div>
+              <div style={{display: 'flex', flexDirection: 'column', gap: '12px'}}>
+                {violations.map((violation, index) => (
+                  <div
+                    key={index}
+                    style={{
+                      ...styles.violationItem,
+                      padding: '16px',
+                      backgroundColor: '#ffffff',
+                      borderRadius: '8px',
+                      border: '1px solid #fed7aa',
+                      boxShadow: '0 1px 3px rgba(0, 0, 0, 0.1)'
+                    }}>
+                    <div
+                      style={{
+                        fontSize: '14px',
+                        fontWeight: 'bold',
+                        color: '#c2410c',
+                        marginBottom: '8px',
+                        display: 'flex',
+                        alignItems: 'center'
+                      }}>
+                      📋 {violation.questionId}
+                      {violation.hasCriticalViolation && (
+                        <span style={{color: '#dc2626', marginLeft: '8px'}}>
+                          ⚠️ 중대위반
+                        </span>
+                      )}
+                    </div>
+
+                    {violation.questionText && (
+                      <div
+                        style={{
+                          fontSize: '13px',
+                          color: '#7c2d12',
+                          marginBottom: '8px',
+                          padding: '8px',
+                          backgroundColor: '#fef7f0',
+                          borderRadius: '4px'
+                        }}>
+                        <strong>질문:</strong> {violation.questionText}
+                      </div>
+                    )}
+
+                    <div
+                      style={{
+                        fontSize: '12px',
+                        color: '#9a3412',
+                        display: 'grid',
+                        gridTemplateColumns: '1fr 1fr',
+                        gap: '8px'
+                      }}>
+                      <div>
+                        <strong>카테고리:</strong>{' '}
+                        {violation.categoryName || getCategoryName(categoryId)}
+                      </div>
+                      <div>
+                        <strong>벌칙 정보:</strong> {violation.penaltyInfo}
+                      </div>
+                    </div>
+
+                    {violation.legalBasis && (
+                      <div
+                        style={{
+                          fontSize: '12px',
+                          color: '#9a3412',
+                          marginTop: '8px',
+                          padding: '8px',
+                          backgroundColor: '#fef7f0',
+                          borderRadius: '4px'
+                        }}>
+                        <strong>법적 근거:</strong> {violation.legalBasis}
+                      </div>
+                    )}
+                  </div>
+                ))}
+              </div>
+            </div>
+          ))}
+        </div>
+      )}
       {/* ======================================================================
           개선 권장사항 (Improvement Recommendations)
           ====================================================================== */}
       {getImprovementItems().length > 0 && (
         <div style={styles.improvement}>
-          <h2 style={styles.cardTitle}>개선 권장사항</h2>
+          <h2 style={styles.cardTitle}>💡 개선 권장사항</h2>
           <div style={styles.improvementBox}>
+            <p style={{fontSize: '14px', color: '#92400e', marginBottom: '16px'}}>
+              다음 영역에서 개선이 필요합니다:
+            </p>
             {getImprovementItems().map(item => (
               <div key={item.category} style={styles.improvementItem}>
                 <span style={{fontWeight: 'bold'}}>• {item.category}:</span>
-                <span style={{marginLeft: '4px'}}>{item.count}개 항목 개선 필요</span>
+                <span style={{marginLeft: '8px'}}>{item.count}개 항목 개선 필요</span>
               </div>
             ))}
           </div>
         </div>
       )}
-
       {/* ======================================================================
           보고서 푸터 (Report Footer)
           ====================================================================== */}
       <div style={styles.footer}>
         <div style={styles.footerContent}>
-          <div>{getCurrentDate()} NSMM ESG 플랫폼에서 생성</div>
-          <div>© 2024 NSMM. All rights reserved.</div>
+          <div>본 보고서는 CSDDD 자가진단 시스템에 의해 자동 생성되었습니다.</div>
+          <div>© 2024 NSMM ESG Platform. All rights reserved.</div>
         </div>
       </div>
     </div>
