@@ -1,4 +1,5 @@
 'use client'
+import toast from '@/util/toast'
 import {useState, useEffect, useRef} from 'react'
 import {
   AlertTriangle,
@@ -608,10 +609,11 @@ export default function CSAssessmentPage() {
       // 실제 API 호출
       await submitSelfAssessmentToBackend(submissionData)
 
-      alert('자가진단이 성공적으로 제출되었습니다!')
+      toast.success('자가진단이 성공적으로 제출되었습니다!')
+      window.location.href = '/CSDDD/evaluation'
     } catch (error) {
       console.error('제출 중 오류 발생:', error)
-      alert('제출 중 오류가 발생했습니다. 다시 시도해주세요.')
+      toast.error('제출 중 오류가 발생했습니다. 다시 시도해주세요.')
     } finally {
       setIsSubmitting(false)
     }
@@ -873,7 +875,10 @@ export default function CSAssessmentPage() {
         {/* 개선된 하단 네비게이션 버튼 */}
         <div className="flex items-center justify-between gap-6 p-6 mt-12 border shadow-sm bg-gradient-to-r from-slate-50 to-white rounded-2xl border-slate-200">
           <button
-            onClick={() => setCurrentCategoryIdx(idx => Math.max(0, idx - 1))}
+            onClick={() => {
+              setCurrentCategoryIdx(idx => Math.max(0, idx - 1))
+              window.scrollTo({top: 0, behavior: 'smooth'})
+            }}
             disabled={isFirst}
             className="flex items-center px-8 py-4 space-x-3 text-lg font-semibold text-gray-700 transition-all duration-300 bg-white border-2 border-gray-300 shadow-lg rounded-2xl hover:shadow-xl disabled:opacity-50 disabled:transform-none hover:bg-gray-50 hover:-translate-y-1">
             <ArrowLeft className="w-5 h-5" />
@@ -903,9 +908,10 @@ export default function CSAssessmentPage() {
             </button>
           ) : (
             <button
-              onClick={() =>
+              onClick={() => {
                 setCurrentCategoryIdx(idx => Math.min(categoryMeta.length - 1, idx + 1))
-              }
+                window.scrollTo({top: 0, behavior: 'smooth'})
+              }}
               className="flex items-center px-8 py-4 space-x-3 text-lg font-semibold text-white transition-all duration-300 bg-blue-500 shadow-lg rounded-2xl hover:shadow-xl hover:bg-blue-600 hover:-translate-y-1">
               <span>다음</span>
               <ArrowLeft className="w-5 h-5 rotate-180" />
@@ -955,7 +961,7 @@ export default function CSAssessmentPage() {
       <div className="px-4 pb-0">
         <div className="flex flex-row w-full mb-6">
           <Link
-            href="/dashboard"
+            href="/CSDDD"
             className="flex flex-row items-center p-4 space-x-4 transition-all rounded-2xl backdrop-blur-sm hover:bg-white/30 group">
             <ArrowLeft className="w-6 h-6 text-gray-500 transition-colors group-hover:text-blue-600" />
             <PageHeader
