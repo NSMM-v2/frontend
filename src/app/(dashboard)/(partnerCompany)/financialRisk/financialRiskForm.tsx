@@ -722,7 +722,7 @@ export default function FinancialRiskForm() {
       }
     } catch (err) {
       console.error('협력사 목록 로드 실패:', err)
-      setError('파트너사 목록을 불러오는데 실패했습니다.')
+      setError('협력사 목록을 불러오는데 실패했습니다.')
       // 에러 토스트는 커스텀 훅에서 자동 처리되지 않음 (목록 조회는 조용히 처리)
     } finally {
       setIsLoading(false) // 로딩 상태 종료
@@ -777,29 +777,40 @@ export default function FinancialRiskForm() {
         setSelectedYearQuarter(autoOption)
         // 자동 선택된 옵션으로 바로 재무 분석 수행
         await loadFinancialRiskData(corpCode, partnerName, autoOption)
+      } else {
+        // 자동 선택 옵션이 없으면 기본 자동 옵션 생성
+        const defaultAutoOption = getAutoYearQuarterOption()
+        setSelectedYearQuarter(defaultAutoOption)
+        // 기본 자동 옵션으로 재무 분석 수행
+        await loadFinancialRiskData(corpCode, partnerName, defaultAutoOption)
       }
     } catch (error) {
       console.error('이용 가능한 기간 로드 실패:', error)
-      // 실패하면 빈 배열로 설정
-      setAvailableOptions([])
-      showError('이용 가능한 재무제표 기간 정보를 불러올 수 없습니다.')
+      // 실패하면 기본 자동 옵션으로 설정
+      const defaultAutoOption = getAutoYearQuarterOption()
+      setAvailableOptions([defaultAutoOption])
+      setSelectedYearQuarter(defaultAutoOption)
+
+      // 기본 자동 옵션으로 재무 분석 수행
+      await loadFinancialRiskData(corpCode, partnerName, defaultAutoOption)
+
+      showError(
+        '이용 가능한 재무제표 기간 정보를 불러올 수 없습니다. 기본 기간으로 분석합니다.'
+      )
     } finally {
       setIsLoadingOptions(false)
     }
   }
 
-  // 파트너사 선택 시 핸들러
+  // 협력사 선택 시 핸들러
   const handlePartnerSelect = async (code: string) => {
     setSelectedPartnerCode(code)
     const selectedOption = partnerOptions.find(opt => opt.code === code)
     if (selectedOption) {
       setSelectedPartnerName(selectedOption.name)
 
-      // 파트너사 변경 시 이용 가능한 기간 옵션 로드
+      // 협력사 변경 시 이용 가능한 기간 옵션 로드 및 자동 분석 수행
       await loadAvailableOptions(code, selectedOption.name)
-
-      // 연도/분기 선택 초기화 (새로운 자동 옵션이 설정될 것임)
-      setSelectedYearQuarter(null)
     }
   }
 
@@ -807,7 +818,7 @@ export default function FinancialRiskForm() {
   const handleYearQuarterSelect = async (option: YearQuarterOption) => {
     setSelectedYearQuarter(option)
 
-    // 파트너사가 이미 선택되어 있으면 새로운 연도/분기로 데이터 다시 로드
+    // 협력사가 이미 선택되어 있으면 새로운 연도/분기로 데이터 다시 로드
     if (selectedPartnerCode && selectedPartnerName) {
       await loadFinancialRiskData(selectedPartnerCode, selectedPartnerName, option)
     }
@@ -870,7 +881,7 @@ export default function FinancialRiskForm() {
                 <FileSearch className="w-6 h-6 text-blue-600" />
               </div>
               <div className="flex flex-col">
-                <h3 className="text-lg font-bold text-slate-800">분석할 파트너사 선택</h3>
+                <h3 className="text-lg font-bold text-slate-800">분석할 협력사 선택</h3>
                 <p className="text-sm text-slate-500">
                   재무 위험도를 분석할 협력사를 선택해주세요
                 </p>
@@ -936,7 +947,7 @@ export default function FinancialRiskForm() {
                     <Building2 className="w-5 h-5 text-blue-600" />
                   </div>
                   <div>
-                    <p className="text-sm font-medium text-gray-500">파트너사</p>
+                    <p className="text-sm font-medium text-gray-500">협력사</p>
                     <div className="flex flex-col gap-1">
                       <h3 className="text-lg font-bold text-slate-800">
                         {riskData.partnerCompanyName}
@@ -1213,7 +1224,7 @@ export default function FinancialRiskForm() {
           ====================================================================== */}
       <DirectionButton
         direction="left"
-        tooltip="파트너사 관리로 이동"
+        tooltip="협력사 관리로 이동"
         href="/managePartner"
         fixed
         position="middle-left"

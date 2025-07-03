@@ -1,8 +1,8 @@
 /**
- * 파트너사 관리 폼 컴포넌트
- * - 파트너사 목록 조회 및 검색 (페이지네이션 지원)
+ * 협력\사 관리 폼 컴포넌트
+ * - 협력\사 목록 조회 및 검색 (페이지네이션 지원)
  * - DART API를 통한 기업 정보 검색 및 등록
- * - 파트너사 정보 수정 및 삭제
+ * - 협력\사 정보 수정 및 삭제
  * - 실시간 검색 및 필터링
  *
  * @author ESG Project Team
@@ -24,7 +24,7 @@ import {motion} from 'framer-motion'
 // ============================================================================
 
 import {
-  Building2, // 빌딩 아이콘 - 파트너사 표시
+  Building2, // 빌딩 아이콘 - 협력\사 표시
   Home, // 홈 아이콘 - 브레드크럼 네비게이션
   Users, // 사용자 그룹 아이콘 - 협력사 관리
   ArrowLeft // 왼쪽 화살표 - 뒤로가기 버튼
@@ -37,7 +37,7 @@ import {
 import {PageHeader} from '@/components/layout/PageHeader'
 import {DirectionButton} from '@/components/layout/direction'
 
-// 파트너사 관련 컴포넌트 (통합 완료)
+// 협력사 관련 컴포넌트 (통합 완료)
 import {
   PartnerCompanyModal,
   EditPartnerModal,
@@ -83,9 +83,9 @@ import authService from '@/services/authService'
 import toast from '@/util/toast'
 
 /**
- * 파트너사 관리 폼 컴포넌트
+ * 협력사 관리 폼 컴포넌트
  *
- * ESG 경영을 위한 파트너사 관리 기능을 제공합니다.
+ * ESG 경영을 위한 협력사 관리 기능을 제공합니다.
  * scope3Form.tsx와 동일한 구조적 패턴 적용:
  * - 상단 브레드크럼 네비게이션
  * - 뒤로가기 버튼 + PageHeader
@@ -93,9 +93,9 @@ import toast from '@/util/toast'
  * - space-y-6 간격의 컴포넌트 배치
  *
  * 주요 기능:
- * - 파트너사 목록 조회 및 검색 (페이지네이션 지원)
+ * - 협력사 목록 조회 및 검색 (페이지네이션 지원)
  * - DART API를 통한 기업 정보 검색 및 등록
- * - 파트너사 정보 수정 및 삭제
+ * - 협력사 정보 수정 및 삭제
  * - 실시간 검색 및 필터링
  */
 export default function ManagePartnerForm() {
@@ -119,8 +119,8 @@ export default function ManagePartnerForm() {
   // 상태 관리 (State Management)
   // ========================================================================
 
-  // 파트너사 데이터 관련 상태
-  const [partners, setPartners] = useState<PartnerCompany[]>([]) // 파트너사 목록 데이터
+  // 협력사 데이터 관련 상태
+  const [partners, setPartners] = useState<PartnerCompany[]>([]) // 협력사 목록 데이터
 
   // 로딩 상태 관리
   const [isLoading, setIsLoading] = useState(false) // 일반적인 로딩 상태
@@ -128,7 +128,7 @@ export default function ManagePartnerForm() {
   const [isSubmitting, setIsSubmitting] = useState(false) // 폼 제출 중 로딩 상태
 
   // 검색 및 필터링 상태
-  const [searchQuery, setSearchQuery] = useState('') // 파트너사 목록 검색어
+  const [searchQuery, setSearchQuery] = useState('') // 협력사 목록 검색어
 
   // 페이지네이션 상태
   const [currentPage, setCurrentPage] = useState(1) // 현재 페이지 번호
@@ -137,10 +137,10 @@ export default function ManagePartnerForm() {
   const [pageSize] = useState(10) // 페이지당 아이템 수
 
   // 다이얼로그 상태 관리
-  const [isAddDialogOpen, setIsAddDialogOpen] = useState(false) // 파트너사 추가 다이얼로그
-  const [isEditDialogOpen, setIsEditDialogOpen] = useState(false) // 파트너사 수정 다이얼로그
-  const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false) // 파트너사 삭제 다이얼로그
-  const [selectedPartner, setSelectedPartner] = useState<PartnerCompany | null>(null) // 선택된 파트너사
+  const [isAddDialogOpen, setIsAddDialogOpen] = useState(false) // 협력사 추가 다이얼로그
+  const [isEditDialogOpen, setIsEditDialogOpen] = useState(false) // 협력사 수정 다이얼로그
+  const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false) // 협력사 삭제 다이얼로그
+  const [selectedPartner, setSelectedPartner] = useState<PartnerCompany | null>(null) // 선택된 협력사
 
   // 추가/수정 다이얼로그 내부 상태
   const [companySearchQuery, setCompanySearchQuery] = useState('') // DART 기업 검색어
@@ -151,13 +151,13 @@ export default function ManagePartnerForm() {
 
   // 폼 데이터 상태
   const [formData, setFormData] = useState({
-    id: '', // 파트너사 ID (수정 시 사용)
+    id: '', // 협력사 ID (수정 시 사용)
     companyName: '', // 회사명
     corpCode: '', // DART 기업 코드
     contractStartDate: new Date().toISOString().split('T')[0] // 계약 시작일
   })
 
-  // 파트너사 추가 시 계약 시작일 (별도 상태)
+  // 협력사 추가 시 계약 시작일 (별도 상태)
   const [contractStartDate, setContractStartDate] = useState(
     new Date().toISOString().split('T')[0]
   )
@@ -176,7 +176,7 @@ export default function ManagePartnerForm() {
   // 디바운스된 값들 (Debounced Values)
   // ========================================================================
 
-  const debouncedMainSearchQuery = useDebounce(searchQuery, 500) // 파트너사 목록 검색용
+  const debouncedMainSearchQuery = useDebounce(searchQuery, 500) // 협력사 목록 검색용
   const debouncedDartSearchQuery = useDebounce(companySearchQuery, 500) // DART 기업 검색용
   const debouncedCompanyName = useDebounce(formData.companyName, 800) // 회사명 중복 검사용
 
@@ -185,7 +185,7 @@ export default function ManagePartnerForm() {
   // ========================================================================
 
   /**
-   * 파트너사 목록을 서버에서 가져오는 함수
+   * 협력사 목록을 서버에서 가져오는 함수
    * 페이지네이션과 검색 필터를 지원합니다.
    */
   const loadPartners = useCallback(
@@ -205,7 +205,7 @@ export default function ManagePartnerForm() {
         setTotalPages(totalPages)
         setCurrentPage(page)
       } catch (error) {
-        console.error('파트너사 목록 조회 오류:', error)
+        console.error('협력사 목록 조회 오류:', error)
         setPartners([])
         setTotalItems(0)
         setTotalPages(1)
@@ -283,7 +283,7 @@ export default function ManagePartnerForm() {
   // ========================================================================
 
   /**
-   * 새로운 파트너사를 등록하는 함수
+   * 새로운 협력\사를 등록하는 함수
    */
   const handleCreatePartner = async () => {
     setIsSubmitting(true)
@@ -301,7 +301,7 @@ export default function ManagePartnerForm() {
         return
       }
 
-      // 파트너사 등록 API 호출 - 새로운 형식
+      // 협력\사 등록 API 호출 - 새로운 형식
       await createPartner({
         corpCode: selectedDartCompany.corpCode || selectedDartCompany.corp_code!,
         contractStartDate: contractStartDate
@@ -311,16 +311,16 @@ export default function ManagePartnerForm() {
       resetForm()
       await loadPartners(currentPage, debouncedMainSearchQuery)
     } catch (error) {
-      console.error('파트너사 등록 오류:', error)
+      console.error('협력사 등록 오류:', error)
       // 에러 토스트는 커스텀 훅에서 자동 처리됨
-      setDialogError('파트너사 등록에 실패했습니다.')
+      setDialogError('협력사 등록에 실패했습니다.')
     } finally {
       setIsSubmitting(false)
     }
   }
 
   /**
-   * 파트너사 정보를 수정하는 함수
+   * 협력\사 정보를 수정하는 함수
    */
   const handleUpdatePartner = async () => {
     if (!selectedPartner) return
@@ -340,7 +340,7 @@ export default function ManagePartnerForm() {
         return
       }
 
-      // 파트너사 수정 API 호출
+      // 협력\사 수정 API 호출
       await updatePartner(selectedPartner.id!, {
         corpCode: formData.corpCode.trim(),
         contractStartDate: formData.contractStartDate
@@ -350,16 +350,16 @@ export default function ManagePartnerForm() {
       resetForm()
       await loadPartners(currentPage, debouncedMainSearchQuery)
     } catch (error) {
-      console.error('파트너사 수정 오류:', error)
+      console.error('협력사 수정 오류:', error)
       // 에러 토스트는 커스텀 훅에서 자동 처리됨
-      setDialogError('파트너사 정보 수정에 실패했습니다.')
+      setDialogError('협력사 정보 수정에 실패했습니다.')
     } finally {
       setIsSubmitting(false)
     }
   }
 
   /**
-   * 파트너사를 삭제하는 함수
+   * 협력\사를 삭제하는 함수
    */
   const handleDeletePartner = async () => {
     if (!selectedPartner) return
@@ -379,7 +379,7 @@ export default function ManagePartnerForm() {
         await loadPartners(currentPage, debouncedMainSearchQuery)
       }
     } catch (error) {
-      console.error('파트너사 삭제 오류:', error)
+      console.error('협력사 삭제 오류:', error)
       // 에러 토스트는 커스텀 훅에서 자동 처리됨
     } finally {
       setIsSubmitting(false)
@@ -391,7 +391,7 @@ export default function ManagePartnerForm() {
   // ========================================================================
 
   /**
-   * 파트너사 수정 다이얼로그를 여는 함수
+   * 협력\사 수정 다이얼로그를 여는 함수
    */
   const openEditDialog = (partner: PartnerCompany) => {
     setSelectedPartner(partner)
@@ -412,7 +412,7 @@ export default function ManagePartnerForm() {
   }
 
   /**
-   * 파트너사 추가 다이얼로그를 여는 함수
+   * 협력\사 추가 다이얼로그를 여는 함수
    */
   const openAddDialog = () => {
     resetForm()
@@ -420,7 +420,7 @@ export default function ManagePartnerForm() {
   }
 
   /**
-   * 파트너사 삭제 확인 다이얼로그를 여는 함수
+   * 협력\사 삭제 확인 다이얼로그를 여는 함수
    */
   const openDeleteDialog = (partner: PartnerCompany) => {
     setSelectedPartner(partner)
@@ -480,7 +480,7 @@ export default function ManagePartnerForm() {
   }
 
   /**
-   * 기존 파트너사를 위한 auth 계정 생성 함수
+   * 기존 협력\사를 위한 auth 계정 생성 함수
    * authService의 createPartner 함수를 활용 (DART API 기반)
    */
   const handleCreateAccount = async (partner: PartnerCompany) => {
@@ -488,7 +488,7 @@ export default function ManagePartnerForm() {
     try {
       // 필수 정보 검증
       if (!partner.id) {
-        throw new Error('파트너사 UUID가 없습니다.')
+        throw new Error('협력사 UUID가 없습니다.')
       }
 
       // 현재 사용자 정보 조회하여 parentUuid 결정
@@ -512,7 +512,7 @@ export default function ManagePartnerForm() {
 
       // 디버깅 로그 (개발 환경에서만)
       if (process.env.NODE_ENV === 'development') {
-        console.log('계정 생성 대상 파트너사:', {
+        console.log('계정 생성 대상 협력사:', {
           id: partner.id,
           corpName: partner.corpName,
           ceoName: partner.ceoName,
@@ -526,7 +526,7 @@ export default function ManagePartnerForm() {
       const accountData = {
         uuid: partner.id, // DART API 회사 고유 식별자
         contactPerson: partner.ceoName || '담당자', // DART API 대표자명
-        companyName: partner.corpName || partner.companyName || '파트너사', // DART API 회사명
+        companyName: partner.corpName || partner.companyName || '협력사', // DART API 회사명
         ...(partner.address && {address: partner.address}), // 주소가 있으면 포함
         ...(partner.phoneNumber && {phone: partner.phoneNumber}), // 전화번호가 있으면 포함
         parentUuid // 현재 사용자 타입에 따라 결정된 상위 UUID
@@ -549,7 +549,7 @@ export default function ManagePartnerForm() {
           }\n초기 비밀번호: ${response.data.initialPassword}`
         )
 
-        // 파트너사 목록 새로고침
+        // 협력\사 목록 새로고침
         await loadPartners(currentPage, debouncedMainSearchQuery || undefined)
 
         console.log('계정 생성 성공:', response.data)
@@ -640,7 +640,7 @@ export default function ManagePartnerForm() {
           <PageHeader
             icon={<Users className="w-6 h-6 text-blue-600" />}
             title="협력사 추가"
-            description="ESG 경영을 위한 파트너사를 등록하고 관리합니다"
+            description="ESG 경영을 위한 협력사를 등록하고 관리합니다"
             module="PARTNERCOMPANY"
             submodule="managePartner"
           />
@@ -660,14 +660,14 @@ export default function ManagePartnerForm() {
           <PageLoadingState />
         ) : (
           <>
-            {/* 파트너사 검색 섹션 */}
+            {/* 협력\사 검색 섹션 */}
             <PartnerSearchSection
               searchQuery={searchQuery}
               onSearchQueryChange={handleSearchChange}
               onOpenAddDialog={openAddDialog}
             />
 
-            {/* 파트너사 목록 테이블 또는 빈 상태 */}
+            {/* 협력\사 목록 테이블 또는 빈 상태 */}
             {partners.length === 0 ? (
               searchQuery ? (
                 <SearchEmptyState searchQuery={searchQuery} />
@@ -700,7 +700,7 @@ export default function ManagePartnerForm() {
           다이얼로그 모달들 (Dialog Modals)
           ====================================================================== */}
 
-      {/* 파트너사 추가 다이얼로그 */}
+      {/* 협력\사 추가 다이얼로그 */}
       <PartnerCompanyModal
         isOpen={isAddDialogOpen}
         onClose={() => setIsAddDialogOpen(false)}
@@ -718,7 +718,7 @@ export default function ManagePartnerForm() {
         duplicateCheckResult={duplicateCheckResult}
       />
 
-      {/* 파트너사 수정 다이얼로그 */}
+      {/* 협력\사 수정 다이얼로그 */}
       <EditPartnerModal
         isOpen={isEditDialogOpen}
         onClose={() => setIsEditDialogOpen(false)}
@@ -728,7 +728,7 @@ export default function ManagePartnerForm() {
         onFormDataChange={data => setFormData(prev => ({...prev, ...data}))}
       />
 
-      {/* 파트너사 삭제 확인 다이얼로그 */}
+      {/* 협력\사 삭제 확인 다이얼로그 */}
       <PartnerDeleteDialog
         isOpen={isDeleteDialogOpen}
         onOpenChange={open => setIsDeleteDialogOpen(open)}

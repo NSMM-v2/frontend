@@ -258,8 +258,7 @@ export function PartnerTable({
                                 }
                                 toast({
                                   title: '계정 생성 성공',
-                                  description:
-                                    '파트너사 계정이 성공적으로 생성되었습니다.'
+                                  description: '협력사 계정이 성공적으로 생성되었습니다.'
                                 })
                               }
                             } catch (error) {
@@ -286,7 +285,7 @@ export function PartnerTable({
                         onClick={() => onDeletePartner(partner)}
                         className="flex gap-3 items-center px-4 py-3 text-red-600 rounded-lg transition-colors cursor-pointer hover:bg-red-50 focus:text-red-600 focus:bg-red-50">
                         <Trash className="w-4 h-4" />
-                        <span className="font-medium">파트너사 삭제</span>
+                        <span className="font-medium">협력사 삭제</span>
                       </DropdownMenuItem>
                     </DropdownMenuContent>
                   </DropdownMenu>
