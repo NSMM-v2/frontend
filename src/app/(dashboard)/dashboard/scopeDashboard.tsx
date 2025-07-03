@@ -75,7 +75,6 @@ interface PartnerInfo {
   hierarchicalId: string // 계층적 아이디 (L1-001, L2-001 등)
   level: number // 협력사 레벨 (1차, 2차, 3차)
   status: string // 상태
-  contactPerson: string // 담당자명
   parentPartnerId?: number // 상위 협력사 ID
   parentPartnerName?: string // 상위 협력사명
   createdAt: string // 생성일시
@@ -313,11 +312,6 @@ export default function ScopeDashboard() {
                           )}`}>
                           {getLevelText(partner.level)}
                         </span>
-                      </div>
-
-                      {/* 담당자 */}
-                      <div className="text-xs text-gray-400">
-                        담당자: {partner.contactPerson}
                       </div>
 
                       {/* 상위 협력사 정보 (2차, 3차인 경우) */}
