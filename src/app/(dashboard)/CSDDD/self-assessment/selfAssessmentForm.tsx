@@ -59,8 +59,7 @@ interface Answer {
   remarks?: string
 }
 
-// 질문 데이터는 여기에 삽입하세요
-const questions: Question[] = [
+export const questions: Question[] = [
   // 인권 및 노동 카테고리
   {
     id: '1.1',
