@@ -35,7 +35,6 @@ import {
   Home,
   ArrowLeft,
   BarChart3,
-  CheckCircle2,
   ChevronDown,
   ChevronUp
 } from 'lucide-react'
@@ -83,7 +82,6 @@ export default function EvaluationForm() {
     }
   }
 
-  // 위반 항목들을 카테고리별로 그룹화
   const groupViolationsByCategory = (answers: any[]) => {
     const violations = answers.filter(a => a.answer === false) // boolean 비교로 수정
     const grouped: {[key: string]: any[]} = {}
@@ -99,7 +97,6 @@ export default function EvaluationForm() {
     return grouped
   }
 
-  // 카테고리 이름 매핑
   const getCategoryName = (categoryId: string) => {
     const categoryNames: {[key: string]: string} = {
       '1': '인권 및 노동',
@@ -111,11 +108,6 @@ export default function EvaluationForm() {
     return categoryNames[categoryId] || `카테고리 ${categoryId}`
   }
 
-  // 결과 목록 조회
-  // fetchResults 함수 수정 (line 80-120)
-  // ====================================================================
-  // 결과 목록 조회 함수 수정 (line 97-138)
-  // ====================================================================
   const fetchResults = async () => {
     setLoading(true)
     try {
@@ -126,10 +118,8 @@ export default function EvaluationForm() {
 
         let response: PaginatedSelfAssessmentResponse
 
-        // JWT Gateway에서 헤더 변환이 자동으로 처리되므로
-        // 백엔드에서 사용자 유형을 자동으로 파악함
         response = await getSelfAssessmentResults({
-          onlyPartners: false // 본인 + 하위 포함 조회
+          onlyPartners: false
         })
 
         setResults(
@@ -152,7 +142,6 @@ export default function EvaluationForm() {
     }
   }
 
-  // 상세 결과 조회 (여러 개를 누적 저장)
   const fetchDetailResult = async (resultId: number) => {
     setDetailLoading(true)
     try {
@@ -170,7 +159,6 @@ export default function EvaluationForm() {
     fetchResults()
   }, [])
 
-  // 등급별 색상 및 스타일
   const getGradeStyle = (grade: string) => {
     switch (grade) {
       case 'A':
@@ -213,7 +201,6 @@ export default function EvaluationForm() {
 
   return (
     <div className="flex flex-col w-full min-h-screen">
-      {/* 브레드크럼 영역 */}
       <div className="p-4 pb-0">
         <div className="flex flex-row items-center p-3 mb-6 text-sm text-gray-600 border shadow-sm rounded-xl backdrop-blur-sm bg-white/80 border-white/50">
           <Breadcrumb>
@@ -243,7 +230,6 @@ export default function EvaluationForm() {
         </div>
       </div>
 
-      {/* 페이지 헤더 영역 */}
       <div className="px-4 pb-0">
         <div className="flex flex-row w-full mb-6">
           <Link
@@ -261,7 +247,6 @@ export default function EvaluationForm() {
         </div>
       </div>
 
-      {/* 메인 컨텐츠 */}
       <div className="flex-1 px-4 pb-8">
         <div className="lg:col-span-3">
           <div className="border shadow-xl rounded-xl backdrop-blur-sm bg-white/95 border-white/50">
@@ -317,8 +302,6 @@ export default function EvaluationForm() {
                 <div className="space-y-4">
                   {results.map((result, index) => {
                     const gradeStyle = getGradeStyle(result.finalGrade ?? 'D')
-                    const scorePercentage =
-                      (result.actualScore / result.totalPossibleScore) * 100
                     const selectedResult = selectedResults[result.id]
                     const violationCount =
                       selectedResult && selectedResult.answers
@@ -333,7 +316,6 @@ export default function EvaluationForm() {
                       <div
                         key={result.id}
                         className="p-4 transition-all border border-gray-200 rounded-xl bg-white/50 hover:border-gray-300 hover:shadow-lg">
-                        {/* 기본 정보 섹션 */}
                         <div className="">
                           <div className="flex items-center justify-between mb-4">
                             <div className="flex items-center space-x-3">
@@ -379,9 +361,8 @@ export default function EvaluationForm() {
                               </button>
                             </div>
                           </div>
-                          {/* 점수 및 정보 - 5열 그리드로 확장 */}
+
                           <div className="grid grid-cols-5 gap-4 mb-4">
-                            {/* 최종 등급 */}
                             <div className="p-3 border border-blue-300 rounded-lg bg-gradient-to-br from-blue-50 to-white">
                               <div className="flex items-center justify-between w-full">
                                 <div className="flex flex-col">
@@ -396,7 +377,7 @@ export default function EvaluationForm() {
                                 </div>
                               </div>
                             </div>
-                            {/* 총 위반 건수 */}
+
                             <div className="p-3 border border-blue-300 rounded-lg bg-gradient-to-br from-blue-50 to-white">
                               <div className="flex items-center justify-between w-full">
                                 <div className="flex flex-col">
@@ -413,7 +394,7 @@ export default function EvaluationForm() {
                                 </div>
                               </div>
                             </div>
-                            {/* 중대 위반 건수 */}
+
                             <div className="p-3 border border-blue-300 rounded-lg bg-gradient-to-br from-blue-50 to-white">
                               <div className="flex items-center justify-between w-full">
                                 <div className="flex flex-col">
@@ -430,7 +411,7 @@ export default function EvaluationForm() {
                                 </div>
                               </div>
                             </div>
-                            {/* 진단 점수 */}
+
                             <div className="p-3 border border-blue-300 rounded-lg bg-gradient-to-br from-blue-50 to-white">
                               <div className="flex items-center justify-between w-full">
                                 <div className="flex flex-col">
@@ -444,7 +425,7 @@ export default function EvaluationForm() {
                                 </div>
                               </div>
                             </div>
-                            {/* 종합 점수 */}
+
                             <div className="p-3 border border-blue-300 rounded-lg bg-gradient-to-br from-blue-50 to-white">
                               <div className="flex items-center justify-between w-full">
                                 <div className="flex flex-col">
@@ -461,7 +442,7 @@ export default function EvaluationForm() {
                               </div>
                             </div>
                           </div>
-                          {/* Chevron icon as toggle button */}
+
                           <div className="flex justify-center">
                             <button
                               onClick={() => {
@@ -521,7 +502,6 @@ export default function EvaluationForm() {
                                     <div
                                       key={categoryId}
                                       className="overflow-hidden border border-blue-200 shadow-sm rounded-xl bg-gradient-to-br from-blue-50 to-white">
-                                      {/* 카테고리 헤더 */}
                                       <div className="px-4 py-3 border-b border-blue-200 bg-gradient-to-r from-blue-100 to-blue-50">
                                         <div className="flex items-center justify-between">
                                           <div>
@@ -534,7 +514,7 @@ export default function EvaluationForm() {
                                           </div>
                                         </div>
                                       </div>
-                                      {/* 위반 항목 목록 */}
+
                                       <div className="p-4">
                                         <div className="grid grid-cols-3 gap-2 sm:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6">
                                           {violations.map((violation, i) => (
