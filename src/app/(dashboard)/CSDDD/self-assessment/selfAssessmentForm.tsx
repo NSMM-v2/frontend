@@ -40,7 +40,6 @@ import authService from '@/services/authService'
 
 import {submitSelfAssessmentToBackend} from '@/services/csdddService'
 
-// 질문 데이터 타입 정의
 interface Question {
   id: string
   category: string
@@ -52,7 +51,6 @@ interface Question {
   }
 }
 
-// 답변 상태 타입
 interface Answer {
   questionId: string
   answer: 'yes' | 'no' | ''
@@ -60,7 +58,6 @@ interface Answer {
 }
 
 export const questions: Question[] = [
-  // 인권 및 노동 카테고리
   {
     id: '1.1',
     category: '인권 및 노동',
@@ -140,7 +137,6 @@ export const questions: Question[] = [
     }
   },
 
-  // 산업안전보건
   {
     id: '2.1',
     category: '산업안전·보건',
@@ -186,7 +182,6 @@ export const questions: Question[] = [
     weight: 1.5
   },
 
-  // 환경경영
   {
     id: '3.1',
     category: '환경경영',
@@ -244,7 +239,6 @@ export const questions: Question[] = [
     weight: 1.0
   },
 
-  // 공급망 및 조달
   {
     id: '4.1',
     category: '공급망 및 조달',
@@ -324,7 +318,6 @@ export const questions: Question[] = [
     weight: 1.5
   },
 
-  // 윤리경영 및 정보보호
   {
     id: '5.1',
     category: '윤리경영 및 정보보호',
@@ -391,7 +384,6 @@ export const questions: Question[] = [
   }
 ]
 
-// 카테고리별 아이콘/색상 정의 (Toss 스타일)
 const categoryMeta = [
   {
     key: '인권 및 노동',
@@ -460,7 +452,6 @@ export default function CSAssessmentPage() {
       .catch(err => console.error('회사명 로드 실패:', err))
   }, [])
 
-  // 답변 변경 핸들러
   const handleAnswerChange = (
     questionId: string,
     answer: 'yes' | 'no',
@@ -479,7 +470,6 @@ export default function CSAssessmentPage() {
     }))
   }
 
-  // 비고 변경 핸들러
   const handleRemarksChange = (questionId: string, remarks: string) => {
     setAnswers(prev => ({
       ...prev,
@@ -492,24 +482,6 @@ export default function CSAssessmentPage() {
     }))
   }
 
-  // 카테고리 토글
-  const toggleCategory = (category: string) => {
-    setExpandedCategories(prev => ({
-      ...prev,
-      [category]: !prev[category]
-    }))
-  }
-
-  // 진행률 계산
-  const calculateProgress = () => {
-    const totalQuestions = questions.length
-    const answeredQuestions = Object.values(answers).filter(
-      answer => answer.answer !== ''
-    ).length
-    return Math.round((answeredQuestions / totalQuestions) * 100)
-  }
-
-  // 카테고리별 질문 그룹화
   const questionsByCategory = questions.reduce((acc, question) => {
     if (!acc[question.category]) {
       acc[question.category] = []
@@ -518,33 +490,14 @@ export default function CSAssessmentPage() {
     return acc
   }, {} as Record<string, Question[]>)
 
-  // 카테고리 전체 선택 핸들러
-  const handleSelectAllInCategory = (category: string, answer: 'yes' | 'no') => {
-    const updatedAnswers = {...answers}
-    const categoryQuestions = questionsByCategory[category] || []
-
-    categoryQuestions.forEach(question => {
-      updatedAnswers[question.id] = {
-        questionId: question.id,
-        answer,
-        remarks: answers[question.id]?.remarks || ''
-      }
-    })
-
-    setAnswers(updatedAnswers)
-  }
-
-  // 미답변 질문으로 이동하는 함수
   const moveToUnansweredQuestion = (questionId: string) => {
     const question = questions.find(q => q.id === questionId)
     if (!question) return
 
-    // 해당 질문이 속한 카테고리로 이동
     const categoryIdx = categoryMeta.findIndex(c => c.key === question.category)
     if (categoryIdx !== -1) {
       setCurrentCategoryIdx(categoryIdx)
 
-      // 약간의 딜레이 후 해당 질문으로 스크롤
       setTimeout(() => {
         const questionElement = questionRefs.current[questionId]
         if (questionElement) {
@@ -552,7 +505,6 @@ export default function CSAssessmentPage() {
             behavior: 'smooth',
             block: 'center'
           })
-          // 하이라이트 효과
           questionElement.classList.add('ring-4', 'ring-amber-300', 'ring-opacity-75')
           setTimeout(() => {
             questionElement.classList.remove(
@@ -567,7 +519,6 @@ export default function CSAssessmentPage() {
     setShowUnansweredModal(false)
   }
 
-  // 제출 핸들러 (개선됨)
   const handleSubmit = async () => {
     const unanswered = questions.filter(
       q => !answers[q.id] || answers[q.id].answer === ''
@@ -582,7 +533,6 @@ export default function CSAssessmentPage() {
     setIsSubmitting(true)
 
     try {
-      // TypeScript 인터페이스에 맞는 데이터 구조로 변환
       const submissionData = {
         companyName,
         answers: questions
@@ -605,7 +555,6 @@ export default function CSAssessmentPage() {
 
       console.log('📦 제출 데이터:', submissionData)
 
-      // 실제 API 호출
       await submitSelfAssessmentToBackend(submissionData)
 
       toast.success('자가진단이 성공적으로 제출되었습니다!')
@@ -618,15 +567,11 @@ export default function CSAssessmentPage() {
     }
   }
 
-  const progress = calculateProgress()
-
-  // 카테고리 클릭 시 해당 섹션으로 이동
   const handleCategoryClick = (category: string) => {
     const idx = categoryMeta.findIndex(c => c.key === category)
     if (idx !== -1) setCurrentCategoryIdx(idx)
   }
 
-  // 미답변 질문 모달
   const UnansweredQuestionsModal = () => (
     <AnimatePresence>
       {showUnansweredModal && (
@@ -704,17 +649,11 @@ export default function CSAssessmentPage() {
     </AnimatePresence>
   )
 
-  // ============================================================================
-  // 카테고리별 섹션 전환 구조 (한 번에 한 섹션만, Toss 스타일)
-  // ============================================================================
   const renderCurrentCategorySection = () => {
     const category = currentCategory
     const categoryQuestions = questionsByCategory[category] || []
     const isFirst = currentCategoryIdx === 0
     const isLast = currentCategoryIdx === categoryMeta.length - 1
-    const answeredInCategory = categoryQuestions.filter(q => answers[q.id]?.answer).length
-    const CategoryIcon = categoryMeta[currentCategoryIdx].icon
-    const gradientClass = categoryMeta[currentCategoryIdx].activeColor
 
     return (
       <motion.div
@@ -723,31 +662,8 @@ export default function CSAssessmentPage() {
         animate={{opacity: 1, x: 0}}
         exit={{opacity: 0, x: -40}}
         transition={{duration: 0.5}}
-        className="mb-8">
-        {/* 개선된 카테고리 헤더 카드 */}
-        <div className="relative flex items-center p-6 mb-6 overflow-hidden text-white bg-blue-500 shadow-lg rounded-3xl">
-          <div className="flex items-center justify-center w-16 h-16 mr-6 shadow-lg rounded-2xl bg-white/20 backdrop-blur-sm">
-            <CategoryIcon className="w-8 h-8" />
-          </div>
-          <div className="flex-1">
-            <h3 className="mb-2 text-2xl font-bold">{category}</h3>
-            <p className="text-lg opacity-90">
-              {categoryQuestions.length}개 질문 • {answeredInCategory}개 답변 완료
-            </p>
-            <div className="flex items-center mt-3 space-x-4">
-              <div className="flex items-center space-x-2">
-                <div className="w-2 h-2 bg-white rounded-full opacity-75"></div>
-                <span className="text-sm opacity-90">
-                  진행률:{' '}
-                  {Math.round((answeredInCategory / categoryQuestions.length) * 100)}%
-                </span>
-              </div>
-            </div>
-          </div>
-        </div>
-
-        {/* 개선된 질문 카드들 */}
-        <div className="space-y-5">
+        className="mb-2">
+        <div className="space-y-3">
           {categoryQuestions.map((question, index) => {
             const answer = answers[question.id]
             const isCritical = !!question.criticalViolation
@@ -762,27 +678,24 @@ export default function CSAssessmentPage() {
                 initial={{opacity: 0, y: 20}}
                 animate={{opacity: 1, y: 0}}
                 transition={{delay: index * 0.05}}
-                className={`relative p-4 transition-all bg-white border-2 rounded-3xl shadow-lg hover:shadow-xl transform hover:-translate-y-1 ${
+                className={`relative p-2 transition-all bg-white border rounded-lg shadow hover:shadow-md transform hover:-translate-y-0.5 ${
                   isAnswered
                     ? 'border-blue-200 bg-blue-50'
                     : 'border-gray-200 hover:border-blue-300'
                 }`}>
-                <div className="flex items-start space-x-6">
+                <div className="flex items-start space-x-4">
                   <div className="flex-shrink-0">
-                    <div className="inline-flex items-center justify-center h-10 text-sm font-bold text-blue-600 bg-blue-100 border-2 border-blue-200 shadow-sm w-14 rounded-2xl">
+                    <div className="inline-flex items-center justify-center w-12 h-8 text-xs font-bold text-blue-600 bg-blue-100 border-2 border-blue-200 rounded-lg shadow-sm">
                       {question.id}
                     </div>
                   </div>
 
-                  <div className="flex-1 space-y-4">
+                  <div className="flex-1 space-y-1">
                     <div className="flex items-start justify-between w-full">
-                      <p className="flex-1 pr-4 text-base font-medium leading-relaxed text-left text-slate-800">
+                      <p className="flex-1 pr-4 text-base font-bold leading-relaxed text-left text-slate-800">
                         {question.text}
                       </p>
-                      <div className="flex items-center flex-shrink-0 space-x-3">
-                        <div className="px-3 py-1 text-xs font-medium rounded-full shadow-sm text-slate-600 bg-slate-100">
-                          가중치 {question.weight}
-                        </div>
+                      <div className="flex items-center flex-shrink-0 space-x-2">
                         {question.criticalViolation && (
                           <TooltipProvider>
                             <Tooltip>
@@ -800,12 +713,14 @@ export default function CSAssessmentPage() {
                             </Tooltip>
                           </TooltipProvider>
                         )}
+                        <div className="px-2 py-0.5 text-[11px] font-medium rounded-full shadow-sm text-slate-600 bg-slate-100">
+                          가중치 {question.weight}
+                        </div>
                       </div>
                     </div>
 
-                    {/* 개선된 답변 선택 버튼 */}
-                    <div className="flex items-center space-x-4">
-                      <label className="flex items-center px-3 py-1.5 space-x-3 transition-all border-2 border-transparent cursor-pointer rounded-2xl group hover:bg-blue-50 hover:border-blue-200">
+                    <div className="flex items-center space-x-3">
+                      <label className="flex items-center px-2 py-1 space-x-2 transition-all border-2 border-transparent cursor-pointer rounded-2xl group hover:bg-blue-50 hover:border-blue-200">
                         <input
                           type="radio"
                           name={question.id}
@@ -823,12 +738,12 @@ export default function CSAssessmentPage() {
                           }
                           className="w-5 h-5 border-2 border-blue-300 rounded-full shadow-sm appearance-none cursor-pointer checked:bg-blue-300 checked:ring-4 checked:ring-blue-100"
                         />
-                        <span className="text-sm font-medium text-blue-600 transition-colors group-hover:text-blue-700">
+                        <span className="text-xs font-medium text-blue-600 transition-colors group-hover:text-blue-700">
                           예
                         </span>
                       </label>
 
-                      <label className="flex items-center px-3 py-1.5 space-x-3 transition-all border-2 border-transparent cursor-pointer rounded-2xl group hover:bg-blue-50 hover:border-blue-200">
+                      <label className="flex items-center px-2 py-1 space-x-2 transition-all border-2 border-transparent cursor-pointer rounded-2xl group hover:bg-blue-50 hover:border-blue-200">
                         <input
                           type="radio"
                           name={question.id}
@@ -846,14 +761,14 @@ export default function CSAssessmentPage() {
                           }
                           className="w-5 h-5 border-2 border-blue-300 rounded-full shadow-sm appearance-none cursor-pointer checked:bg-blue-300 checked:ring-4 checked:ring-blue-100"
                         />
-                        <span className="text-sm font-medium text-blue-600 transition-colors group-hover:text-blue-700">
+                        <span className="text-xs font-medium text-blue-600 transition-colors group-hover:text-blue-700">
                           아니오
                         </span>
                       </label>
                     </div>
 
-                    <div className="space-y-3">
-                      <label className="block text-sm font-semibold text-slate-700">
+                    <div className="space-y-2">
+                      <label className="block text-xs font-semibold text-slate-700">
                         비고 (선택사항)
                       </label>
                       <textarea
@@ -861,7 +776,7 @@ export default function CSAssessmentPage() {
                         onChange={e => handleRemarksChange(question.id, e.target.value)}
                         placeholder="추가 설명이나 특이사항을 입력하세요"
                         rows={1}
-                        className="w-full px-4 py-3 text-sm transition-all border-2 shadow-sm resize-none rounded-2xl backdrop-blur-sm border-slate-200 focus:outline-none focus:ring-4 focus:ring-blue-200 focus:border-blue-500 bg-white/90 hover:border-slate-300"
+                        className="w-full px-2 py-1 text-xs transition-all border-2 shadow-sm resize-none rounded-2xl backdrop-blur-sm border-slate-200 focus:outline-none focus:ring-4 focus:ring-blue-200 focus:border-blue-500 bg-white/90 hover:border-slate-300"
                       />
                     </div>
                   </div>
@@ -871,16 +786,15 @@ export default function CSAssessmentPage() {
           })}
         </div>
 
-        {/* 개선된 하단 네비게이션 버튼 */}
-        <div className="flex items-center justify-between gap-6 p-6 mt-12 border shadow-sm bg-gradient-to-r from-slate-50 to-white rounded-2xl border-slate-200">
+        <div className="flex items-center justify-between gap-3 mt-12">
           <button
             onClick={() => {
               setCurrentCategoryIdx(idx => Math.max(0, idx - 1))
               window.scrollTo({top: 0, behavior: 'smooth'})
             }}
             disabled={isFirst}
-            className="flex items-center px-8 py-4 space-x-3 text-lg font-semibold text-gray-700 transition-all duration-300 bg-white border-2 border-gray-300 shadow-lg rounded-2xl hover:shadow-xl disabled:opacity-50 disabled:transform-none hover:bg-gray-50 hover:-translate-y-1">
-            <ArrowLeft className="w-5 h-5" />
+            className="flex items-center px-8 py-4 space-x-3 text-sm font-semibold text-gray-700 transition-all duration-300 bg-white border-2 border-gray-300 shadow-lg rounded-2xl hover:shadow-xl disabled:opacity-50 disabled:transform-none hover:bg-gray-50 hover:-translate-y-1">
+            <ArrowLeft className="w-3 h-3" />
             <span>이전</span>
           </button>
 
@@ -895,12 +809,12 @@ export default function CSAssessmentPage() {
               }`}>
               {isSubmitting ? (
                 <>
-                  <div className="w-5 h-5 border-2 border-t-2 rounded-full animate-spin border-white/20 border-t-white"></div>
+                  <div className="w-3 h-3 border-2 border-t-2 rounded-full animate-spin border-white/20 border-t-white"></div>
                   <span>제출 중...</span>
                 </>
               ) : (
                 <>
-                  <Send className="w-5 h-5" />
+                  <Send className="w-3 h-3" />
                   <span>자가진단 제출</span>
                 </>
               )}
@@ -911,9 +825,9 @@ export default function CSAssessmentPage() {
                 setCurrentCategoryIdx(idx => Math.min(categoryMeta.length - 1, idx + 1))
                 window.scrollTo({top: 0, behavior: 'smooth'})
               }}
-              className="flex items-center px-8 py-4 space-x-3 text-lg font-semibold text-white transition-all duration-300 bg-blue-500 shadow-lg rounded-2xl hover:shadow-xl hover:bg-blue-600 hover:-translate-y-1">
+              className="flex items-center px-8 py-4 space-x-3 text-sm font-semibold text-white transition-all duration-300 bg-blue-500 shadow-lg rounded-2xl hover:shadow-xl hover:bg-blue-600 hover:-translate-y-1">
               <span>다음</span>
-              <ArrowLeft className="w-5 h-5 rotate-180" />
+              <ArrowLeft className="w-3 h-3 rotate-180" />
             </button>
           )}
         </div>
@@ -923,10 +837,8 @@ export default function CSAssessmentPage() {
 
   return (
     <div className="flex flex-col w-full min-h-screen">
-      {/* 미답변 질문 모달 */}
       <UnansweredQuestionsModal />
 
-      {/* 브레드크럼 영역 */}
       <div className="p-4 pb-0">
         <div className="flex flex-row items-center p-4 mb-6 text-sm text-gray-600 border shadow-sm rounded-2xl backdrop-blur-sm bg-white/90 border-white/50">
           <Breadcrumb>
@@ -956,7 +868,6 @@ export default function CSAssessmentPage() {
         </div>
       </div>
 
-      {/* 페이지 헤더 영역 */}
       <div className="px-4 pb-0">
         <div className="flex flex-row w-full mb-6">
           <Link
@@ -975,40 +886,45 @@ export default function CSAssessmentPage() {
       </div>
 
       <div className="flex-1 px-4 pb-8">
-        {/* 진행 현황 + 카테고리 프로그레스바 통합 */}
-        <div className="p-6 mb-6 border shadow-xl rounded-3xl backdrop-blur-xl bg-white/70 border-white/50 shadow-blue-500/10">
-          <div className="flex items-center justify-between mb-6">
-            <div className="flex items-center space-x-3">
-              <div className="p-3 bg-blue-500 shadow-lg rounded-xl">
-                <TrendingUp className="w-6 h-6 text-white" />
+        <div className="p-4 mb-4 border shadow-xl rounded-3xl backdrop-blur-xl bg-white/70 border-white/50 shadow-blue-500/10">
+          <div className="flex items-center justify-between mb-4">
+            <div className="flex items-center space-x-2">
+              <div className="p-2 bg-blue-500 shadow-lg rounded-xl">
+                <TrendingUp className="w-5 h-5 text-white" />
               </div>
               <div>
-                <h2 className="text-2xl font-bold text-slate-800">진행 현황</h2>
-                <p className="text-slate-600">현재 평가 진행 상태를 확인하세요</p>
+                <h2 className="text-xl font-bold text-slate-800">진행 현황</h2>
+                <p className="text-sm text-slate-500">현재 평가 진행 상태를 확인하세요</p>
               </div>
             </div>
-            <div className="text-right">
-              <div className="text-4xl font-bold text-blue-600">{progress}%</div>
-              <p className="mt-1 text-sm text-slate-500">완료율</p>
-            </div>
           </div>
-          {/* 진행률 바 */}
-          <div className="relative mb-6">
-            <div className="w-full h-4 overflow-hidden rounded-full shadow-inner bg-gradient-to-r from-slate-200 to-slate-300">
-              <div
-                className="relative h-full transition-all duration-1000 ease-out rounded-full bg-gradient-to-r from-blue-500 to-cyan-500"
-                style={{width: `${progress}%`}}>
-                <div className="absolute inset-0 rounded-full animate-pulse bg-white/20"></div>
-              </div>
-            </div>
-            <div className="absolute transform -translate-x-1/2 -translate-y-1/2 top-1/2 left-1/2">
-              <Zap className="w-4 h-4 text-white animate-pulse" />
-            </div>
+
+          <div className="relative mb-4">
+            {(() => {
+              const totalQuestions = questions.length
+              const answeredQuestions = Object.values(answers).filter(
+                answer => answer.answer !== ''
+              ).length
+              const progress = Math.round((answeredQuestions / totalQuestions) * 100)
+              return (
+                <>
+                  <div className="w-full h-3 overflow-hidden rounded-full shadow-inner bg-gradient-to-r from-slate-200 to-slate-300">
+                    <div
+                      className="relative h-full transition-all duration-1000 ease-out rounded-full bg-gradient-to-r from-blue-500 to-cyan-500"
+                      style={{width: `${progress}%`}}>
+                      <div className="absolute inset-0 rounded-full animate-pulse bg-white/20"></div>
+                    </div>
+                  </div>
+                  <div className="absolute transform -translate-x-1/2 -translate-y-1/2 top-1/2 left-1/2">
+                    <Zap className="w-3 h-3 text-white animate-pulse" />
+                  </div>
+                </>
+              )
+            })()}
           </div>
-          {/* 카테고리 프로그레스바 (내부로 이동) */}
-          <div className="flex flex-row items-center justify-between gap-2 px-2 py-4 mt-2 bg-white border border-gray-100 shadow-sm rounded-2xl md:px-8">
+
+          <div className="flex flex-row items-center justify-between gap-2 px-2 py-3 mt-1 bg-white border border-gray-100 shadow-sm rounded-2xl md:px-8">
             {categoryMeta.map((cat, idx) => {
-              // 카테고리별 전체/완료 질문 수 계산
               const total = questions.filter(q => q.category === cat.key).length
               const done = questions.filter(
                 q => q.category === cat.key && answers[q.id]?.answer !== ''
@@ -1024,14 +940,14 @@ export default function CSAssessmentPage() {
                   }`}
                   style={{minWidth: 0}}>
                   <div
-                    className={`flex items-center justify-center w-12 h-12 rounded-xl shadow-md mb-2 ${
+                    className={`flex items-center justify-center w-10 h-10 rounded-xl shadow-md mb-1 ${
                       isActive ? 'bg-blue-500' : 'bg-slate-200'
                     } transition-all`}>
                     <Icon
-                      className={`w-6 h-6 ${isActive ? 'text-white' : 'text-slate-600'}`}
+                      className={`w-7 h-7 ${isActive ? 'text-white' : 'text-slate-600'}`}
                     />
                   </div>
-                  <span className={`text-xs font-semibold truncate ${cat.text}`}>
+                  <span className={`text-[15px] font-semibold truncate ${cat.text}`}>
                     {cat.key}
                   </span>
                 </button>
@@ -1040,7 +956,6 @@ export default function CSAssessmentPage() {
           </div>
         </div>
 
-        {/* 질문 카테고리별 섹션 */}
         {renderCurrentCategorySection()}
       </div>
     </div>
