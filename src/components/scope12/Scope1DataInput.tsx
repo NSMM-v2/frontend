@@ -347,10 +347,10 @@ export function Scope1DataInput({
         return
       }
 
-      // 각 계산기별로 저장 처리
+      // 각 계산기별로 저장 처리 (수정: 반전 제거)
       const savePromises = calculatorsToSave.map(async calc => {
-        const isManualInput = !calculatorModes[calc.id] // false면 LCA, true면 Manual
-        return await saveCalculatorData(calc, !isManualInput)
+        const isManualInput = !(calculatorModes[calc.id] || false) // 기본값 false(Manual)
+        return await saveCalculatorData(calc, isManualInput)
       })
 
       await Promise.all(savePromises)

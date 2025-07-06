@@ -112,12 +112,12 @@ export function CalculatorItem({
     onChangeState(id, newState)
   }
 
-  // 모드별 제목 및 설명 설정
+  // 모드별 제목 및 설명 설정 (논리 수정)
   const title = mode ? `LCA 기반 배출계수 선택 ${index}` : `수동 입력 ${index}`
   const description = mode
-    ? '배출계수를 단계별로 선택하여 자동 계산하세요'
-    : '직접 값을 입력하여 배출량을 계산하세요.'
-  const IconComponent = mode ? Sparkles : Database
+    ? '직접 값을 입력하여 배출량을 계산하세요.'
+    : '배출계수를 단계별로 선택하여 자동 계산하세요'
+  const IconComponent = mode ? Database : Sparkles
 
   /**
    * 입력된 데이터가 있는지 확인하는 함수
@@ -133,6 +133,8 @@ export function CalculatorItem({
       (state.kgCO2eq && state.kgCO2eq.trim() !== '')
     )
   }
+
+  const isManualInput = mode || false
 
   return (
     <motion.div
@@ -194,7 +196,7 @@ export function CalculatorItem({
                   className="data-[state=checked]:bg-blue-500"
                 />
 
-                {/* 라벨 */}
+                {/* 라벨 - Scope 1과 동일한 방식으로 수정 */}
                 <span
                   className={`text-sm font-medium transition-colors ${
                     mode ? 'text-blue-600' : 'text-gray-500'

@@ -22,7 +22,7 @@ import {
   scope3CategoryList,
   Scope3CategoryKey
 } from '../scopeTotal/Scope123CategorySelector'
-import {SelectorState, ScopeEmissionResponse} from '@/types/scopeTypes'
+import {SelectorState, ScopeEmissionResponse, InputType} from '@/types/scopeTypes'
 import {createScopeEmission, updateScopeEmission} from '@/services/scopeService'
 import {showError, showSuccess, showWarning} from '@/util/toast'
 
@@ -169,7 +169,7 @@ export function CategoryDataInput({
 
     // 전체 검증 먼저 실행
     const allValidationResults = calculators.map(calc => {
-      const isManualInput = calculatorModes[calc.id] || false
+      const isManualInput = !(calculatorModes[calc.id] || false)
       return {
         calculatorId: calc.id,
         validation: validateCalculatorData(calc, isManualInput),
@@ -210,7 +210,8 @@ export function CategoryDataInput({
           state: calc.state
         })
 
-        const isManualInput = calculatorModes[calc.id] || false
+        // 수정: mode와 isManualInput 매핑 수정
+        const isManualInput = !(calculatorModes[calc.id] || false)
 
         // 요청 데이터 구성
         const requestData = createRequestPayload(calc, isManualInput)
@@ -392,8 +393,8 @@ export function CategoryDataInput({
       reportingYear: selectedYear || new Date().getFullYear(),
       reportingMonth: selectedMonth || new Date().getMonth() + 1,
 
-      // 입력 모드 제어
-      inputType: isManualInput ? ('MANUAL' as const) : ('LCA' as const),
+      // 입력 모드 제어 (수정: 논리 반전)
+      inputType: isManualInput ? 'MANUAL' : ('LCA' as InputType),
       hasProductMapping: false // Scope 3는 제품 매핑 불가
     }
   }

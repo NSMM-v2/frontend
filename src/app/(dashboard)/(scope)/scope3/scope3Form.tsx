@@ -289,6 +289,15 @@ export default function Scope3Form() {
         }
       ]
     }))
+
+    // 새 계산기의 기본 모드를 수동 입력(false)으로 설정
+    setCalculatorModes(prev => ({
+      ...prev,
+      [activeCategory]: {
+        ...prev[activeCategory],
+        [newId]: false // 수동 입력이 기본값 (false)
+      }
+    }))
   }
 
   /**
@@ -515,6 +524,15 @@ export default function Scope3Form() {
           }
         ]
       }))
+
+      // 기본 계산기의 모드를 수동 입력(false)으로 설정
+      setCalculatorModes(prev => ({
+        ...prev,
+        [category]: {
+          ...prev[category],
+          [newId]: false // 수동 입력이 기본값 (false)
+        }
+      }))
     }
   }
 
@@ -629,13 +647,13 @@ export default function Scope3Form() {
         savedData: emission // 전체 백엔드 데이터 보관
       }
 
-      // 수동 입력 모드 상태도 함께 복원
+      // 수동 입력 모드 상태도 함께 복원 (논리 수정)
       if (emission.inputType !== undefined) {
         setCalculatorModes(prev => ({
           ...prev,
           [categoryKey]: {
             ...prev[categoryKey],
-            [calculatorId]: emission.inputType === 'MANUAL'
+            [calculatorId]: emission.inputType === 'MANUAL' // 수정: 논리 그대로 사용
           }
         }))
       }

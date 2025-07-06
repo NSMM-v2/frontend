@@ -19,18 +19,9 @@
 
 import React, {useEffect, useRef} from 'react'
 import {motion} from 'framer-motion'
-import {Card, CardContent, CardHeader, CardTitle} from '@/components/ui/card'
+import {Card, CardContent} from '@/components/ui/card'
 import {Input} from '../ui/input'
-import {
-  Layers,
-  Tag,
-  Zap,
-  Ruler,
-  Calculator,
-  Hash,
-  Sparkles,
-  TrendingUp
-} from 'lucide-react'
+import {Layers, Tag, Zap, Ruler, Calculator, Hash, TrendingUp} from 'lucide-react'
 import type {SelectorState} from '@/types/scopeTypes'
 import {showWarning} from '@/util/toast'
 
