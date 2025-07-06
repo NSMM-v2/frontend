@@ -16,7 +16,7 @@ import React, {useCallback} from 'react'
 import {motion, AnimatePresence} from 'framer-motion'
 import {Button} from '@/components/ui/button'
 import {Card, CardContent} from '@/components/ui/card'
-import {Plus, Save} from 'lucide-react'
+import {Calculator, Plus, Save} from 'lucide-react'
 import {CalculatorItem} from './Scope3CalculatorItem'
 import {
   scope3CategoryList,
@@ -500,7 +500,7 @@ export function CategoryDataInput({
             onClick={handleAddCalculator}
             variant="outline"
             className="px-8 py-4 text-lg font-semibold text-white bg-blue-500 rounded-xl shadow-lg transition-all duration-300 transform hover:bg-blue-600 hover:scale-105 hover:shadow-xl">
-            <Plus className="mr-2 w-5 h-5" />
+            <Calculator className="mr-2 w-5 h-5" />
             계산기 추가
           </Button>
 

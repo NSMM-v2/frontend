@@ -13,7 +13,8 @@ import {
   Save, // 저장 아이콘
   Sparkles, // LCA 모드용 아이콘 추가
   Database, // 수동 입력 모드용 아이콘 추가
-  AlertTriangle // 경고 아이콘 (삭제 확인용)
+  AlertTriangle, // 경고 아이콘 (삭제 확인용)
+  Calculator
 } from 'lucide-react'
 
 // UI 컴포넌트 임포트
@@ -666,7 +667,7 @@ export function Scope1DataInput({
         <Button
           onClick={onAddCalculator}
           className="px-8 py-4 text-lg font-semibold text-white bg-blue-500 rounded-xl shadow-lg transition-all duration-300 transform hover:bg-blue-600 hover:scale-105 hover:shadow-xl">
-          <Plus className="mr-2 w-5 h-5" />
+          <Calculator className="mr-2 w-5 h-5" />
           계산기 추가
         </Button>
         <Button
@@ -674,7 +675,7 @@ export function Scope1DataInput({
           variant="outline"
           className="px-8 py-4 text-lg font-semibold text-green-700 bg-white rounded-xl border-2 border-green-500 shadow-lg transition-all duration-300 hover:bg-green-50 hover:scale-105 hover:shadow-xl">
           <Save className="mr-2 w-5 h-5" />
-          저장 및 완료
+          입력 완료
         </Button>
       </motion.div>
     </motion.div>
