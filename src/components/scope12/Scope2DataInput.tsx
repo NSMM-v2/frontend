@@ -438,7 +438,7 @@ export function Scope2DataInput({
             const animationDelay = index * 0.2
 
             return (
-              <React.Fragment key={calculator.id}>
+              <div key={calculator.id} className="flex flex-col items-center w-full">
                 {/* 개별 계산기 컨테이너 */}
                 <motion.div
                   initial={{opacity: 0, y: 30}}
@@ -632,7 +632,7 @@ export function Scope2DataInput({
                     </AlertDialogFooter>
                   </AlertDialogContent>
                 </AlertDialog>
-              </React.Fragment>
+              </div>
             )
           })}
         </AnimatePresence>

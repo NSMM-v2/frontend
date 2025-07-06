@@ -104,11 +104,11 @@ class AuthService {
     try {
       console.log('[AuthService] 사용자 정보 조회 시작 - 폴백 모드')
 
-      // 1. 협력사 API 시도 (권한 오류 발생 안함)
+      // 1. 협력사 API 시도 (500 에러도 허용하여 에러 발생 안함)
       try {
         console.log('[AuthService] 협력사 API 시도')
         const partnerResponse = await api.get('/api/v1/auth/partners/me', {
-          validateStatus: status => status < 500
+          validateStatus: status => true // 모든 상태 코드 허용 (500 에러도 에러로 처리 안함)
         })
 
         if (partnerResponse.status === 200) {
@@ -119,11 +119,11 @@ class AuthService {
         console.log('[AuthService] 협력사 API 실패')
       }
 
-      // 2. 본사 API 시도
+      // 2. 본사 API 시도 (500 에러도 허용하여 에러 발생 안함)
       try {
         console.log('[AuthService] 본사 API 시도')
         const headquartersResponse = await api.get('/api/v1/auth/headquarters/me', {
-          validateStatus: status => status < 500
+          validateStatus: status => true // 모든 상태 코드 허용 (500 에러도 에러로 처리 안함)
         })
 
         if (headquartersResponse.status === 200) {

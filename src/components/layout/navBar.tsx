@@ -59,8 +59,6 @@ export default function NavigationBar() {
     <div className="fixed top-0 left-0 z-50 p-4 w-full h-20 bg-white shadow-sm">
       <div className="flex flex-row justify-between items-center w-full h-full">
         <Link href="/" className="flex flex-row gap-2 items-center w-full">
-          {/* <EarthLock className="w-10 h-10 text-blue-400" />
-          <span className="text-2xl font-bold text-blue-400">NSMM</span> */}
           <div className="flex justify-center items-center w-8 h-8 bg-blue-500 rounded-lg">
             <span className="text-sm font-bold text-white">N</span>
           </div>

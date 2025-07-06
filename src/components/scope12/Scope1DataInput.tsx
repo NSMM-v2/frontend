@@ -526,7 +526,7 @@ export function Scope1DataInput({
             const IconComponent = mode ? Sparkles : Database
 
             return (
-              <React.Fragment key={calculator.id}>
+              <div key={calculator.id} className="flex flex-col items-center w-full">
                 {/* ============================================================================
                     계산기 간 구분선 (Inter-Calculator Divider) - Scope 3 스타일 적용
                     ============================================================================ */}
@@ -720,14 +720,14 @@ export function Scope1DataInput({
                         </AlertDialogCancel>
                         <AlertDialogAction
                           onClick={() => handleDeleteConfirm(calculator.id, index, mode)}
-                          className="px-6 py-2 text-white bg-red-600 rounded-lg border-0 transition-all hover:bg-red-700">
+                          className="px-6 py-2 text-white bg-red-500 rounded-lg border-0 transition-all hover:bg-red-600">
                           삭제
                         </AlertDialogAction>
                       </AlertDialogFooter>
                     </AlertDialogContent>
                   </AlertDialog>
                 </motion.div>
-              </React.Fragment>
+              </div>
             )
           })}
         </AnimatePresence>
