@@ -217,28 +217,45 @@ export function Scope1DataInput({
     const activityAmount = Math.round(parseFloat(state.quantity || '0') * 1000) / 1000 // 소수점 3자리
     const totalEmission = Math.round(emissionFactor * activityAmount * 1000000) / 1000000 // 소수점 6자리
 
-    // 카테고리 번호 결정
-    let scope1CategoryNumber = 1
-    if (activeCategory in scope1PotentialCategoryList) {
-      scope1CategoryNumber = parseInt(activeCategory.replace('list', ''))
-    } else if (activeCategory in scope1KineticCategoryList) {
-      scope1CategoryNumber = parseInt(activeCategory.replace('list', ''))
-    } else if (activeCategory in scope1ProcessCategoryList) {
-      scope1CategoryNumber = parseInt(activeCategory.replace('list', ''))
-    } else if (activeCategory in scope1LeakCategoryList) {
-      scope1CategoryNumber = parseInt(activeCategory.replace('list', ''))
+    const categoryMapping = {
+      // 고정연소
+      list1: {number: 1, major: '고정연소', sub: '액체 연료'},
+      list2: {number: 2, major: '고정연소', sub: '가스 연료'},
+      list3: {number: 3, major: '고정연소', sub: '고체 연료'},
+      // 이동연소
+      list4: {number: 4, major: '이동연소', sub: '차량'},
+      list5: {number: 5, major: '이동연소', sub: '항공기'},
+      list6: {number: 6, major: '이동연소', sub: '선박'},
+      // 공정배출
+      list7: {number: 7, major: '공정배출', sub: '제조 배출'},
+      list8: {number: 8, major: '공정배출', sub: '폐수 처리'},
+      // 냉매누출
+      list9: {number: 9, major: '냉매누출', sub: '냉동/냉방 설비 냉매'},
+      list10: {number: 10, major: '냉매누출', sub: '소화기 방출'}
     }
 
-    // 통합 Scope 시스템에 맞는 요청 데이터 구성
+    const category = categoryMapping[activeCategory]
+    if (!category) {
+      throw new Error('유효하지 않은 카테고리입니다.')
+    }
+
     return {
       // Scope 분류 정보
       scopeType: 'SCOPE1',
-      scope1CategoryNumber,
+      scope1CategoryNumber: category.number,
+      majorCategory: category.major,
 
       // 배출원 정보
-      majorCategory: state.separate || '',
-      subcategory: state.rawMaterial || '',
+      subcategory: state.separate || '',
       rawMaterial: state.rawMaterial || '',
+
+      // 제품 관련 정보
+      ...(state.productName || state.productCode
+        ? {
+            companyProductCode: state.productCode || '',
+            productName: state.productName || ''
+          }
+        : {}),
 
       // 수치 데이터
       activityAmount,
@@ -251,8 +268,8 @@ export function Scope1DataInput({
       reportingMonth: selectedMonth || 1,
 
       // 입력 모드 제어
-      inputType: isManualInput ? ('MANUAL' as InputType) : ('LCA' as InputType),
-      hasProductMapping: false // Scope 1은 제품 매핑 불가
+      inputType: isManualInput ? 'MANUAL' : 'LCA',
+      hasProductMapping: !!(state.productName || state.productCode)
     }
   }
 

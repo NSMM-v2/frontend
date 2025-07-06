@@ -11,8 +11,6 @@
  *
  * @author ESG Project Team
  * @version 2.0
- * @since 2024
- * @lastModified 2024-12-20
  */
 'use client'
 
@@ -29,7 +27,6 @@ import {
   Plus, // 플러스 아이콘 (추가)
   Trash2, // 삭제 아이콘
   Save, // 저장 아이콘
-  Calculator, // 계산기 아이콘
   Sparkles, // LCA 모드용 아이콘 추가
   Database, // 수동 입력 모드용 아이콘 추가
   AlertTriangle // 경고 아이콘 (삭제 확인용)
@@ -67,7 +64,7 @@ import {ExcelCascadingSelector} from '@/components/scope12/Scope12ExcelCascading
 // ============================================================================
 // 타입 임포트 (Type Imports)
 // ============================================================================
-import {SelectorState} from '@/types/scopeTypes'
+import {ScopeEmissionResponse, SelectorState} from '@/types/scopeTypes'
 import {showSuccess, showError} from '@/util/toast'
 import {
   createScopeEmission,
@@ -112,6 +109,12 @@ interface Scope2DataInputProps {
   onDataChange: () => void
 }
 
+interface CalculatorData {
+  id: number
+  state: SelectorState
+  savedData?: ScopeEmissionResponse
+}
+
 // ============================================================================
 // 메인 컴포넌트 (Main Component)
 // ============================================================================
@@ -148,6 +151,52 @@ export function Scope2DataInput({
     {}
   )
 
+  const [activeElectricCategory, setActiveElectricCategory] =
+    useState<Scope2ElectricCategoryKey | null>(null)
+  const [activeSteamCategory, setActiveSteamCategory] =
+    useState<Scope2SteamCategoryKey | null>(null)
+
+  // 카테고리별 계산기 목록 관리
+  const [electricCategoryCalculators, setElectricCategoryCalculators] = useState<
+    Record<Scope2ElectricCategoryKey, CalculatorData[]>
+  >({
+    list11: [
+      {
+        id: -1,
+        state: {
+          category: '전력', // 기본값 설정
+          separate: '',
+          rawMaterial: '',
+          quantity: '',
+          unit: '',
+          kgCO2eq: '',
+          productName: '',
+          productCode: ''
+        }
+      }
+    ]
+  })
+
+  const [steamCategoryCalculators, setSteamCategoryCalculators] = useState<
+    Record<Scope2SteamCategoryKey, CalculatorData[]>
+  >({
+    list12: [
+      {
+        id: -2,
+        state: {
+          category: '스팀', // 기본값 설정
+          separate: '',
+          rawMaterial: '',
+          quantity: '',
+          unit: '',
+          kgCO2eq: '',
+          productName: '',
+          productCode: ''
+        }
+      }
+    ]
+  })
+
   // ========================================================================
   // 백엔드 API 연동 함수 (Backend API Integration Functions)
   // ========================================================================
@@ -159,25 +208,28 @@ export function Scope2DataInput({
     calc: Scope2CalculatorData,
     isManualInput: boolean
   ) => {
-    if (!selectedYear || !selectedMonth) {
-      showError('보고연도와 보고월을 먼저 선택해주세요.')
-      return
-    }
-
     try {
-      const requestData = createRequestPayload(calc, isManualInput)
-      let response
+      const payload = createRequestPayload(calc, isManualInput)
 
       if (isTemporaryId(calc.id)) {
-        response = await createScopeEmission(requestData)
+        // 새로운 데이터 생성
+        const response = await createScopeEmission(payload)
+        if (response) {
+          onDataChange()
+        }
       } else {
-        response = await updateScopeEmission(calc.id, requestData)
+        // 기존 데이터 수정
+        const response = await updateScopeEmission(calc.id, payload)
+        if (response) {
+          onDataChange()
+        }
       }
-
-      onDataChange()
-      return response
     } catch (error) {
-      console.error('Scope2 데이터 저장 실패:', error)
+      if (error instanceof Error) {
+        alert(error.message)
+      } else {
+        alert('데이터 저장 중 오류가 발생했습니다.')
+      }
       throw error
     }
   }
@@ -191,28 +243,52 @@ export function Scope2DataInput({
   ): ScopeEmissionRequest => {
     const state = calc.state
 
+    // 카테고리 결정 로직 강화
+    const isElectric = activeCategory === 'list11'
+    const scope2CategoryNumber = isElectric ? 1 : 2
+    const majorCategory = isElectric ? '전력' : '스팀'
+
+    console.log('Debug - Category Info:', {
+      activeCategory,
+      isElectric,
+      scope2CategoryNumber,
+      majorCategory,
+      state
+    })
+
+    // 안전한 숫자 변환 및 정밀도 제한
     const emissionFactor =
       Math.round(parseFloat(state.kgCO2eq || '0') * 1000000) / 1000000
     const activityAmount = Math.round(parseFloat(state.quantity || '0') * 1000) / 1000
     const totalEmission = Math.round(emissionFactor * activityAmount * 1000000) / 1000000
 
-    // 카테고리 번호 결정 (list11=1, list12=2)
-    const scope2CategoryNumber = activeCategory === 'list11' ? 1 : 2
+    // 필수 필드 검증
+    const missingFields = []
+    if (!state.separate) missingFields.push('구분')
+    if (!state.rawMaterial) missingFields.push('원료/에너지')
+    if (!state.quantity) missingFields.push('사용량')
+    if (!state.unit) missingFields.push('단위')
+
+    if (missingFields.length > 0) {
+      throw new Error(`다음 필드를 입력해주세요: ${missingFields.join(', ')}`)
+    }
 
     return {
       scopeType: 'SCOPE2',
       scope2CategoryNumber,
-      majorCategory: state.separate || '',
-      subcategory: state.rawMaterial || '',
+      majorCategory,
+      subcategory: state.separate || '',
       rawMaterial: state.rawMaterial || '',
       activityAmount,
       unit: state.unit || '',
       emissionFactor,
       totalEmission,
+      productName: state.productName || '',
+      companyProductCode: state.productCode || '',
+      inputType: isManualInput ? 'MANUAL' : 'LCA',
       reportingYear: selectedYear,
       reportingMonth: selectedMonth || 1,
-      inputType: isManualInput ? ('MANUAL' as InputType) : ('LCA' as InputType),
-      hasProductMapping: false
+      hasProductMapping: !!(state.productName || state.productCode)
     }
   }
 
@@ -304,6 +380,18 @@ export function Scope2DataInput({
     }
   }
 
+  const handleElectricCategorySelect = (category: Scope2ElectricCategoryKey) => {
+    setActiveElectricCategory(category)
+    setActiveSteamCategory(null)
+    // scope2CategoryNumber는 1로 설정
+  }
+
+  const handleSteamCategorySelect = (category: Scope2SteamCategoryKey) => {
+    setActiveSteamCategory(category)
+    setActiveElectricCategory(null)
+    // scope2CategoryNumber는 2로 설정
+  }
+
   // ========================================================================
   // 유틸리티 함수 (Utility Functions)
   // ========================================================================
@@ -345,8 +433,24 @@ export function Scope2DataInput({
    * 입력된 데이터가 있는지 확인
    */
   const hasInputData = (calculator: Scope2CalculatorData): boolean => {
-    const {category, separate, rawMaterial, quantity} = calculator.state
-    return !!(category || separate || rawMaterial || quantity)
+    const state = calculator.state
+    const hasData = !!(
+      state.category &&
+      state.separate &&
+      state.rawMaterial &&
+      state.quantity &&
+      state.unit &&
+      state.kgCO2eq
+    )
+
+    // 디버깅: 입력 데이터 검증 결과
+    console.log('Input Data Validation:', {
+      calculatorId: calculator.id,
+      hasData,
+      state
+    })
+
+    return hasData
   }
 
   const categoryInfo = getCategoryInfo()
@@ -358,6 +462,17 @@ export function Scope2DataInput({
 
   if (!activeCategory || !categoryInfo) {
     return null
+  }
+
+  const initialState: SelectorState = {
+    category: activeCategory === 'list11' ? '전력' : '스팀',
+    separate: '',
+    rawMaterial: '',
+    quantity: '',
+    unit: '',
+    kgCO2eq: '',
+    productName: '',
+    productCode: ''
   }
 
   return (

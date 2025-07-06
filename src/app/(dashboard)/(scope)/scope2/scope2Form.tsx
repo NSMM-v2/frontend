@@ -80,9 +80,9 @@ import {
  * 백엔드 ScopeEmission 엔티티와 연동되는 프론트엔드 계산기 상태
  */
 interface CalculatorData {
-  id: number // 식별자: emissionId(양수) 또는 임시ID(음수)
-  state: SelectorState // 사용자 입력 상태
-  savedData?: ScopeEmissionResponse // 백엔드에서 받은 전체 데이터 (저장된 경우에만)
+  id: number
+  state: SelectorState
+  savedData?: ScopeEmissionResponse
 }
 
 /**
@@ -216,6 +216,51 @@ export default function Scope2Form() {
   const isEmissionId = (id: number): boolean => id > 0
 
   // ========================================================================
+  // 데이터 검증 함수 (Data Validation Functions)
+  // ========================================================================
+
+  /**
+   * 입력된 데이터가 있는지 확인
+   * 필수 필드만 체크하도록 수정
+   */
+  const hasInputData = (calculator: CalculatorData): boolean => {
+    const state = calculator.state
+
+    // 필수 필드만 체크
+    const requiredFields = [
+      state.separate, // 구분
+      state.rawMaterial, // 원료/에너지
+      state.quantity, // 사용량
+      state.unit // 단위
+    ]
+
+    // 모든 필수 필드가 채워져 있는지 확인
+    const hasRequiredData = requiredFields.every(field => field && field.trim() !== '')
+
+    // 디버깅: 입력 데이터 검증 결과
+    console.log('Input Data Validation:', {
+      calculatorId: calculator.id,
+      hasRequiredData,
+      state,
+      missingFields: requiredFields
+        .map((field, index) =>
+          !field ? ['구분', '원료/에너지', '사용량', '단위'][index] : null
+        )
+        .filter(Boolean)
+    })
+
+    return hasRequiredData
+  }
+
+  /**
+   * 현재 활성 카테고리에 유효한 데이터가 있는지 확인
+   */
+  const hasValidData = (): boolean => {
+    const currentCalculators = getCurrentCalculators()
+    return currentCalculators.some(calculator => hasInputData(calculator))
+  }
+
+  // ========================================================================
   // 이벤트 핸들러 (Event Handlers)
   // ========================================================================
   const handleModeChange = (id: number, checked: boolean) => {
@@ -272,7 +317,16 @@ export default function Scope2Form() {
           ...prev[activeElectricCategory],
           {
             id: newId,
-            state: {category: '', separate: '', rawMaterial: '', quantity: ''}
+            state: {
+              category: activeElectricCategory,
+              separate: '',
+              rawMaterial: '',
+              quantity: '',
+              unit: '',
+              kgCO2eq: '',
+              productName: '',
+              productCode: ''
+            }
           }
         ]
       }))
@@ -284,7 +338,16 @@ export default function Scope2Form() {
           ...prev[activeSteamCategory],
           {
             id: newId,
-            state: {category: '', separate: '', rawMaterial: '', quantity: ''}
+            state: {
+              category: activeSteamCategory,
+              separate: '',
+              rawMaterial: '',
+              quantity: '',
+              unit: '',
+              kgCO2eq: '',
+              productName: '',
+              productCode: ''
+            }
           }
         ]
       }))
@@ -303,13 +366,31 @@ export default function Scope2Form() {
       try {
         // 백엔드에 저장된 데이터가 있으면 API 호출로 삭제
         if (isEmissionId(id)) {
-          const deleteSuccess = await deleteScopeEmission(id)
-          if (!deleteSuccess) {
-            alert('서버에서 데이터 삭제에 실패했습니다. 다시 시도해주세요.')
-            return
+          console.log('백엔드 삭제 시작:', {
+            emissionId: id,
+            저장여부: !!targetCalculator?.savedData
+          })
+
+          try {
+            const deleteSuccess = await deleteScopeEmission(id)
+            console.log('백엔드 삭제 결과:', {
+              success: deleteSuccess,
+              emissionId: id
+            })
+
+            // 삭제 성공 여부 확인 (API에서 이미 에러 처리를 했으므로 여기서는 단순히 진행)
+            if (!deleteSuccess) {
+              console.warn(
+                '백엔드 삭제 API가 false를 반환했지만, 프론트엔드에서는 삭제를 진행합니다.'
+              )
+            }
+          } catch (apiError) {
+            console.error('백엔드 삭제 API 호출 실패:', apiError)
+            // API 호출 실패해도 프론트엔드에서는 삭제 진행
           }
         }
 
+        // 프론트엔드 상태 업데이트
         if (isLastItem) {
           const newTemporaryId = generateNewTemporaryId(activeElectricCategory)
           setElectricCategoryCalculators(prev => ({
@@ -317,7 +398,16 @@ export default function Scope2Form() {
             [activeElectricCategory]: [
               {
                 id: newTemporaryId,
-                state: {category: '', separate: '', rawMaterial: '', quantity: ''}
+                state: {
+                  category: activeElectricCategory,
+                  separate: '',
+                  rawMaterial: '',
+                  quantity: '',
+                  unit: '',
+                  kgCO2eq: '',
+                  productName: '',
+                  productCode: ''
+                }
               }
             ]
           }))
@@ -342,7 +432,9 @@ export default function Scope2Form() {
 
         // 백엔드 데이터가 있었던 경우 전체 데이터 새로고침
         if (isEmissionId(id)) {
+          console.log('백엔드 삭제 후 데이터 새로고침 시작...')
           await refreshData()
+          console.log('데이터 새로고침 완료')
         }
       } catch (error) {
         console.error('계산기 삭제 중 오류 발생:', error)
@@ -356,13 +448,31 @@ export default function Scope2Form() {
       try {
         // 백엔드에 저장된 데이터가 있으면 API 호출로 삭제
         if (isEmissionId(id)) {
-          const deleteSuccess = await deleteScopeEmission(id)
-          if (!deleteSuccess) {
-            alert('서버에서 데이터 삭제에 실패했습니다. 다시 시도해주세요.')
-            return
+          console.log('백엔드 삭제 시작:', {
+            emissionId: id,
+            저장여부: !!targetCalculator?.savedData
+          })
+
+          try {
+            const deleteSuccess = await deleteScopeEmission(id)
+            console.log('백엔드 삭제 결과:', {
+              success: deleteSuccess,
+              emissionId: id
+            })
+
+            // 삭제 성공 여부 확인 (API에서 이미 에러 처리를 했으므로 여기서는 단순히 진행)
+            if (!deleteSuccess) {
+              console.warn(
+                '백엔드 삭제 API가 false를 반환했지만, 프론트엔드에서는 삭제를 진행합니다.'
+              )
+            }
+          } catch (apiError) {
+            console.error('백엔드 삭제 API 호출 실패:', apiError)
+            // API 호출 실패해도 프론트엔드에서는 삭제 진행
           }
         }
 
+        // 프론트엔드 상태 업데이트
         if (isLastItem) {
           const newTemporaryId = generateNewTemporaryId(activeSteamCategory)
           setSteamCategoryCalculators(prev => ({
@@ -370,7 +480,16 @@ export default function Scope2Form() {
             [activeSteamCategory]: [
               {
                 id: newTemporaryId,
-                state: {category: '', separate: '', rawMaterial: '', quantity: ''}
+                state: {
+                  category: activeSteamCategory,
+                  separate: '',
+                  rawMaterial: '',
+                  quantity: '',
+                  unit: '',
+                  kgCO2eq: '',
+                  productName: '',
+                  productCode: ''
+                }
               }
             ]
           }))
@@ -395,7 +514,9 @@ export default function Scope2Form() {
 
         // 백엔드 데이터가 있었던 경우 전체 데이터 새로고침
         if (isEmissionId(id)) {
+          console.log('백엔드 삭제 후 데이터 새로고침 시작...')
           await refreshData()
+          console.log('데이터 새로고침 완료')
         }
       } catch (error) {
         console.error('계산기 삭제 중 오류 발생:', error)
@@ -430,9 +551,8 @@ export default function Scope2Form() {
    */
   const handleElectricCategorySelect = (category: Scope2ElectricCategoryKey) => {
     setActiveElectricCategory(category)
-    setActiveSteamCategory(null) // 다른 타입 카테고리는 초기화
+    setActiveSteamCategory(null)
 
-    // 해당 카테고리에 계산기가 없으면 기본 계산기 1개 생성
     if (
       !electricCategoryCalculators[category] ||
       electricCategoryCalculators[category]!.length === 0
@@ -443,7 +563,16 @@ export default function Scope2Form() {
         [category]: [
           {
             id: newId,
-            state: {category: '', separate: '', rawMaterial: '', quantity: ''}
+            state: {
+              category: category,
+              separate: '',
+              rawMaterial: '',
+              quantity: '',
+              unit: '',
+              kgCO2eq: '',
+              productName: '',
+              productCode: ''
+            }
           }
         ]
       }))
@@ -465,7 +594,16 @@ export default function Scope2Form() {
         [category]: [
           {
             id: newId,
-            state: {category: '', separate: '', rawMaterial: '', quantity: ''}
+            state: {
+              category: category,
+              separate: '',
+              rawMaterial: '',
+              quantity: '',
+              unit: '',
+              kgCO2eq: '',
+              productName: '',
+              productCode: ''
+            }
           }
         ]
       }))
@@ -474,8 +612,15 @@ export default function Scope2Form() {
 
   /**
    * 카테고리 입력 완료 핸들러
+   * 데이터 검증 추가
    */
   const handleComplete = () => {
+    // 데이터 검증
+    if (!hasValidData()) {
+      alert('저장할 데이터가 없습니다. 최소 하나의 계산기에 데이터를 입력해주세요.')
+      return
+    }
+
     setActiveElectricCategory(null)
     setActiveSteamCategory(null)
   }
@@ -552,9 +697,11 @@ export default function Scope2Form() {
           category: emission.majorCategory,
           separate: emission.subcategory,
           rawMaterial: emission.rawMaterial,
-          unit: emission.unit,
+          unit: emission.unit || '',
           kgCO2eq: emission.emissionFactor.toString(),
-          quantity: emission.activityAmount.toString()
+          quantity: emission.activityAmount.toString(),
+          productName: emission.productName || '',
+          productCode: emission.companyProductCode || ''
         },
         savedData: emission
       }

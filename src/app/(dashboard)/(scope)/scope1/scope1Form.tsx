@@ -12,8 +12,6 @@
  *
  * @author ESG Project Team
  * @version 2.0
- * @since 2024
- * @lastModified 2024-12-20
  */
 'use client'
 
@@ -444,25 +442,113 @@ export default function Scope1Form() {
 
   /**
    * 계산기 삭제 핸들러
+   * scope3Form.tsx와 동일한 패턴으로 수정
    */
   const removeCalculator = async (id: number) => {
+    // 현재 활성화된 카테고리 확인
+    const activeCategory =
+      activePotentialCategory ||
+      activeKineticCategory ||
+      activeProcessCategory ||
+      activeLeakCategory
+
+    if (!activeCategory) {
+      console.error('삭제 실패: 활성화된 카테고리가 없습니다.')
+      return
+    }
+
+    // 현재 카테고리의 계산기 목록 가져오기
+    let currentCalculators: CalculatorData[] = []
     if (activePotentialCategory) {
-      const currentCalculators =
-        potentialCategoryCalculators[activePotentialCategory] || []
-      const isLastItem = currentCalculators.length === 1
+      currentCalculators = potentialCategoryCalculators[activePotentialCategory] || []
+    } else if (activeKineticCategory) {
+      currentCalculators = kineticCategoryCalculators[activeKineticCategory] || []
+    } else if (activeProcessCategory) {
+      currentCalculators = processCategoryCalculators[activeProcessCategory] || []
+    } else if (activeLeakCategory) {
+      currentCalculators = leakCategoryCalculators[activeLeakCategory] || []
+    }
 
-      try {
-        // 백엔드에 저장된 데이터가 있으면 API 호출로 삭제
-        if (isEmissionId(id)) {
-          const deleteSuccess = await deleteScopeEmission(id)
-          if (!deleteSuccess) {
-            alert('서버에서 데이터 삭제에 실패했습니다. 다시 시도해주세요.')
-            return
+    const targetCalculator = currentCalculators.find(c => c.id === id)
+    const isLastItem = currentCalculators.length === 1
+
+    console.log('===== 계산기 삭제 요청 시작 =====')
+    console.log('삭제 요청 상세 정보:', {
+      activeCategory,
+      삭제ID: id,
+      ID타입: isTemporaryId(id) ? '임시ID' : 'emissionId',
+      isLastItem,
+      currentCalculators: currentCalculators.map(c => ({
+        id: c.id,
+        ID타입: isTemporaryId(c.id) ? '임시ID' : 'emissionId',
+        저장여부: !!c.savedData,
+        state: c.state
+      })),
+      targetCalculator: targetCalculator
+        ? {
+            id: targetCalculator.id,
+            ID타입: isTemporaryId(targetCalculator.id) ? '임시ID' : 'emissionId',
+            저장여부: !!targetCalculator.savedData,
+            state: targetCalculator.state
           }
-        }
+        : null
+    })
 
-        if (isLastItem) {
-          const newTemporaryId = generateNewTemporaryId(activePotentialCategory)
+    if (!targetCalculator) {
+      console.error('삭제 실패: 대상 계산기를 찾을 수 없습니다.', {
+        찾는ID: id,
+        현재계산기목록: currentCalculators.map(c => c.id)
+      })
+      alert('삭제할 항목을 찾을 수 없습니다.')
+      return
+    }
+
+    try {
+      // 백엔드에 저장된 데이터가 있으면 API 호출로 삭제
+      if (isEmissionId(targetCalculator.id)) {
+        console.log('백엔드 삭제 시작:', {
+          emissionId: targetCalculator.id,
+          저장여부: !!targetCalculator.savedData
+        })
+
+        try {
+          const deleteSuccess = await deleteScopeEmission(targetCalculator.id)
+          console.log('백엔드 삭제 결과:', {
+            success: deleteSuccess,
+            emissionId: targetCalculator.id
+          })
+
+          // 삭제 성공 여부 확인 (API에서 이미 에러 처리를 했으므로 여기서는 단순히 진행)
+          if (!deleteSuccess) {
+            console.warn(
+              '백엔드 삭제 API가 false를 반환했지만, 프론트엔드 상태는 업데이트합니다.'
+            )
+          }
+
+          console.log('백엔드 삭제 처리 완료')
+        } catch (error) {
+          console.error('백엔드 삭제 중 에러 발생:', error)
+          // 에러가 발생해도 프론트엔드 상태는 업데이트 (사용자 경험 개선)
+          console.warn('백엔드 삭제 실패했지만, 프론트엔드 상태는 업데이트합니다.')
+        }
+      } else {
+        console.log('백엔드 삭제 스킵:', {
+          이유: '임시ID (아직 저장되지 않은 데이터)',
+          id: targetCalculator.id
+        })
+      }
+
+      // 항목이 하나만 있는 경우: 값 초기화 (빈 계산기로 변경)
+      if (isLastItem) {
+        console.log('단일 항목 삭제 처리 시작:', {
+          id: id,
+          처리방식: '값 초기화 (빈 계산기로 변경)'
+        })
+
+        const newTemporaryId = generateNewTemporaryId(activeCategory)
+
+        // 상태 업데이트
+        if (activePotentialCategory) {
           setPotentialCategoryCalculators(prev => ({
             ...prev,
             [activePotentialCategory]: [
@@ -476,44 +562,7 @@ export default function Scope1Form() {
             ...prev,
             [activePotentialCategory]: [{id: newTemporaryId, emission: 0}]
           }))
-        } else {
-          setPotentialCategoryCalculators(prev => ({
-            ...prev,
-            [activePotentialCategory]: (prev[activePotentialCategory] || []).filter(
-              c => c.id !== id
-            )
-          }))
-          setPotentialCategoryTotals(prev => ({
-            ...prev,
-            [activePotentialCategory]: (prev[activePotentialCategory] || []).filter(
-              t => t.id !== id
-            )
-          }))
-        }
-
-        // 백엔드 데이터가 있었던 경우 전체 데이터 새로고침
-        if (isEmissionId(id)) {
-          await loadScope1Data()
-        }
-      } catch (error) {
-        console.error('계산기 삭제 중 오류 발생:', error)
-        alert('데이터 삭제 중 오류가 발생했습니다.')
-      }
-    } else if (activeKineticCategory) {
-      const currentCalculators = kineticCategoryCalculators[activeKineticCategory] || []
-      const isLastItem = currentCalculators.length === 1
-
-      try {
-        if (isEmissionId(id)) {
-          const deleteSuccess = await deleteScopeEmission(id)
-          if (!deleteSuccess) {
-            alert('서버에서 데이터 삭제에 실패했습니다. 다시 시도해주세요.')
-            return
-          }
-        }
-
-        if (isLastItem) {
-          const newTemporaryId = generateNewTemporaryId(activeKineticCategory)
+        } else if (activeKineticCategory) {
           setKineticCategoryCalculators(prev => ({
             ...prev,
             [activeKineticCategory]: [
@@ -527,43 +576,7 @@ export default function Scope1Form() {
             ...prev,
             [activeKineticCategory]: [{id: newTemporaryId, emission: 0}]
           }))
-        } else {
-          setKineticCategoryCalculators(prev => ({
-            ...prev,
-            [activeKineticCategory]: (prev[activeKineticCategory] || []).filter(
-              c => c.id !== id
-            )
-          }))
-          setKineticCategoryTotals(prev => ({
-            ...prev,
-            [activeKineticCategory]: (prev[activeKineticCategory] || []).filter(
-              t => t.id !== id
-            )
-          }))
-        }
-
-        if (isEmissionId(id)) {
-          await loadScope1Data()
-        }
-      } catch (error) {
-        console.error('계산기 삭제 중 오류 발생:', error)
-        alert('데이터 삭제 중 오류가 발생했습니다.')
-      }
-    } else if (activeProcessCategory) {
-      const currentCalculators = processCategoryCalculators[activeProcessCategory] || []
-      const isLastItem = currentCalculators.length === 1
-
-      try {
-        if (isEmissionId(id)) {
-          const deleteSuccess = await deleteScopeEmission(id)
-          if (!deleteSuccess) {
-            alert('서버에서 데이터 삭제에 실패했습니다. 다시 시도해주세요.')
-            return
-          }
-        }
-
-        if (isLastItem) {
-          const newTemporaryId = generateNewTemporaryId(activeProcessCategory)
+        } else if (activeProcessCategory) {
           setProcessCategoryCalculators(prev => ({
             ...prev,
             [activeProcessCategory]: [
@@ -577,43 +590,7 @@ export default function Scope1Form() {
             ...prev,
             [activeProcessCategory]: [{id: newTemporaryId, emission: 0}]
           }))
-        } else {
-          setProcessCategoryCalculators(prev => ({
-            ...prev,
-            [activeProcessCategory]: (prev[activeProcessCategory] || []).filter(
-              c => c.id !== id
-            )
-          }))
-          setProcessCategoryTotals(prev => ({
-            ...prev,
-            [activeProcessCategory]: (prev[activeProcessCategory] || []).filter(
-              t => t.id !== id
-            )
-          }))
-        }
-
-        if (isEmissionId(id)) {
-          await loadScope1Data()
-        }
-      } catch (error) {
-        console.error('계산기 삭제 중 오류 발생:', error)
-        alert('데이터 삭제 중 오류가 발생했습니다.')
-      }
-    } else if (activeLeakCategory) {
-      const currentCalculators = leakCategoryCalculators[activeLeakCategory] || []
-      const isLastItem = currentCalculators.length === 1
-
-      try {
-        if (isEmissionId(id)) {
-          const deleteSuccess = await deleteScopeEmission(id)
-          if (!deleteSuccess) {
-            alert('서버에서 데이터 삭제에 실패했습니다. 다시 시도해주세요.')
-            return
-          }
-        }
-
-        if (isLastItem) {
-          const newTemporaryId = generateNewTemporaryId(activeLeakCategory)
+        } else if (activeLeakCategory) {
           setLeakCategoryCalculators(prev => ({
             ...prev,
             [activeLeakCategory]: [
@@ -627,28 +604,93 @@ export default function Scope1Form() {
             ...prev,
             [activeLeakCategory]: [{id: newTemporaryId, emission: 0}]
           }))
-        } else {
-          setLeakCategoryCalculators(prev => ({
+        }
+
+        // 수동 입력 모드도 초기화 (기본값: 자동 모드)
+        handleModeChange(newTemporaryId, false)
+
+        console.log('단일 항목 삭제 완료 - 빈 계산기로 초기화됨')
+      } else {
+        // 여러 항목이 있는 경우: 선택된 항목만 완전 삭제
+        console.log('다중 항목 중 하나 삭제 처리 시작:', {
+          id: id,
+          처리방식: '완전 제거',
+          남은항목수: currentCalculators.length - 1
+        })
+
+        if (activePotentialCategory) {
+          setPotentialCategoryCalculators(prev => ({
             ...prev,
-            [activeLeakCategory]: (prev[activeLeakCategory] || []).filter(
+            [activePotentialCategory]: prev[activePotentialCategory].filter(
               c => c.id !== id
             )
           }))
-          setLeakCategoryTotals(prev => ({
+          setPotentialCategoryTotals(prev => ({
             ...prev,
-            [activeLeakCategory]: (prev[activeLeakCategory] || []).filter(
+            [activePotentialCategory]: prev[activePotentialCategory].filter(
               t => t.id !== id
             )
           }))
+        } else if (activeKineticCategory) {
+          setKineticCategoryCalculators(prev => ({
+            ...prev,
+            [activeKineticCategory]: prev[activeKineticCategory].filter(c => c.id !== id)
+          }))
+          setKineticCategoryTotals(prev => ({
+            ...prev,
+            [activeKineticCategory]: prev[activeKineticCategory].filter(t => t.id !== id)
+          }))
+        } else if (activeProcessCategory) {
+          setProcessCategoryCalculators(prev => ({
+            ...prev,
+            [activeProcessCategory]: prev[activeProcessCategory].filter(c => c.id !== id)
+          }))
+          setProcessCategoryTotals(prev => ({
+            ...prev,
+            [activeProcessCategory]: prev[activeProcessCategory].filter(t => t.id !== id)
+          }))
+        } else if (activeLeakCategory) {
+          setLeakCategoryCalculators(prev => ({
+            ...prev,
+            [activeLeakCategory]: prev[activeLeakCategory].filter(c => c.id !== id)
+          }))
+          setLeakCategoryTotals(prev => ({
+            ...prev,
+            [activeLeakCategory]: prev[activeLeakCategory].filter(t => t.id !== id)
+          }))
         }
 
-        if (isEmissionId(id)) {
-          await loadScope1Data()
-        }
-      } catch (error) {
-        console.error('계산기 삭제 중 오류 발생:', error)
-        alert('데이터 삭제 중 오류가 발생했습니다.')
+        // 수동 입력 모드에서도 제거
+        setCalculatorModes(prev => {
+          const categoryModes = prev[activeCategory] || {}
+          const {[id]: _, ...updatedModes} = categoryModes
+          return {
+            ...prev,
+            [activeCategory]: updatedModes
+          }
+        })
+
+        console.log('수동 입력 모드에서 제거 완료')
+        console.log('다중 항목 중 하나 삭제 완료')
       }
+
+      // 백엔드 데이터가 있었던 경우 전체 데이터 새로고침
+      if (isEmissionId(targetCalculator.id)) {
+        console.log('백엔드 삭제 후 데이터 새로고침 시작...')
+        await refreshData()
+        console.log('데이터 새로고침 완료')
+      }
+
+      console.log('===== 계산기 삭제 요청 완료 =====')
+    } catch (error) {
+      console.error('===== 계산기 삭제 중 오류 발생 =====')
+      console.error('오류 상세 정보:', {
+        error,
+        errorMessage: error instanceof Error ? error.message : '알 수 없는 오류',
+        id: id,
+        activeCategory
+      })
+      alert('데이터 삭제 중 오류가 발생했습니다. 콘솔을 확인해주세요.')
     }
   }
 
@@ -862,7 +904,9 @@ export default function Scope1Form() {
           rawMaterial: emission.rawMaterial,
           unit: emission.unit,
           kgCO2eq: emission.emissionFactor.toString(),
-          quantity: emission.activityAmount.toString()
+          quantity: emission.activityAmount.toString(),
+          productName: emission.productName || '',
+          productCode: emission.companyProductCode || ''
         },
         savedData: emission
       }
@@ -1121,12 +1165,10 @@ export default function Scope1Form() {
                           총 Scope 1 배출량
                         </p>
                         <h3 className="text-2xl font-bold text-gray-900">
-                          {Object.values(categorySummary)
-                            .reduce((sum, emission) => sum + emission, 0)
-                            .toLocaleString(undefined, {
-                              maximumFractionDigits: 2,
-                              minimumFractionDigits: 2
-                            })}
+                          {grandTotal.toLocaleString(undefined, {
+                            maximumFractionDigits: 2,
+                            minimumFractionDigits: 2
+                          })}
                           <span className="ml-1 text-sm font-normal text-gray-500">
                             kgCO₂eq
                           </span>

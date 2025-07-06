@@ -86,7 +86,15 @@ export function SelfInputScope12Calculator({
    */
   const handleChange =
     (key: keyof SelectorState) => (e: React.ChangeEvent<HTMLInputElement>) => {
-      onChangeState({...state, [key]: e.target.value})
+      const newValue = e.target.value
+      const newState = {...state, [key]: newValue}
+
+      onChangeState(newState)
+
+      // 제품 정보 필드 변경 시 토글 상태 자동 업데이트
+      if (key === 'productName' || key === 'productCode') {
+        setProductEnabled(!!(newState.productName || newState.productCode))
+      }
     }
 
   /**
@@ -233,7 +241,28 @@ export function SelfInputScope12Calculator({
    * 계산된 배출량 값 (안전한 계산)
    */
   const calculatedEmission = calculateSafeEmission()
-  const [productEnabled, setProductEnabled] = useState(false)
+  const [productEnabled, setProductEnabled] = useState(
+    !!(state.productName || state.productCode)
+  )
+
+  // 제품 정보 상태 동기화
+  useEffect(() => {
+    setProductEnabled(!!(state.productName || state.productCode))
+  }, [state.productName, state.productCode])
+
+  // 제품 정보 토글 변경 핸들러 추가
+  const handleProductToggle = (checked: boolean) => {
+    setProductEnabled(checked)
+
+    // 토글을 끄면 제품 정보 필드 초기화
+    if (!checked) {
+      onChangeState({
+        ...state,
+        productName: '',
+        productCode: ''
+      })
+    }
+  }
 
   return (
     <motion.div
@@ -262,7 +291,7 @@ export function SelfInputScope12Calculator({
               {/* 토글 스위치 */}
               <Switch
                 checked={productEnabled}
-                onCheckedChange={setProductEnabled}
+                onCheckedChange={handleProductToggle}
                 className="data-[state=checked]:bg-blue-500"
               />
 

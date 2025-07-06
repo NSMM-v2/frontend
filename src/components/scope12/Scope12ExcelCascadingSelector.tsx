@@ -79,12 +79,13 @@ export function ExcelCascadingSelector({
 
   const [data, setData] = useState<CO2Data[]>([])
   const [selectedItem, setSelectedItem] = useState<CO2Data | null>(null)
+  const [isInitialized, setIsInitialized] = useState(false)
 
   const prevSelectedItemRef = useRef<CO2Data | null>(null)
   const isFirstRenderRef = useRef(true)
 
   // ========================================================================
-  // 데이터 로딩 및 선택 리스트 생성 (Data Loading & List Generation)
+  // 데이터 로딩 및 초기 상태 복원 (Data Loading & Initial State Restoration)
   // ========================================================================
 
   useEffect(() => {
@@ -108,37 +109,89 @@ export function ExcelCascadingSelector({
 
         console.log(`CSV 데이터 로딩 완료: ${parsed.length}개 항목`)
         setData(parsed)
+
+        // CSV 데이터 로딩 완료 후 초기 상태 복원
+        if (state.separate && state.rawMaterial && !isInitialized) {
+          restoreInitialSelection(parsed)
+        }
+
+        setIsInitialized(true)
       } catch (error) {
         console.error('CSV 데이터 로딩 실패:', error)
         setData([])
+        setIsInitialized(true)
       }
     }
 
     loadCSVData()
   }, [])
 
+  /**
+   * 백엔드에서 불러온 데이터로 초기 선택 상태 복원
+   */
+  const restoreInitialSelection = (csvData: CO2Data[]) => {
+    if (!state.separate || !state.rawMaterial) return
+
+    // CSV 데이터에서 매칭되는 항목 찾기
+    const matchingItem = csvData.find(
+      item => item.separate === state.separate && item.RawMaterial === state.rawMaterial
+    )
+
+    if (matchingItem) {
+      console.log('LCA 모드 초기 데이터 복원:', {
+        separate: state.separate,
+        rawMaterial: state.rawMaterial,
+        unit: matchingItem.unit,
+        kgCO2eq: matchingItem.kgCO2eq
+      })
+
+      // 매칭되는 항목이 있으면 선택된 상태로 설정
+      setSelectedItem(matchingItem)
+
+      // 단위와 배출계수가 다르면 업데이트 (백엔드 데이터 우선)
+      if (
+        state.unit !== matchingItem.unit ||
+        state.kgCO2eq !== matchingItem.kgCO2eq.toString()
+      ) {
+        onChangeState({
+          ...state,
+          unit: matchingItem.unit,
+          kgCO2eq: matchingItem.kgCO2eq.toString()
+        })
+      }
+
+      // 수량이 있으면 배출량 계산
+      const quantity = parseFloat(state.quantity || '0')
+      if (quantity > 0) {
+        const emission = quantity * matchingItem.kgCO2eq
+        onChangeTotal(id, emission)
+      }
+    } else {
+      console.warn('CSV 데이터에서 매칭되는 항목을 찾을 수 없습니다:', {
+        separate: state.separate,
+        rawMaterial: state.rawMaterial
+      })
+    }
+  }
+
   const unique = (arr: string[]) => [...new Set(arr.filter(Boolean))]
 
   // ... existing code ...
 
   const separateFilterMap: Record<typeof activeCategory, SeparateFilterRule> = {
-    // Scope 1 카테고리들
-    list1: {include: ['에너지']}, // 액체 연료
-    list2: {include: ['에너지']}, // 가스 연료
-    list3: {include: ['에너지']}, // 고체연료
-    list4: {include: ['육상수송', '항공수송', '해상수송']}, // 차량
-    list5: {include: ['항공수송']}, // 항공기
-    list6: {include: ['해상수송']}, // 선박
-    list7: undefined, // 제조 배출 - 필터링 없음
-    list8: undefined, // 폐수 처리 - 필터링 없음
-    list9: undefined, // 냉동/냉방 설비 냉매 - 필터링 없음
-    list10: undefined, // 소화기 방출 - 필터링 없음
-
-    // Scope 2 카테고리들
-    list11: {include: ['전력']}, // 전력
-    list12: {include: ['스팀']} // 스팀
+    list1: {include: ['에너지']}, // 예시
+    list2: {exclude: ['에너지']}, // list2는 필터링 안 함 → 전체 표시
+    list3: {include: ['에너지', '육상수송', '항공수송', '해상수송']}, // list3는 에너지, 육상수송, 항공수송, 해상수송만 표시
+    list4: undefined,
+    list5: undefined,
+    list6: undefined, // list6는 필터링 안 함 → 전체 표시
+    list7: undefined, // list7는 필터링 안 함 → 전체 표시
+    list8: undefined,
+    list9: undefined, // list9는 필터링 안 함 → 전체 표시
+    list10: undefined, // list15는 필터링 안 함 → 전체 표시
+    list11: undefined,
+    list12: undefined
   }
-
   // ... rest of the code remains the same ...
   // const categoryList = unique(data.map(d => d.category))
   const filteredSeparateList = useMemo(() => {
@@ -167,6 +220,9 @@ export function ExcelCascadingSelector({
   // ========================================================================
 
   useEffect(() => {
+    // CSV 데이터 로딩이 완료되고 초기화가 끝난 후에만 실행
+    if (!isInitialized || data.length === 0) return
+
     const selected =
       data.find(
         d => d.separate === state.separate && d.RawMaterial === state.rawMaterial
@@ -220,7 +276,8 @@ export function ExcelCascadingSelector({
     data,
     id,
     onChangeTotal,
-    onChangeState
+    onChangeState,
+    isInitialized
   ])
 
   // ========================================================================
@@ -277,12 +334,43 @@ export function ExcelCascadingSelector({
     }
   }
 
-  const handleChange =
-    (key: keyof SelectorState) => (e: React.ChangeEvent<HTMLInputElement>) => {
+  const [productEnabled, setProductEnabled] = useState(
+    !!(state.productName || state.productCode)
+  )
+
+  useEffect(() => {
+    setProductEnabled(!!(state.productName || state.productCode))
+  }, [state.productName, state.productCode])
+
+  // 제품 정보 토글 변경 시 필드 초기화 핸들러 추가
+  const handleProductToggle = (checked: boolean) => {
+    setProductEnabled(checked)
+
+    // 토글을 끄면 제품 정보 필드 초기화
+    if (!checked) {
       onChangeState({
         ...state,
-        [key]: e.target.value
+        productName: '',
+        productCode: ''
       })
+    }
+  }
+
+  // handleChange 함수 수정 - 제품 정보 변경 시 토글 상태도 업데이트
+  const handleChange =
+    (key: keyof SelectorState) => (e: React.ChangeEvent<HTMLInputElement>) => {
+      const newValue = e.target.value
+      const newState = {
+        ...state,
+        [key]: newValue
+      }
+
+      onChangeState(newState)
+
+      // 제품 정보 필드 변경 시 토글 상태 자동 업데이트
+      if (key === 'productName' || key === 'productCode') {
+        setProductEnabled(!!(newState.productName || newState.productCode))
+      }
     }
 
   // ========================================================================
@@ -371,8 +459,6 @@ export function ExcelCascadingSelector({
       ? parseFloat(state.quantity) * selectedItem.kgCO2eq
       : 0
 
-  const [productEnabled, setProductEnabled] = useState(false)
-
   return (
     <motion.div
       initial={{opacity: 0, scale: 0.95}}
@@ -403,7 +489,7 @@ export function ExcelCascadingSelector({
               {/* 토글 스위치 */}
               <Switch
                 checked={productEnabled}
-                onCheckedChange={setProductEnabled}
+                onCheckedChange={handleProductToggle}
                 className="data-[state=checked]:bg-blue-500"
               />
 

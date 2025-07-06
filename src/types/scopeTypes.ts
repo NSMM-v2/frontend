@@ -169,6 +169,8 @@ export interface SelectorState {
   unit?: string
   kgCO2eq?: string
   quantity: string
+  productName?: string
+  productCode?: string
 }
 
 /**
