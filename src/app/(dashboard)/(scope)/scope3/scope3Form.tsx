@@ -1,38 +1,13 @@
-/**
- * Scope 3 배출량 관리 폼 컴포넌트
- *
- * 주요 기능:
- * - Scope 3 15개 카테고리별 배출량 데이터 관리
- * - 카테고리별 계산기 추가/삭제 기능
- * - CSV 데이터 기반 배출계수 적용
- * - 실시간 배출량 계산 및 집계
- * - scope2Form.tsx와 동일한 레이아웃 구조 적용
- * - 백엔드 API 연동으로 데이터 영속화 지원
- *
- * @author ESG Project Team
- * @version 1.0
- */
 'use client'
 
-// ============================================================================
-// React 및 애니메이션 라이브러리 임포트 (React & Animation Imports)
-// ============================================================================
 import React, {useState, useEffect} from 'react'
 import {motion} from 'framer-motion'
-
-// ============================================================================
-// UI 아이콘 임포트 (UI Icon Imports)
-// ============================================================================
 import {
   Home, // 홈 아이콘
   Factory, // 공장 아이콘
   CalendarDays, // 달력 아이콘
   TrendingUp // 상승 트렌드 아이콘 (배출량 카드용)
 } from 'lucide-react'
-
-// ============================================================================
-// 컴포넌트 임포트 (Component Imports)
-// ============================================================================
 import {
   Breadcrumb,
   BreadcrumbItem,
@@ -54,10 +29,6 @@ import {MonthSelector} from '@/components/scopeTotal/Scope123MonthSelector'
 import {Input} from '@/components/ui/input'
 import {Card, CardContent} from '@/components/ui/card'
 import {scope3CategoryList} from '@/components/scopeTotal/Scope123CategorySelector'
-
-// ============================================================================
-// 타입 및 서비스 임포트 (Types & Services Imports)
-// ============================================================================
 import {
   SelectorState,
   ScopeEmissionResponse,

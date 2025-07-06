@@ -1,17 +1,3 @@
-/**
- * 카테고리별 데이터 입력 화면 컴포넌트
- *
- * 주요 기능:
- * - 선택된 카테고리의 데이터 입력 관리
- * - 계산기 추가/삭제 기능
- * - 카테고리별 배출량 소계 표시
- * - 빈 상태 및 액션 버튼 관리
- * - 백엔드 API 연동으로 데이터 자동 저장/수정/삭제
- *
- * @author ESG Project Team
- * @version 1.0
- */
-
 import React, {useCallback} from 'react'
 import {motion, AnimatePresence} from 'framer-motion'
 import {Button} from '@/components/ui/button'

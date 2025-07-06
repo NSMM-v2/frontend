@@ -1,32 +1,9 @@
-/**More actions
- * CategorySelector 컴포넌트
- *
- * 다양한 Scope 카테고리를 선택할 수 있는 카드 그리드 형태의 UI 컴포넌트입니다.
- * Scope1, Scope2, Scope3의 각 카테고리를 시각적으로 표시하고 선택할 수 있습니다.
- *
- * 주요 기능:
- * - 카테고리별 카드 형태 UI 제공
- * - 각 카테고리별 배출량 데이터 표시
- * - 데이터 유무에 따른 시각적 상태 표시
- * - 애니메이션 효과로 부드러운 사용자 경험
- *
- * @author ESG Project Team
- * @version 1.0
- */
-
 import React from 'react'
 import {motion} from 'framer-motion'
 import {Card, CardHeader, CardTitle} from '@/components/ui/card'
 import {usePathname} from 'next/navigation'
-/**
- * =============================================================================
- * 카테고리 목록 정의 (Category Lists Definition)
- * =============================================================================
- * 각 Scope별로 사용되는 카테고리 목록을 정의합니다.
- * 이 목록들은 CategorySelector 컴포넌트에서 동적으로 렌더링됩니다.
- */
 
-// Scope 1 - 고정연소 카테고리 (Stationary Combustion Categories)====================================================================
+// Scope 1 - 고정연소 카테고리 (Stationary Combustion Categories)
 export const scope1PotentialCategoryList = {
   list1: '액체 연료', // 경유, 휘발유, 등유 등
   list2: '가스 연료', // LNG, LPG, 도시가스 등

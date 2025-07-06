@@ -1,21 +1,3 @@
-/**
- * 협력사 관리 모달 컴포넌트들
- *
- * 이 파일은 협력사 관리와 관련된 모든 모달/다이얼로그 컴포넌트들을 포함합니다:
- * - 협력사 추가 모달 (PartnerCompanyModal)
- * - 협력사 수정 모달 (EditPartnerModal)
- * - 협력사 삭제 확인 다이얼로그 (PartnerDeleteDialog)
- *
- * 주요 기능:
- * - DART API를 통한 기업 정보 검색 및 등록
- * - 협력사 정보 수정 (계약 시작일만 수정 가능)
- * - 협력사 삭제 확인 및 실행
- * - 실시간 유효성 검증 및 중복 검사
- *
- * @author ESG Project Team
- * @version 1.0
- */
-
 'use client'
 
 import React from 'react'

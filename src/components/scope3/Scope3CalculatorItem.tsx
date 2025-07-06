@@ -1,24 +1,3 @@
-/**
- * 개별 계산기 아이템 컴포넌트
- *
- * 주요 기능:
- * - 계산기 번호 표시 및 삭제 버튼 제공
- * - ExcelCascadingSelector 컴포넌트를 래핑
- * - 계산기별 상태 관리 및 이벤트 처리
- * - NSMM 통일된 블루 디자인 적용
- * - Scope 1, 2와 동일한 삭제 모션 적용
- *
- * 디자인 특징:
- * - 통일된 블루 색상 체계
- * - 부드러운 그림자 효과
- * - 직관적인 아이콘과 레이아웃
- * - 반응형 디자인
- * - 모드별 제목 구분 (중복 방지)
- *
- * @author ESG Project Team
- * @version 3.1
- */
-
 import React, {useState} from 'react'
 import {motion} from 'framer-motion'
 import {Button} from '@/components/ui/button'

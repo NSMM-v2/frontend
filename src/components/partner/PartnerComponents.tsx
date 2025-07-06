@@ -1,22 +1,3 @@
-/**
- * 협력사 관리 기본 UI 컴포넌트들
- *
- * 이 파일은 협력사 관리 페이지에서 사용되는 기본적인 UI 컴포넌트들을 포함합니다:
- * - 검색 섹션 (PartnerSearchSection)
- * - 로딩 상태 (PartnerLoadingState, PageLoadingState)
- * - 페이지네이션 (PartnerPagination)
- * - 빈 상태 (EmptyPartnerState, SearchEmptyState)
- *
- * 주요 기능:
- * - 협력사 추가 버튼 제공
- * - 로딩 상태 시각화
- * - 페이지 네비게이션
- * - 빈 상태 안내 메시지
- *
- * @author ESG Project Team
- * @version 1.0
- */
-
 'use client'
 
 import React from 'react'

@@ -1,22 +1,3 @@
-/**
- * 엑셀 데이터 기반 계단식 선택기 컴포넌트
- *
- * 주요 기능:
- * - CSV 데이터에서 배출계수 정보 로드
- * - 계단식 선택을 통한 배출계수 자동 선택
- * - 실시간 배출량 계산 및 표시
- * - SelfInputCalculator와 통일된 NSMM 디자인
- *
- * 디자인 특징:
- * - 통일된 블루 색상 체계
- * - 섹션별 그룹화 레이아웃
- * - 단계별 번호 표시 및 아이콘
- * - 아름다운 결과 영역 3D 효과
- *
- * @author ESG Project Team
- * @version 3.0
- */
-
 import React, {useState, useEffect, useRef, useMemo} from 'react'
 import Papa from 'papaparse'
 import {motion} from 'framer-motion'

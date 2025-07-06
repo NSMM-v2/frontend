@@ -1,22 +1,3 @@
-/**
- * 수동 입력 계산기 컴포넌트
- *
- * 주요 기능:
- * - 사용자가 직접 ESG 데이터를 입력할 수 있는 폼
- * - 실시간 배출량 계산 및 표시
- * - 입력 필드별 유효성 검증
- * - 아름다운 NSMM Toss 스타일 디자인
- *
- * 디자인 특징:
- * - 그룹화된 입력 필드 레이아웃
- * - 부드러운 애니메이션 효과
- * - 직관적인 아이콘과 색상 체계
- * - 반응형 디자인
- *
- * @author ESG Project Team
- * @version 3.0
- */
-
 import React, {useEffect, useRef} from 'react'
 import {motion} from 'framer-motion'
 import {Card, CardContent} from '@/components/ui/card'

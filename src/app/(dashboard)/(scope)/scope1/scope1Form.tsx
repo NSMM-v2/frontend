@@ -1,29 +1,8 @@
-/**
- * Scope 1 배출량 관리 폼 컴포넌트
- *
- * 주요 기능:
- * - 고정연소/이동연소 배출량 데이터 관리
- * - 카테고리별 계산기 추가/삭제 기능
- * - CSV 데이터 기반 배출계수 적용
- * - 실시간 배출량 계산 및 집계
- * - scope3Form.tsx와 동일한 레이아웃 구조 적용
- * - 백엔드 API 연동으로 데이터 영속화 지원
- * - 보고연도/월별 데이터 관리
- *
- * @author ESG Project Team
- * @version 2.0
- */
 'use client'
 
-// ============================================================================
-// React 및 애니메이션 라이브러리 임포트 (React & Animation Imports)
-// ============================================================================
 import React, {useState, useEffect} from 'react'
 import {motion} from 'framer-motion'
 
-// ============================================================================
-// UI 아이콘 임포트 (UI Icon Imports)
-// ============================================================================
 import {
   Home, // 홈 아이콘
   Factory, // 공장 아이콘
@@ -31,9 +10,6 @@ import {
   TrendingUp // 상승 트렌드 아이콘
 } from 'lucide-react'
 
-// ============================================================================
-// 컴포넌트 임포트 (Component Imports)
-// ============================================================================
 import {
   Breadcrumb,
   BreadcrumbItem,
@@ -42,10 +18,8 @@ import {
   BreadcrumbSeparator
 } from '@/components/ui/breadcrumb'
 
-// 레이아웃 컴포넌트 임포트
 import {PageHeader} from '@/components/layout/PageHeader'
 
-// 분리된 Scope1 컴포넌트들 임포트
 import {
   CategorySelector,
   Scope1PotentialCategoryKey,
@@ -62,9 +36,6 @@ import {MonthSelector} from '@/components/scopeTotal/Scope123MonthSelector'
 import {Input} from '@/components/ui/input'
 import {Card, CardContent} from '@/components/ui/card'
 
-// ============================================================================
-// 타입 및 서비스 임포트 (Types & Services Imports)
-// ============================================================================
 import {
   SelectorState,
   ScopeEmissionResponse,
@@ -77,10 +48,6 @@ import {
 } from '@/services/scopeService'
 import {DirectionButton} from '@/components/layout/direction'
 
-// ============================================================================
-// 타입 정의 (Type Definitions)
-// ============================================================================
-
 /**
  * Scope 1 계산기 데이터 구조
  * 백엔드 ScopeEmission 엔티티와 연동되는 프론트엔드 계산기 상태
@@ -90,16 +57,6 @@ interface CalculatorData {
   state: SelectorState // 사용자 입력 상태
   savedData?: ScopeEmissionResponse // 백엔드에서 받은 전체 데이터 (저장된 경우에만)
 }
-
-/**
- * ID 관리 규칙:
- * - 저장된 데이터: id = emissionId (양수, 1, 2, 3...)
- * - 미저장 데이터: id = 임시ID (음수, -1, -2, -3...)
- */
-
-// ============================================================================
-// 메인 Scope1 폼 컴포넌트 (Main Scope1 Form Component)
-// ============================================================================
 
 /**
  * Scope 1 배출량 관리 메인 컴포넌트
