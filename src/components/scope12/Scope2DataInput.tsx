@@ -374,16 +374,19 @@ export function Scope2DataInput({
   // 입력된 데이터가 있는지 확인
   const hasInputData = (calculator: Scope2CalculatorData): boolean => {
     const state = calculator.state
-    const hasData = !!(
-      state.category &&
-      state.separate &&
-      state.rawMaterial &&
-      state.quantity &&
-      state.unit &&
-      state.kgCO2eq
+
+    // category는 기본값이므로 제외하고, 실제 사용자 입력 필드만 확인
+    const hasAnyData = !!(
+      state.separate ||
+      state.rawMaterial ||
+      state.quantity ||
+      state.unit ||
+      state.kgCO2eq ||
+      state.productName ||
+      state.productCode
     )
 
-    return hasData
+    return hasAnyData
   }
 
   const categoryInfo = getCategoryInfo()
