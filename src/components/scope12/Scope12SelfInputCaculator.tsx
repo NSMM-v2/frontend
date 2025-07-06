@@ -298,6 +298,8 @@ export function SelfInputScope12Calculator({
                     </div>
                     <Input
                       type={field.type}
+                      value={state[field.key] || ''}
+                      onChange={handleChange(field.key)}
                       placeholder={field.placeholder}
                       className="px-4 py-2 w-full text-sm rounded-xl border-2 border-gray-200 transition-all duration-200 focus:border-blue-500 focus:ring-4 focus:ring-blue-100 hover:border-gray-300"
                     />
@@ -328,7 +330,7 @@ export function SelfInputScope12Calculator({
                   {/* 입력 필드 */}
                   <Input
                     type={field.type}
-                    value={state[field.key]}
+                    value={state[field.key] || ''}
                     onChange={handleChange(field.key)}
                     className="px-4 py-3 text-sm rounded-xl border-2 border-gray-200 transition-all duration-200 focus:border-blue-500 focus:ring-4 focus:ring-blue-100 hover:border-gray-300"
                     placeholder={field.placeholder}
@@ -378,7 +380,7 @@ export function SelfInputScope12Calculator({
                   <Input
                     type={field.type}
                     inputMode={field.type === 'number' ? 'decimal' : undefined}
-                    value={state[field.key]}
+                    value={state[field.key] || ''}
                     onChange={
                       field.type === 'number'
                         ? handleNumberInput(field.key)

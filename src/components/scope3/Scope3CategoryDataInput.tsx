@@ -22,8 +22,8 @@ import {
   scope3CategoryList,
   Scope3CategoryKey
 } from '../scopeTotal/Scope123CategorySelector'
-import {SelectorState, Scope3EmissionResponse} from '@/types/scopeTypes'
-import {createScope3Emission, updateScope3Emission} from '@/services/scopeService'
+import {SelectorState, ScopeEmissionResponse} from '@/types/scopeTypes'
+import {createScopeEmission, updateScopeEmission} from '@/services/scopeService'
 import {showError, showSuccess, showWarning} from '@/util/toast'
 
 /**
@@ -33,7 +33,7 @@ interface CalculatorData {
   id: number
   state: SelectorState
   emissionId?: number // 백엔드에서 받은 배출량 데이터 ID (수정/삭제용)
-  savedData?: Scope3EmissionResponse // 백엔드에서 받은 전체 데이터
+  savedData?: ScopeEmissionResponse // 백엔드에서 받은 전체 데이터
 }
 
 /**
@@ -221,13 +221,13 @@ export function CategoryDataInput({
         if (calc.id > 0) {
           // 저장된 데이터 업데이트 (emissionId 사용)
           console.log(`기존 데이터 업데이트 시작 (emissionId: ${calc.id})`)
-          response = await updateScope3Emission(calc.id, requestData)
-          console.log('updateScope3Emission 응답:', response)
+          response = await updateScopeEmission(calc.id, requestData)
+          console.log('updateScopeEmission 응답:', response)
         } else {
           // 새 데이터 생성 (임시ID는 무시하고 새로 생성)
           console.log(`새 데이터 생성 시작 (임시ID: ${calc.id})`)
-          response = await createScope3Emission(requestData)
-          console.log('createScope3Emission 응답:', response)
+          response = await createScopeEmission(requestData)
+          console.log('createScopeEmission 응답:', response)
         }
 
         if (response && response.id) {
@@ -364,7 +364,7 @@ export function CategoryDataInput({
   }
 
   /**
-   * 개선된 API 요청 데이터 생성 (안전한 소수점 처리)
+   * 개선된 API 요청 데이터 생성 (통합 Scope 시스템에 맞춤)
    */
   const createRequestPayload = (calc: any, isManualInput: boolean) => {
     const state = calc.state
@@ -375,19 +375,26 @@ export function CategoryDataInput({
     const activityAmount = Math.round(parseFloat(state.quantity || '0') * 1000) / 1000 // 소수점 3자리
     const totalEmission = Math.round(emissionFactor * activityAmount * 1000000) / 1000000 // 소수점 6자리
 
+    // 통합 Scope 시스템에 맞는 요청 데이터 구성
     return {
+      // Scope 분류 정보
+      scopeType: 'SCOPE3' as const,
+      scope3CategoryNumber: Number(scope3CategoryNumber) || 1,
+
+      // 프론트엔드 입력 데이터
       majorCategory: state.category || '',
       subcategory: state.separate || '',
       rawMaterial: state.rawMaterial || '',
+      activityAmount: activityAmount,
       unit: state.unit || '',
       emissionFactor: emissionFactor,
-      activityAmount: activityAmount,
       totalEmission: totalEmission,
       reportingYear: selectedYear || new Date().getFullYear(),
       reportingMonth: selectedMonth || new Date().getMonth() + 1,
-      scope3CategoryNumber: Number(scope3CategoryNumber) || 1,
-      scope3CategoryName: categoryTitle,
-      isManualInput: isManualInput
+
+      // 입력 모드 제어
+      inputType: isManualInput ? ('MANUAL' as const) : ('LCA' as const),
+      hasProductMapping: false // Scope 3는 제품 매핑 불가
     }
   }
 
@@ -424,15 +431,15 @@ export function CategoryDataInput({
           헤더 섹션 (Header Section)
           - 카테고리 제목 및 목록으로 돌아가기 버튼
           ======================================================================== */}
-      <div className="overflow-hidden bg-white border-0 shadow-sm rounded-3xl">
+      <div className="overflow-hidden bg-white rounded-3xl border-0 shadow-sm">
         <div className="p-6 bg-white">
-          <div className="flex flex-row items-center justify-between">
+          <div className="flex flex-row justify-between items-center">
             <motion.div
               initial={{opacity: 0, x: -20}}
               animate={{opacity: 1, x: 0}}
               transition={{delay: 0.1, duration: 0.5}}
               onClick={handleBackToList}
-              className="flex flex-row items-center p-4 transition-all duration-200 rounded-xl hover:cursor-pointer hover:bg-blue-50">
+              className="flex flex-row items-center p-4 rounded-xl transition-all duration-200 hover:cursor-pointer hover:bg-blue-50">
               <div className="mr-4 text-2xl text-blue-500">←</div>
               <div>
                 <h1 className="text-3xl font-bold text-gray-900">{categoryTitle}</h1>
@@ -450,8 +457,8 @@ export function CategoryDataInput({
               initial={{opacity: 0, x: 20}}
               animate={{opacity: 1, x: 0}}
               transition={{delay: 0.1, duration: 0.5}}>
-              <Card className="bg-white border-2 border-blue-200 shadow-sm rounded-2xl min-w-md">
-                <CardContent className="flex items-center justify-between p-6">
+              <Card className="bg-white rounded-2xl border-2 border-blue-200 shadow-sm min-w-md">
+                <CardContent className="flex justify-between items-center p-6">
                   <div>
                     <span className="text-lg font-semibold text-gray-900">
                       현재 카테고리 소계:
@@ -479,7 +486,7 @@ export function CategoryDataInput({
           계산기 목록 (Calculator List)
           - 현재 카테고리의 모든 계산기 표시
           ======================================================================== */}
-      <div className="flex flex-col items-center w-full space-y-8">
+      <div className="flex flex-col items-center space-y-8 w-full">
         <AnimatePresence mode="popLayout" initial={false}>
           {calculators.length > 0 ? (
             calculators.map((calc, index) => (
@@ -516,7 +523,7 @@ export function CategoryDataInput({
                     transition={{delay: 0.5, duration: 0.4}}
                     className="mb-6 text-gray-400">
                     <svg
-                      className="w-16 h-16 mx-auto"
+                      className="mx-auto w-16 h-16"
                       fill="none"
                       stroke="currentColor"
                       viewBox="0 0 24 24">
@@ -546,8 +553,8 @@ export function CategoryDataInput({
                     {/* 첫 번째 항목 추가 버튼 */}
                     <Button
                       onClick={handleAddCalculator}
-                      className="px-8 py-3 text-lg font-semibold text-white transition-all duration-200 bg-blue-500 shadow-sm rounded-xl hover:bg-blue-600 hover:shadow-sm">
-                      <Plus className="w-5 h-5 mr-2" />
+                      className="px-8 py-3 text-lg font-semibold text-white bg-blue-500 rounded-xl shadow-sm transition-all duration-200 hover:bg-blue-600 hover:shadow-sm">
+                      <Plus className="mr-2 w-5 h-5" />
                       항목 추가하기
                     </Button>
                   </motion.div>
@@ -567,21 +574,21 @@ export function CategoryDataInput({
           initial={{opacity: 0, y: 20}}
           animate={{opacity: 1, y: 0}}
           transition={{delay: 0.7, duration: 0.5}}
-          className="flex items-center justify-center gap-4 pt-8 border-t border-gray-200">
+          className="flex gap-4 justify-center items-center pt-8 border-t border-gray-200">
           {/* 항목 추가 버튼 */}
           <Button
             onClick={handleAddCalculator}
             variant="outline"
-            className="px-8 py-4 text-lg font-semibold text-white transition-all duration-300 transform bg-blue-500 shadow-lg rounded-xl hover:bg-blue-600 hover:scale-105 hover:shadow-xl">
-            <Plus className="w-5 h-5 mr-2" />
+            className="px-8 py-4 text-lg font-semibold text-white bg-blue-500 rounded-xl shadow-lg transition-all duration-300 transform hover:bg-blue-600 hover:scale-105 hover:shadow-xl">
+            <Plus className="mr-2 w-5 h-5" />
             계산기 추가
           </Button>
 
           {/* 입력 완료 버튼 */}
           <Button
             onClick={handleCompleteAsync}
-            className="px-8 py-4 text-lg font-semibold text-green-700 transition-all duration-300 bg-white border-2 border-green-500 shadow-lg rounded-xl hover:bg-green-50 hover:scale-105 hover:shadow-xl">
-            <Save className="w-5 h-5 mr-2" />
+            className="px-8 py-4 text-lg font-semibold text-green-700 bg-white rounded-xl border-2 border-green-500 shadow-lg transition-all duration-300 hover:bg-green-50 hover:scale-105 hover:shadow-xl">
+            <Save className="mr-2 w-5 h-5" />
             입력 완료
           </Button>
         </motion.div>

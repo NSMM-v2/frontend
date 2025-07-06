@@ -58,12 +58,15 @@ import {scope3CategoryList} from '@/components/scopeTotal/Scope123CategorySelect
 // ============================================================================
 // 타입 및 서비스 임포트 (Types & Services Imports)
 // ============================================================================
-import {SelectorState} from '@/types/scopeTypes'
-import {Scope3EmissionResponse, Scope3CategorySummary} from '@/types/scopeTypes'
 import {
-  fetchScope3EmissionsByYearAndMonth,
-  fetchScope3CategorySummary,
-  deleteScope3Emission
+  SelectorState,
+  ScopeEmissionResponse,
+  ScopeCategorySummary
+} from '@/types/scopeTypes'
+import {
+  fetchEmissionsByYearAndMonth,
+  fetchCategorySummaryByScope,
+  deleteScopeEmission
 } from '@/services/scopeService'
 
 // ============================================================================
@@ -72,12 +75,12 @@ import {
 
 /**
  * 계산기 데이터 구조 (Calculator Data Structure)
- * 백엔드 Scope3Emission 엔티티와 연동되는 프론트엔드 계산기 상태
+ * 백엔드 ScopeEmission 엔티티와 연동되는 프론트엔드 계산기 상태
  */
 interface CalculatorData {
   id: number // 식별자: emissionId(양수) 또는 임시ID(음수)
   state: SelectorState // 사용자 입력 상태
-  savedData?: Scope3EmissionResponse // 백엔드에서 받은 전체 데이터 (저장된 경우에만)
+  savedData?: ScopeEmissionResponse // 백엔드에서 받은 전체 데이터 (저장된 경우에만)
 }
 
 /**
@@ -170,10 +173,10 @@ export default function Scope3Form() {
   // ========================================================================
 
   // 전체 Scope3 배출량 데이터 (년/월 기준)
-  const [scope3Data, setScope3Data] = useState<Scope3EmissionResponse[]>([])
+  const [scope3Data, setScope3Data] = useState<ScopeEmissionResponse[]>([])
 
   // 카테고리별 요약 데이터 (CategorySummaryCard용)
-  const [categorySummary, setCategorySummary] = useState<Scope3CategorySummary>({})
+  const [categorySummary, setCategorySummary] = useState<ScopeCategorySummary>({})
 
   // 로딩 상태 관리
   const [isLoading, setIsLoading] = useState<boolean>(false)
@@ -342,7 +345,7 @@ export default function Scope3Form() {
           저장여부: !!targetCalculator.savedData
         })
 
-        const deleteSuccess = await deleteScope3Emission(targetCalculator.id)
+        const deleteSuccess = await deleteScopeEmission(targetCalculator.id)
 
         console.log('백엔드 삭제 결과:', {
           success: deleteSuccess,
@@ -561,15 +564,20 @@ export default function Scope3Form() {
 
     setIsLoading(true)
     try {
-      // 1. 전체 배출량 데이터 조회
-      const emissionsData = await fetchScope3EmissionsByYearAndMonth(
+      // 1. 전체 배출량 데이터 조회 (Scope 3만 필터링)
+      const emissionsData = await fetchEmissionsByYearAndMonth(
         selectedYear,
-        selectedMonth
+        selectedMonth,
+        'SCOPE3'
       )
       setScope3Data(emissionsData)
 
       // 2. 카테고리별 요약 데이터 조회
-      const summaryData = await fetchScope3CategorySummary(selectedYear, selectedMonth)
+      const summaryData = await fetchCategorySummaryByScope(
+        'SCOPE3',
+        selectedYear,
+        selectedMonth
+      )
       setCategorySummary(summaryData)
 
       // 3. 기존 데이터를 카테고리별 계산기로 변환
@@ -585,12 +593,12 @@ export default function Scope3Form() {
    * 백엔드 데이터를 프론트엔드 계산기 형식으로 변환
    * 기존 저장된 데이터를 각 카테고리의 계산기 목록으로 변환하여 표시
    */
-  const convertBackendDataToCalculators = (data: Scope3EmissionResponse[]) => {
+  const convertBackendDataToCalculators = (data: ScopeEmissionResponse[]) => {
     const categorizedData: {[key in Scope3CategoryKey]?: CalculatorData[]} = {}
 
     // 카테고리별로 데이터 그룹화
     data.forEach(emission => {
-      const categoryKey = getCategoryKeyByNumber(emission.scope3CategoryNumber)
+      const categoryKey = getCategoryKeyByNumber(emission.scope3CategoryNumber || 0)
       if (!categoryKey) return
 
       if (!categorizedData[categoryKey]) {
@@ -622,12 +630,12 @@ export default function Scope3Form() {
       }
 
       // 수동 입력 모드 상태도 함께 복원
-      if (emission.isManualInput !== undefined) {
+      if (emission.inputType !== undefined) {
         setCalculatorModes(prev => ({
           ...prev,
           [categoryKey]: {
             ...prev[categoryKey],
-            [calculatorId]: emission.isManualInput
+            [calculatorId]: emission.inputType === 'MANUAL'
           }
         }))
       }
@@ -764,7 +772,7 @@ export default function Scope3Form() {
   // ========================================================================
 
   return (
-    <div className="flex flex-col w-full h-full p-4">
+    <div className="flex flex-col p-4 w-full h-full">
       {/* ========================================================================
           상단 네비게이션 (Top Navigation)
           - 브레드크럼을 통한 현재 위치 표시
@@ -773,7 +781,7 @@ export default function Scope3Form() {
         <Breadcrumb>
           <BreadcrumbList>
             <BreadcrumbItem>
-              <Home className="w-4 h-4 mr-1" />
+              <Home className="mr-1 w-4 h-4" />
               <BreadcrumbLink href="/dashboard">대시보드</BreadcrumbLink>
             </BreadcrumbItem>
             <BreadcrumbSeparator />
@@ -788,7 +796,7 @@ export default function Scope3Form() {
           헤더 섹션 (Header Section)
           - 뒤로가기 버튼과 페이지 제목/설명
           ======================================================================== */}
-      <div className="flex flex-row justify-between w-full h-24 mb-4">
+      <div className="flex flex-row justify-between mb-4 w-full h-24">
         <div className="flex flex-row items-center p-4">
           <PageHeader
             icon={<Factory className="w-6 h-6 text-blue-600" />}
@@ -813,16 +821,16 @@ export default function Scope3Form() {
           initial={{opacity: 0}}
           animate={{opacity: 1}}
           transition={{duration: 0.4, delay: 0.1}}>
-          <Card className="mb-4 overflow-hidden shadow-sm">
+          <Card className="overflow-hidden mb-4 shadow-sm">
             <CardContent className="p-4">
-              <div className="grid items-center justify-center h-24 grid-cols-1 gap-8 md:grid-cols-3">
+              <div className="grid grid-cols-1 gap-8 justify-center items-center h-24 md:grid-cols-3">
                 {/* 백엔드 데이터 기반 총 배출량 카드 */}
                 <motion.div
                   initial={{opacity: 0, scale: 0.95}}
                   animate={{opacity: 1, scale: 1}}
                   transition={{delay: 0.1, duration: 0.5}}
                   className="max-w-md">
-                  <Card className="justify-center h-24 border-blue-200 shadow-sm bg-gradient-to-br from-blue-50 to-blue-100">
+                  <Card className="justify-center h-24 bg-gradient-to-br from-blue-50 to-blue-100 border-blue-200 shadow-sm">
                     <CardContent className="flex items-center p-4">
                       <div className="p-2 mr-3 bg-blue-100 rounded-full">
                         <TrendingUp className="w-5 h-5 text-blue-600" />
@@ -849,7 +857,7 @@ export default function Scope3Form() {
 
                 {/* 보고연도 입력 필드 */}
                 <div className="space-y-3">
-                  <label className="flex items-center gap-2 text-sm font-semibold text-customG-700">
+                  <label className="flex gap-2 items-center text-sm font-semibold text-customG-700">
                     <CalendarDays className="w-4 h-4" />
                     보고연도
                   </label>
@@ -859,13 +867,13 @@ export default function Scope3Form() {
                     onChange={e => setSelectedYear(parseInt(e.target.value))}
                     min="1900"
                     max="2200"
-                    className="w-full px-3 py-2 text-sm h-9 backdrop-blur-sm border-customG-200 focus:border-customG-400 focus:ring-customG-100 bg-white/80"
+                    className="px-3 py-2 w-full h-9 text-sm backdrop-blur-sm border-customG-200 focus:border-customG-400 focus:ring-customG-100 bg-white/80"
                   />
                 </div>
 
                 {/* 보고월 선택 드롭다운 (선택사항) */}
                 <div className="space-y-3">
-                  <label className="flex items-center gap-2 text-sm font-semibold text-customG-700">
+                  <label className="flex gap-2 items-center text-sm font-semibold text-customG-700">
                     <CalendarDays className="w-4 h-4" />
                     보고월 (선택사항)
                   </label>

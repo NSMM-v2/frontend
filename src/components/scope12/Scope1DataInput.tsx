@@ -8,14 +8,24 @@
  * - 백엔드 API 연동 (CRUD)
  * - Scope 3와 동일한 디자인 스타일 적용
  * - 삭제 확인 다이얼로그와 계산기 간 구분선 적용
+ * - 보고연도/월별 데이터 관리
  *
  * @author ESG Project Team
- * @version 2.0
+ * @version 3.0
+ * @since 2024
+ * @lastModified 2024-12-20
  */
 'use client'
 
+// ============================================================================
+// React 및 애니메이션 라이브러리 임포트 (React & Animation Imports)
+// ============================================================================
 import React, {useState, useEffect} from 'react'
 import {motion, AnimatePresence} from 'framer-motion'
+
+// ============================================================================
+// UI 아이콘 임포트 (UI Icon Imports)
+// ============================================================================
 import {
   Plus, // 플러스 아이콘 (추가)
   Trash2, // 삭제 아이콘
@@ -24,8 +34,12 @@ import {
   Database, // 수동 입력 모드용 아이콘 추가
   AlertTriangle // 경고 아이콘 (삭제 확인용)
 } from 'lucide-react'
+
+// ============================================================================
+// UI 컴포넌트 임포트 (UI Component Imports)
+// ============================================================================
 import {Button} from '@/components/ui/button'
-import {Card, CardContent, CardHeader} from '@/components/ui/card'
+import {Card, CardContent} from '@/components/ui/card'
 import {Switch} from '@/components/ui/switch'
 import {
   AlertDialog,
@@ -37,6 +51,10 @@ import {
   AlertDialogHeader,
   AlertDialogTitle
 } from '@/components/ui/alert-dialog'
+
+// ============================================================================
+// 커스텀 컴포넌트 임포트 (Custom Component Imports)
+// ============================================================================
 import {
   Scope1PotentialCategoryKey,
   Scope1KineticCategoryKey,
@@ -45,14 +63,27 @@ import {
   scope1PotentialCategoryList,
   scope1KineticCategoryList,
   scope1ProcessCategoryList,
-  scope1LeakCategoryList,
-  Scope2ElectricCategoryKey,
-  Scope2SteamCategoryKey
+  scope1LeakCategoryList
 } from '@/components/scopeTotal/Scope123CategorySelector'
 import {SelfInputScope12Calculator} from '@/components/scope12/Scope12SelfInputCaculator'
 import {ExcelCascadingSelector} from '@/components/scope12/Scope12ExcelCascadingSelector'
-import {SelectorState} from '@/types/scopeTypes'
-import {showSuccess} from '@/util/toast'
+
+// ============================================================================
+// 타입 및 서비스 임포트 (Types & Services Imports)
+// ============================================================================
+import {
+  SelectorState,
+  ScopeEmissionResponse,
+  ScopeEmissionRequest,
+  ScopeEmissionUpdateRequest,
+  InputType
+} from '@/types/scopeTypes'
+import {
+  createScopeEmission,
+  updateScopeEmission,
+  deleteScopeEmission
+} from '@/services/scopeService'
+import {showSuccess, showError} from '@/util/toast'
 
 // ============================================================================
 // 타입 정의 (Type Definitions)
@@ -62,10 +93,9 @@ import {showSuccess} from '@/util/toast'
  * Scope 1 계산기 데이터 구조
  */
 interface Scope1CalculatorData {
-  id: number
-  state: SelectorState
-  savedData?: any // 백엔드에서 받은 전체 데이터
-  showDeleteDialog?: boolean // 삭제 다이얼로그 표시 여부
+  id: number // 식별자: emissionId(양수) 또는 임시ID(음수)
+  state: SelectorState // 사용자 입력 상태
+  savedData?: ScopeEmissionResponse // 백엔드에서 받은 전체 데이터 (저장된 경우에만)
 }
 
 /**
@@ -77,8 +107,6 @@ interface Scope1DataInputProps {
     | Scope1KineticCategoryKey
     | Scope1ProcessCategoryKey
     | Scope1LeakCategoryKey
-
-  
   calculators: Scope1CalculatorData[]
   getTotalEmission: (
     category:
@@ -86,7 +114,6 @@ interface Scope1DataInputProps {
       | Scope1KineticCategoryKey
       | Scope1ProcessCategoryKey
       | Scope1LeakCategoryKey
-
   ) => number
   onAddCalculator: () => void
   onRemoveCalculator: (id: number) => void
@@ -138,6 +165,112 @@ export function Scope1DataInput({
   )
 
   // ========================================================================
+  // 백엔드 API 연동 함수 (Backend API Integration Functions)
+  // ========================================================================
+
+  /**
+   * 계산기 데이터 저장/수정 처리
+   * 임시 ID(-1, -2, ...)면 생성, 양수 ID면 수정
+   */
+  const saveCalculatorData = async (
+    calc: Scope1CalculatorData,
+    isManualInput: boolean
+  ) => {
+    if (!selectedYear || !selectedMonth) {
+      showError('보고연도와 보고월을 먼저 선택해주세요.')
+      return
+    }
+
+    try {
+      const requestData = createRequestPayload(calc, isManualInput)
+      let response: ScopeEmissionResponse
+
+      if (isTemporaryId(calc.id)) {
+        // 새로운 데이터 생성
+        response = await createScopeEmission(requestData)
+      } else {
+        // 기존 데이터 수정
+        response = await updateScopeEmission(calc.id, requestData)
+      }
+
+      // 성공 시 전체 데이터 새로고침
+      onDataChange()
+      return response
+    } catch (error) {
+      console.error('Scope1 데이터 저장 실패:', error)
+      throw error
+    }
+  }
+
+  /**
+   * API 요청 데이터 생성 (통합 Scope 시스템에 맞춤)
+   */
+  const createRequestPayload = (
+    calc: Scope1CalculatorData,
+    isManualInput: boolean
+  ): ScopeEmissionRequest => {
+    const state = calc.state
+
+    // 안전한 숫자 변환 및 정밀도 제한
+    const emissionFactor =
+      Math.round(parseFloat(state.kgCO2eq || '0') * 1000000) / 1000000 // 소수점 6자리
+    const activityAmount = Math.round(parseFloat(state.quantity || '0') * 1000) / 1000 // 소수점 3자리
+    const totalEmission = Math.round(emissionFactor * activityAmount * 1000000) / 1000000 // 소수점 6자리
+
+    // 카테고리 번호 결정
+    let scope1CategoryNumber = 1
+    if (activeCategory in scope1PotentialCategoryList) {
+      scope1CategoryNumber = parseInt(activeCategory.replace('list', ''))
+    } else if (activeCategory in scope1KineticCategoryList) {
+      scope1CategoryNumber = parseInt(activeCategory.replace('list', ''))
+    } else if (activeCategory in scope1ProcessCategoryList) {
+      scope1CategoryNumber = parseInt(activeCategory.replace('list', ''))
+    } else if (activeCategory in scope1LeakCategoryList) {
+      scope1CategoryNumber = parseInt(activeCategory.replace('list', ''))
+    }
+
+    // 통합 Scope 시스템에 맞는 요청 데이터 구성
+    return {
+      // Scope 분류 정보
+      scopeType: 'SCOPE1',
+      scope1CategoryNumber,
+
+      // 배출원 정보
+      majorCategory: state.separate || '',
+      subcategory: state.rawMaterial || '',
+      rawMaterial: state.rawMaterial || '',
+
+      // 수치 데이터
+      activityAmount,
+      unit: state.unit || '',
+      emissionFactor,
+      totalEmission,
+
+      // 시간 정보
+      reportingYear: selectedYear,
+      reportingMonth: selectedMonth || 1,
+
+      // 입력 모드 제어
+      inputType: isManualInput ? ('MANUAL' as InputType) : ('LCA' as InputType),
+      hasProductMapping: false // Scope 1은 제품 매핑 불가
+    }
+  }
+
+  // ========================================================================
+  // 유틸리티 함수 (Utility Functions)
+  // ========================================================================
+
+  /**
+   * ID가 임시 ID인지 확인 (음수면 임시 ID)
+   */
+  const isTemporaryId = (id: number): boolean => id < 0
+
+  /**
+   * ID가 저장된 데이터 ID인지 확인 (양수면 emissionId)
+   */
+  const isEmissionId = (id: number): boolean => id > 0
+
+  // ========================================================================
   // 이벤트 핸들러 (Event Handlers)
   // ========================================================================
 
@@ -155,14 +288,84 @@ export function Scope1DataInput({
    * 삭제 확인 핸들러
    * AlertDialog를 통한 세련된 삭제 확인
    */
-  const handleDeleteConfirm = (calculatorId: number, index: number, mode: boolean) => {
-    onRemoveCalculator(calculatorId)
-    handleShowDeleteDialog(calculatorId, false)
-    showSuccess(
-      `${mode ? 'LCA 기반 배출계수 선택' : '수동 입력'} ${
-        index + 1
-      }이(가) 삭제되었습니다.`
-    )
+  const handleDeleteConfirm = async (
+    calculatorId: number,
+    index: number,
+    mode: boolean
+  ) => {
+    try {
+      // 백엔드에 저장된 데이터가 있으면 API 호출로 삭제
+      if (isEmissionId(calculatorId)) {
+        const deleteSuccess = await deleteScopeEmission(calculatorId)
+        if (!deleteSuccess) {
+          showError('서버에서 데이터 삭제에 실패했습니다. 다시 시도해주세요.')
+          return
+        }
+      }
+
+      onRemoveCalculator(calculatorId)
+      handleShowDeleteDialog(calculatorId, false)
+      showSuccess(
+        `${mode ? 'LCA 기반 배출계수 선택' : '수동 입력'} ${
+          index + 1
+        }이(가) 삭제되었습니다.`
+      )
+
+      // 백엔드 데이터가 있었던 경우 전체 데이터 새로고침
+      if (isEmissionId(calculatorId)) {
+        onDataChange()
+      }
+    } catch (error) {
+      console.error('삭제 처리 중 오류:', error)
+      showError('데이터 삭제 중 오류가 발생했습니다.')
+    }
+  }
+
+  /**
+   * 계산기 상태 변경 처리
+   */
+  const handleCalculatorStateChange = (id: number, newState: SelectorState) => {
+    // 상태 업데이트만 수행 (자동 저장 제거)
+    onUpdateCalculatorState(id, newState)
+  }
+
+  /**
+   * 입력 완료 처리 (모든 계산기 데이터 저장)
+   */
+  const handleComplete = async () => {
+    if (!selectedYear || !selectedMonth) {
+      showError('보고연도와 보고월을 먼저 선택해주세요.')
+      return
+    }
+
+    try {
+      // 입력된 데이터가 있는 계산기들만 저장
+      const calculatorsToSave = calculators.filter(calc => hasInputData(calc))
+
+      if (calculatorsToSave.length === 0) {
+        showError('저장할 데이터가 없습니다. 최소 하나의 계산기에 데이터를 입력해주세요.')
+        return
+      }
+
+      // 각 계산기별로 저장 처리
+      const savePromises = calculatorsToSave.map(async calc => {
+        const isManualInput = !calculatorModes[calc.id] // false면 LCA, true면 Manual
+        return await saveCalculatorData(calc, !isManualInput)
+      })
+
+      await Promise.all(savePromises)
+
+      showSuccess(`${calculatorsToSave.length}개의 데이터가 성공적으로 저장되었습니다.`)
+
+      // 저장 후 데이터 새로고침
+      onDataChange()
+
+      // 목록으로 돌아가기
+      onComplete()
+    } catch (error) {
+      console.error('데이터 저장 중 오류:', error)
+      showError('데이터 저장 중 오류가 발생했습니다. 다시 시도해주세요.')
+    }
   }
 
   // ========================================================================
@@ -228,8 +431,8 @@ export function Scope1DataInput({
    * 입력된 데이터가 있는지 확인
    */
   const hasInputData = (calculator: Scope1CalculatorData): boolean => {
-    const {category, separate, rawMaterial, quantity} = calculator.state
-    return !!(category || separate || rawMaterial || quantity)
+    const {separate, rawMaterial, quantity} = calculator.state
+    return !!(separate || rawMaterial || quantity)
   }
 
   const categoryInfo = getCategoryInfo()
@@ -248,24 +451,27 @@ export function Scope1DataInput({
       initial={{opacity: 0, scale: 0.95}}
       animate={{opacity: 1, scale: 1}}
       transition={{delay: 0.6, duration: 0.5}}
-      className="flex flex-col justify-center w-full space-y-4">
+      className="flex flex-col justify-center space-y-4 w-full">
       {/* ====================================================================
           카테고리 헤더 (Category Header)
           ==================================================================== */}
-      <div className="overflow-hidden bg-white border-0 shadow-sm rounded-3xl">
+      <div className="overflow-hidden bg-white rounded-3xl border-0 shadow-sm">
         <div className="p-6 bg-white">
-          <div className="flex flex-row items-center justify-between">
+          <div className="flex flex-row justify-between items-center">
             <motion.div
               initial={{opacity: 0, x: -20}}
               animate={{opacity: 1, x: 0}}
               transition={{delay: 0.1, duration: 0.5}}
               onClick={onBackToList}
-              className="flex flex-row items-center p-4 transition-all duration-200 rounded-xl hover:cursor-pointer hover:bg-blue-50">
+              className="flex flex-row items-center p-4 rounded-xl transition-all duration-200 hover:cursor-pointer hover:bg-blue-50">
               <div className="mr-4 text-2xl text-blue-500">←</div>
               <div>
                 <h1 className="text-3xl font-bold text-gray-900">{categoryInfo.title}</h1>
                 <div className="mt-1 text-sm text-gray-600">
                   {categoryInfo.description}
+                </div>
+                <div className="mt-1 text-xs text-gray-500">
+                  {selectedYear}년 {selectedMonth}월 데이터
                 </div>
               </div>
             </motion.div>
@@ -278,8 +484,8 @@ export function Scope1DataInput({
               initial={{opacity: 0, x: 20}}
               animate={{opacity: 1, x: 0}}
               transition={{delay: 0.1, duration: 0.5}}>
-              <Card className="bg-white border-2 border-blue-200 shadow-sm rounded-2xl min-w-md">
-                <CardContent className="flex items-center justify-between p-6">
+              <Card className="bg-white rounded-2xl border-2 border-blue-200 shadow-sm min-w-md">
+                <CardContent className="flex justify-between items-center p-6">
                   <div>
                     <span className="text-lg font-semibold text-gray-900">
                       현재 카테고리 소계:
@@ -304,7 +510,7 @@ export function Scope1DataInput({
       {/* ======================================================================
           계산기 목록 섹션 (Calculators List Section)
           ====================================================================== */}
-      <div className="flex flex-col items-center w-full space-y-8">
+      <div className="flex flex-col items-center space-y-8 w-full">
         <AnimatePresence mode="popLayout" initial={false}>
           {calculators.map((calculator, index) => {
             // ========================================================================
@@ -318,35 +524,51 @@ export function Scope1DataInput({
               ? '배출계수를 단계별로 선택하여 자동 계산하세요'
               : '직접 값을 입력하여 배출량을 계산하세요.'
             const IconComponent = mode ? Sparkles : Database
-            const animationDelay = index * 0.2 // 순차적 등장 효과
 
             return (
               <React.Fragment key={calculator.id}>
+                {/* ============================================================================
+                    계산기 간 구분선 (Inter-Calculator Divider) - Scope 3 스타일 적용
+                    ============================================================================ */}
+                {index > 0 && (
+                  <motion.div
+                    initial={{scaleX: 0}}
+                    animate={{scaleX: 1}}
+                    transition={{delay: 0, duration: 0.3}}
+                    className="relative mt-6 mb-2 w-[80%]">
+                    {/* 심플한 구분선 */}
+                    <div className="h-px bg-blue-200" />
+
+                    {/* 중앙 포인트 */}
+                    <div className="absolute top-1/2 left-1/2 w-3 h-3 bg-blue-500 rounded-full border-2 border-white transform -translate-x-1/2 -translate-y-1/2" />
+                  </motion.div>
+                )}
+
                 {/* 개별 계산기 컨테이너 */}
                 <motion.div
                   initial={{opacity: 0, y: 30}}
                   animate={{opacity: 1, y: 0}}
                   exit={{opacity: 0, y: -30}}
                   transition={{
-                    delay: 0, // 삭제 시 딜레이 제거
+                    delay: 0,
                     duration: 0.5
                   }}
                   className="w-[80%]">
-                  <Card className="overflow-hidden bg-white border-0 shadow-lg rounded-3xl">
+                  <Card className="overflow-hidden bg-white rounded-3xl border-0 shadow-lg">
                     {/* ========================================================================
-                      계산기 헤더 (Calculator Header) - Scope 3 스타일 적용
-                      ======================================================================== */}
+                    계산기 헤더 (Calculator Header) - Scope 3 스타일 적용
+                    ======================================================================== */}
                     <div className="p-6 bg-gradient-to-r from-blue-50 to-blue-100">
-                      <div className="relative flex items-center">
+                      <div className="flex relative items-center">
                         {/* 계산기 번호 배지 */}
                         <motion.div
                           initial={{scale: 0}}
                           animate={{scale: 1}}
                           transition={{
-                            delay: 0, // 딜레이 제거
+                            delay: 0,
                             duration: 0.3
                           }}
-                          className="flex items-center justify-center mr-5 bg-blue-500 shadow-md w-14 h-14 rounded-2xl">
+                          className="flex justify-center items-center mr-5 w-14 h-14 bg-blue-500 rounded-2xl shadow-md">
                           <span className="text-lg font-bold text-white">
                             {index + 1}
                           </span>
@@ -358,8 +580,6 @@ export function Scope1DataInput({
                             initial={{opacity: 0, x: -20}}
                             animate={{opacity: 1, x: 0}}
                             transition={{delay: 0, duration: 0.4}}>
-                            {' '}
-                            {/* 딜레이 제거 */}
                             <div className="flex items-center mb-1 space-x-2">
                               <IconComponent className="w-5 h-5 text-blue-500" />
                               <h3 className="text-lg font-bold text-gray-900">{title}</h3>
@@ -374,8 +594,8 @@ export function Scope1DataInput({
                           <motion.div
                             initial={{opacity: 0, scale: 0.8}}
                             animate={{opacity: 1, scale: 1}}
-                            transition={{delay: 0, duration: 0.3}} // 딜레이 제거
-                            className="flex items-center px-4 py-2 space-x-3 transition-all bg-white border border-blue-200 shadow-sm rounded-xl hover:bg-blue-50">
+                            transition={{delay: 0, duration: 0.3}}
+                            className="flex items-center px-4 py-2 space-x-3 bg-white rounded-xl border border-blue-200 shadow-sm transition-all hover:bg-blue-50">
                             {/* 토글 스위치 */}
                             <Switch
                               checked={mode}
@@ -400,16 +620,14 @@ export function Scope1DataInput({
                               initial={{opacity: 0, scale: 0.8}}
                               animate={{opacity: 1, scale: 1}}
                               transition={{delay: 0, duration: 0.3}}>
-                              {' '}
-                              {/* 딜레이 제거 */}
                               <Button
                                 variant="ghost"
                                 size="sm"
                                 onClick={() =>
                                   handleShowDeleteDialog(calculator.id, true)
                                 }
-                                className="px-4 py-2 text-red-500 transition-all duration-200 border border-red-200 bg-red-50 rounded-xl hover:text-red-700 hover:bg-red-100 hover:border-red-300 hover:scale-105">
-                                <Trash2 className="w-4 h-4 mr-2" />
+                                className="px-4 py-2 text-red-500 bg-red-50 rounded-xl border border-red-200 transition-all duration-200 hover:text-red-700 hover:bg-red-100 hover:border-red-300 hover:scale-105">
+                                <Trash2 className="mr-2 w-4 h-4" />
                                 <span className="font-medium">삭제</span>
                               </Button>
                             </motion.div>
@@ -419,15 +637,13 @@ export function Scope1DataInput({
                     </div>
 
                     {/* ========================================================================
-                      계산기 내용 영역 (Calculator Content)
-                      ======================================================================== */}
+                    계산기 내용 영역 (Calculator Content)
+                    ======================================================================== */}
                     <CardContent className="p-8 bg-white">
                       <motion.div
                         initial={{opacity: 0, y: 20}}
                         animate={{opacity: 1, y: 0}}
                         transition={{delay: 0, duration: 0.4}}>
-                        {' '}
-                        {/* 딜레이 제거 */}
                         {mode ? (
                           /* LCA 기반 자동 계산 모드 */
                           <ExcelCascadingSelector
@@ -436,7 +652,7 @@ export function Scope1DataInput({
                             id={calculator.id}
                             state={calculator.state}
                             onChangeState={(newState: SelectorState) =>
-                              onUpdateCalculatorState(calculator.id, newState)
+                              handleCalculatorStateChange(calculator.id, newState)
                             }
                             onChangeTotal={(id: number, emission: number) =>
                               onChangeTotal(id, emission)
@@ -449,7 +665,7 @@ export function Scope1DataInput({
                             id={calculator.id}
                             state={calculator.state}
                             onChangeState={(newState: SelectorState) =>
-                              onUpdateCalculatorState(calculator.id, newState)
+                              handleCalculatorStateChange(calculator.id, newState)
                             }
                             onChangeTotal={(id: number, emission: number) =>
                               onChangeTotal(id, emission)
@@ -469,7 +685,7 @@ export function Scope1DataInput({
                     <AlertDialogContent className="max-w-md">
                       <AlertDialogHeader>
                         <div className="flex items-center mb-2 space-x-3">
-                          <div className="flex items-center justify-center w-12 h-12 bg-red-100 rounded-full">
+                          <div className="flex justify-center items-center w-12 h-12 bg-red-100 rounded-full">
                             <AlertTriangle className="w-6 h-6 text-red-600" />
                           </div>
                           <div>
@@ -491,15 +707,20 @@ export function Scope1DataInput({
                           입력된 모든 데이터가 완전히 삭제되며, 이 작업은 되돌릴 수
                           없습니다.
                         </span>
+                        {isEmissionId(calculator.id) && (
+                          <span className="block text-sm font-medium text-red-700">
+                            백엔드에 저장된 데이터도 함께 삭제됩니다.
+                          </span>
+                        )}
                       </AlertDialogDescription>
 
                       <AlertDialogFooter className="gap-3">
-                        <AlertDialogCancel className="px-6 py-2 text-gray-700 transition-all bg-gray-100 border-0 rounded-lg hover:bg-gray-200">
+                        <AlertDialogCancel className="px-6 py-2 text-gray-700 bg-gray-100 rounded-lg border-0 transition-all hover:bg-gray-200">
                           취소
                         </AlertDialogCancel>
                         <AlertDialogAction
                           onClick={() => handleDeleteConfirm(calculator.id, index, mode)}
-                          className="px-6 py-2 text-white transition-all bg-red-600 border-0 rounded-lg hover:bg-red-700">
+                          className="px-6 py-2 text-white bg-red-600 rounded-lg border-0 transition-all hover:bg-red-700">
                           삭제
                         </AlertDialogAction>
                       </AlertDialogFooter>
@@ -519,19 +740,19 @@ export function Scope1DataInput({
         initial={{opacity: 0, y: 20}}
         animate={{opacity: 1, y: 0}}
         transition={{delay: 0.8, duration: 0.4}}
-        className="flex items-center justify-center gap-4 pt-8 border-t border-gray-200">
+        className="flex gap-4 justify-center items-center pt-8 border-t border-gray-200">
         <Button
           onClick={onAddCalculator}
-          className="px-8 py-4 text-lg font-semibold text-white transition-all duration-300 transform bg-blue-500 shadow-lg rounded-xl hover:bg-blue-600 hover:scale-105 hover:shadow-xl">
-          <Plus className="w-5 h-5 mr-2" />
+          className="px-8 py-4 text-lg font-semibold text-white bg-blue-500 rounded-xl shadow-lg transition-all duration-300 transform hover:bg-blue-600 hover:scale-105 hover:shadow-xl">
+          <Plus className="mr-2 w-5 h-5" />
           계산기 추가
         </Button>
         <Button
-          onClick={onComplete}
+          onClick={handleComplete}
           variant="outline"
-          className="px-8 py-4 text-lg font-semibold text-green-700 transition-all duration-300 bg-white border-2 border-green-500 shadow-lg rounded-xl hover:bg-green-50 hover:scale-105 hover:shadow-xl">
-          <Save className="w-5 h-5 mr-2" />
-          입력 완료
+          className="px-8 py-4 text-lg font-semibold text-green-700 bg-white rounded-xl border-2 border-green-500 shadow-lg transition-all duration-300 hover:bg-green-50 hover:scale-105 hover:shadow-xl">
+          <Save className="mr-2 w-5 h-5" />
+          저장 및 완료
         </Button>
       </motion.div>
     </motion.div>

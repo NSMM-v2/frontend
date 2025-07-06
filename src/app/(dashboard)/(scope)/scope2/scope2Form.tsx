@@ -60,7 +60,16 @@ import {Card, CardContent} from '@/components/ui/card'
 // ============================================================================
 // 타입 및 서비스 임포트 (Types & Services Imports)
 // ============================================================================
-import {SelectorState} from '@/types/scopeTypes'
+import {
+  SelectorState,
+  ScopeEmissionResponse,
+  ScopeCategorySummary
+} from '@/types/scopeTypes'
+import {
+  fetchEmissionsByYearAndMonth,
+  fetchCategorySummaryByScope,
+  deleteScopeEmission
+} from '@/services/scopeService'
 
 // ============================================================================
 // 타입 정의 (Type Definitions)
@@ -68,12 +77,19 @@ import {SelectorState} from '@/types/scopeTypes'
 
 /**
  * Scope 2 계산기 데이터 구조
+ * 백엔드 ScopeEmission 엔티티와 연동되는 프론트엔드 계산기 상태
  */
 interface CalculatorData {
   id: number // 식별자: emissionId(양수) 또는 임시ID(음수)
   state: SelectorState // 사용자 입력 상태
-  savedData?: any // 백엔드에서 받은 전체 데이터 (저장된 경우에만)
+  savedData?: ScopeEmissionResponse // 백엔드에서 받은 전체 데이터 (저장된 경우에만)
 }
+
+/**
+ * ID 관리 규칙:
+ * - 저장된 데이터: id = emissionId (양수, 1, 2, 3...)
+ * - 미저장 데이터: id = 임시ID (음수, -1, -2, -3...)
+ */
 
 // ============================================================================
 // 메인 Scope2 폼 컴포넌트 (Main Scope2 Form Component)
@@ -90,8 +106,8 @@ export default function Scope2Form() {
   const [calculatorModes, setCalculatorModes] = useState<
     Record<Scope2ElectricCategoryKey | Scope2SteamCategoryKey, Record<number, boolean>>
   >({
-    list1: {},
-    list2: {}
+    list11: {}, // 전력 카테고리
+    list12: {} // 스팀 카테고리
   })
   const [selectedYear, setSelectedYear] = useState<number>(new Date().getFullYear()) // 선택된 연도
   const currentMonth = new Date().getMonth() + 1 // JavaScript의 월은 0부터 시작하므로 1을 더함
@@ -106,31 +122,37 @@ export default function Scope2Form() {
   const [electricCategoryCalculators, setElectricCategoryCalculators] = useState<
     Record<Scope2ElectricCategoryKey, CalculatorData[]>
   >({
-    list1: []
+    list11: [] // 전력 카테고리
   })
 
   const [steamCategoryCalculators, setSteamCategoryCalculators] = useState<
     Record<Scope2SteamCategoryKey, CalculatorData[]>
   >({
-    list2: []
+    list12: [] // 스팀 카테고리
   })
 
   // 카테고리별 배출량 총계 관리
   const [electricCategoryTotals, setElectricCategoryTotals] = useState<
     Record<Scope2ElectricCategoryKey, {id: number; emission: number}[]>
   >({
-    list1: []
+    list11: [] // 전력 카테고리
   })
 
   const [steamCategoryTotals, setSteamCategoryTotals] = useState<
     Record<Scope2SteamCategoryKey, {id: number; emission: number}[]>
   >({
-    list2: []
+    list12: [] // 스팀 카테고리
   })
 
   // ========================================================================
   // 백엔드 연동 상태 관리 (Backend Integration State)
   // ========================================================================
+
+  // 전체 Scope2 배출량 데이터 (년/월 기준)
+  const [scope2Data, setScope2Data] = useState<ScopeEmissionResponse[]>([])
+
+  // 카테고리별 요약 데이터 (CategorySummaryCard용)
+  const [categorySummary, setCategorySummary] = useState<ScopeCategorySummary>({})
 
   // 로딩 상태 관리
   const [isLoading, setIsLoading] = useState<boolean>(false)
@@ -182,6 +204,16 @@ export default function Scope2Form() {
     const minId = existingIds.length > 0 ? Math.min(...existingIds) : 0
     return minId - 1
   }
+
+  /**
+   * ID가 임시 ID인지 확인 (음수면 임시 ID)
+   */
+  const isTemporaryId = (id: number): boolean => id < 0
+
+  /**
+   * ID가 저장된 데이터 ID인지 확인 (양수면 emissionId)
+   */
+  const isEmissionId = (id: number): boolean => id > 0
 
   // ========================================================================
   // 이벤트 핸들러 (Event Handlers)
@@ -265,69 +297,109 @@ export default function Scope2Form() {
   const removeCalculator = async (id: number) => {
     if (activeElectricCategory) {
       const currentCalculators = electricCategoryCalculators[activeElectricCategory] || []
+      const targetCalculator = currentCalculators.find(c => c.id === id)
       const isLastItem = currentCalculators.length === 1
 
-      if (isLastItem) {
-        const newTemporaryId = generateNewTemporaryId(activeElectricCategory)
-        setElectricCategoryCalculators(prev => ({
-          ...prev,
-          [activeElectricCategory]: [
-            {
-              id: newTemporaryId,
-              state: {category: '', separate: '', rawMaterial: '', quantity: ''}
-            }
-          ]
-        }))
-        setElectricCategoryTotals(prev => ({
-          ...prev,
-          [activeElectricCategory]: [{id: newTemporaryId, emission: 0}]
-        }))
-      } else {
-        setElectricCategoryCalculators(prev => ({
-          ...prev,
-          [activeElectricCategory]: (prev[activeElectricCategory] || []).filter(
-            c => c.id !== id
-          )
-        }))
-        setElectricCategoryTotals(prev => ({
-          ...prev,
-          [activeElectricCategory]: (prev[activeElectricCategory] || []).filter(
-            t => t.id !== id
-          )
-        }))
+      try {
+        // 백엔드에 저장된 데이터가 있으면 API 호출로 삭제
+        if (isEmissionId(id)) {
+          const deleteSuccess = await deleteScopeEmission(id)
+          if (!deleteSuccess) {
+            alert('서버에서 데이터 삭제에 실패했습니다. 다시 시도해주세요.')
+            return
+          }
+        }
+
+        if (isLastItem) {
+          const newTemporaryId = generateNewTemporaryId(activeElectricCategory)
+          setElectricCategoryCalculators(prev => ({
+            ...prev,
+            [activeElectricCategory]: [
+              {
+                id: newTemporaryId,
+                state: {category: '', separate: '', rawMaterial: '', quantity: ''}
+              }
+            ]
+          }))
+          setElectricCategoryTotals(prev => ({
+            ...prev,
+            [activeElectricCategory]: [{id: newTemporaryId, emission: 0}]
+          }))
+        } else {
+          setElectricCategoryCalculators(prev => ({
+            ...prev,
+            [activeElectricCategory]: (prev[activeElectricCategory] || []).filter(
+              c => c.id !== id
+            )
+          }))
+          setElectricCategoryTotals(prev => ({
+            ...prev,
+            [activeElectricCategory]: (prev[activeElectricCategory] || []).filter(
+              t => t.id !== id
+            )
+          }))
+        }
+
+        // 백엔드 데이터가 있었던 경우 전체 데이터 새로고침
+        if (isEmissionId(id)) {
+          await refreshData()
+        }
+      } catch (error) {
+        console.error('계산기 삭제 중 오류 발생:', error)
+        alert('데이터 삭제 중 오류가 발생했습니다.')
       }
     } else if (activeSteamCategory) {
       const currentCalculators = steamCategoryCalculators[activeSteamCategory] || []
+      const targetCalculator = currentCalculators.find(c => c.id === id)
       const isLastItem = currentCalculators.length === 1
 
-      if (isLastItem) {
-        const newTemporaryId = generateNewTemporaryId(activeSteamCategory)
-        setSteamCategoryCalculators(prev => ({
-          ...prev,
-          [activeSteamCategory]: [
-            {
-              id: newTemporaryId,
-              state: {category: '', separate: '', rawMaterial: '', quantity: ''}
-            }
-          ]
-        }))
-        setSteamCategoryTotals(prev => ({
-          ...prev,
-          [activeSteamCategory]: [{id: newTemporaryId, emission: 0}]
-        }))
-      } else {
-        setSteamCategoryCalculators(prev => ({
-          ...prev,
-          [activeSteamCategory]: (prev[activeSteamCategory] || []).filter(
-            c => c.id !== id
-          )
-        }))
-        setSteamCategoryTotals(prev => ({
-          ...prev,
-          [activeSteamCategory]: (prev[activeSteamCategory] || []).filter(
-            t => t.id !== id
-          )
-        }))
+      try {
+        // 백엔드에 저장된 데이터가 있으면 API 호출로 삭제
+        if (isEmissionId(id)) {
+          const deleteSuccess = await deleteScopeEmission(id)
+          if (!deleteSuccess) {
+            alert('서버에서 데이터 삭제에 실패했습니다. 다시 시도해주세요.')
+            return
+          }
+        }
+
+        if (isLastItem) {
+          const newTemporaryId = generateNewTemporaryId(activeSteamCategory)
+          setSteamCategoryCalculators(prev => ({
+            ...prev,
+            [activeSteamCategory]: [
+              {
+                id: newTemporaryId,
+                state: {category: '', separate: '', rawMaterial: '', quantity: ''}
+              }
+            ]
+          }))
+          setSteamCategoryTotals(prev => ({
+            ...prev,
+            [activeSteamCategory]: [{id: newTemporaryId, emission: 0}]
+          }))
+        } else {
+          setSteamCategoryCalculators(prev => ({
+            ...prev,
+            [activeSteamCategory]: (prev[activeSteamCategory] || []).filter(
+              c => c.id !== id
+            )
+          }))
+          setSteamCategoryTotals(prev => ({
+            ...prev,
+            [activeSteamCategory]: (prev[activeSteamCategory] || []).filter(
+              t => t.id !== id
+            )
+          }))
+        }
+
+        // 백엔드 데이터가 있었던 경우 전체 데이터 새로고침
+        if (isEmissionId(id)) {
+          await refreshData()
+        }
+      } catch (error) {
+        console.error('계산기 삭제 중 오류 발생:', error)
+        alert('데이터 삭제 중 오류가 발생했습니다.')
       }
     }
   }
@@ -428,6 +500,118 @@ export default function Scope2Form() {
     )
 
   // ========================================================================
+  // 백엔드 데이터 로드 함수 (Backend Data Loading Functions)
+  // ========================================================================
+
+  /**
+   * 연도/월별 Scope2 데이터 전체 조회
+   * selectedYear, selectedMonth 변경 시 자동 호출
+   */
+  const loadScope2Data = async () => {
+    if (!selectedYear || !selectedMonth) return
+
+    setIsLoading(true)
+    try {
+      // 1. 전체 배출량 데이터 조회 (Scope 2만 필터링)
+      const emissionsData = await fetchEmissionsByYearAndMonth(
+        selectedYear,
+        selectedMonth,
+        'SCOPE2'
+      )
+      setScope2Data(emissionsData)
+
+      // 2. 카테고리별 요약 데이터 조회
+      const summaryData = await fetchCategorySummaryByScope(
+        'SCOPE2',
+        selectedYear,
+        selectedMonth
+      )
+      setCategorySummary(summaryData)
+
+      // 3. 기존 데이터를 카테고리별 계산기로 변환
+      convertBackendDataToCalculators(emissionsData)
+    } catch (error) {
+      console.error('Scope2 데이터 로드 오류:', error)
+    } finally {
+      setIsLoading(false)
+    }
+  }
+
+  // 백엔드 데이터를 프론트엔드 계산기 형식으로 변환
+  const convertBackendDataToCalculators = (data: ScopeEmissionResponse[]) => {
+    const electricData: CalculatorData[] = []
+    const steamData: CalculatorData[] = []
+
+    data.forEach(emission => {
+      const calculatorId =
+        emission.id && emission.id > 0 ? emission.id : Math.abs(Math.random() * 1000000)
+
+      const calculatorData: CalculatorData = {
+        id: calculatorId,
+        state: {
+          category: emission.majorCategory,
+          separate: emission.subcategory,
+          rawMaterial: emission.rawMaterial,
+          unit: emission.unit,
+          kgCO2eq: emission.emissionFactor.toString(),
+          quantity: emission.activityAmount.toString()
+        },
+        savedData: emission
+      }
+
+      // 카테고리 번호에 따라 분류
+      if (emission.scope2CategoryNumber === 1) {
+        electricData.push(calculatorData)
+      } else if (emission.scope2CategoryNumber === 2) {
+        steamData.push(calculatorData)
+      }
+
+      // 수동 입력 모드 상태 복원
+      if (emission.inputType !== undefined) {
+        const categoryKey = emission.scope2CategoryNumber === 1 ? 'list11' : 'list12'
+        setCalculatorModes(prev => ({
+          ...prev,
+          [categoryKey]: {
+            ...prev[categoryKey],
+            [calculatorId]: emission.inputType === 'MANUAL'
+          }
+        }))
+      }
+    })
+
+    // 상태 업데이트
+    setElectricCategoryCalculators({list11: electricData})
+    setSteamCategoryCalculators({list12: steamData})
+
+    setElectricCategoryTotals({
+      list11: electricData.map(calc => ({
+        id: calc.id,
+        emission: calc.savedData?.totalEmission || 0
+      }))
+    })
+
+    setSteamCategoryTotals({
+      list12: steamData.map(calc => ({
+        id: calc.id,
+        emission: calc.savedData?.totalEmission || 0
+      }))
+    })
+  }
+
+  // ========================================================================
+  // useEffect 훅 (Lifecycle Effects)
+  // ========================================================================
+
+  /**
+   * 연도/월 변경 시 데이터 자동 로드
+   */
+  useEffect(() => {
+    if (selectedYear && selectedMonth) {
+      loadScope2Data()
+    }
+  }, [selectedYear, selectedMonth, refreshTrigger])
+
+  // ========================================================================
   // 데이터 새로고침 함수 (Data Refresh Function)
   // ========================================================================
 
@@ -492,25 +676,36 @@ export default function Scope2Form() {
           <Card className="overflow-hidden mb-4 shadow-sm">
             <CardContent className="p-4">
               <div className="grid grid-cols-1 gap-8 justify-center items-center h-24 md:grid-cols-3">
-                {/* 총 배출량 카드 */}
-                <Card className="justify-center h-24 bg-gradient-to-br from-blue-50 to-white border-blue-100">
-                  <CardContent className="flex items-center p-4">
-                    <div className="p-2 mr-3 bg-blue-100 rounded-full">
-                      <TrendingUp className="w-5 h-5 text-blue-600" />
-                    </div>
-                    <div>
-                      <p className="text-sm font-medium text-gray-500">
-                        총 Scope 2 배출량
-                      </p>
-                      <h3 className="text-2xl font-bold">
-                        {grandTotal.toFixed(2)}
-                        <span className="ml-1 text-sm font-normal text-gray-500">
-                          tCO₂eq
-                        </span>
-                      </h3>
-                    </div>
-                  </CardContent>
-                </Card>
+                {/* 백엔드 데이터 기반 총 배출량 카드 */}
+                <motion.div
+                  initial={{opacity: 0, scale: 0.95}}
+                  animate={{opacity: 1, scale: 1}}
+                  transition={{delay: 0.1, duration: 0.5}}
+                  className="max-w-md">
+                  <Card className="justify-center h-24 bg-gradient-to-br from-blue-50 to-white border-blue-100">
+                    <CardContent className="flex items-center p-4">
+                      <div className="p-2 mr-3 bg-blue-100 rounded-full">
+                        <TrendingUp className="w-5 h-5 text-blue-600" />
+                      </div>
+                      <div>
+                        <p className="text-sm font-medium text-gray-500">
+                          총 Scope 2 배출량
+                        </p>
+                        <h3 className="text-2xl font-bold text-gray-900">
+                          {Object.values(categorySummary)
+                            .reduce((sum, emission) => sum + emission, 0)
+                            .toLocaleString(undefined, {
+                              maximumFractionDigits: 2,
+                              minimumFractionDigits: 2
+                            })}
+                          <span className="ml-1 text-sm font-normal text-gray-500">
+                            kgCO₂eq
+                          </span>
+                        </h3>
+                      </div>
+                    </CardContent>
+                  </Card>
+                </motion.div>
 
                 {/* 보고연도 입력 필드 */}
                 <div className="space-y-3">
@@ -590,7 +785,7 @@ export default function Scope2Form() {
             카테고리별 데이터 입력 화면 (Category Data Input Screen)
             ==================================================================== */
         <Scope2DataInput
-          activeCategory={activeElectricCategory || activeSteamCategory}
+          activeCategory={activeElectricCategory || activeSteamCategory!}
           calculators={getCurrentCalculators()}
           getTotalEmission={category =>
             activeElectricCategory
