@@ -49,7 +49,7 @@ import {
   CategorySelector,
   Scope3CategoryKey
 } from '@/components/scopeTotal/Scope123CategorySelector'
-import {CategoryDataInput} from '@/components/scope3/Scope3CategoryDataInput'
+import {CategoryDataInput} from '@/components/scope3/Scope3DataInput'
 import {MonthSelector} from '@/components/scopeTotal/Scope123MonthSelector'
 import {Input} from '@/components/ui/input'
 import {Card, CardContent} from '@/components/ui/card'
