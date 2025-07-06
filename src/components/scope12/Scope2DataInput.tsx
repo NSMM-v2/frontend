@@ -1,28 +1,12 @@
-/**
- * Scope 2 데이터 입력 컴포넌트
- *
- * 주요 기능:
- * - 전력/스팀 사용량 데이터 입력
- * - 계산기 추가/삭제 기능
- * - 실시간 배출량 계산
- * - 백엔드 API 연동 (CRUD)
- * - Scope 3와 동일한 디자인 스타일 적용
- * - 삭제 확인 다이얼로그와 계산기 간 구분선 적용
- *
- * @author ESG Project Team
- * @version 2.0
- */
+// Scope 2 데이터 입력 컴포넌트
+// 전력/스팀 사용량 데이터 입력, 계산기 추가/삭제, 실시간 배출량 계산, 백엔드 API 연동
 'use client'
 
-// ============================================================================
-// React 및 애니메이션 라이브러리 임포트 (React & Animation Imports)
-// ============================================================================
+// React 및 애니메이션 라이브러리 임포트
 import React, {useState} from 'react'
 import {motion, AnimatePresence} from 'framer-motion'
 
-// ============================================================================
-// UI 아이콘 임포트 (UI Icon Imports)
-// ============================================================================
+// UI 아이콘 임포트
 import {
   Plus, // 플러스 아이콘 (추가)
   Trash2, // 삭제 아이콘
@@ -32,9 +16,7 @@ import {
   AlertTriangle // 경고 아이콘 (삭제 확인용)
 } from 'lucide-react'
 
-// ============================================================================
-// UI 컴포넌트 임포트 (UI Component Imports)
-// ============================================================================
+// UI 컴포넌트 임포트
 import {Button} from '@/components/ui/button'
 import {Card, CardContent} from '@/components/ui/card'
 import {Switch} from '@/components/ui/switch'
@@ -49,9 +31,7 @@ import {
   AlertDialogTitle
 } from '@/components/ui/alert-dialog'
 
-// ============================================================================
-// 커스텀 컴포넌트 임포트 (Custom Component Imports)
-// ============================================================================
+// 커스텀 컴포넌트 임포트
 import {
   Scope2ElectricCategoryKey,
   Scope2SteamCategoryKey,
@@ -61,9 +41,7 @@ import {
 import {SelfInputScope12Calculator} from '@/components/scope12/Scope12SelfInputCaculator'
 import {ExcelCascadingSelector} from '@/components/scope12/Scope12ExcelCascadingSelector'
 
-// ============================================================================
-// 타입 임포트 (Type Imports)
-// ============================================================================
+// 타입 및 서비스 임포트
 import {ScopeEmissionResponse, SelectorState} from '@/types/scopeTypes'
 import {showSuccess, showError} from '@/util/toast'
 import {
@@ -73,13 +51,9 @@ import {
 } from '@/services/scopeService'
 import {ScopeEmissionRequest, InputType} from '@/types/scopeTypes'
 
-// ============================================================================
-// 타입 정의 (Type Definitions)
-// ============================================================================
+// 타입 정의
 
-/**
- * Scope 2 계산기 데이터 구조
- */
+// Scope 2 계산기 데이터 구조
 interface Scope2CalculatorData {
   id: number
   state: SelectorState
@@ -87,9 +61,7 @@ interface Scope2CalculatorData {
   showDeleteDialog?: boolean // 삭제 다이얼로그 표시 여부
 }
 
-/**
- * 컴포넌트 Props 정의
- */
+// 컴포넌트 Props 정의
 interface Scope2DataInputProps {
   activeCategory: Scope2ElectricCategoryKey | Scope2SteamCategoryKey
   calculators: Scope2CalculatorData[]
@@ -139,14 +111,9 @@ export function Scope2DataInput({
   selectedMonth,
   onDataChange
 }: Scope2DataInputProps) {
-  // ========================================================================
-  // 상태 관리 (State Management)
-  // ========================================================================
+  // 상태 관리
 
-  /**
-   * 삭제 다이얼로그 표시 상태 관리
-   * 각 계산기별로 개별 상태 관리
-   */
+  // 삭제 다이얼로그 표시 상태 관리 (각 계산기별로 개별 상태 관리)
   const [deleteDialogStates, setDeleteDialogStates] = useState<Record<number, boolean>>(
     {}
   )
@@ -197,13 +164,9 @@ export function Scope2DataInput({
     ]
   })
 
-  // ========================================================================
-  // 백엔드 API 연동 함수 (Backend API Integration Functions)
-  // ========================================================================
+  // 백엔드 API 연동 함수
 
-  /**
-   * 계산기 데이터 저장/수정 처리
-   */
+  // 계산기 데이터 저장/수정 처리
   const saveCalculatorData = async (
     calc: Scope2CalculatorData,
     isManualInput: boolean
@@ -234,9 +197,7 @@ export function Scope2DataInput({
     }
   }
 
-  /**
-   * API 요청 데이터 생성
-   */
+  // API 요청 데이터 생성
   const createRequestPayload = (
     calc: Scope2CalculatorData,
     isManualInput: boolean
@@ -247,14 +208,6 @@ export function Scope2DataInput({
     const isElectric = activeCategory === 'list11'
     const scope2CategoryNumber = isElectric ? 1 : 2
     const majorCategory = isElectric ? '전력' : '스팀'
-
-    console.log('Debug - Category Info:', {
-      activeCategory,
-      isElectric,
-      scope2CategoryNumber,
-      majorCategory,
-      state
-    })
 
     // 안전한 숫자 변환 및 정밀도 제한
     const emissionFactor =
@@ -292,15 +245,11 @@ export function Scope2DataInput({
     }
   }
 
-  /**
-   * 유틸리티 함수들
-   */
+  // 유틸리티 함수들
   const isTemporaryId = (id: number): boolean => id < 0
   const isEmissionId = (id: number): boolean => id > 0
 
-  /**
-   * 입력 완료 처리 (모든 계산기 데이터 저장)
-   */
+  // 입력 완료 처리 (모든 계산기 데이터 저장)
   const handleComplete = async () => {
     if (!selectedYear || !selectedMonth) {
       showError('보고연도와 보고월을 먼저 선택해주세요.')
@@ -315,7 +264,7 @@ export function Scope2DataInput({
         return
       }
 
-      // 각 계산기별로 저장 처리 (수정: 반전 제거)
+      // 각 계산기별로 저장 처리
       const savePromises = calculatorsToSave.map(async calc => {
         const isManualInput = !(calculatorModes[calc.id] || false) // 기본값 false(Manual)
         return await saveCalculatorData(calc, isManualInput)
@@ -327,14 +276,11 @@ export function Scope2DataInput({
       onDataChange()
       onComplete()
     } catch (error) {
-      console.error('데이터 저장 중 오류:', error)
       showError('데이터 저장 중 오류가 발생했습니다. 다시 시도해주세요.')
     }
   }
 
-  // ========================================================================
-  // 이벤트 핸들러 (Event Handlers)
-  // ========================================================================
+  // 이벤트 핸들러
 
   /**
    * 삭제 다이얼로그 표시/숨김 처리
@@ -375,7 +321,6 @@ export function Scope2DataInput({
         onDataChange()
       }
     } catch (error) {
-      console.error('삭제 처리 중 오류:', error)
       showError('데이터 삭제 중 오류가 발생했습니다.')
     }
   }
@@ -392,13 +337,9 @@ export function Scope2DataInput({
     // scope2CategoryNumber는 2로 설정
   }
 
-  // ========================================================================
-  // 유틸리티 함수 (Utility Functions)
-  // ========================================================================
+  // 유틸리티 함수
 
-  /**
-   * 카테고리 정보 조회
-   */
+  // 카테고리 정보 조회
   const getCategoryInfo = () => {
     if (!activeCategory) return null
 
@@ -429,9 +370,7 @@ export function Scope2DataInput({
     return null
   }
 
-  /**
-   * 입력된 데이터가 있는지 확인
-   */
+  // 입력된 데이터가 있는지 확인
   const hasInputData = (calculator: Scope2CalculatorData): boolean => {
     const state = calculator.state
     const hasData = !!(
@@ -442,13 +381,6 @@ export function Scope2DataInput({
       state.unit &&
       state.kgCO2eq
     )
-
-    // 디버깅: 입력 데이터 검증 결과
-    console.log('Input Data Validation:', {
-      calculatorId: calculator.id,
-      hasData,
-      state
-    })
 
     return hasData
   }
@@ -481,9 +413,7 @@ export function Scope2DataInput({
       animate={{opacity: 1, scale: 1}}
       transition={{delay: 0.6, duration: 0.5}}
       className="flex flex-col justify-center space-y-4 w-full">
-      {/* ====================================================================
-          카테고리 헤더 (Category Header)
-          ==================================================================== */}
+      {/* 카테고리 헤더 */}
       <div className="overflow-hidden bg-white rounded-3xl border-0 shadow-sm">
         <div className="p-6 bg-white">
           <div className="flex flex-row justify-between items-center">
@@ -502,10 +432,7 @@ export function Scope2DataInput({
               </div>
             </motion.div>
 
-            {/* ========================================================================
-                    현재 카테고리 소계 카드 (Category Summary Card)
-                    - 현재 카테고리의 총 배출량 표시
-                    ======================================================================== */}
+            {/* 현재 카테고리 소계 카드 */}
             <motion.div
               initial={{opacity: 0, x: 20}}
               animate={{opacity: 1, x: 0}}
@@ -533,15 +460,11 @@ export function Scope2DataInput({
         </div>
       </div>
 
-      {/* ====================================================================
-          계산기 목록 (Calculator List) - Scope 3 CalculatorItem 스타일 적용
-          ==================================================================== */}
+      {/* 계산기 목록 */}
       <div className="flex flex-col items-center space-y-8 w-full">
         <AnimatePresence mode="popLayout" initial={false}>
           {calculators.map((calculator, index) => {
-            // ========================================================================
-            // 모드별 제목 및 설명 설정 (Scope 3 CalculatorItem 스타일 적용)
-            // ========================================================================
+            // 모드별 제목 및 설명 설정
             const mode = calculatorModes[calculator.id] || false
             const title = mode
               ? `LCA 기반 배출계수 선택 ${index + 1}`
@@ -565,7 +488,7 @@ export function Scope2DataInput({
                   }}
                   className="w-[80%]">
                   <Card className="overflow-hidden bg-white rounded-3xl border-0 shadow-lg">
-                    {/* ========================================================================
+                    {/*
                       계산기 헤더 (Calculator Header) - Scope 3 스타일 적용
                       ======================================================================== */}
                     <div className="p-6 bg-gradient-to-r from-blue-50 to-blue-100">

@@ -1,31 +1,12 @@
-/**
- * Scope 1 데이터 입력 컴포넌트
- *
- * 주요 기능:
- * - 고정연소/이동연소 배출량 데이터 입력
- * - 계산기 추가/삭제 기능
- * - 실시간 배출량 계산
- * - 백엔드 API 연동 (CRUD)
- * - Scope 3와 동일한 디자인 스타일 적용
- * - 삭제 확인 다이얼로그와 계산기 간 구분선 적용
- * - 보고연도/월별 데이터 관리
- *
- * @author ESG Project Team
- * @version 3.0
- * @since 2024
- * @lastModified 2024-12-20
- */
+// Scope 1 데이터 입력 컴포넌트
+// 고정연소/이동연소 배출량 데이터 입력, 계산기 추가/삭제, 실시간 배출량 계산, 백엔드 API 연동
 'use client'
 
-// ============================================================================
-// React 및 애니메이션 라이브러리 임포트 (React & Animation Imports)
-// ============================================================================
+// React 및 애니메이션 라이브러리 임포트
 import React, {useState, useEffect} from 'react'
 import {motion, AnimatePresence} from 'framer-motion'
 
-// ============================================================================
-// UI 아이콘 임포트 (UI Icon Imports)
-// ============================================================================
+// UI 아이콘 임포트
 import {
   Plus, // 플러스 아이콘 (추가)
   Trash2, // 삭제 아이콘
@@ -35,9 +16,7 @@ import {
   AlertTriangle // 경고 아이콘 (삭제 확인용)
 } from 'lucide-react'
 
-// ============================================================================
-// UI 컴포넌트 임포트 (UI Component Imports)
-// ============================================================================
+// UI 컴포넌트 임포트
 import {Button} from '@/components/ui/button'
 import {Card, CardContent} from '@/components/ui/card'
 import {Switch} from '@/components/ui/switch'
@@ -52,9 +31,7 @@ import {
   AlertDialogTitle
 } from '@/components/ui/alert-dialog'
 
-// ============================================================================
-// 커스텀 컴포넌트 임포트 (Custom Component Imports)
-// ============================================================================
+// 커스텀 컴포넌트 임포트
 import {
   Scope1PotentialCategoryKey,
   Scope1KineticCategoryKey,
@@ -68,9 +45,7 @@ import {
 import {SelfInputScope12Calculator} from '@/components/scope12/Scope12SelfInputCaculator'
 import {ExcelCascadingSelector} from '@/components/scope12/Scope12ExcelCascadingSelector'
 
-// ============================================================================
-// 타입 및 서비스 임포트 (Types & Services Imports)
-// ============================================================================
+// 타입 및 서비스 임포트
 import {
   SelectorState,
   ScopeEmissionResponse,
@@ -85,22 +60,16 @@ import {
 } from '@/services/scopeService'
 import {showSuccess, showError} from '@/util/toast'
 
-// ============================================================================
-// 타입 정의 (Type Definitions)
-// ============================================================================
+// 타입 정의
 
-/**
- * Scope 1 계산기 데이터 구조
- */
+// Scope 1 계산기 데이터 구조
 interface Scope1CalculatorData {
   id: number // 식별자: emissionId(양수) 또는 임시ID(음수)
   state: SelectorState // 사용자 입력 상태
   savedData?: ScopeEmissionResponse // 백엔드에서 받은 전체 데이터 (저장된 경우에만)
 }
 
-/**
- * 컴포넌트 Props 정의
- */
+// 컴포넌트 Props 정의
 interface Scope1DataInputProps {
   activeCategory:
     | Scope1PotentialCategoryKey
@@ -128,14 +97,9 @@ interface Scope1DataInputProps {
   onDataChange: () => void
 }
 
-// ============================================================================
-// 메인 컴포넌트 (Main Component)
-// ============================================================================
+// 메인 컴포넌트
 
-/**
- * Scope 1 데이터 입력 컴포넌트
- * Scope 3 CalculatorItem과 동일한 디자인 스타일 적용
- */
+// Scope 1 데이터 입력 컴포넌트
 export function Scope1DataInput({
   activeCategory,
   calculators,
@@ -152,26 +116,16 @@ export function Scope1DataInput({
   selectedMonth,
   onDataChange
 }: Scope1DataInputProps) {
-  // ========================================================================
-  // 상태 관리 (State Management)
-  // ========================================================================
+  // 상태 관리
 
-  /**
-   * 삭제 다이얼로그 표시 상태 관리
-   * 각 계산기별로 개별 상태 관리
-   */
+  // 삭제 다이얼로그 표시 상태 관리 (각 계산기별로 개별 상태 관리)
   const [deleteDialogStates, setDeleteDialogStates] = useState<Record<number, boolean>>(
     {}
   )
 
-  // ========================================================================
-  // 백엔드 API 연동 함수 (Backend API Integration Functions)
-  // ========================================================================
+  // 백엔드 API 연동 함수
 
-  /**
-   * 계산기 데이터 저장/수정 처리
-   * 임시 ID(-1, -2, ...)면 생성, 양수 ID면 수정
-   */
+  // 계산기 데이터 저장/수정 처리 (임시 ID면 생성, 양수 ID면 수정)
   const saveCalculatorData = async (
     calc: Scope1CalculatorData,
     isManualInput: boolean
@@ -197,14 +151,11 @@ export function Scope1DataInput({
       onDataChange()
       return response
     } catch (error) {
-      console.error('Scope1 데이터 저장 실패:', error)
       throw error
     }
   }
 
-  /**
-   * API 요청 데이터 생성 (통합 Scope 시스템에 맞춤)
-   */
+  // API 요청 데이터 생성 (통합 Scope 시스템에 맞춤)
   const createRequestPayload = (
     calc: Scope1CalculatorData,
     isManualInput: boolean
@@ -273,27 +224,17 @@ export function Scope1DataInput({
     }
   }
 
-  // ========================================================================
-  // 유틸리티 함수 (Utility Functions)
-  // ========================================================================
+  // 유틸리티 함수
 
-  /**
-   * ID가 임시 ID인지 확인 (음수면 임시 ID)
-   */
+  // ID가 임시 ID인지 확인 (음수면 임시 ID)
   const isTemporaryId = (id: number): boolean => id < 0
 
-  /**
-   * ID가 저장된 데이터 ID인지 확인 (양수면 emissionId)
-   */
+  // ID가 저장된 데이터 ID인지 확인 (양수면 emissionId)
   const isEmissionId = (id: number): boolean => id > 0
 
-  // ========================================================================
-  // 이벤트 핸들러 (Event Handlers)
-  // ========================================================================
+  // 이벤트 핸들러
 
-  /**
-   * 삭제 다이얼로그 표시/숨김 처리
-   */
+  // 삭제 다이얼로그 표시/숨김 처리
   const handleShowDeleteDialog = (calculatorId: number, show: boolean) => {
     setDeleteDialogStates(prev => ({
       ...prev,
@@ -301,10 +242,7 @@ export function Scope1DataInput({
     }))
   }
 
-  /**
-   * 삭제 확인 핸들러
-   * AlertDialog를 통한 세련된 삭제 확인
-   */
+  // 삭제 확인 핸들러
   const handleDeleteConfirm = async (
     calculatorId: number,
     index: number,
@@ -333,22 +271,17 @@ export function Scope1DataInput({
         onDataChange()
       }
     } catch (error) {
-      console.error('삭제 처리 중 오류:', error)
       showError('데이터 삭제 중 오류가 발생했습니다.')
     }
   }
 
-  /**
-   * 계산기 상태 변경 처리
-   */
+  // 계산기 상태 변경 처리
   const handleCalculatorStateChange = (id: number, newState: SelectorState) => {
     // 상태 업데이트만 수행 (자동 저장 제거)
     onUpdateCalculatorState(id, newState)
   }
 
-  /**
-   * 입력 완료 처리 (모든 계산기 데이터 저장)
-   */
+  // 입력 완료 처리 (모든 계산기 데이터 저장)
   const handleComplete = async () => {
     if (!selectedYear || !selectedMonth) {
       showError('보고연도와 보고월을 먼저 선택해주세요.')
@@ -364,7 +297,7 @@ export function Scope1DataInput({
         return
       }
 
-      // 각 계산기별로 저장 처리 (수정: 반전 제거)
+      // 각 계산기별로 저장 처리
       const savePromises = calculatorsToSave.map(async calc => {
         const isManualInput = !(calculatorModes[calc.id] || false) // 기본값 false(Manual)
         return await saveCalculatorData(calc, isManualInput)
@@ -380,18 +313,13 @@ export function Scope1DataInput({
       // 목록으로 돌아가기
       onComplete()
     } catch (error) {
-      console.error('데이터 저장 중 오류:', error)
       showError('데이터 저장 중 오류가 발생했습니다. 다시 시도해주세요.')
     }
   }
 
-  // ========================================================================
-  // 유틸리티 함수 (Utility Functions)
-  // ========================================================================
+  // 유틸리티 함수
 
-  /**
-   * 카테고리 정보 조회
-   */
+  // 카테고리 정보 조회
   const getCategoryInfo = () => {
     if (!activeCategory) return null
 
@@ -444,9 +372,7 @@ export function Scope1DataInput({
     return null
   }
 
-  /**
-   * 입력된 데이터가 있는지 확인
-   */
+  // 입력된 데이터가 있는지 확인
   const hasInputData = (calculator: Scope1CalculatorData): boolean => {
     const {separate, rawMaterial, quantity} = calculator.state
     return !!(separate || rawMaterial || quantity)
@@ -455,9 +381,7 @@ export function Scope1DataInput({
   const categoryInfo = getCategoryInfo()
   const totalEmission = activeCategory ? getTotalEmission(activeCategory as any) : 0
 
-  // ========================================================================
-  // 렌더링 (Rendering)
-  // ========================================================================
+  // 렌더링
 
   if (!activeCategory || !categoryInfo) {
     return null
@@ -469,9 +393,7 @@ export function Scope1DataInput({
       animate={{opacity: 1, scale: 1}}
       transition={{delay: 0.6, duration: 0.5}}
       className="flex flex-col justify-center space-y-4 w-full">
-      {/* ====================================================================
-          카테고리 헤더 (Category Header)
-          ==================================================================== */}
+      {/* 카테고리 헤더 */}
       <div className="overflow-hidden bg-white rounded-3xl border-0 shadow-sm">
         <div className="p-6 bg-white">
           <div className="flex flex-row justify-between items-center">
@@ -493,10 +415,7 @@ export function Scope1DataInput({
               </div>
             </motion.div>
 
-            {/* ========================================================================
-                    현재 카테고리 소계 카드 (Category Summary Card)
-                    - 현재 카테고리의 총 배출량 표시
-                    ======================================================================== */}
+            {/* 현재 카테고리 소계 카드 */}
             <motion.div
               initial={{opacity: 0, x: 20}}
               animate={{opacity: 1, x: 0}}
@@ -524,15 +443,11 @@ export function Scope1DataInput({
         </div>
       </div>
 
-      {/* ======================================================================
-          계산기 목록 섹션 (Calculators List Section)
-          ====================================================================== */}
+      {/* 계산기 목록 섹션 */}
       <div className="flex flex-col items-center space-y-8 w-full">
         <AnimatePresence mode="popLayout" initial={false}>
           {calculators.map((calculator, index) => {
-            // ========================================================================
-            // 모드별 제목 및 설명 설정 (Scope 3 CalculatorItem 스타일 적용)
-            // ========================================================================
+            // 모드별 제목 및 설명 설정
             const mode = calculatorModes[calculator.id] || false
             const title = mode
               ? `LCA 기반 배출계수 선택 ${index + 1}`
@@ -544,9 +459,7 @@ export function Scope1DataInput({
 
             return (
               <div key={calculator.id} className="flex flex-col items-center w-full">
-                {/* ============================================================================
-                    계산기 간 구분선 (Inter-Calculator Divider) - Scope 3 스타일 적용
-                    ============================================================================ */}
+                {/* 계산기 간 구분선 */}
                 {index > 0 && (
                   <motion.div
                     initial={{scaleX: 0}}
@@ -572,9 +485,7 @@ export function Scope1DataInput({
                   }}
                   className="w-[80%]">
                   <Card className="overflow-hidden bg-white rounded-3xl border-0 shadow-lg">
-                    {/* ========================================================================
-                    계산기 헤더 (Calculator Header) - Scope 3 스타일 적용
-                    ======================================================================== */}
+                    {/* 계산기 헤더 */}
                     <div className="p-6 bg-gradient-to-r from-blue-50 to-blue-100">
                       <div className="flex relative items-center">
                         {/* 계산기 번호 배지 */}
@@ -653,9 +564,7 @@ export function Scope1DataInput({
                       </div>
                     </div>
 
-                    {/* ========================================================================
-                    계산기 내용 영역 (Calculator Content)
-                    ======================================================================== */}
+                    {/* 계산기 내용 영역 */}
                     <CardContent className="p-8 bg-white">
                       <motion.div
                         initial={{opacity: 0, y: 20}}
@@ -693,9 +602,7 @@ export function Scope1DataInput({
                     </CardContent>
                   </Card>
 
-                  {/* ============================================================================
-                    삭제 확인 다이얼로그 (Delete Confirmation Dialog) - Scope 3 스타일 적용
-                    ============================================================================ */}
+                  {/* 삭제 확인 다이얼로그 */}
                   <AlertDialog
                     open={deleteDialogStates[calculator.id] || false}
                     onOpenChange={open => handleShowDeleteDialog(calculator.id, open)}>
@@ -750,9 +657,7 @@ export function Scope1DataInput({
         </AnimatePresence>
       </div>
 
-      {/* ====================================================================
-          액션 버튼들 (Action Buttons)
-          ==================================================================== */}
+      {/* 액션 버튼들 */}
       <motion.div
         initial={{opacity: 0, y: 20}}
         animate={{opacity: 1, y: 0}}

@@ -1,21 +1,5 @@
-/**
- * 엑셀 데이터 기반 계단식 선택기 컴포넌트
- *
- * 주요 기능:
- * - CSV 데이터에서 배출계수 정보 로드
- * - 계단식 선택을 통한 배출계수 자동 선택
- * - 실시간 배출량 계산 및 표시
- * - SelfInputCalculator와 통일된 NSMM 디자인
- *
- * 디자인 특징:
- * - 통일된 블루 색상 체계
- * - 섹션별 그룹화 레이아웃
- * - 단계별 번호 표시 및 아이콘
- * - 아름다운 결과 영역 3D 효과
- *
- * @author ESG Project Team
- * @version 3.0
- */
+// 엑셀 데이터 기반 계단식 선택기 컴포넌트
+// CSV 데이터에서 배출계수 정보 로드, 계단식 선택을 통한 배출계수 자동 선택, 실시간 배출량 계산
 
 import React, {useState, useEffect, useRef, useMemo} from 'react'
 import Papa from 'papaparse'
@@ -63,9 +47,7 @@ export function ExcelCascadingSelector({
   onChangeState,
   onChangeTotal
 }: ExcelCascadingSelectorProps) {
-  // ========================================================================
-  // 상태 관리 (State Management)
-  // ========================================================================
+  // 상태 관리
 
   const [data, setData] = useState<CO2Data[]>([])
   const [selectedItem, setSelectedItem] = useState<CO2Data | null>(null)
@@ -74,9 +56,7 @@ export function ExcelCascadingSelector({
   const prevSelectedItemRef = useRef<CO2Data | null>(null)
   const isFirstRenderRef = useRef(true)
 
-  // ========================================================================
-  // 데이터 로딩 및 초기 상태 복원 (Data Loading & Initial State Restoration)
-  // ========================================================================
+  // 데이터 로딩 및 초기 상태 복원
 
   useEffect(() => {
     const loadCSVData = async () => {
@@ -97,7 +77,6 @@ export function ExcelCascadingSelector({
               0
           }))
 
-        console.log(`CSV 데이터 로딩 완료: ${parsed.length}개 항목`)
         setData(parsed)
 
         // CSV 데이터 로딩 완료 후 초기 상태 복원
@@ -107,7 +86,6 @@ export function ExcelCascadingSelector({
 
         setIsInitialized(true)
       } catch (error) {
-        console.error('CSV 데이터 로딩 실패:', error)
         setData([])
         setIsInitialized(true)
       }
@@ -116,9 +94,7 @@ export function ExcelCascadingSelector({
     loadCSVData()
   }, [])
 
-  /**
-   * 백엔드에서 불러온 데이터로 초기 선택 상태 복원
-   */
+  // 백엔드에서 불러온 데이터로 초기 선택 상태 복원
   const restoreInitialSelection = (csvData: CO2Data[]) => {
     if (!state.separate || !state.rawMaterial) return
 
@@ -128,13 +104,6 @@ export function ExcelCascadingSelector({
     )
 
     if (matchingItem) {
-      console.log('LCA 모드 초기 데이터 복원:', {
-        separate: state.separate,
-        rawMaterial: state.rawMaterial,
-        unit: matchingItem.unit,
-        kgCO2eq: matchingItem.kgCO2eq
-      })
-
       // 매칭되는 항목이 있으면 선택된 상태로 설정
       setSelectedItem(matchingItem)
 
@@ -156,17 +125,10 @@ export function ExcelCascadingSelector({
         const emission = quantity * matchingItem.kgCO2eq
         onChangeTotal(id, emission)
       }
-    } else {
-      console.warn('CSV 데이터에서 매칭되는 항목을 찾을 수 없습니다:', {
-        separate: state.separate,
-        rawMaterial: state.rawMaterial
-      })
     }
   }
 
   const unique = (arr: string[]) => [...new Set(arr.filter(Boolean))]
-
-  // ... existing code ...
 
   const separateFilterMap: Record<typeof activeCategory, SeparateFilterRule> = {
     list1: {include: ['에너지']}, // 예시
@@ -205,9 +167,7 @@ export function ExcelCascadingSelector({
     data.filter(d => d.separate === state.separate).map(d => d.RawMaterial)
   )
 
-  // ========================================================================
-  // 선택된 아이템 및 배출량 계산 (Selected Item & Emission Calculation)
-  // ========================================================================
+  // 선택된 아이템 및 배출량 계산
 
   useEffect(() => {
     // CSV 데이터 로딩이 완료되고 초기화가 끝난 후에만 실행
@@ -270,10 +230,7 @@ export function ExcelCascadingSelector({
     isInitialized
   ])
 
-  // ========================================================================
   // 이벤트 핸들러 (Event Handlers)
-  // ========================================================================
-
   const handleSelect = (value: string, type: 'category' | 'separate' | 'raw') => {
     if (type === 'category') {
       onChangeState({
@@ -311,7 +268,6 @@ export function ExcelCascadingSelector({
 
     const num = parseFloat(value)
     if (isNaN(num) || num < 0) {
-      console.warn('유효하지 않은 수량 입력:', value)
       onChangeTotal(id, 0)
       return
     }
@@ -363,13 +319,7 @@ export function ExcelCascadingSelector({
       }
     }
 
-  // ========================================================================
   // 입력 필드 설정 데이터 (Input Field Configuration)
-  // ========================================================================
-
-  /**
-   * 선택 단계 필드 (대분류, 구분, 원료/에너지)
-   */
   const productInfoFields = [
     {
       step: '1',

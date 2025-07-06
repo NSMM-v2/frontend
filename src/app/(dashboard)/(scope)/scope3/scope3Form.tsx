@@ -220,12 +220,6 @@ export default function Scope3Form() {
     const minId = existingIds.length > 0 ? Math.min(...existingIds) : 0
     const newId = minId - 1
 
-    console.log('새 임시 ID 생성:', {
-      카테고리: categoryKey,
-      기존임시ID목록: existingIds,
-      새임시ID: newId
-    })
-
     return newId
   }
 
@@ -277,7 +271,6 @@ export default function Scope3Form() {
     if (!activeCategory) return
 
     const newId = generateNewTemporaryId(activeCategory)
-    console.log(`새 계산기 추가 - 카테고리: ${activeCategory}, 임시ID: ${newId}`)
 
     setCategoryCalculators(prev => ({
       ...prev,
@@ -308,7 +301,6 @@ export default function Scope3Form() {
    */
   const removeCalculator = async (id: number) => {
     if (!activeCategory) {
-      console.error('삭제 실패: activeCategory가 없습니다.')
       return
     }
 
@@ -316,33 +308,7 @@ export default function Scope3Form() {
     const targetCalculator = currentCalculators.find(c => c.id === id)
     const isLastItem = currentCalculators.length === 1
 
-    console.log('===== 계산기 삭제 요청 시작 =====')
-    console.log('삭제 요청 상세 정보:', {
-      activeCategory,
-      삭제ID: id,
-      ID타입: isTemporaryId(id) ? '임시ID' : 'emissionId',
-      isLastItem,
-      currentCalculators: currentCalculators.map(c => ({
-        id: c.id,
-        ID타입: isTemporaryId(c.id) ? '임시ID' : 'emissionId',
-        저장여부: !!c.savedData,
-        state: c.state
-      })),
-      targetCalculator: targetCalculator
-        ? {
-            id: targetCalculator.id,
-            ID타입: isTemporaryId(targetCalculator.id) ? '임시ID' : 'emissionId',
-            저장여부: !!targetCalculator.savedData,
-            state: targetCalculator.state
-          }
-        : null
-    })
-
     if (!targetCalculator) {
-      console.error('삭제 실패: 대상 계산기를 찾을 수 없습니다.', {
-        찾는ID: id,
-        현재계산기목록: currentCalculators.map(c => c.id)
-      })
       alert('삭제할 항목을 찾을 수 없습니다.')
       return
     }
@@ -350,39 +316,16 @@ export default function Scope3Form() {
     try {
       // 백엔드에 저장된 데이터가 있으면 API 호출로 삭제
       if (isEmissionId(targetCalculator.id)) {
-        console.log('백엔드 삭제 시작:', {
-          emissionId: targetCalculator.id,
-          저장여부: !!targetCalculator.savedData
-        })
-
         const deleteSuccess = await deleteScopeEmission(targetCalculator.id)
 
-        console.log('백엔드 삭제 결과:', {
-          success: deleteSuccess,
-          emissionId: targetCalculator.id
-        })
-
         if (!deleteSuccess) {
-          console.error('백엔드 삭제 실패 - API 호출 결과가 false')
           alert('서버에서 데이터 삭제에 실패했습니다. 다시 시도해주세요.')
           return
         }
-
-        console.log('백엔드 삭제 성공')
-      } else {
-        console.log('백엔드 삭제 스킵:', {
-          이유: '임시ID (아직 저장되지 않은 데이터)',
-          id: targetCalculator.id
-        })
       }
 
       // 항목이 하나만 있는 경우: 값 초기화 (빈 계산기로 변경)
       if (isLastItem) {
-        console.log('단일 항목 삭제 처리 시작:', {
-          id: id,
-          처리방식: '값 초기화 (빈 계산기로 변경)'
-        })
-
         const newTemporaryId = generateNewTemporaryId(activeCategory)
 
         setCategoryCalculators(prev => {
@@ -403,7 +346,6 @@ export default function Scope3Form() {
               }
             ]
           }
-          console.log('단일 항목 값 초기화 완료:', updated[activeCategory])
           return updated
         })
 
@@ -418,28 +360,18 @@ export default function Scope3Form() {
               }
             ]
           }
-          console.log('단일 항목 총계 초기화 완료:', updated[activeCategory])
           return updated
         })
 
         // 수동 입력 모드도 초기화 (기본값: 자동 모드)
         handleModeChange(newTemporaryId, false)
-
-        console.log('단일 항목 삭제 완료 - 빈 계산기로 초기화됨')
       } else {
         // 여러 항목이 있는 경우: 선택된 항목만 완전 삭제
-        console.log('다중 항목 중 하나 삭제 처리 시작:', {
-          id: id,
-          처리방식: '완전 제거',
-          남은항목수: currentCalculators.length - 1
-        })
-
         setCategoryCalculators(prev => {
           const updated = {
             ...prev,
             [activeCategory]: (prev[activeCategory] || []).filter(c => c.id !== id)
           }
-          console.log('다중 항목 중 하나 삭제 완료:', updated[activeCategory])
           return updated
         })
 
@@ -449,7 +381,6 @@ export default function Scope3Form() {
             ...prev,
             [activeCategory]: (prev[activeCategory] || []).filter(t => t.id !== id)
           }
-          console.log('다중 항목 총계 업데이트:', updated[activeCategory])
           return updated
         })
 
@@ -462,27 +393,13 @@ export default function Scope3Form() {
             [activeCategory]: updatedModes
           }
         })
-
-        console.log('수동 입력 모드에서 제거 완료')
-        console.log('다중 항목 중 하나 삭제 완료')
       }
 
       // 백엔드 데이터가 있었던 경우 전체 데이터 새로고침
       if (isEmissionId(targetCalculator.id)) {
-        console.log('백엔드 삭제 후 데이터 새로고침 시작...')
         await refreshData()
-        console.log('데이터 새로고침 완료')
       }
-
-      console.log('===== 계산기 삭제 요청 완료 =====')
     } catch (error) {
-      console.error('===== 계산기 삭제 중 오류 발생 =====')
-      console.error('오류 상세 정보:', {
-        error,
-        errorMessage: error instanceof Error ? error.message : '알 수 없는 오류',
-        id: id,
-        activeCategory
-      })
       alert('데이터 삭제 중 오류가 발생했습니다. 콘솔을 확인해주세요.')
     }
   }
@@ -511,9 +428,6 @@ export default function Scope3Form() {
     // 해당 카테고리에 계산기가 없으면 기본 계산기 1개 생성
     if (!categoryCalculators[category] || categoryCalculators[category]!.length === 0) {
       const newId = generateNewTemporaryId(category)
-      console.log(
-        `카테고리 선택 시 기본 계산기 생성 - 카테고리: ${category}, ID: ${newId}`
-      )
 
       setCategoryCalculators(prev => ({
         ...prev,
@@ -602,7 +516,6 @@ export default function Scope3Form() {
       // 3. 기존 데이터를 카테고리별 계산기로 변환
       convertBackendDataToCalculators(emissionsData)
     } catch (error) {
-      console.error('Scope3 데이터 로드 오류:', error)
     } finally {
       setIsLoading(false)
     }
@@ -628,12 +541,6 @@ export default function Scope3Form() {
       // id가 유효하지 않으면 새 ID 생성
       const calculatorId =
         emission.id && emission.id > 0 ? emission.id : generateNewTemporaryId(categoryKey)
-
-      console.log('백엔드 데이터 변환:', {
-        id: calculatorId,
-        categoryKey,
-        isNewId: calculatorId !== emission.id
-      })
 
       const calculatorData: CalculatorData = {
         id: calculatorId, // 유효한 ID 사용
@@ -668,7 +575,6 @@ export default function Scope3Form() {
       Object.entries(categorizedData).forEach(([categoryKey, calculators]) => {
         newState[categoryKey as Scope3CategoryKey] = calculators || []
       })
-      console.log('계산기 상태 업데이트 완료:', newState)
       return newState
     })
 
@@ -680,7 +586,6 @@ export default function Scope3Form() {
           emission: calc.savedData?.totalEmission || 0
         }))
       })
-      console.log('총계 상태 업데이트 완료:', newState)
       return newState
     })
   }
@@ -741,8 +646,6 @@ export default function Scope3Form() {
    * undefined나 잘못된 ID를 가진 계산기들을 새로운 유효한 ID로 교체
    */
   const fixInvalidCalculatorIds = () => {
-    console.log('잘못된 계산기 ID 수정 시작')
-
     setCategoryCalculators(prev => {
       const updated = {...prev}
       let hasChanges = false
@@ -757,7 +660,6 @@ export default function Scope3Form() {
             calc.id <= 0
           ) {
             const newId = generateNewTemporaryId(categoryKey as Scope3CategoryKey)
-            console.log(`ID 수정: ${calc.id} → ${newId} (카테고리: ${categoryKey})`)
             hasChanges = true
             return {...calc, id: newId}
           }
@@ -770,7 +672,6 @@ export default function Scope3Form() {
       })
 
       if (hasChanges) {
-        console.log('계산기 ID 수정 완료')
         return updated
       }
 

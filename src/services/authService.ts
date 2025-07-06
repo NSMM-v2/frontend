@@ -102,8 +102,6 @@ class AuthService {
    */
   async getCurrentUserByType(): Promise<ApiResponse<UserInfo> | null> {
     try {
-      console.log('[AuthService] 사용자 정보 조회 시작 - 폴백 모드')
-
       // 1. 협력사 API 시도 (500 에러도 허용하여 에러 발생 안함)
       try {
         console.log('[AuthService] 협력사 API 시도')

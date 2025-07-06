@@ -47,7 +47,7 @@ export const submitSelfAssessmentToBackend = async (
 export const getSelfAssessmentResult = async (
   resultId: number
 ): Promise<SelfAssessmentResponse> => {
-  console.log('🔍 [CSDDD Service] 자가진단 결과 단건 조회 요청:', {
+  console.log('[CSDDD Service] 자가진단 결과 단건 조회 요청:', {
     resultId,
     endpoint: `/api/v1/csddd/${resultId}`
   })

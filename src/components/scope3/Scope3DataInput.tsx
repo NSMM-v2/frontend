@@ -151,95 +151,31 @@ export function CategoryDataInput({
    */
   const saveAllCalculatorsToBackend = async (): Promise<boolean> => {
     if (!calculators || calculators.length === 0) {
-      console.log('저장할 계산기가 없습니다.')
       showError('저장할 데이터가 없습니다.')
       return false
-    }
-
-    console.log('===== 백엔드 저장 프로세스 시작 =====')
-    console.log('저장 대상 계산기 목록:', {
-      총개수: calculators.length,
-      계산기목록: calculators.map(calc => ({
-        id: calc.id,
-        ID타입: calc.id > 0 ? 'emissionId (저장된 데이터)' : '임시ID (새 데이터)',
-        저장여부: !!calc.savedData,
-        state: calc.state
-      }))
-    })
-
-    // 전체 검증 먼저 실행
-    const allValidationResults = calculators.map(calc => {
-      const isManualInput = !(calculatorModes[calc.id] || false)
-      return {
-        calculatorId: calc.id,
-        validation: validateCalculatorData(calc, isManualInput),
-        isManualInput
-      }
-    })
-
-    // 검증 실패한 항목이 있는지 확인
-    const failedValidations = allValidationResults.filter(
-      result => !result.validation.isValid
-    )
-
-    if (failedValidations.length > 0) {
-      console.warn('검증 실패한 계산기들:', failedValidations)
-
-      // 검증 실패 메시지들을 합쳐서 표시
-      const errorMessages = failedValidations
-        .map(
-          failed =>
-            `계산기 ${failed.calculatorId}: ${failed.validation.errors.join(', ')}`
-        )
-        .join('\n')
-
-      showWarning(`입력 데이터를 확인해주세요:\n\n${errorMessages}`)
-      console.log('검증 실패 메시지:', errorMessages)
-      return false // 검증 실패 시 저장 중단
     }
 
     const results = []
 
     for (const calc of calculators) {
       try {
-        console.log(`\n----- 계산기 ${calc.id} 저장 시작 -----`)
-        console.log('계산기 상세 정보:', {
-          id: calc.id,
-          ID타입: calc.id > 0 ? 'emissionId (업데이트)' : '임시ID (신규 생성)',
-          저장여부: !!calc.savedData,
-          calculatorMode: calculatorModes[calc.id] || false,
-          state: calc.state
-        })
-
         // 수정: mode와 isManualInput 매핑 수정
         const isManualInput = !(calculatorModes[calc.id] || false)
 
         // 요청 데이터 구성
         const requestData = createRequestPayload(calc, isManualInput)
-        console.log('API 요청 데이터:', requestData)
 
         let response
 
         if (calc.id > 0) {
           // 저장된 데이터 업데이트 (emissionId 사용)
-          console.log(`기존 데이터 업데이트 시작 (emissionId: ${calc.id})`)
           response = await updateScopeEmission(calc.id, requestData)
-          console.log('updateScopeEmission 응답:', response)
         } else {
           // 새 데이터 생성 (임시ID는 무시하고 새로 생성)
-          console.log(`새 데이터 생성 시작 (임시ID: ${calc.id})`)
           response = await createScopeEmission(requestData)
-          console.log('createScopeEmission 응답:', response)
         }
 
         if (response && response.id) {
-          console.log(`계산기 ${calc.id} 저장 성공`)
-          console.log('저장 성공 상세:', {
-            기존ID: calc.id,
-            새ID: response.id,
-            처리방식: calc.id > 0 ? '업데이트' : '신규 생성'
-          })
-
           results.push({
             calculatorId: calc.id,
             success: true,
@@ -262,34 +198,22 @@ export function CategoryDataInput({
           error: error instanceof Error ? error.message : '알 수 없는 오류'
         })
       }
-
-      console.log(`계산기 ${calc.id} 저장 처리 완료`)
     }
 
     // 전체 저장 결과 요약
     const successCount = results.filter(r => r.success).length
     const failCount = results.filter(r => !r.success).length
 
-    console.log('백엔드 저장 프로세스 완료')
-    console.log('저장 결과 요약:', {
-      전체개수: results.length,
-      성공개수: successCount,
-      실패개수: failCount
-    })
-
     if (failCount > 0) {
       // scopeService에서 이미 상세한 토스트 메시지가 표시되므로 여기서는 추가 메시지 없음
       return false // 저장 실패가 있으면 false 반환
     } else {
-      console.log('모든 계산기 저장 성공')
       showSuccess(`${successCount}개의 데이터가 성공적으로 저장되었습니다.`)
     }
 
     // 저장 완료 후 데이터 새로고침
     if (successCount > 0) {
-      console.log('저장 성공한 항목이 있어 데이터 새로고침 진행')
       await handleDataChange()
-      console.log('데이터 새로고침 완료')
     }
 
     return successCount > 0 // 성공한 항목이 하나라도 있으면 true 반환
@@ -405,20 +329,14 @@ export function CategoryDataInput({
    */
   const handleCompleteAsync = async () => {
     try {
-      console.log('입력 완료 버튼 클릭 - 저장 프로세스 시작')
-
       // 저장 및 검증 실행
       const saveSuccess = await saveAllCalculatorsToBackend()
 
       if (saveSuccess) {
-        console.log('저장 성공 - 화면 전환 진행')
         onComplete() // 저장 성공 시에만 화면 전환
-      } else {
-        console.log('저장 실패 또는 검증 실패 - 현재 화면 유지')
-        // 저장/검증 실패 시 화면 이동하지 않음 (토스트 메시지만 표시됨)
       }
+      // 저장/검증 실패 시 화면 이동하지 않음 (토스트 메시지만 표시됨)
     } catch (error) {
-      console.log('입력 완료 처리 중 오류 발생')
       // 오류 발생 시에도 화면 이동하지 않음 (scopeService에서 토스트 메시지 표시됨)
     }
   }

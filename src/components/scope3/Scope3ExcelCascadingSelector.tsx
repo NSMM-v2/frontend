@@ -118,7 +118,6 @@ export function ExcelCascadingSelector({
               0
           }))
 
-        console.log(`CSV 데이터 로딩 완료: ${parsed.length}개 항목`)
         setData(parsed)
       } catch (error) {
         console.error('CSV 데이터 로딩 실패:', error)

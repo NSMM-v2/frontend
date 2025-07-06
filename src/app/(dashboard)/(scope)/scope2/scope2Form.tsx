@@ -238,18 +238,6 @@ export default function Scope2Form() {
     // 모든 필수 필드가 채워져 있는지 확인
     const hasRequiredData = requiredFields.every(field => field && field.trim() !== '')
 
-    // 디버깅: 입력 데이터 검증 결과
-    console.log('Input Data Validation:', {
-      calculatorId: calculator.id,
-      hasRequiredData,
-      state,
-      missingFields: requiredFields
-        .map((field, index) =>
-          !field ? ['구분', '원료/에너지', '사용량', '단위'][index] : null
-        )
-        .filter(Boolean)
-    })
-
     return hasRequiredData
   }
 
@@ -367,26 +355,11 @@ export default function Scope2Form() {
       try {
         // 백엔드에 저장된 데이터가 있으면 API 호출로 삭제
         if (isEmissionId(id)) {
-          console.log('백엔드 삭제 시작:', {
-            emissionId: id,
-            저장여부: !!targetCalculator?.savedData
-          })
-
           try {
             const deleteSuccess = await deleteScopeEmission(id)
-            console.log('백엔드 삭제 결과:', {
-              success: deleteSuccess,
-              emissionId: id
-            })
-
-            // 삭제 성공 여부 확인 (API에서 이미 에러 처리를 했으므로 여기서는 단순히 진행)
             if (!deleteSuccess) {
-              console.warn(
-                '백엔드 삭제 API가 false를 반환했지만, 프론트엔드에서는 삭제를 진행합니다.'
-              )
             }
           } catch (apiError) {
-            console.error('백엔드 삭제 API 호출 실패:', apiError)
             // API 호출 실패해도 프론트엔드에서는 삭제 진행
           }
         }
@@ -433,12 +406,9 @@ export default function Scope2Form() {
 
         // 백엔드 데이터가 있었던 경우 전체 데이터 새로고침
         if (isEmissionId(id)) {
-          console.log('백엔드 삭제 후 데이터 새로고침 시작...')
           await refreshData()
-          console.log('데이터 새로고침 완료')
         }
       } catch (error) {
-        console.error('계산기 삭제 중 오류 발생:', error)
         alert('데이터 삭제 중 오류가 발생했습니다.')
       }
     } else if (activeSteamCategory) {
@@ -449,26 +419,11 @@ export default function Scope2Form() {
       try {
         // 백엔드에 저장된 데이터가 있으면 API 호출로 삭제
         if (isEmissionId(id)) {
-          console.log('백엔드 삭제 시작:', {
-            emissionId: id,
-            저장여부: !!targetCalculator?.savedData
-          })
-
           try {
             const deleteSuccess = await deleteScopeEmission(id)
-            console.log('백엔드 삭제 결과:', {
-              success: deleteSuccess,
-              emissionId: id
-            })
-
-            // 삭제 성공 여부 확인 (API에서 이미 에러 처리를 했으므로 여기서는 단순히 진행)
             if (!deleteSuccess) {
-              console.warn(
-                '백엔드 삭제 API가 false를 반환했지만, 프론트엔드에서는 삭제를 진행합니다.'
-              )
             }
           } catch (apiError) {
-            console.error('백엔드 삭제 API 호출 실패:', apiError)
             // API 호출 실패해도 프론트엔드에서는 삭제 진행
           }
         }
@@ -515,12 +470,9 @@ export default function Scope2Form() {
 
         // 백엔드 데이터가 있었던 경우 전체 데이터 새로고침
         if (isEmissionId(id)) {
-          console.log('백엔드 삭제 후 데이터 새로고침 시작...')
           await refreshData()
-          console.log('데이터 새로고침 완료')
         }
       } catch (error) {
-        console.error('계산기 삭제 중 오류 발생:', error)
         alert('데이터 삭제 중 오류가 발생했습니다.')
       }
     }
@@ -618,7 +570,6 @@ export default function Scope2Form() {
   const handleComplete = () => {
     // 데이터 검증
     if (!hasValidData()) {
-      alert('저장할 데이터가 없습니다. 최소 하나의 계산기에 데이터를 입력해주세요.')
       return
     }
 

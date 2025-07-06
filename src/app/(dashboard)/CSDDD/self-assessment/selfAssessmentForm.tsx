@@ -553,8 +553,6 @@ export default function CSAssessmentPage() {
           .filter((item): item is NonNullable<typeof item> => item !== null)
       }
 
-      console.log('📦 제출 데이터:', submissionData)
-
       await submitSelfAssessmentToBackend(submissionData)
 
       toast.success('자가진단이 성공적으로 제출되었습니다!')
@@ -579,7 +577,7 @@ export default function CSAssessmentPage() {
           initial={{opacity: 0}}
           animate={{opacity: 1}}
           exit={{opacity: 0}}
-          className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black bg-opacity-50"
+          className="flex fixed inset-0 z-50 justify-center items-center p-4 bg-black bg-opacity-50"
           onClick={() => setShowUnansweredModal(false)}>
           <motion.div
             initial={{scale: 0.9, opacity: 0}}
@@ -589,7 +587,7 @@ export default function CSAssessmentPage() {
             onClick={e => e.stopPropagation()}>
             <div className="p-6 border-b border-gray-100">
               <div className="flex items-center space-x-3">
-                <div className="p-2 rounded-lg bg-amber-100">
+                <div className="p-2 bg-amber-100 rounded-lg">
                   <AlertCircle className="w-6 h-6 text-amber-600" />
                 </div>
                 <div>
@@ -603,16 +601,16 @@ export default function CSAssessmentPage() {
               </div>
             </div>
 
-            <div className="p-6 overflow-y-auto max-h-96">
+            <div className="overflow-y-auto p-6 max-h-96">
               <div className="space-y-3">
                 {unansweredQuestions.map((question, index) => (
                   <div
                     key={question.id}
-                    className="flex items-start justify-between p-4 transition-colors border cursor-pointer bg-amber-50 border-amber-200 rounded-xl hover:bg-amber-100"
+                    className="flex justify-between items-start p-4 bg-amber-50 rounded-xl border border-amber-200 transition-colors cursor-pointer hover:bg-amber-100"
                     onClick={() => moveToUnansweredQuestion(question.id)}>
                     <div className="flex-1">
                       <div className="flex items-center mb-2 space-x-2">
-                        <span className="px-2 py-1 text-xs font-bold rounded-lg text-amber-700 bg-amber-200">
+                        <span className="px-2 py-1 text-xs font-bold text-amber-700 bg-amber-200 rounded-lg">
                           {question.id}
                         </span>
                         <span className="text-xs font-medium text-amber-600">
@@ -623,22 +621,22 @@ export default function CSAssessmentPage() {
                         {question.text}
                       </p>
                     </div>
-                    <Eye className="flex-shrink-0 w-5 h-5 ml-3 text-amber-600" />
+                    <Eye className="flex-shrink-0 ml-3 w-5 h-5 text-amber-600" />
                   </div>
                 ))}
               </div>
             </div>
 
-            <div className="p-6 border-t border-gray-100 bg-gray-50">
+            <div className="p-6 bg-gray-50 border-t border-gray-100">
               <div className="flex space-x-3">
                 <button
                   onClick={() => setShowUnansweredModal(false)}
-                  className="flex-1 px-4 py-3 font-medium transition-colors bg-white border border-gray-300 text-slate-600 rounded-xl hover:bg-gray-50">
+                  className="flex-1 px-4 py-3 font-medium bg-white rounded-xl border border-gray-300 transition-colors text-slate-600 hover:bg-gray-50">
                   닫기
                 </button>
                 <button
                   onClick={() => moveToUnansweredQuestion(unansweredQuestions[0]?.id)}
-                  className="flex-1 px-4 py-3 font-medium text-white transition-colors bg-amber-500 rounded-xl hover:bg-amber-600">
+                  className="flex-1 px-4 py-3 font-medium text-white bg-amber-500 rounded-xl transition-colors hover:bg-amber-600">
                   첫 번째 미답변으로 이동
                 </button>
               </div>
@@ -685,17 +683,17 @@ export default function CSAssessmentPage() {
                 }`}>
                 <div className="flex items-start space-x-4">
                   <div className="flex-shrink-0">
-                    <div className="inline-flex items-center justify-center w-12 h-8 text-xs font-bold text-blue-600 bg-blue-100 border-2 border-blue-200 rounded-lg shadow-sm">
+                    <div className="inline-flex justify-center items-center w-12 h-8 text-xs font-bold text-blue-600 bg-blue-100 rounded-lg border-2 border-blue-200 shadow-sm">
                       {question.id}
                     </div>
                   </div>
 
                   <div className="flex-1 space-y-1">
-                    <div className="flex items-start justify-between w-full">
+                    <div className="flex justify-between items-start w-full">
                       <p className="flex-1 pr-4 text-base font-bold leading-relaxed text-left text-slate-800">
                         {question.text}
                       </p>
-                      <div className="flex items-center flex-shrink-0 space-x-2">
+                      <div className="flex flex-shrink-0 items-center space-x-2">
                         {question.criticalViolation && (
                           <TooltipProvider>
                             <Tooltip>
@@ -704,7 +702,7 @@ export default function CSAssessmentPage() {
                                   <AlertTriangle className="w-4 h-4 text-red-500" />
                                 </div>
                               </TooltipTrigger>
-                              <TooltipContent className="max-w-xs text-sm text-left text-red-800 border border-red-300 rounded-lg shadow-md bg-red-50">
+                              <TooltipContent className="max-w-xs text-sm text-left text-red-800 bg-red-50 rounded-lg border border-red-300 shadow-md">
                                 <div className="mb-1 font-semibold">
                                   {question.criticalViolation?.grade} 등급 위반
                                 </div>
@@ -720,7 +718,7 @@ export default function CSAssessmentPage() {
                     </div>
 
                     <div className="flex items-center space-x-3">
-                      <label className="flex items-center px-2 py-1 space-x-2 transition-all border-2 border-transparent cursor-pointer rounded-2xl group hover:bg-blue-50 hover:border-blue-200">
+                      <label className="flex items-center px-2 py-1 space-x-2 rounded-2xl border-2 border-transparent transition-all cursor-pointer group hover:bg-blue-50 hover:border-blue-200">
                         <input
                           type="radio"
                           name={question.id}
@@ -736,14 +734,14 @@ export default function CSAssessmentPage() {
                               question.criticalViolation?.grade
                             )
                           }
-                          className="w-5 h-5 border-2 border-blue-300 rounded-full shadow-sm appearance-none cursor-pointer checked:bg-blue-300 checked:ring-4 checked:ring-blue-100"
+                          className="w-5 h-5 rounded-full border-2 border-blue-300 shadow-sm appearance-none cursor-pointer checked:bg-blue-300 checked:ring-4 checked:ring-blue-100"
                         />
                         <span className="text-xs font-medium text-blue-600 transition-colors group-hover:text-blue-700">
                           예
                         </span>
                       </label>
 
-                      <label className="flex items-center px-2 py-1 space-x-2 transition-all border-2 border-transparent cursor-pointer rounded-2xl group hover:bg-blue-50 hover:border-blue-200">
+                      <label className="flex items-center px-2 py-1 space-x-2 rounded-2xl border-2 border-transparent transition-all cursor-pointer group hover:bg-blue-50 hover:border-blue-200">
                         <input
                           type="radio"
                           name={question.id}
@@ -759,7 +757,7 @@ export default function CSAssessmentPage() {
                               question.criticalViolation?.grade
                             )
                           }
-                          className="w-5 h-5 border-2 border-blue-300 rounded-full shadow-sm appearance-none cursor-pointer checked:bg-blue-300 checked:ring-4 checked:ring-blue-100"
+                          className="w-5 h-5 rounded-full border-2 border-blue-300 shadow-sm appearance-none cursor-pointer checked:bg-blue-300 checked:ring-4 checked:ring-blue-100"
                         />
                         <span className="text-xs font-medium text-blue-600 transition-colors group-hover:text-blue-700">
                           아니오
@@ -776,7 +774,7 @@ export default function CSAssessmentPage() {
                         onChange={e => handleRemarksChange(question.id, e.target.value)}
                         placeholder="추가 설명이나 특이사항을 입력하세요"
                         rows={1}
-                        className="w-full px-2 py-1 text-xs transition-all border-2 shadow-sm resize-none rounded-2xl backdrop-blur-sm border-slate-200 focus:outline-none focus:ring-4 focus:ring-blue-200 focus:border-blue-500 bg-white/90 hover:border-slate-300"
+                        className="px-2 py-1 w-full text-xs rounded-2xl border-2 shadow-sm backdrop-blur-sm transition-all resize-none border-slate-200 focus:outline-none focus:ring-4 focus:ring-blue-200 focus:border-blue-500 bg-white/90 hover:border-slate-300"
                       />
                     </div>
                   </div>
@@ -786,14 +784,14 @@ export default function CSAssessmentPage() {
           })}
         </div>
 
-        <div className="flex items-center justify-between gap-3 mt-12">
+        <div className="flex gap-3 justify-between items-center mt-12">
           <button
             onClick={() => {
               setCurrentCategoryIdx(idx => Math.max(0, idx - 1))
               window.scrollTo({top: 0, behavior: 'smooth'})
             }}
             disabled={isFirst}
-            className="flex items-center px-8 py-4 space-x-3 text-sm font-semibold text-gray-700 transition-all duration-300 bg-white border-2 border-gray-300 shadow-lg rounded-2xl hover:shadow-xl disabled:opacity-50 disabled:transform-none hover:bg-gray-50 hover:-translate-y-1">
+            className="flex items-center px-8 py-4 space-x-3 text-sm font-semibold text-gray-700 bg-white rounded-2xl border-2 border-gray-300 shadow-lg transition-all duration-300 hover:shadow-xl disabled:opacity-50 disabled:transform-none hover:bg-gray-50 hover:-translate-y-1">
             <ArrowLeft className="w-3 h-3" />
             <span>이전</span>
           </button>
@@ -804,12 +802,12 @@ export default function CSAssessmentPage() {
               disabled={isSubmitting}
               className={`flex items-center space-x-3 px-8 py-4 text-lg font-semibold rounded-2xl transition-all duration-300 shadow-lg hover:shadow-xl hover:-translate-y-1 ${
                 isSubmitting
-                  ? 'bg-slate-400 text-white cursor-not-allowed'
-                  : 'bg-blue-500 text-white hover:bg-blue-600'
+                  ? 'text-white cursor-not-allowed bg-slate-400'
+                  : 'text-white bg-blue-500 hover:bg-blue-600'
               }`}>
               {isSubmitting ? (
                 <>
-                  <div className="w-3 h-3 border-2 border-t-2 rounded-full animate-spin border-white/20 border-t-white"></div>
+                  <div className="w-3 h-3 rounded-full border-2 border-t-2 animate-spin border-white/20 border-t-white"></div>
                   <span>제출 중...</span>
                 </>
               ) : (
@@ -825,7 +823,7 @@ export default function CSAssessmentPage() {
                 setCurrentCategoryIdx(idx => Math.min(categoryMeta.length - 1, idx + 1))
                 window.scrollTo({top: 0, behavior: 'smooth'})
               }}
-              className="flex items-center px-8 py-4 space-x-3 text-sm font-semibold text-white transition-all duration-300 bg-blue-500 shadow-lg rounded-2xl hover:shadow-xl hover:bg-blue-600 hover:-translate-y-1">
+              className="flex items-center px-8 py-4 space-x-3 text-sm font-semibold text-white bg-blue-500 rounded-2xl shadow-lg transition-all duration-300 hover:shadow-xl hover:bg-blue-600 hover:-translate-y-1">
               <span>다음</span>
               <ArrowLeft className="w-3 h-3 rotate-180" />
             </button>
@@ -840,11 +838,11 @@ export default function CSAssessmentPage() {
       <UnansweredQuestionsModal />
 
       <div className="p-4 pb-0">
-        <div className="flex flex-row items-center p-4 mb-6 text-sm text-gray-600 border shadow-sm rounded-2xl backdrop-blur-sm bg-white/90 border-white/50">
+        <div className="flex flex-row items-center p-4 mb-6 text-sm text-gray-600 rounded-2xl border shadow-sm backdrop-blur-sm bg-white/90 border-white/50">
           <Breadcrumb>
             <BreadcrumbList>
               <BreadcrumbItem>
-                <Home className="w-4 h-4 mr-1" />
+                <Home className="mr-1 w-4 h-4" />
                 <BreadcrumbLink
                   href="/dashboard"
                   className="transition-colors hover:text-blue-600">
@@ -869,10 +867,10 @@ export default function CSAssessmentPage() {
       </div>
 
       <div className="px-4 pb-0">
-        <div className="flex flex-row w-full mb-6">
+        <div className="flex flex-row mb-6 w-full">
           <Link
             href="/CSDDD"
-            className="flex flex-row items-center p-4 space-x-4 transition-all rounded-2xl backdrop-blur-sm hover:bg-white/30 group">
+            className="flex flex-row items-center p-4 space-x-4 rounded-2xl backdrop-blur-sm transition-all hover:bg-white/30 group">
             <ArrowLeft className="w-6 h-6 text-gray-500 transition-colors group-hover:text-blue-600" />
             <PageHeader
               icon={<Shield className="w-6 h-6 text-blue-600" />}
@@ -886,10 +884,10 @@ export default function CSAssessmentPage() {
       </div>
 
       <div className="flex-1 px-4 pb-8">
-        <div className="p-4 mb-4 border shadow-xl rounded-3xl backdrop-blur-xl bg-white/70 border-white/50 shadow-blue-500/10">
-          <div className="flex items-center justify-between mb-4">
+        <div className="p-4 mb-4 rounded-3xl border shadow-xl backdrop-blur-xl bg-white/70 border-white/50 shadow-blue-500/10">
+          <div className="flex justify-between items-center mb-4">
             <div className="flex items-center space-x-2">
-              <div className="p-2 bg-blue-500 shadow-lg rounded-xl">
+              <div className="p-2 bg-blue-500 rounded-xl shadow-lg">
                 <TrendingUp className="w-5 h-5 text-white" />
               </div>
               <div>
@@ -908,14 +906,14 @@ export default function CSAssessmentPage() {
               const progress = Math.round((answeredQuestions / totalQuestions) * 100)
               return (
                 <>
-                  <div className="w-full h-3 overflow-hidden rounded-full shadow-inner bg-gradient-to-r from-slate-200 to-slate-300">
+                  <div className="overflow-hidden w-full h-3 bg-gradient-to-r rounded-full shadow-inner from-slate-200 to-slate-300">
                     <div
-                      className="relative h-full transition-all duration-1000 ease-out rounded-full bg-gradient-to-r from-blue-500 to-cyan-500"
+                      className="relative h-full bg-gradient-to-r from-blue-500 to-cyan-500 rounded-full transition-all duration-1000 ease-out"
                       style={{width: `${progress}%`}}>
                       <div className="absolute inset-0 rounded-full animate-pulse bg-white/20"></div>
                     </div>
                   </div>
-                  <div className="absolute transform -translate-x-1/2 -translate-y-1/2 top-1/2 left-1/2">
+                  <div className="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2">
                     <Zap className="w-3 h-3 text-white animate-pulse" />
                   </div>
                 </>
@@ -923,7 +921,7 @@ export default function CSAssessmentPage() {
             })()}
           </div>
 
-          <div className="flex flex-row items-center justify-between gap-2 px-2 py-3 mt-1 bg-white border border-gray-100 shadow-sm rounded-2xl md:px-8">
+          <div className="flex flex-row gap-2 justify-between items-center px-2 py-3 mt-1 bg-white rounded-2xl border border-gray-100 shadow-sm md:px-8">
             {categoryMeta.map((cat, idx) => {
               const total = questions.filter(q => q.category === cat.key).length
               const done = questions.filter(
