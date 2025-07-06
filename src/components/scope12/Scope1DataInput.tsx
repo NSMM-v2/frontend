@@ -540,7 +540,7 @@ export function Scope1DataInput({
             const description = mode
               ? '배출계수를 단계별로 선택하여 자동 계산하세요'
               : '직접 값을 입력하여 배출량을 계산하세요.'
-            const IconComponent = mode ? Sparkles : Database
+            const IconComponent = mode ? Database : Sparkles
 
             return (
               <div key={calculator.id} className="flex flex-col items-center w-full">

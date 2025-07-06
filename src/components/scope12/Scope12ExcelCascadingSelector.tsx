@@ -20,18 +20,8 @@
 import React, {useState, useEffect, useRef, useMemo} from 'react'
 import Papa from 'papaparse'
 import {motion} from 'framer-motion'
-import {Card, CardContent, CardHeader, CardTitle} from '@/components/ui/card'
-import {
-  Database,
-  Layers,
-  Tag,
-  Zap,
-  Ruler,
-  Calculator,
-  Hash,
-  TrendingUp,
-  Cog
-} from 'lucide-react'
+import {Card, CardContent} from '@/components/ui/card'
+import {Layers, Tag, Zap, Ruler, Calculator, Hash, TrendingUp, Cog} from 'lucide-react'
 import type {SelectorState} from '@/types/scopeTypes'
 import {Switch} from '../ui/switch'
 import {Input} from '../ui/input'

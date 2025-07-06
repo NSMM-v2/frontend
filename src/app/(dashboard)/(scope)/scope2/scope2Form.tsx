@@ -70,6 +70,7 @@ import {
   fetchCategorySummaryByScope,
   deleteScopeEmission
 } from '@/services/scopeService'
+import {DirectionButton} from '@/components/layout/direction'
 
 // ============================================================================
 // 타입 정의 (Type Definitions)
@@ -839,12 +840,17 @@ export default function Scope2Form() {
                           총 Scope 2 배출량
                         </p>
                         <h3 className="text-2xl font-bold text-gray-900">
-                          {Object.values(categorySummary)
-                            .reduce((sum, emission) => sum + emission, 0)
-                            .toLocaleString(undefined, {
-                              maximumFractionDigits: 2,
-                              minimumFractionDigits: 2
-                            })}
+                          {Object.values(categorySummary).length > 0
+                            ? Object.values(categorySummary)
+                                .reduce((sum, emission) => sum + emission, 0)
+                                .toLocaleString(undefined, {
+                                  maximumFractionDigits: 2,
+                                  minimumFractionDigits: 2
+                                })
+                            : grandTotal.toLocaleString(undefined, {
+                                maximumFractionDigits: 2,
+                                minimumFractionDigits: 2
+                              })}
                           <span className="ml-1 text-sm font-normal text-gray-500">
                             kgCO₂eq
                           </span>
@@ -954,6 +960,27 @@ export default function Scope2Form() {
           onDataChange={refreshData}
         />
       )}
+
+      {/* ======================================================================
+          하단 네비게이션 버튼 (Bottom Navigation Button)
+          ====================================================================== */}
+      <DirectionButton
+        direction="left"
+        tooltip="Scope 1로 이동"
+        href="/scope1"
+        fixed
+        position="middle-left"
+        size={48}
+      />
+
+      <DirectionButton
+        direction="right"
+        tooltip="Scope 3로 이동"
+        href="/scope3"
+        fixed
+        position="middle-right"
+        size={48}
+      />
     </div>
   )
 }

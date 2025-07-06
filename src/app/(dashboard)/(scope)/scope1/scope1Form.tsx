@@ -75,6 +75,7 @@ import {
   fetchCategorySummaryByScope,
   deleteScopeEmission
 } from '@/services/scopeService'
+import {DirectionButton} from '@/components/layout/direction'
 
 // ============================================================================
 // 타입 정의 (Type Definitions)
@@ -1349,6 +1350,17 @@ export default function Scope1Form() {
           />
         )
       )}
+      {/* ======================================================================
+          하단 네비게이션 버튼 (Bottom Navigation Button)
+          ====================================================================== */}
+      <DirectionButton
+        direction="right"
+        tooltip="Scope 2로 이동"
+        href="/scope2"
+        fixed
+        position="middle-right"
+        size={48}
+      />
     </div>
   )
 }

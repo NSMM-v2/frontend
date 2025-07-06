@@ -38,10 +38,7 @@ import {
 } from '@/components/ui/alert-dialog'
 import type {SelectorState} from '@/types/scopeTypes'
 import {showSuccess} from '@/util/toast'
-import {
-  scope3CategoryList,
-  Scope3CategoryKey
-} from '../scopeTotal/Scope123CategorySelector'
+import {Scope3CategoryKey} from '../scopeTotal/Scope123CategorySelector'
 
 /**
  * CalculatorItem 컴포넌트 Props 타입
@@ -133,8 +130,6 @@ export function CalculatorItem({
       (state.kgCO2eq && state.kgCO2eq.trim() !== '')
     )
   }
-
-  const isManualInput = mode || false
 
   return (
     <motion.div

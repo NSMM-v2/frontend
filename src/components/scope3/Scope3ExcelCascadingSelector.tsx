@@ -20,17 +20,8 @@
 import React, {useState, useEffect, useRef, useMemo} from 'react'
 import Papa from 'papaparse'
 import {motion} from 'framer-motion'
-import {Card, CardContent, CardHeader, CardTitle} from '@/components/ui/card'
-import {
-  Database,
-  Layers,
-  Tag,
-  Zap,
-  Ruler,
-  Calculator,
-  Hash,
-  TrendingUp
-} from 'lucide-react'
+import {Card, CardContent} from '@/components/ui/card'
+import {Layers, Tag, Zap, Ruler, Calculator, Hash, TrendingUp} from 'lucide-react'
 import type {SelectorState} from '@/types/scopeTypes'
 import type {Scope3CategoryKey} from '../scopeTotal/Scope123CategorySelector'
 

@@ -68,6 +68,7 @@ import {
   fetchCategorySummaryByScope,
   deleteScopeEmission
 } from '@/services/scopeService'
+import {DirectionButton} from '@/components/layout/direction'
 
 // ============================================================================
 // 타입 정의 (Type Definitions)
@@ -934,6 +935,15 @@ export default function Scope3Form() {
           onDataChange={refreshData} // CRUD 작업 후 데이터 새로고침 콜백
         />
       )}
+
+      <DirectionButton
+        direction="left"
+        tooltip="Scope 2로 이동"
+        href="/scope2"
+        fixed
+        position="middle-left"
+        size={48}
+      />
     </div>
   )
 }

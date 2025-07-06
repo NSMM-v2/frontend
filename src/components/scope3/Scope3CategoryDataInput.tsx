@@ -194,6 +194,7 @@ export function CategoryDataInput({
         .join('\n')
 
       showWarning(`입력 데이터를 확인해주세요:\n\n${errorMessages}`)
+      console.log('검증 실패 메시지:', errorMessages)
       return false // 검증 실패 시 저장 중단
     }
 
