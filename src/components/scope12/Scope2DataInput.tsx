@@ -44,7 +44,7 @@ import {ExcelCascadingSelector} from '@/components/scope12/Scope12ExcelCascading
 
 // 타입 및 서비스 임포트
 import {ScopeEmissionResponse, SelectorState} from '@/types/scopeTypes'
-import {showSuccess, showError} from '@/util/toast'
+import {showSuccess, showError, showWarning} from '@/util/toast'
 import {
   createScopeEmission,
   updateScopeEmission,
@@ -261,7 +261,7 @@ export function Scope2DataInput({
       const calculatorsToSave = calculators.filter(calc => hasInputData(calc))
 
       if (calculatorsToSave.length === 0) {
-        showError('저장할 데이터가 없습니다. 최소 하나의 계산기에 데이터를 입력해주세요.')
+        showWarning('모든 필수 필드를 올바르게 입력해주세요')
         return
       }
 

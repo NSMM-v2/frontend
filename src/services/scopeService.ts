@@ -429,24 +429,19 @@ const handleScopeEmissionError = (error: any, operation: string) => {
     // 백엔드 ErrorCode에 따른 사용자 친화적 메시지 변환
     switch (errorCode) {
       case 'VALIDATION_ERROR':
-        userFriendlyMessage =
-          '⚠️ 입력값 검증 오류\n\n📍 확인사항:\n• 모든 필수 필드를 올바르게 입력해주세요'
+        userFriendlyMessage = '모든 필수 필드를 올바르게 입력해주세요'
         break
       case 'MISSING_REQUIRED_FIELD':
-        userFriendlyMessage =
-          '⚠️ 필수 항목 누락\n\n📍 확인사항:\n• 모든 필수 필드를 입력해주세요'
+        userFriendlyMessage = '모든 필수 필드를 입력해주세요'
         break
       case 'INVALID_CATEGORY_NUMBER':
-        userFriendlyMessage =
-          '⚠️ 카테고리 번호 오류\n\n📍 올바른 범위:\n• Scope 1: 1~10\n• Scope 2: 1~2\n• Scope 3: 1~15'
+        userFriendlyMessage = '올바른 범위를 입력해주세요'
         break
       case 'INVALID_EMISSION_FACTOR':
-        userFriendlyMessage =
-          '⚠️ 배출계수 입력 오류\n\n📍 올바른 입력:\n• 최대 9자리, 소수점 6자리까지\n• 예: 999,999,999.999999'
+        userFriendlyMessage = '배출계수 입력 오류 예: 999,999,999.999999'
         break
       case 'INVALID_ACTIVITY_AMOUNT':
-        userFriendlyMessage =
-          '⚠️ 수량 입력 오류\n\n📍 올바른 입력:\n• 최대 12자리, 소수점 3자리까지\n• 예: 999,999,999,999.999'
+        userFriendlyMessage = '수량 입력 오류 예: 999,999,999,999.999'
         break
       case 'INVALID_TOTAL_EMISSION':
         userFriendlyMessage =
@@ -455,11 +450,9 @@ const handleScopeEmissionError = (error: any, operation: string) => {
       default:
         // 메시지 내용 기반 변환
         if (errorMessage.includes('제품 코드')) {
-          userFriendlyMessage =
-            '⚠️ 제품 코드 매핑 오류\n\n📍 확인사항:\n• Scope 3는 제품 코드 매핑 불가\n• 제품 코드와 제품명을 모두 입력해주세요'
+          userFriendlyMessage = '제품 코드 매핑 오류 Scope 3는 제품 코드 매핑 불가'
         } else if (errorMessage.includes('배출량 계산')) {
-          userFriendlyMessage =
-            '⚠️ 배출량 계산 오류\n\n📍 확인사항:\n• 수량 × 배출계수 = 총 배출량\n• 계산 결과를 다시 확인해주세요'
+          userFriendlyMessage = '배출량 계산 오류 수량 × 배출계수 = 총 배출량'
         }
         break
     }

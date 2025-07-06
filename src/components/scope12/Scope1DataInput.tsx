@@ -59,7 +59,7 @@ import {
   updateScopeEmission,
   deleteScopeEmission
 } from '@/services/scopeService'
-import {showSuccess, showError} from '@/util/toast'
+import {showSuccess, showError, showWarning} from '@/util/toast'
 
 // 타입 정의
 
@@ -282,7 +282,10 @@ export function Scope1DataInput({
     onUpdateCalculatorState(id, newState)
   }
 
-  // 입력 완료 처리 (모든 계산기 데이터 저장)
+  /**
+   * 입력 완료 처리 (모든 계산기 데이터 저장)
+   * Scope 3과 동일한 검증 방식 적용
+   */
   const handleComplete = async () => {
     if (!selectedYear || !selectedMonth) {
       showError('보고연도와 보고월을 먼저 선택해주세요.')
@@ -294,7 +297,7 @@ export function Scope1DataInput({
       const calculatorsToSave = calculators.filter(calc => hasInputData(calc))
 
       if (calculatorsToSave.length === 0) {
-        showError('저장할 데이터가 없습니다. 최소 하나의 계산기에 데이터를 입력해주세요.')
+        showWarning('모든 필수 필드를 올바르게 입력해주세요')
         return
       }
 
