@@ -276,9 +276,7 @@ export function Scope2DataInput({
       showSuccess(`${calculatorsToSave.length}개의 데이터가 성공적으로 저장되었습니다.`)
       onDataChange()
       onComplete()
-    } catch (error) {
-      showError('데이터 저장 중 오류가 발생했습니다. 다시 시도해주세요.')
-    }
+    } catch (error) {}
   }
 
   // 이벤트 핸들러

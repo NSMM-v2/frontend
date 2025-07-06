@@ -316,9 +316,7 @@ export function Scope1DataInput({
 
       // 목록으로 돌아가기
       onComplete()
-    } catch (error) {
-      showError('데이터 저장 중 오류가 발생했습니다. 다시 시도해주세요.')
-    }
+    } catch (error) {}
   }
 
   // 유틸리티 함수
