@@ -894,7 +894,7 @@ export default function Scope1Form() {
         leakData.push(calculatorData)
       }
 
-      // 수동 입력 모드 상태 복원
+      // 수동 입력 모드 상태 복원 (화면 반전 로직 고려)
       if (emission.inputType !== undefined && emission.scope1CategoryNumber) {
         const categoryKey =
           `list${emission.scope1CategoryNumber}` as keyof typeof calculatorModes
@@ -902,7 +902,7 @@ export default function Scope1Form() {
           ...prev,
           [categoryKey]: {
             ...prev[categoryKey],
-            [calculatorId]: emission.inputType === 'MANUAL'
+            [calculatorId]: emission.inputType === 'LCA' // 수정: 화면에서 반전되므로 LCA일 때 true
           }
         }))
       }

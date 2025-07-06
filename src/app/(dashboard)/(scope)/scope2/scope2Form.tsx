@@ -566,14 +566,14 @@ export default function Scope2Form() {
         steamData.push(calculatorData)
       }
 
-      // 수동 입력 모드 상태 복원
+      // 수동 입력 모드 상태 복원 (화면 반전 로직 고려)
       if (emission.inputType !== undefined) {
         const categoryKey = emission.scope2CategoryNumber === 1 ? 'list11' : 'list12'
         setCalculatorModes(prev => ({
           ...prev,
           [categoryKey]: {
             ...prev[categoryKey],
-            [calculatorId]: emission.inputType === 'MANUAL'
+            [calculatorId]: emission.inputType === 'LCA' // 수정: 화면에서 반전되므로 LCA일 때 true
           }
         }))
       }

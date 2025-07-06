@@ -647,13 +647,13 @@ export default function Scope3Form() {
         savedData: emission // 전체 백엔드 데이터 보관
       }
 
-      // 수동 입력 모드 상태도 함께 복원 (논리 수정)
+      // 수동 입력 모드 상태도 함께 복원 (화면 반전 로직 고려)
       if (emission.inputType !== undefined) {
         setCalculatorModes(prev => ({
           ...prev,
           [categoryKey]: {
             ...prev[categoryKey],
-            [calculatorId]: emission.inputType === 'MANUAL' // 수정: 논리 그대로 사용
+            [calculatorId]: emission.inputType === 'LCA' // 수정: 화면에서 반전되므로 LCA일 때 true
           }
         }))
       }
