@@ -1,25 +1,22 @@
 'use client'
-import {useState, useEffect} from 'react'
+import toast from '@/util/toast'
+import {useState, useEffect, useRef} from 'react'
 import {
-  ChevronDown,
-  ChevronUp,
-  CheckCircle,
   AlertTriangle,
-  Building,
   Send,
   Home,
   ArrowLeft,
   Shield,
-  Star,
-  Sparkles,
   Activity,
   TrendingUp,
-  Clock,
   Users,
   Globe,
   FileText,
-  Zap
+  Zap,
+  AlertCircle,
+  Eye
 } from 'lucide-react'
+import {motion, AnimatePresence} from 'framer-motion'
 
 import {
   Tooltip,
@@ -42,7 +39,7 @@ import {
 import authService from '@/services/authService'
 
 import {submitSelfAssessmentToBackend} from '@/services/csdddService'
-// 질문 데이터 타입 정의
+
 interface Question {
   id: string
   category: string
@@ -54,39 +51,13 @@ interface Question {
   }
 }
 
-// 답변 상태 타입
 interface Answer {
   questionId: string
   answer: 'yes' | 'no' | ''
   remarks?: string
 }
 
-const categories = [
-  '인권 및 노동',
-  '산업안전·보건',
-  '환경경영',
-  '공급망 및 조달',
-  '윤리경영 및 정보보호'
-]
-
-const categoryIcons: Record<(typeof categories)[number], React.ComponentType<any>> = {
-  '인권 및 노동': Users,
-  '산업안전·보건': Shield,
-  환경경영: Globe,
-  '공급망 및 조달': Activity,
-  '윤리경영 및 정보보호': FileText
-}
-
-const categoryColors: Record<(typeof categories)[number], string> = {
-  '인권 및 노동': 'from-purple-500 to-pink-500',
-  '산업안전·보건': 'from-blue-500 to-cyan-500',
-  환경경영: 'from-green-500 to-emerald-500',
-  '공급망 및 조달': 'from-orange-500 to-red-500',
-  '윤리경영 및 정보보호': 'from-indigo-500 to-purple-500'
-}
-
-const questions: Question[] = [
-  // 인권 및 노동 카테고리
+export const questions: Question[] = [
   {
     id: '1.1',
     category: '인권 및 노동',
@@ -166,7 +137,6 @@ const questions: Question[] = [
     }
   },
 
-  // 산업안전보건
   {
     id: '2.1',
     category: '산업안전·보건',
@@ -212,7 +182,6 @@ const questions: Question[] = [
     weight: 1.5
   },
 
-  // 환경경영
   {
     id: '3.1',
     category: '환경경영',
@@ -270,7 +239,6 @@ const questions: Question[] = [
     weight: 1.0
   },
 
-  // 공급망 및 조달
   {
     id: '4.1',
     category: '공급망 및 조달',
@@ -350,7 +318,6 @@ const questions: Question[] = [
     weight: 1.5
   },
 
-  // 윤리경영 및 정보보호
   {
     id: '5.1',
     category: '윤리경영 및 정보보호',
@@ -417,6 +384,49 @@ const questions: Question[] = [
   }
 ]
 
+const categoryMeta = [
+  {
+    key: '인권 및 노동',
+    icon: Users,
+    color: 'from-blue-100 to-blue-50',
+    activeColor: 'from-blue-500 to-cyan-500',
+    text: 'text-blue-700',
+    bar: 'bg-blue-500'
+  },
+  {
+    key: '산업안전·보건',
+    icon: Shield,
+    color: 'from-blue-100 to-blue-50',
+    activeColor: 'from-blue-500 to-cyan-500',
+    text: 'text-blue-700',
+    bar: 'bg-blue-500'
+  },
+  {
+    key: '환경경영',
+    icon: Globe,
+    color: 'from-blue-100 to-blue-50',
+    activeColor: 'from-blue-500 to-cyan-500',
+    text: 'text-blue-700',
+    bar: 'bg-blue-500'
+  },
+  {
+    key: '공급망 및 조달',
+    icon: Activity,
+    color: 'from-blue-100 to-blue-50',
+    activeColor: 'from-blue-500 to-cyan-500',
+    text: 'text-blue-700',
+    bar: 'bg-blue-500'
+  },
+  {
+    key: '윤리경영 및 정보보호',
+    icon: FileText,
+    color: 'from-blue-100 to-blue-50',
+    activeColor: 'from-blue-500 to-cyan-500',
+    text: 'text-blue-700',
+    bar: 'bg-blue-500'
+  }
+]
+
 export default function CSAssessmentPage() {
   const [companyName, setCompanyName] = useState('')
   const [answers, setAnswers] = useState<Record<string, Answer>>({})
@@ -424,6 +434,12 @@ export default function CSAssessmentPage() {
     {}
   )
   const [isSubmitting, setIsSubmitting] = useState(false)
+  const [currentCategoryIdx, setCurrentCategoryIdx] = useState(0)
+  const [showUnansweredModal, setShowUnansweredModal] = useState(false)
+  const [unansweredQuestions, setUnansweredQuestions] = useState<Question[]>([])
+  const questionRefs = useRef<Record<string, HTMLDivElement | null>>({})
+
+  const currentCategory = categoryMeta[currentCategoryIdx].key
 
   useEffect(() => {
     authService
@@ -436,7 +452,6 @@ export default function CSAssessmentPage() {
       .catch(err => console.error('회사명 로드 실패:', err))
   }, [])
 
-  // 답변 변경 핸들러
   const handleAnswerChange = (
     questionId: string,
     answer: 'yes' | 'no',
@@ -455,7 +470,6 @@ export default function CSAssessmentPage() {
     }))
   }
 
-  // 비고 변경 핸들러
   const handleRemarksChange = (questionId: string, remarks: string) => {
     setAnswers(prev => ({
       ...prev,
@@ -468,24 +482,6 @@ export default function CSAssessmentPage() {
     }))
   }
 
-  // 카테고리 토글
-  const toggleCategory = (category: string) => {
-    setExpandedCategories(prev => ({
-      ...prev,
-      [category]: !prev[category]
-    }))
-  }
-
-  // 진행률 계산
-  const calculateProgress = () => {
-    const totalQuestions = questions.length
-    const answeredQuestions = Object.values(answers).filter(
-      answer => answer.answer !== ''
-    ).length
-    return Math.round((answeredQuestions / totalQuestions) * 100)
-  }
-
-  // 카테고리별 질문 그룹화
   const questionsByCategory = questions.reduce((acc, question) => {
     if (!acc[question.category]) {
       acc[question.category] = []
@@ -494,36 +490,49 @@ export default function CSAssessmentPage() {
     return acc
   }, {} as Record<string, Question[]>)
 
-  // 카테고리 전체 선택 핸들러
-  const handleSelectAllInCategory = (category: string, answer: 'yes' | 'no') => {
-    const updatedAnswers = {...answers}
-    const categoryQuestions = questionsByCategory[category] || []
+  const moveToUnansweredQuestion = (questionId: string) => {
+    const question = questions.find(q => q.id === questionId)
+    if (!question) return
 
-    categoryQuestions.forEach(question => {
-      updatedAnswers[question.id] = {
-        questionId: question.id,
-        answer,
-        remarks: answers[question.id]?.remarks || ''
-      }
-    })
+    const categoryIdx = categoryMeta.findIndex(c => c.key === question.category)
+    if (categoryIdx !== -1) {
+      setCurrentCategoryIdx(categoryIdx)
 
-    setAnswers(updatedAnswers)
+      setTimeout(() => {
+        const questionElement = questionRefs.current[questionId]
+        if (questionElement) {
+          questionElement.scrollIntoView({
+            behavior: 'smooth',
+            block: 'center'
+          })
+          questionElement.classList.add('ring-4', 'ring-amber-300', 'ring-opacity-75')
+          setTimeout(() => {
+            questionElement.classList.remove(
+              'ring-4',
+              'ring-amber-300',
+              'ring-opacity-75'
+            )
+          }, 2000)
+        }
+      }, 500)
+    }
+    setShowUnansweredModal(false)
   }
 
-  // 제출 핸들러
   const handleSubmit = async () => {
-    const unansweredQuestions = questions.filter(
+    const unanswered = questions.filter(
       q => !answers[q.id] || answers[q.id].answer === ''
     )
-    if (unansweredQuestions.length > 0) {
-      alert(`모든 질문에 답변해주세요. (미답변: ${unansweredQuestions.length}개)`)
+
+    if (unanswered.length > 0) {
+      setUnansweredQuestions(unanswered)
+      setShowUnansweredModal(true)
       return
     }
 
     setIsSubmitting(true)
 
     try {
-      // TypeScript 인터페이스에 맞는 데이터 구조로 변환
       const submissionData = {
         companyName,
         answers: questions
@@ -541,34 +550,299 @@ export default function CSAssessmentPage() {
               remarks: answers[question.id].remarks || undefined
             }
           })
-          .filter((item): item is NonNullable<typeof item> => item !== null) // 타입 가드 사용
+          .filter((item): item is NonNullable<typeof item> => item !== null)
       }
 
-      console.log('📦 제출 데이터:', submissionData)
-
-      // 실제 API 호출
       await submitSelfAssessmentToBackend(submissionData)
 
-      alert('자가진단이 성공적으로 제출되었습니다!')
+      toast.success('자가진단이 성공적으로 제출되었습니다!')
+      window.location.href = '/CSDDD/evaluation'
     } catch (error) {
       console.error('제출 중 오류 발생:', error)
-      alert('제출 중 오류가 발생했습니다. 다시 시도해주세요.')
+      toast.error('제출 중 오류가 발생했습니다. 다시 시도해주세요.')
     } finally {
       setIsSubmitting(false)
     }
   }
 
-  const progress = calculateProgress()
+  const handleCategoryClick = (category: string) => {
+    const idx = categoryMeta.findIndex(c => c.key === category)
+    if (idx !== -1) setCurrentCategoryIdx(idx)
+  }
+
+  const UnansweredQuestionsModal = () => (
+    <AnimatePresence>
+      {showUnansweredModal && (
+        <motion.div
+          initial={{opacity: 0}}
+          animate={{opacity: 1}}
+          exit={{opacity: 0}}
+          className="flex fixed inset-0 z-50 justify-center items-center p-4 bg-black bg-opacity-50"
+          onClick={() => setShowUnansweredModal(false)}>
+          <motion.div
+            initial={{scale: 0.9, opacity: 0}}
+            animate={{scale: 1, opacity: 1}}
+            exit={{scale: 0.9, opacity: 0}}
+            className="bg-white rounded-2xl shadow-2xl max-w-2xl w-full max-h-[80vh] overflow-hidden"
+            onClick={e => e.stopPropagation()}>
+            <div className="p-6 border-b border-gray-100">
+              <div className="flex items-center space-x-3">
+                <div className="p-2 bg-amber-100 rounded-lg">
+                  <AlertCircle className="w-6 h-6 text-amber-600" />
+                </div>
+                <div>
+                  <h3 className="text-xl font-bold text-slate-800">
+                    미답변 질문이 있습니다
+                  </h3>
+                  <p className="text-sm text-slate-600">
+                    {unansweredQuestions.length}개의 질문에 답변이 필요합니다
+                  </p>
+                </div>
+              </div>
+            </div>
+
+            <div className="overflow-y-auto p-6 max-h-96">
+              <div className="space-y-3">
+                {unansweredQuestions.map((question, index) => (
+                  <div
+                    key={question.id}
+                    className="flex justify-between items-start p-4 bg-amber-50 rounded-xl border border-amber-200 transition-colors cursor-pointer hover:bg-amber-100"
+                    onClick={() => moveToUnansweredQuestion(question.id)}>
+                    <div className="flex-1">
+                      <div className="flex items-center mb-2 space-x-2">
+                        <span className="px-2 py-1 text-xs font-bold text-amber-700 bg-amber-200 rounded-lg">
+                          {question.id}
+                        </span>
+                        <span className="text-xs font-medium text-amber-600">
+                          {question.category}
+                        </span>
+                      </div>
+                      <p className="text-sm leading-relaxed text-slate-700">
+                        {question.text}
+                      </p>
+                    </div>
+                    <Eye className="flex-shrink-0 ml-3 w-5 h-5 text-amber-600" />
+                  </div>
+                ))}
+              </div>
+            </div>
+
+            <div className="p-6 bg-gray-50 border-t border-gray-100">
+              <div className="flex space-x-3">
+                <button
+                  onClick={() => setShowUnansweredModal(false)}
+                  className="flex-1 px-4 py-3 font-medium bg-white rounded-xl border border-gray-300 transition-colors text-slate-600 hover:bg-gray-50">
+                  닫기
+                </button>
+                <button
+                  onClick={() => moveToUnansweredQuestion(unansweredQuestions[0]?.id)}
+                  className="flex-1 px-4 py-3 font-medium text-white bg-amber-500 rounded-xl transition-colors hover:bg-amber-600">
+                  첫 번째 미답변으로 이동
+                </button>
+              </div>
+            </div>
+          </motion.div>
+        </motion.div>
+      )}
+    </AnimatePresence>
+  )
+
+  const renderCurrentCategorySection = () => {
+    const category = currentCategory
+    const categoryQuestions = questionsByCategory[category] || []
+    const isFirst = currentCategoryIdx === 0
+    const isLast = currentCategoryIdx === categoryMeta.length - 1
+
+    return (
+      <motion.div
+        key={category}
+        initial={{opacity: 0, x: 40}}
+        animate={{opacity: 1, x: 0}}
+        exit={{opacity: 0, x: -40}}
+        transition={{duration: 0.5}}
+        className="mb-2">
+        <div className="space-y-3">
+          {categoryQuestions.map((question, index) => {
+            const answer = answers[question.id]
+            const isCritical = !!question.criticalViolation
+            const isAnswered = answer?.answer !== '' && answer?.answer
+
+            return (
+              <motion.div
+                key={question.id}
+                ref={el => {
+                  questionRefs.current[question.id] = el
+                }}
+                initial={{opacity: 0, y: 20}}
+                animate={{opacity: 1, y: 0}}
+                transition={{delay: index * 0.05}}
+                className={`relative p-2 transition-all bg-white border rounded-lg shadow hover:shadow-md transform hover:-translate-y-0.5 ${
+                  isAnswered
+                    ? 'border-blue-200 bg-blue-50'
+                    : 'border-gray-200 hover:border-blue-300'
+                }`}>
+                <div className="flex items-start space-x-4">
+                  <div className="flex-shrink-0">
+                    <div className="inline-flex justify-center items-center w-12 h-8 text-xs font-bold text-blue-600 bg-blue-100 rounded-lg border-2 border-blue-200 shadow-sm">
+                      {question.id}
+                    </div>
+                  </div>
+
+                  <div className="flex-1 space-y-1">
+                    <div className="flex justify-between items-start w-full">
+                      <p className="flex-1 pr-4 text-base font-bold leading-relaxed text-left text-slate-800">
+                        {question.text}
+                      </p>
+                      <div className="flex flex-shrink-0 items-center space-x-2">
+                        {question.criticalViolation && (
+                          <TooltipProvider>
+                            <Tooltip>
+                              <TooltipTrigger asChild>
+                                <div className="flex-shrink-0 p-1.5 bg-red-100 rounded-full shadow-sm cursor-help">
+                                  <AlertTriangle className="w-4 h-4 text-red-500" />
+                                </div>
+                              </TooltipTrigger>
+                              <TooltipContent className="max-w-xs text-sm text-left text-red-800 bg-red-50 rounded-lg border border-red-300 shadow-md">
+                                <div className="mb-1 font-semibold">
+                                  {question.criticalViolation?.grade} 등급 위반
+                                </div>
+                                <div>{question.criticalViolation?.reason}</div>
+                              </TooltipContent>
+                            </Tooltip>
+                          </TooltipProvider>
+                        )}
+                        <div className="px-2 py-0.5 text-[11px] font-medium rounded-full shadow-sm text-slate-600 bg-slate-100">
+                          가중치 {question.weight}
+                        </div>
+                      </div>
+                    </div>
+
+                    <div className="flex items-center space-x-3">
+                      <label className="flex items-center px-2 py-1 space-x-2 rounded-2xl border-2 border-transparent transition-all cursor-pointer group hover:bg-blue-50 hover:border-blue-200">
+                        <input
+                          type="radio"
+                          name={question.id}
+                          value="yes"
+                          checked={answer?.answer === 'yes'}
+                          onChange={() =>
+                            handleAnswerChange(
+                              question.id,
+                              'yes',
+                              question.category,
+                              question.weight,
+                              isCritical,
+                              question.criticalViolation?.grade
+                            )
+                          }
+                          className="w-5 h-5 rounded-full border-2 border-blue-300 shadow-sm appearance-none cursor-pointer checked:bg-blue-300 checked:ring-4 checked:ring-blue-100"
+                        />
+                        <span className="text-xs font-medium text-blue-600 transition-colors group-hover:text-blue-700">
+                          예
+                        </span>
+                      </label>
+
+                      <label className="flex items-center px-2 py-1 space-x-2 rounded-2xl border-2 border-transparent transition-all cursor-pointer group hover:bg-blue-50 hover:border-blue-200">
+                        <input
+                          type="radio"
+                          name={question.id}
+                          value="no"
+                          checked={answer?.answer === 'no'}
+                          onChange={() =>
+                            handleAnswerChange(
+                              question.id,
+                              'no',
+                              question.category,
+                              question.weight,
+                              isCritical,
+                              question.criticalViolation?.grade
+                            )
+                          }
+                          className="w-5 h-5 rounded-full border-2 border-blue-300 shadow-sm appearance-none cursor-pointer checked:bg-blue-300 checked:ring-4 checked:ring-blue-100"
+                        />
+                        <span className="text-xs font-medium text-blue-600 transition-colors group-hover:text-blue-700">
+                          아니오
+                        </span>
+                      </label>
+                    </div>
+
+                    <div className="space-y-2">
+                      <label className="block text-xs font-semibold text-slate-700">
+                        비고 (선택사항)
+                      </label>
+                      <textarea
+                        value={answer?.remarks || ''}
+                        onChange={e => handleRemarksChange(question.id, e.target.value)}
+                        placeholder="추가 설명이나 특이사항을 입력하세요"
+                        rows={1}
+                        className="px-2 py-1 w-full text-xs rounded-2xl border-2 shadow-sm backdrop-blur-sm transition-all resize-none border-slate-200 focus:outline-none focus:ring-4 focus:ring-blue-200 focus:border-blue-500 bg-white/90 hover:border-slate-300"
+                      />
+                    </div>
+                  </div>
+                </div>
+              </motion.div>
+            )
+          })}
+        </div>
+
+        <div className="flex gap-3 justify-between items-center mt-12">
+          <button
+            onClick={() => {
+              setCurrentCategoryIdx(idx => Math.max(0, idx - 1))
+              window.scrollTo({top: 0, behavior: 'smooth'})
+            }}
+            disabled={isFirst}
+            className="flex items-center px-8 py-4 space-x-3 text-sm font-semibold text-gray-700 bg-white rounded-2xl border-2 border-gray-300 shadow-lg transition-all duration-300 hover:shadow-xl disabled:opacity-50 disabled:transform-none hover:bg-gray-50 hover:-translate-y-1">
+            <ArrowLeft className="w-3 h-3" />
+            <span>이전</span>
+          </button>
+
+          {isLast ? (
+            <button
+              onClick={handleSubmit}
+              disabled={isSubmitting}
+              className={`flex items-center space-x-3 px-8 py-4 text-lg font-semibold rounded-2xl transition-all duration-300 shadow-lg hover:shadow-xl hover:-translate-y-1 ${
+                isSubmitting
+                  ? 'text-white cursor-not-allowed bg-slate-400'
+                  : 'text-white bg-blue-500 hover:bg-blue-600'
+              }`}>
+              {isSubmitting ? (
+                <>
+                  <div className="w-3 h-3 rounded-full border-2 border-t-2 animate-spin border-white/20 border-t-white"></div>
+                  <span>제출 중...</span>
+                </>
+              ) : (
+                <>
+                  <Send className="w-3 h-3" />
+                  <span>자가진단 제출</span>
+                </>
+              )}
+            </button>
+          ) : (
+            <button
+              onClick={() => {
+                setCurrentCategoryIdx(idx => Math.min(categoryMeta.length - 1, idx + 1))
+                window.scrollTo({top: 0, behavior: 'smooth'})
+              }}
+              className="flex items-center px-8 py-4 space-x-3 text-sm font-semibold text-white bg-blue-500 rounded-2xl shadow-lg transition-all duration-300 hover:shadow-xl hover:bg-blue-600 hover:-translate-y-1">
+              <span>다음</span>
+              <ArrowLeft className="w-3 h-3 rotate-180" />
+            </button>
+          )}
+        </div>
+      </motion.div>
+    )
+  }
 
   return (
     <div className="flex flex-col w-full min-h-screen">
-      {/* 브레드크럼 영역 */}
+      <UnansweredQuestionsModal />
+
       <div className="p-4 pb-0">
-        <div className="flex flex-row items-center p-3 mb-6 text-sm text-gray-600 border shadow-sm rounded-xl backdrop-blur-sm bg-white/80 border-white/50">
+        <div className="flex flex-row items-center p-4 mb-6 text-sm text-gray-600 rounded-2xl border shadow-sm backdrop-blur-sm bg-white/90 border-white/50">
           <Breadcrumb>
             <BreadcrumbList>
               <BreadcrumbItem>
-                <Home className="w-4 h-4 mr-1" />
+                <Home className="mr-1 w-4 h-4" />
                 <BreadcrumbLink
                   href="/dashboard"
                   className="transition-colors hover:text-blue-600">
@@ -592,12 +866,11 @@ export default function CSAssessmentPage() {
         </div>
       </div>
 
-      {/* 페이지 헤더 영역 */}
       <div className="px-4 pb-0">
-        <div className="flex flex-row w-full mb-6">
+        <div className="flex flex-row mb-6 w-full">
           <Link
-            href="/dashboard"
-            className="flex flex-row items-center p-4 space-x-4 transition-all rounded-xl backdrop-blur-sm hover:bg-white/30 group">
+            href="/CSDDD"
+            className="flex flex-row items-center p-4 space-x-4 rounded-2xl backdrop-blur-sm transition-all hover:bg-white/30 group">
             <ArrowLeft className="w-6 h-6 text-gray-500 transition-colors group-hover:text-blue-600" />
             <PageHeader
               icon={<Shield className="w-6 h-6 text-blue-600" />}
@@ -611,330 +884,78 @@ export default function CSAssessmentPage() {
       </div>
 
       <div className="flex-1 px-4 pb-8">
-        {/* 진행률 대시보드 */}
-        <div className="p-8 mb-8 border shadow-xl bg-white/70 backdrop-blur-xl rounded-3xl border-white/50 shadow-blue-500/10">
-          <div className="flex items-center justify-between mb-6">
-            <div className="flex items-center space-x-3">
-              <div className="p-3 shadow-lg bg-gradient-to-br from-blue-500 to-indigo-600 rounded-xl">
-                <TrendingUp className="w-6 h-6 text-white" />
+        <div className="p-4 mb-4 rounded-3xl border shadow-xl backdrop-blur-xl bg-white/70 border-white/50 shadow-blue-500/10">
+          <div className="flex justify-between items-center mb-4">
+            <div className="flex items-center space-x-2">
+              <div className="p-2 bg-blue-500 rounded-xl shadow-lg">
+                <TrendingUp className="w-5 h-5 text-white" />
               </div>
               <div>
-                <h2 className="text-2xl font-bold text-slate-800">진행 현황</h2>
-                <p className="text-slate-600">현재 평가 진행 상태를 확인하세요</p>
+                <h2 className="text-xl font-bold text-slate-800">진행 현황</h2>
+                <p className="text-sm text-slate-500">현재 평가 진행 상태를 확인하세요</p>
               </div>
-            </div>
-            <div className="text-right">
-              <div className="text-4xl font-bold text-transparent bg-gradient-to-r from-blue-600 to-indigo-600 bg-clip-text">
-                {progress}%
-              </div>
-              <p className="mt-1 text-sm text-slate-500">완료율</p>
             </div>
           </div>
 
-          {/* 진행률 바 */}
-          <div className="relative mb-6">
-            <div className="w-full h-4 overflow-hidden rounded-full shadow-inner bg-gradient-to-r from-slate-200 to-slate-300">
-              <div
-                className="relative h-full transition-all duration-1000 ease-out rounded-full bg-gradient-to-r from-blue-500 via-indigo-500 to-purple-500"
-                style={{width: `${progress}%`}}>
-                <div className="absolute inset-0 rounded-full bg-white/20 animate-pulse"></div>
-              </div>
-            </div>
-            <div className="absolute transform -translate-x-1/2 -translate-y-1/2 top-1/2 left-1/2">
-              <Zap className="w-4 h-4 text-white animate-pulse" />
-            </div>
-          </div>
-
-          {/* 통계 */}
-          <div className="grid grid-cols-3 gap-4">
-            <div className="p-4 text-center border bg-gradient-to-br from-green-50 to-emerald-50 rounded-2xl border-green-200/50">
-              <div className="mb-1 text-2xl font-bold text-green-600">
-                {Object.values(answers).filter(a => a.answer === 'yes').length}
-              </div>
-              <div className="text-sm text-green-700">준수 항목</div>
-            </div>
-            <div className="p-4 text-center border bg-gradient-to-br from-red-50 to-rose-50 rounded-2xl border-red-200/50">
-              <div className="mb-1 text-2xl font-bold text-red-600">
-                {Object.values(answers).filter(a => a.answer === 'no').length}
-              </div>
-              <div className="text-sm text-red-700">미준수 항목</div>
-            </div>
-            <div className="p-4 text-center border bg-gradient-to-br from-amber-50 to-yellow-50 rounded-2xl border-amber-200/50">
-              <div className="mb-1 text-2xl font-bold text-amber-600">
-                {questions.length -
-                  Object.values(answers).filter(a => a.answer !== '').length}
-              </div>
-              <div className="text-sm text-amber-700">미답변 항목</div>
-            </div>
-          </div>
-
-          {progress === 100 && (
-            <div className="p-4 mt-6 text-white bg-gradient-to-r from-green-500 to-emerald-500 rounded-2xl">
-              <div className="flex items-center justify-center space-x-2">
-                <Star className="w-5 h-5 animate-spin" />
-                <span className="font-semibold">
-                  모든 질문 답변 완료! 제출할 수 있습니다.
-                </span>
-              </div>
-            </div>
-          )}
-        </div>
-
-        {/* 질문 카테고리별 섹션 */}
-        {categories.map((category, categoryIndex) => {
-          const categoryQuestions = questionsByCategory[category] || []
-          const isExpanded = expandedCategories[category]
-          const answeredInCategory = categoryQuestions.filter(
-            q => answers[q.id]?.answer
-          ).length
-          const CategoryIcon = categoryIcons[category]
-          const gradientClass = categoryColors[category]
-
-          return (
-            <div
-              key={category}
-              className="mb-6 overflow-hidden transition-all duration-300 border shadow-xl bg-white/70 backdrop-blur-xl rounded-3xl border-white/50 shadow-blue-500/5 hover:shadow-2xl hover:shadow-blue-500/10"
-              style={{animationDelay: `${categoryIndex * 100}ms`}}>
-              <button
-                onClick={() => toggleCategory(category)}
-                className="flex items-center justify-between w-full p-6 transition-all duration-300 hover:bg-white/50 group">
-                <div className="flex items-center space-x-4">
-                  <div
-                    className={`p-3 bg-gradient-to-br ${gradientClass} rounded-2xl shadow-lg group-hover:scale-110 transition-transform duration-300`}>
-                    <CategoryIcon className="w-6 h-6 text-white" />
-                  </div>
-                  <div className="text-left">
-                    <h3 className="text-xl font-bold transition-colors text-slate-800 group-hover:text-blue-600">
-                      {category}
-                    </h3>
-                    <p className="mt-1 text-sm text-slate-500">
-                      {categoryQuestions.length}개 질문
-                    </p>
-                  </div>
-                </div>
-
-                <div className="flex items-center space-x-3">
-                  <div className="flex items-center space-x-2">
-                    <div className="text-right">
-                      <div className="text-lg font-bold text-slate-800">
-                        {answeredInCategory}/{categoryQuestions.length}
-                      </div>
-                      <div className="text-xs text-slate-500">답변 완료</div>
+          <div className="relative mb-4">
+            {(() => {
+              const totalQuestions = questions.length
+              const answeredQuestions = Object.values(answers).filter(
+                answer => answer.answer !== ''
+              ).length
+              const progress = Math.round((answeredQuestions / totalQuestions) * 100)
+              return (
+                <>
+                  <div className="overflow-hidden w-full h-3 bg-gradient-to-r rounded-full shadow-inner from-slate-200 to-slate-300">
+                    <div
+                      className="relative h-full bg-gradient-to-r from-blue-500 to-cyan-500 rounded-full transition-all duration-1000 ease-out"
+                      style={{width: `${progress}%`}}>
+                      <div className="absolute inset-0 rounded-full animate-pulse bg-white/20"></div>
                     </div>
-                    {answeredInCategory === categoryQuestions.length &&
-                      categoryQuestions.length > 0 && (
-                        <div className="p-2 bg-green-100 rounded-full">
-                          <CheckCircle className="w-5 h-5 text-green-600" />
-                        </div>
-                      )}
                   </div>
-                  <div className="p-2 transition-colors rounded-full bg-slate-100 group-hover:bg-blue-100">
-                    {isExpanded ? (
-                      <ChevronUp className="w-5 h-5 transition-colors text-slate-600 group-hover:text-blue-600" />
-                    ) : (
-                      <ChevronDown className="w-5 h-5 transition-colors text-slate-600 group-hover:text-blue-600" />
-                    )}
+                  <div className="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2">
+                    <Zap className="w-3 h-3 text-white animate-pulse" />
                   </div>
-                </div>
-              </button>
+                </>
+              )
+            })()}
+          </div>
 
-              {isExpanded && (
-                <div className="border-t border-slate-200/60">
-                  <div className="flex justify-end gap-3 px-6 py-4 bg-gradient-to-r from-slate-50/50 to-slate-100/50">
-                    <button
-                      onClick={() => handleSelectAllInCategory(category, 'yes')}
-                      className="px-4 py-2 text-sm font-medium text-green-700 transition-all duration-200 bg-green-100 shadow-sm hover:bg-green-200 rounded-xl hover:scale-105 hover:shadow-md">
-                      전체 예
-                    </button>
-                    <button
-                      onClick={() => handleSelectAllInCategory(category, 'no')}
-                      className="px-4 py-2 text-sm font-medium text-red-700 transition-all duration-200 bg-red-100 shadow-sm hover:bg-red-200 rounded-xl hover:scale-105 hover:shadow-md">
-                      전체 아니오
-                    </button>
+          <div className="flex flex-row gap-2 justify-between items-center px-2 py-3 mt-1 bg-white rounded-2xl border border-gray-100 shadow-sm md:px-8">
+            {categoryMeta.map((cat, idx) => {
+              const total = questions.filter(q => q.category === cat.key).length
+              const done = questions.filter(
+                q => q.category === cat.key && answers[q.id]?.answer !== ''
+              ).length
+              const isActive = currentCategory === cat.key
+              const Icon = cat.icon
+              return (
+                <button
+                  key={cat.key}
+                  onClick={() => handleCategoryClick(cat.key)}
+                  className={`flex flex-col items-center flex-1 group transition-all duration-300 ${
+                    isActive ? 'scale-105' : 'opacity-80 hover:scale-102'
+                  }`}
+                  style={{minWidth: 0}}>
+                  <div
+                    className={`flex items-center justify-center w-10 h-10 rounded-xl shadow-md mb-1 ${
+                      isActive ? 'bg-blue-500' : 'bg-slate-200'
+                    } transition-all`}>
+                    <Icon
+                      className={`w-7 h-7 ${isActive ? 'text-white' : 'text-slate-600'}`}
+                    />
                   </div>
-
-                  {categoryQuestions.map((question, index) => {
-                    const answer = answers[question.id]
-                    const isCritical = !!question.criticalViolation
-
-                    return (
-                      <div
-                        key={question.id}
-                        className="p-6 transition-all duration-200 border-b border-slate-200/60 last:border-b-0 hover:bg-white/30">
-                        <div className="flex items-start space-x-4">
-                          <div className="flex-shrink-0">
-                            <div className="inline-flex items-center justify-center w-12 h-8 text-sm font-bold text-blue-600 bg-blue-100 border-2 border-blue-200 rounded-xl">
-                              {question.id}
-                            </div>
-                          </div>
-
-                          <div className="flex-1 space-y-4">
-                            <div className="flex items-start space-x-3">
-                              <p className="flex-1 font-medium leading-relaxed text-slate-800">
-                                {question.text}
-                              </p>
-                              {question.criticalViolation && (
-                                <TooltipProvider>
-                                  <Tooltip>
-                                    <TooltipTrigger asChild>
-                                      <div className="flex-shrink-0 p-1 bg-red-100 rounded-full cursor-help">
-                                        <AlertTriangle className="w-4 h-4 text-red-500" />
-                                      </div>
-                                    </TooltipTrigger>
-                                    <TooltipContent className="max-w-xs text-sm text-left text-red-800 border border-red-300 rounded-lg shadow-md bg-red-50">
-                                      <div className="mb-1 font-semibold">
-                                        {question.criticalViolation?.grade} 등급 위반
-                                      </div>
-                                      <div>{question.criticalViolation?.reason}</div>
-                                    </TooltipContent>
-                                  </Tooltip>
-                                </TooltipProvider>
-                              )}
-                            </div>
-
-                            <div className="flex items-center space-x-6">
-                              <label className="flex items-center p-3 space-x-3 transition-colors cursor-pointer group rounded-xl hover:bg-green-50">
-                                <input
-                                  type="radio"
-                                  name={question.id}
-                                  value="yes"
-                                  checked={answer?.answer === 'yes'}
-                                  onChange={() =>
-                                    handleAnswerChange(
-                                      question.id,
-                                      'yes',
-                                      question.category,
-                                      question.weight,
-                                      isCritical,
-                                      question.criticalViolation?.grade
-                                    )
-                                  }
-                                  className="w-5 h-5 text-green-600 border-2 border-green-300 focus:ring-green-500 focus:ring-2"
-                                />
-                                <span className="font-medium text-green-700 transition-colors group-hover:text-green-800">
-                                  예
-                                </span>
-                              </label>
-                              <label className="flex items-center p-3 space-x-3 transition-colors cursor-pointer group rounded-xl hover:bg-red-50">
-                                <input
-                                  type="radio"
-                                  name={question.id}
-                                  value="no"
-                                  checked={answer?.answer === 'no'}
-                                  onChange={() =>
-                                    handleAnswerChange(
-                                      question.id,
-                                      'no',
-                                      question.category,
-                                      question.weight,
-                                      isCritical,
-                                      question.criticalViolation?.grade
-                                    )
-                                  }
-                                  className="w-5 h-5 text-red-600 border-2 border-red-300 focus:ring-red-500 focus:ring-2"
-                                />
-                                <span className="font-medium text-red-700 transition-colors group-hover:text-red-800">
-                                  아니오
-                                </span>
-                              </label>
-                            </div>
-
-                            <div className="space-y-2">
-                              <label className="block text-sm font-medium text-slate-700">
-                                비고 (선택사항)
-                              </label>
-                              <textarea
-                                value={answer?.remarks || ''}
-                                onChange={e =>
-                                  handleRemarksChange(question.id, e.target.value)
-                                }
-                                placeholder="추가 설명이나 특이사항을 입력하세요"
-                                rows={3}
-                                className="w-full px-4 py-3 text-sm transition-colors border-2 border-slate-200 rounded-2xl focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent bg-white/80 backdrop-blur-sm hover:border-slate-300"
-                              />
-                            </div>
-
-                            <div className="flex items-center justify-between">
-                              <div className="flex items-center space-x-2">
-                                <div className="px-3 py-1 text-xs font-medium rounded-full text-slate-600 bg-slate-100">
-                                  가중치 {question.weight}
-                                </div>
-                              </div>
-                              {answer?.answer && (
-                                <div className="flex items-center space-x-2 text-green-600">
-                                  <CheckCircle className="w-5 h-5" />
-                                  <span className="text-sm font-medium">완료</span>
-                                </div>
-                              )}
-                            </div>
-                          </div>
-                        </div>
-                      </div>
-                    )
-                  })}
-                </div>
-              )}
-            </div>
-          )
-        })}
-
-        {/* 제출 섹션 */}
-        <div className="p-8 border shadow-xl bg-gradient-to-br from-white/80 to-slate-50/80 backdrop-blur-xl rounded-3xl border-white/50 shadow-blue-500/10">
-          <div className="flex items-center justify-between">
-            <div className="space-y-2">
-              <h3 className="text-xl font-bold text-slate-800">자가진단 완료</h3>
-              <div className="flex items-center space-x-4 text-sm text-slate-600">
-                <div className="flex items-center space-x-1">
-                  <Clock className="w-4 h-4" />
-                  <span>총 {questions.length}개 질문</span>
-                </div>
-                <div className="flex items-center space-x-1">
-                  <CheckCircle className="w-4 h-4 text-green-500" />
-                  <span className="font-medium text-green-600">
-                    {Object.values(answers).filter(a => a.answer !== '').length}개 답변
-                    완료
+                  <span className={`text-[15px] font-semibold truncate ${cat.text}`}>
+                    {cat.key}
                   </span>
-                </div>
-              </div>
-            </div>
-
-            <button
-              onClick={handleSubmit}
-              disabled={progress !== 100 || isSubmitting}
-              className={`flex items-center space-x-3 px-8 py-4 rounded-2xl font-semibold text-white transition-all duration-300 shadow-lg hover:shadow-xl transform hover:scale-105 ${
-                progress === 100 && !isSubmitting
-                  ? 'bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 shadow-blue-500/25 hover:shadow-blue-500/40'
-                  : 'bg-slate-400 cursor-not-allowed'
-              }`}>
-              {isSubmitting ? (
-                <>
-                  <div className="w-5 h-5 border-2 border-t-2 rounded-full border-white/20 border-t-white animate-spin"></div>
-                  <span>제출 중...</span>
-                </>
-              ) : (
-                <>
-                  <Send className="w-5 h-5" />
-                  <span>자가진단 제출</span>
-                </>
-              )}
-            </button>
+                </button>
+              )
+            })}
           </div>
         </div>
+
+        {renderCurrentCategorySection()}
       </div>
     </div>
-  )
-}
-
-// ChevronRight 컴포넌트 추가
-function ChevronRight({className}: {className?: string}) {
-  return (
-    <svg className={className} fill="none" stroke="currentColor" viewBox="0 0 24 24">
-      <path
-        strokeLinecap="round"
-        strokeLinejoin="round"
-        strokeWidth={2}
-        d="M9 5l7 7-7 7"
-      />
-    </svg>
   )
 }

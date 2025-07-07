@@ -1,32 +1,10 @@
-/**
- * 개별 계산기 아이템 컴포넌트
- *
- * 주요 기능:
- * - 계산기 번호 표시 및 삭제 버튼 제공
- * - ExcelCascadingSelector 컴포넌트를 래핑
- * - 계산기별 상태 관리 및 이벤트 처리
- * - NSMM 통일된 블루 디자인 적용
- *
- * 디자인 특징:
- * - 통일된 블루 색상 체계
- * - 부드러운 그림자 효과
- * - 직관적인 아이콘과 레이아웃
- * - 반응형 디자인
- * - 모드별 제목 구분 (중복 방지)
- *
- * @author ESG Project Team
- * @version 3.0
- * @since 2024
- * @lastModified 2024-12-20
- */
-
 import React, {useState} from 'react'
 import {motion} from 'framer-motion'
 import {Button} from '@/components/ui/button'
 import {Trash2, Database, Sparkles, AlertTriangle} from 'lucide-react'
-import {ExcelCascadingSelector} from './ExcelCascadingSelector'
+import {ExcelCascadingSelector} from './Scope3ExcelCascadingSelector'
 import {Switch} from '@/components/ui/switch'
-import {SelfInputCalculator} from './SelfInputScope3Caculator'
+import {SelfInputCalculator} from './Scope3SelfInputCaculator'
 import {
   AlertDialog,
   AlertDialogAction,
@@ -39,11 +17,13 @@ import {
 } from '@/components/ui/alert-dialog'
 import type {SelectorState} from '@/types/scopeTypes'
 import {showSuccess} from '@/util/toast'
+import {Scope3CategoryKey} from '../scopeTotal/Scope123CategorySelector'
 
 /**
  * CalculatorItem 컴포넌트 Props 타입
  */
 interface CalculatorItemProps {
+  activeCategory: Scope3CategoryKey
   /** 계산기 고유 ID */
   id: number
   /** 계산기 순서 번호 (1부터 시작) */
@@ -71,6 +51,7 @@ interface CalculatorItemProps {
  * 개별 계산기를 관리하는 래퍼 컴포넌트
  */
 export function CalculatorItem({
+  activeCategory,
   id,
   index,
   state,
@@ -95,7 +76,9 @@ export function CalculatorItem({
   const handleDeleteConfirm = () => {
     onRemove(id)
     setShowDeleteDialog(false)
-    showSuccess(`${mode ? '수동 입력' : '배출계수 선택'} ${index}이(가) 삭제되었습니다.`)
+    showSuccess(
+      `${mode ? '수동 입력' : 'LCA 기반 배출계수 선택'} ${index}이(가) 삭제되었습니다.`
+    )
   }
 
   /**
@@ -105,12 +88,12 @@ export function CalculatorItem({
     onChangeState(id, newState)
   }
 
-  // 모드별 제목 및 설명 설정
-  const title = mode ? `수동 입력 ${index}` : `배출계수 선택 ${index}`
+  // 모드별 제목 및 설명 설정 (논리 수정)
+  const title = mode ? `LCA 기반 배출계수 선택 ${index}` : `수동 입력 ${index}`
   const description = mode
-    ? '직접 값을 입력하여 배출량을 계산하세요'
+    ? '직접 값을 입력하여 배출량을 계산하세요.'
     : '배출계수를 단계별로 선택하여 자동 계산하세요'
-  const IconComponent = mode ? Sparkles : Database
+  const IconComponent = mode ? Database : Sparkles
 
   /**
    * 입력된 데이터가 있는지 확인하는 함수
@@ -129,25 +112,18 @@ export function CalculatorItem({
 
   return (
     <motion.div
-      initial={{opacity: 0, y: 20}}
+      initial={{opacity: 0, y: 30}}
       animate={{opacity: 1, y: 0}}
-      exit={{opacity: 0, y: -20}}
+      exit={{opacity: 0, y: -30}}
       transition={{
         delay: animationDelay,
-        duration: 0.4,
-        type: 'spring',
-        stiffness: 100
+        duration: 0.5
       }}
-      className="relative w-[80%] mb-8">
+      className="w-[80%]">
       {/* ============================================================================
           메인 카드 컨테이너 (Main Card Container)
           ============================================================================ */}
-      <motion.div
-        whileHover={{
-          scale: 1.01,
-          transition: {duration: 0.2}
-        }}
-        className="overflow-hidden relative bg-white rounded-3xl border-0 shadow-lg transition-all duration-300 hover:shadow-xl">
+      <div className="overflow-hidden relative bg-white rounded-3xl border-0 shadow-lg transition-all duration-300 hover:shadow-xl">
         {/* ========================================================================
             계산기 헤더 (Calculator Header)
             ======================================================================== */}
@@ -194,7 +170,7 @@ export function CalculatorItem({
                   className="data-[state=checked]:bg-blue-500"
                 />
 
-                {/* 라벨 */}
+                {/* 라벨 - Scope 1과 동일한 방식으로 수정 */}
                 <span
                   className={`text-sm font-medium transition-colors ${
                     mode ? 'text-blue-600' : 'text-gray-500'
@@ -226,13 +202,10 @@ export function CalculatorItem({
         {/* ========================================================================
             계산기 컴포넌트 영역 (Calculator Component Area)
             ======================================================================== */}
-        <motion.div
-          initial={{opacity: 0, y: 10}}
-          animate={{opacity: 1, y: 0}}
-          transition={{delay: animationDelay + 0.6, duration: 0.4}}
-          className="p-6">
+        <div className="p-6">
           {mode ? (
             <ExcelCascadingSelector
+              activeCategory={activeCategory}
               id={id}
               state={state}
               onChangeState={handleStateChange}
@@ -253,8 +226,8 @@ export function CalculatorItem({
               onChangeTotal={onChangeTotal}
             />
           )}
-        </motion.div>
-      </motion.div>
+        </div>
+      </div>
 
       {/* ============================================================================
           계산기 간 구분선 (Inter-Calculator Divider)

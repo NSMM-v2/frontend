@@ -1,27 +1,3 @@
-/**
- * CSDDD PDF 보고서 HTML 템플릿 컴포넌트 - 한글 지원 PDF 생성용
- *
- * html2canvas를 사용하여 HTML을 이미지로 변환한 후 PDF에 삽입하기 위한
- * 전용 템플릿 컴포넌트. 브라우저 폰트를 사용하므로 한글이 완벽히 지원됨
- *
- * 주요 기능:
- * - 한글 완벽 지원 (브라우저 폰트 사용)
- * - 토스 스타일 디자인 적용
- * - A4 용지 비율에 맞춘 레이아웃
- * - 등급별 색상 구분
- * - 중대위반 항목 강조 표시
- *
- * 사용된 기술:
- * - React 18 컴포넌트
- * - Tailwind CSS (스타일링)
- * - TypeScript 타입 안전성
- *
- * @author ESG Project Team
- * @version 1.0
- * @since 2024
- * @lastModified 2024-12-21
- */
-
 'use client'
 
 // ============================================================================
@@ -35,6 +11,19 @@ import React from 'react' // React 라이브러리
 // ============================================================================
 
 /**
+ * 자가진단 답변 인터페이스
+ */
+interface Answer {
+  questionId: string
+  answer: boolean
+  hasCriticalViolation?: boolean
+  penaltyInfo?: string
+  legalBasis?: string
+  categoryName?: string
+  questionText?: string
+}
+
+/**
  * 자가진단 질문 인터페이스
  */
 interface Question {
@@ -43,7 +32,7 @@ interface Question {
   text: string // 질문 내용
   weight: number // 가중치
   criticalViolation?: {
-    grade: 'D' | 'C' | 'B' | 'B/C' // 위반 시 등급
+    grade: 'D' | 'C' | 'B' // 위반 시 등급
     reason: string // 위반 사유
   }
 }
@@ -54,72 +43,61 @@ interface Question {
 interface CriticalViolation {
   question: Question // 위반 질문
   violation: {
-    grade: 'D' | 'C' | 'B' | 'B/C'
+    grade: 'D' | 'C' | 'B'
     reason: string
   }
-}
-
-/**
- * 등급 정보 인터페이스
- */
-interface GradeInfo {
-  color: string // CSS 클래스명
-  description: string // 위험 수준 설명
-  action: string // 권장 조치사항
+  penaltyInfo?: string
+  legalBasis?: string
 }
 
 /**
  * PDF 보고서 템플릿 Props 인터페이스
  */
 interface PDFReportTemplateProps {
-  answers: Record<string, string> // 사용자 응답 데이터
+  answers: Answer[] // 사용자 응답 데이터 (배열로 변경)
   questions: Question[] // 전체 질문 목록
   categories: string[] // 카테고리 목록
   finalGrade: string // 최종 등급
-  gradeInfo: GradeInfo // 등급 정보
   baseScore: number // 기본 점수
   criticalViolations: CriticalViolation[] // 중대위반 목록
-  calculateCategoryScore: (category: string) => number // 카테고리 점수 계산 함수
+  companyName: string // 회사명
   isVisible?: boolean // 화면 표시 여부 (기본값: false)
+  noAnswerCount: number
+  score: number
+  actualScore: number
+  totalPossibleScore: number
+  criticalViolationCount: number
+  completedAt?: string // 완료 일시
 }
 
 // ============================================================================
 // PDF 보고서 HTML 템플릿 컴포넌트 (PDF Report HTML Template Component)
 // ============================================================================
 
-/**
- * CSDDD PDF 보고서 HTML 템플릿 컴포넌트
- *
- * html2canvas로 변환되어 PDF에 삽입될 HTML 구조를 렌더링
- * A4 용지 비율에 맞춘 레이아웃과 한글 폰트 지원
- */
 export const PDFReportTemplate: React.FC<PDFReportTemplateProps> = ({
   answers,
-  questions,
-  categories,
   finalGrade,
-  gradeInfo,
-  baseScore,
   criticalViolations,
-  calculateCategoryScore,
-  isVisible = false
+  companyName,
+  isVisible = false,
+  noAnswerCount,
+  score,
+  actualScore,
+  totalPossibleScore,
+  criticalViolationCount,
+  completedAt
 }) => {
-  // ========================================================================
-  // 인라인 스타일 정의 (Inline Styles Definitions)
-  // html2canvas oklch 색상 문제 방지를 위해 모든 스타일을 hex/rgb로 정의
-  // ========================================================================
-
   const styles = {
     // 컨테이너 스타일
     container: {
       width: '794px',
       minHeight: '1123px',
-      padding: '32px',
+      padding: '40px',
       backgroundColor: '#ffffff',
-      color: '#111827',
-      fontFamily: '"Noto Sans KR", "Apple SD Gothic Neo", "Malgun Gothic", sans-serif',
-      fontSize: '14px',
-      lineHeight: '1.5',
+      color: '#2d3748',
+      fontFamily: '"Malgun Gothic", "맑은고딕", "Noto Sans KR", sans-serif',
+      fontSize: '13px',
+      lineHeight: '1.6',
       opacity: isVisible ? 1 : 0,
       position: isVisible ? ('static' as const) : ('absolute' as const),
       top: isVisible ? 'auto' : '-9999px',
@@ -132,212 +110,240 @@ export const PDFReportTemplate: React.FC<PDFReportTemplateProps> = ({
 
     // 헤더 스타일
     header: {
-      marginBottom: '32px',
-      textAlign: 'center' as const
+      marginBottom: '50px',
+      textAlign: 'center' as const,
+      paddingBottom: '30px',
+      borderBottom: '3px solid #2d3748'
     },
     headerTitle: {
-      marginBottom: '8px',
-      fontSize: '30px',
+      marginBottom: '15px',
+      fontSize: '28px',
       fontWeight: 'bold',
-      color: '#2563eb'
+      color: '#2d3748',
+      letterSpacing: '-0.5px'
     },
     headerSubtitle: {
-      marginBottom: '4px',
-      fontSize: '18px',
-      color: '#4b5563'
+      marginBottom: '20px',
+      fontSize: '16px',
+      color: '#718096',
+      fontWeight: 'normal'
     },
     headerDate: {
-      fontSize: '14px',
-      color: '#6b7280'
+      fontSize: '13px',
+      color: '#a0aec0',
+      marginTop: '10px'
     },
 
-    // 카드 스타일
-    card: {
-      padding: '24px',
-      marginBottom: '32px',
-      backgroundColor: '#f9fafb',
-      borderRadius: '8px'
+    // 섹션 스타일
+    section: {
+      marginBottom: '35px',
+      pageBreakInside: 'avoid' as const
     },
-    cardTitle: {
-      marginBottom: '16px',
-      fontSize: '20px',
+    sectionTitle: {
+      fontSize: '18px',
       fontWeight: 'bold',
-      color: '#111827'
+      color: '#2d3748',
+      marginBottom: '20px',
+      paddingBottom: '8px',
+      borderBottom: '2px solid #e2e8f0'
+    },
+    sectionContent: {
+      padding: '20px',
+      backgroundColor: '#f7fafc',
+      border: '1px solid #e2e8f0'
+    },
+
+    // 테이블 스타일
+    table: {
+      width: '100%',
+      borderCollapse: 'collapse' as const,
+      marginBottom: '20px',
+      backgroundColor: '#ffffff',
+      border: '1px solid #e2e8f0',
+      pageBreakInside: 'auto' as const,
+      pageBreakBefore: 'auto' as const,
+      pageBreakAfter: 'auto' as const
+    },
+    tableHeader: {
+      backgroundColor: '#edf2f7',
+      borderBottom: '2px solid #cbd5e0'
+    },
+    tableHeaderCell: {
+      padding: '12px 15px',
+      textAlign: 'center' as const, // 가로 중앙정렬
+      verticalAlign: 'middle' as const, // 세로 중앙정렬
+      fontWeight: 'bold',
+      fontSize: '13px',
+      color: '#2d3748',
+      border: '1px solid #e2e8f0',
+      whiteSpace: 'nowrap' as const
+    },
+    tableCell: {
+      padding: '10px 15px',
+      border: '1px solid #e2e8f0',
+      fontSize: '12px',
+      color: '#4a5568',
+      textAlign: 'center' as const, // 가로 중앙정렬
+      verticalAlign: 'middle' as const // 세로 중앙정렬
+    },
+    // 기본 정보 테이블 셀 (왼쪽 정렬)
+    basicInfoCell: {
+      padding: '10px 15px',
+      border: '1px solid #e2e8f0',
+      fontSize: '12px',
+      color: '#4a5568',
+      textAlign: 'center' as const, // 가로 중앙정렬
+      verticalAlign: 'middle' as const, // 세로 중앙정렬
+      lineHeight: 'normal',
+      height: '48px'
+    },
+    basicInfoLabelCell: {
+      padding: '10px 15px',
+      border: '1px solid #e2e8f0',
+      fontSize: '12px',
+      color: '#4a5568',
+      textAlign: 'center' as const, // 가로 중앙정렬
+      verticalAlign: 'middle' as const, // 세로 중앙정렬
+      fontWeight: 'bold',
+      backgroundColor: '#f7fafc',
+      lineHeight: 'normal',
+      height: '48px'
+    },
+    tableRow: {
+      borderBottom: '1px solid #e2e8f0',
+      pageBreakInside: 'avoid' as const,
+      pageBreakAfter: 'auto' as const
+    },
+    tableBody: {
+      pageBreakInside: 'auto' as const
     },
 
     // 그리드 스타일
     grid2: {
       display: 'grid',
       gridTemplateColumns: '1fr 1fr',
-      gap: '16px',
-      fontSize: '14px'
+      gap: '20px',
+      marginBottom: '20px'
     },
-    grid3: {
+    grid4: {
       display: 'grid',
-      gridTemplateColumns: '1fr 1fr 1fr',
-      gap: '24px',
-      marginBottom: '24px'
+      gridTemplateColumns: '1fr 1fr 1fr 1fr',
+      gap: '20px',
+      marginBottom: '20px'
+    },
+
+    // 정보 박스 스타일
+    infoBox: {
+      padding: '15px',
+      backgroundColor: '#ffffff',
+      border: '1px solid #e2e8f0',
+      textAlign: 'center' as const
+    },
+    infoValue: {
+      fontSize: '36px',
+      fontWeight: 'bold',
+      color: '#2d3748',
+      marginBottom: '8px'
+    },
+    infoLabel: {
+      fontSize: '14px',
+      color: '#718096',
+      fontWeight: 'normal'
     },
 
     // 등급 스타일
-    gradeA: {
-      display: 'inline-block',
-      padding: '32px',
-      borderRadius: '12px',
-      backgroundColor: '#22c55e',
-      color: '#ffffff'
-    },
-    gradeB: {
-      display: 'inline-block',
-      padding: '32px',
-      borderRadius: '12px',
-      backgroundColor: '#3b82f6',
-      color: '#ffffff'
-    },
-    gradeC: {
-      display: 'inline-block',
-      padding: '32px',
-      borderRadius: '12px',
-      backgroundColor: '#f97316',
-      color: '#ffffff'
-    },
-    gradeD: {
-      display: 'inline-block',
-      padding: '32px',
-      borderRadius: '12px',
-      backgroundColor: '#ef4444',
-      color: '#ffffff'
-    },
-    gradeDefault: {
-      display: 'inline-block',
-      padding: '32px',
-      borderRadius: '12px',
-      backgroundColor: '#6b7280',
-      color: '#ffffff'
-    },
-    gradeText: {
-      fontSize: '32px',
-      fontWeight: 'bold'
-    },
-
-    // 점수 스타일
-    scoreContainer: {
+    gradeBox: {
+      padding: '20px',
+      backgroundColor: '#ffffff',
+      border: '2px solid #2d3748',
       textAlign: 'center' as const
     },
-    scoreValue: {
-      marginBottom: '8px',
-      fontSize: '24px',
+    gradeValue: {
+      fontSize: '36px',
       fontWeight: 'bold',
-      color: '#2563eb'
-    },
-    scoreLabel: {
-      marginTop: '8px',
-      fontWeight: 'bold'
-    },
-    scoreDescription: {
-      marginTop: '4px',
-      fontSize: '12px',
-      color: '#6b7280'
-    },
-
-    // 테이블 스타일
-    table: {
-      overflow: 'hidden',
-      borderRadius: '8px',
-      border: '1px solid #e5e7eb'
-    },
-    tableHeader: {
-      display: 'grid',
-      gridTemplateColumns: '1fr 1fr',
-      padding: '12px 16px',
-      fontWeight: 'bold',
-      color: '#111827',
-      backgroundColor: '#f3f4f6'
-    },
-    tableRow: {
-      display: 'grid',
-      gridTemplateColumns: '1fr 1fr',
-      padding: '12px 16px',
-      fontSize: '14px',
-      borderTop: '1px solid #f3f4f6'
-    },
-    tableRowEven: {
-      backgroundColor: '#ffffff'
-    },
-    tableRowOdd: {
-      backgroundColor: '#f9fafb'
-    },
-    tableCellCenter: {
-      textAlign: 'center' as const,
-      fontWeight: 'bold',
-      color: '#2563eb'
-    },
-
-    // 경고 스타일
-    alertCritical: {
-      padding: '24px',
-      marginBottom: '32px',
-      backgroundColor: '#fef2f2',
-      borderRadius: '8px',
-      border: '2px solid #fca5a5'
-    },
-    alertTitle: {
-      marginBottom: '16px',
-      fontSize: '20px',
-      fontWeight: 'bold',
-      color: '#b91c1c'
-    },
-    alertText: {
-      marginBottom: '16px',
-      fontSize: '14px',
-      color: '#dc2626'
-    },
-    alertItem: {
-      padding: '12px',
-      backgroundColor: '#fee2e2',
-      borderRadius: '4px',
-      border: '1px solid #fca5a5',
+      color: '#2d3748',
       marginBottom: '8px'
     },
-    alertItemTitle: {
+    gradeLabel: {
       fontSize: '14px',
-      fontWeight: 'bold',
-      color: '#7f1d1d'
-    },
-    alertItemDetail: {
-      marginTop: '4px',
-      fontSize: '12px',
-      color: '#dc2626'
+      color: '#718096',
+      fontWeight: 'normal'
     },
 
-    // 개선 권장사항 스타일
-    improvement: {
-      marginBottom: '32px'
+    // 리스트 스타일
+    list: {
+      listStyle: 'none',
+      padding: 0,
+      margin: 0
     },
-    improvementBox: {
-      padding: '24px',
-      backgroundColor: '#fefce8',
-      borderRadius: '8px',
-      border: '1px solid #fde68a'
+    listItem: {
+      padding: '10px 0',
+      borderBottom: '1px solid #e2e8f0',
+      display: 'flex',
+      justifyContent: 'space-between',
+      alignItems: 'flex-start'
     },
-    improvementItem: {
-      fontSize: '14px',
-      color: '#a16207',
-      marginBottom: '8px'
+    listItemContent: {
+      flex: 1,
+      marginRight: '20px'
+    },
+    listItemTitle: {
+      fontWeight: 'bold',
+      color: '#2d3748',
+      marginBottom: '5px'
+    },
+    listItemDetail: {
+      fontSize: '12px',
+      color: '#718096',
+      lineHeight: '1.5'
+    },
+
+    // 경고 박스 스타일
+    warningBox: {
+      padding: '20px',
+      backgroundColor: '#fffbf0',
+      border: '1px solid #f6e05e',
+      borderLeft: '4px solid #f6e05e',
+      marginBottom: '20px'
+    },
+    warningTitle: {
+      fontSize: '16px',
+      fontWeight: 'bold',
+      color: '#2d3748',
+      marginBottom: '10px'
+    },
+    warningContent: {
+      fontSize: '13px',
+      color: '#4a5568',
+      lineHeight: '1.6'
+    },
+
+    // 카테고리 컨테이너 스타일 (페이지 넘김 방지)
+    categoryContainer: {
+      marginBottom: '40px',
+      pageBreakInside: 'avoid' as const,
+      pageBreakAfter: 'auto' as const
+    },
+
+    // 카테고리 제목 스타일
+    categoryTitle: {
+      fontSize: '16px',
+      fontWeight: 'bold',
+      color: '#2d3748',
+      marginBottom: '15px',
+      paddingBottom: '5px',
+      borderBottom: '1px solid #e2e8f0',
+      pageBreakAfter: 'avoid' as const
     },
 
     // 푸터 스타일
     footer: {
-      paddingTop: '24px',
-      marginTop: '32px',
-      borderTop: '1px solid #e5e7eb'
-    },
-    footerContent: {
-      display: 'flex',
-      justifyContent: 'space-between',
-      alignItems: 'center',
-      fontSize: '12px',
-      color: '#6b7280'
+      marginTop: '50px',
+      paddingTop: '20px',
+      borderTop: '1px solid #e2e8f0',
+      textAlign: 'center' as const,
+      fontSize: '11px',
+      color: '#a0aec0'
     }
   }
 
@@ -346,27 +352,18 @@ export const PDFReportTemplate: React.FC<PDFReportTemplateProps> = ({
   // ========================================================================
 
   /**
-   * 등급별 스타일 반환
-   */
-  const getGradeStyle = (grade: string) => {
-    switch (grade) {
-      case 'A':
-        return styles.gradeA
-      case 'B':
-        return styles.gradeB
-      case 'C':
-        return styles.gradeC
-      case 'D':
-        return styles.gradeD
-      default:
-        return styles.gradeDefault
-    }
-  }
-
-  /**
    * 현재 날짜를 한국어 형식으로 반환
    */
   const getCurrentDate = () => {
+    if (completedAt) {
+      return new Date(completedAt).toLocaleDateString('ko-KR', {
+        year: 'numeric',
+        month: 'long',
+        day: 'numeric',
+        hour: '2-digit',
+        minute: '2-digit'
+      })
+    }
     return new Date().toLocaleDateString('ko-KR', {
       year: 'numeric',
       month: 'long',
@@ -375,19 +372,35 @@ export const PDFReportTemplate: React.FC<PDFReportTemplateProps> = ({
   }
 
   /**
-   * 개선 권장사항 목록 생성
+   * 카테고리 이름 매핑
    */
-  const getImprovementItems = () => {
-    return categories
-      .map(category => {
-        const categoryQuestions = questions.filter(q => q.category === category)
-        const noAnswers = categoryQuestions.filter(q => answers[q.id] === 'no')
-        return {
-          category,
-          count: noAnswers.filter(q => !q.criticalViolation).length
-        }
-      })
-      .filter(item => item.count > 0)
+  const getCategoryName = (categoryId: string) => {
+    const categoryNames: {[key: string]: string} = {
+      '1': '인권 및 노동',
+      '2': '산업안전 및 보건',
+      '3': '환경 경영',
+      '4': '공급망 및 조달',
+      '5': '윤리경영 및 정보보호'
+    }
+    return categoryNames[categoryId] || `카테고리 ${categoryId}`
+  }
+
+  /**
+   * 위반 항목들을 카테고리별로 그룹화
+   */
+  const groupViolationsByCategory = () => {
+    const violations = answers.filter(a => a.answer === false)
+    const grouped: {[key: string]: Answer[]} = {}
+
+    violations.forEach(violation => {
+      const category = violation.questionId.split('.')[0]
+      if (!grouped[category]) {
+        grouped[category] = []
+      }
+      grouped[category].push(violation)
+    })
+
+    return grouped
   }
 
   // ========================================================================
@@ -396,160 +409,154 @@ export const PDFReportTemplate: React.FC<PDFReportTemplateProps> = ({
 
   return (
     <div style={styles.container}>
-      {/* ======================================================================
-          보고서 헤더 (Report Header)
-          ====================================================================== */}
+      {/* 보고서 헤더 */}
       <div style={styles.header}>
         <h1 style={styles.headerTitle}>공급망 실사 자가진단 보고서</h1>
         <p style={styles.headerSubtitle}>
           Supply Chain Due Diligence Self-Assessment Report
         </p>
-        <p style={styles.headerDate}>생성일: {getCurrentDate()}</p>
+        <p style={styles.headerDate}>발행일: {getCurrentDate()}</p>
       </div>
 
-      {/* ======================================================================
-          평가 기본 정보 (Basic Assessment Information)
-          ====================================================================== */}
-      <div style={styles.card}>
-        <h2 style={styles.cardTitle}>평가 기본 정보</h2>
-        <div style={styles.grid2}>
-          <div>
-            <span style={{fontWeight: 'bold', color: '#374151'}}>평가 일시:</span>
-            <span style={{marginLeft: '8px'}}>{getCurrentDate()}</span>
-          </div>
-          <div>
-            <span style={{fontWeight: 'bold', color: '#374151'}}>평가 유형:</span>
-            <span style={{marginLeft: '8px'}}>CSDDD 자가진단</span>
-          </div>
-          <div>
-            <span style={{fontWeight: 'bold', color: '#374151'}}>평가 대상:</span>
-            <span style={{marginLeft: '8px'}}>[회사명]</span>
-          </div>
-          <div>
-            <span style={{fontWeight: 'bold', color: '#374151'}}>평가 기준:</span>
-            <span style={{marginLeft: '8px'}}>유럽연합 CSDDD 지침</span>
-          </div>
+      {/* 평가 기본 정보 */}
+      <div style={styles.section}>
+        <h2 style={styles.sectionTitle}>1. 평가 기본 정보</h2>
+        <div style={styles.sectionContent}>
+          <table style={styles.table}>
+            <tbody style={styles.tableBody}>
+              <tr style={styles.tableRow}>
+                <td style={styles.basicInfoLabelCell}>평가 대상</td>
+                <td style={styles.basicInfoCell}>{companyName}</td>
+              </tr>
+              <tr style={styles.tableRow}>
+                <td style={styles.basicInfoLabelCell}>평가 일시</td>
+                <td style={styles.basicInfoCell}>{getCurrentDate()}</td>
+              </tr>
+              <tr style={styles.tableRow}>
+                <td style={styles.basicInfoLabelCell}>평가 유형</td>
+                <td style={styles.basicInfoCell}>CSDDD 자가진단</td>
+              </tr>
+              <tr style={styles.tableRow}>
+                <td style={styles.basicInfoLabelCell}>평가 기준</td>
+                <td style={styles.basicInfoCell}>
+                  유럽연합 기업 지속가능성 실사 지침(CSDDD)
+                </td>
+              </tr>
+            </tbody>
+          </table>
         </div>
       </div>
 
-      {/* ======================================================================
-          종합 평가 결과 (Overall Assessment Results)
-          ====================================================================== */}
-      <div style={styles.card}>
-        <h2 style={styles.cardTitle}>종합 평가 결과</h2>
-
-        <div style={styles.grid3}>
-          {/* 최종 등급 */}
-          <div style={styles.scoreContainer}>
-            <div style={getGradeStyle(finalGrade)}>
-              <div style={styles.gradeText}>{finalGrade}</div>
+      {/* 종합 평가 결과 */}
+      <div style={styles.section}>
+        <h2 style={styles.sectionTitle}>2. 종합 평가 결과</h2>
+        <div style={styles.sectionContent}>
+          <div style={styles.grid4}>
+            <div style={styles.gradeBox}>
+              <div style={styles.gradeValue}>{finalGrade}</div>
+              <div style={styles.gradeLabel}>최종 등급</div>
             </div>
-            <h3 style={styles.scoreLabel}>최종 등급</h3>
-            <p style={styles.scoreDescription}>{gradeInfo.description}</p>
-          </div>
-
-          {/* 기본 점수 */}
-          <div style={styles.scoreContainer}>
-            <div style={{...styles.scoreValue, fontSize: '32px'}}>{baseScore}</div>
-            <h3 style={styles.scoreLabel}>기본 점수</h3>
-            <p style={styles.scoreDescription}>100점 만점 기준</p>
-          </div>
-
-          {/* 권장 조치 */}
-          <div style={styles.scoreContainer}>
-            <div style={{fontSize: '18px', fontWeight: 'bold', color: '#374151'}}>
-              {gradeInfo.action}
+            <div style={styles.infoBox}>
+              <div style={styles.infoValue}>{noAnswerCount}</div>
+              <div style={styles.infoLabel}>총 위반 건수</div>
             </div>
-            <h3 style={styles.scoreLabel}>권장 조치</h3>
-            <p style={styles.scoreDescription}>등급 기반 대응</p>
+            <div style={styles.infoBox}>
+              <div style={styles.infoValue}>{criticalViolationCount}</div>
+              <div style={styles.infoLabel}>중대 위반 건수</div>
+            </div>
+            <div style={styles.infoBox}>
+              <div style={styles.infoValue}>{actualScore.toFixed(1)}</div>
+              <div style={styles.infoLabel}>종합 점수</div>
+            </div>
           </div>
         </div>
       </div>
 
-      {/* ======================================================================
-          카테고리별 점수 (Category Scores)
-          ====================================================================== */}
-      <div style={styles.card}>
-        <h2 style={styles.cardTitle}>카테고리별 점수</h2>
-
-        <div style={styles.table}>
-          {/* 테이블 헤더 */}
-          <div style={styles.tableHeader}>
-            <div>평가 카테고리</div>
-            <div style={{textAlign: 'center'}}>점수</div>
+      {/* 위반 항목 상세 정보 */}
+      {Object.keys(groupViolationsByCategory()).length > 0 && (
+        <div style={styles.section}>
+          <h2 style={styles.sectionTitle}>3. 위반 항목 상세 정보</h2>
+          <div style={styles.sectionContent}>
+            {Object.entries(groupViolationsByCategory()).map(
+              ([categoryId, violations]) => (
+                <div key={categoryId} style={styles.categoryContainer}>
+                  <h3 style={styles.categoryTitle}>
+                    {getCategoryName(categoryId)} ({violations.length}건)
+                  </h3>
+                  <table style={styles.table}>
+                    <thead style={styles.tableHeader}>
+                      <tr>
+                        <th style={{...styles.tableHeaderCell, width: '8%'}}>항목번호</th>
+                        <th style={{...styles.tableHeaderCell, width: '40%'}}>
+                          질문내용
+                        </th>
+                        <th style={{...styles.tableHeaderCell, width: '26%'}}>
+                          벌칙정보
+                        </th>
+                        <th style={{...styles.tableHeaderCell, width: '26%'}}>
+                          법적근거
+                        </th>
+                      </tr>
+                    </thead>
+                    <tbody style={styles.tableBody}>
+                      {violations.map((violation, index) => (
+                        <tr key={index} style={styles.tableRow}>
+                          <td style={styles.tableCell}>{violation.questionId}</td>
+                          <td style={styles.tableCell}>{violation.questionText}</td>
+                          <td style={styles.tableCell}>{violation.penaltyInfo}</td>
+                          <td style={styles.tableCell}>{violation.legalBasis}</td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+              )
+            )}
           </div>
-
-          {/* 테이블 내용 */}
-          {categories.map((category, index) => {
-            const score = calculateCategoryScore(category)
-            return (
-              <div
-                key={category}
-                style={{
-                  ...styles.tableRow,
-                  ...(index % 2 === 0 ? styles.tableRowEven : styles.tableRowOdd)
-                }}>
-                <div style={{color: '#111827'}}>{category}</div>
-                <div style={styles.tableCellCenter}>{score}점</div>
-              </div>
-            )
-          })}
         </div>
-      </div>
+      )}
 
-      {/* ======================================================================
-          중대위반 항목 (Critical Violations)
-          ====================================================================== */}
+      {/* 중대위반 항목 */}
       {criticalViolations.length > 0 && (
-        <div style={styles.alertCritical}>
-          <h2 style={styles.alertTitle}>중대 위반 항목 발견</h2>
-          <p style={styles.alertText}>
-            다음 중대 위반 항목들로 인해 등급이 조정되었습니다:
-          </p>
-
-          <div style={{marginTop: '12px'}}>
-            {criticalViolations.slice(0, 6).map(cv => (
-              <div key={cv.question.id} style={styles.alertItem}>
-                <div style={styles.alertItemTitle}>
-                  {cv.question.id}: {cv.question.text}
-                </div>
-                <div style={styles.alertItemDetail}>
-                  <span style={{fontWeight: 'bold'}}>
-                    위반 시 등급: {cv.violation.grade}
-                  </span>
-                  <span style={{marginLeft: '16px'}}>사유: {cv.violation.reason}</span>
-                </div>
-              </div>
-            ))}
+        <div style={styles.section}>
+          <h2 style={styles.sectionTitle}>4. 중대 위반 항목</h2>
+          <div style={styles.warningBox}>
+            <div style={styles.warningTitle}>
+              중대 위반 항목이 {criticalViolations.length}건 발견되었습니다.
+            </div>
+            <div style={styles.warningContent}>
+              다음 항목들은 등급에 직접적인 영향을 미치는 중대 위반사항입니다.
+            </div>
+          </div>
+          <div style={styles.sectionContent}>
+            <table style={styles.table}>
+              <thead style={styles.tableHeader}>
+                <tr>
+                  <th style={{...styles.tableHeaderCell, width: '8%'}}>항목번호</th>
+                  <th style={{...styles.tableHeaderCell, width: '40%'}}>질문내용</th>
+                  <th style={{...styles.tableHeaderCell, width: '26%'}}>위반등급</th>
+                  <th style={{...styles.tableHeaderCell, width: '26%'}}>위반사유</th>
+                </tr>
+              </thead>
+              <tbody style={styles.tableBody}>
+                {criticalViolations.map((cv, index) => (
+                  <tr key={cv.question.id} style={styles.tableRow}>
+                    <td style={styles.tableCell}>{cv.question.id}</td>
+                    <td style={styles.tableCell}>{cv.question.text}</td>
+                    <td style={styles.tableCell}>{cv.violation.grade}등급</td>
+                    <td style={styles.tableCell}>{cv.violation.reason}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
           </div>
         </div>
       )}
 
-      {/* ======================================================================
-          개선 권장사항 (Improvement Recommendations)
-          ====================================================================== */}
-      {getImprovementItems().length > 0 && (
-        <div style={styles.improvement}>
-          <h2 style={styles.cardTitle}>개선 권장사항</h2>
-          <div style={styles.improvementBox}>
-            {getImprovementItems().map(item => (
-              <div key={item.category} style={styles.improvementItem}>
-                <span style={{fontWeight: 'bold'}}>• {item.category}:</span>
-                <span style={{marginLeft: '4px'}}>{item.count}개 항목 개선 필요</span>
-              </div>
-            ))}
-          </div>
-        </div>
-      )}
-
-      {/* ======================================================================
-          보고서 푸터 (Report Footer)
-          ====================================================================== */}
+      {/* 보고서 푸터 */}
       <div style={styles.footer}>
-        <div style={styles.footerContent}>
-          <div>{getCurrentDate()} NSMM ESG 플랫폼에서 생성</div>
-          <div>© 2024 NSMM. All rights reserved.</div>
-        </div>
+        <p>본 보고서는 CSDDD 자가진단 시스템에 의해 자동 생성되었습니다.</p>
+        <p>문의사항은 담당부서로 연락하시기 바랍니다.</p>
       </div>
     </div>
   )

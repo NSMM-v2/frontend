@@ -1,34 +1,9 @@
-/**More actions
- * CategorySelector 컴포넌트
- *
- * 다양한 Scope 카테고리를 선택할 수 있는 카드 그리드 형태의 UI 컴포넌트입니다.
- * Scope1, Scope2, Scope3의 각 카테고리를 시각적으로 표시하고 선택할 수 있습니다.
- *
- * 주요 기능:
- * - 카테고리별 카드 형태 UI 제공
- * - 각 카테고리별 배출량 데이터 표시
- * - 데이터 유무에 따른 시각적 상태 표시
- * - 애니메이션 효과로 부드러운 사용자 경험
- *
- * @author ESG Project Team
- * @version 1.0
- * @since 2024
- */
-
 import React from 'react'
 import {motion} from 'framer-motion'
 import {Card, CardHeader, CardTitle} from '@/components/ui/card'
-import {SelectorState} from '@/types/scopeTypes'
 import {usePathname} from 'next/navigation'
-/**
- * =============================================================================
- * 카테고리 목록 정의 (Category Lists Definition)
- * =============================================================================
- * 각 Scope별로 사용되는 카테고리 목록을 정의합니다.
- * 이 목록들은 CategorySelector 컴포넌트에서 동적으로 렌더링됩니다.
- */
 
-// Scope 1 - 고정연소 카테고리 (Stationary Combustion Categories)====================================================================
+// Scope 1 - 고정연소 카테고리 (Stationary Combustion Categories)
 export const scope1PotentialCategoryList = {
   list1: '액체 연료', // 경유, 휘발유, 등유 등
   list2: '가스 연료', // LNG, LPG, 도시가스 등
@@ -42,20 +17,22 @@ export const scope1KineticCategoryList = {
 } as const
 // Scope 1 - 공정배출 카테고리
 export const scope1ProcessCategoryList = {
-  list7: '공정배출' // 화학 공정, 금속 가공 등
+  list7: '제조 배출', // 화학 공정, 금속 가공 등
+  list8: '폐수 처리'
 } as const
 // Scope 1 - 냉매누출 카테고리
 export const scope1LeakCategoryList = {
-  list8: '누출배출' // 냉매, 가스 누출
+  list9: '냉동/냉방 설비 냉매', // 냉매, 가스 누출
+  list10: '소화기 방출'
 } as const
 
 // Scope 2 - 전력 카테고리 (Electricity Categories)================================================================================
 export const scope2ElectricCategoryList = {
-  list1: '전력' // 전력 사용량 (일반전력, 재생에너지)
+  list11: '전력' // 전력 사용량 (일반전력, 재생에너지)
 } as const
 // Scope 2 - 스팀 카테고리 (Steam Categories)
 export const scope2SteamCategoryList = {
-  list2: '스팀' // 스팀 사용량 (A타입, B타입, C타입)
+  list12: '스팀' // 스팀 사용량 (A타입, B타입, C타입)
 } as const
 
 // Scope 3 - 간접배출 카테고리 (Indirect Emissions Categories)======================================================================
@@ -184,7 +161,7 @@ export function CategorySelector<KeyType extends string>({
               onClick={() => onCategorySelect(key as KeyType)}>
               <CardHeader className="p-4">
                 {/* 카테고리 정보 컨테이너 */}
-                <div className="flex items-start justify-between">
+                <div className="flex justify-between items-start">
                   {/* 카테고리 메인 정보 */}
                   <div className="flex-1">
                     {/* 카테고리 번호 라벨 */}
@@ -202,7 +179,7 @@ export function CategorySelector<KeyType extends string>({
                 </div>
 
                 {/* 배출량 표시 섹션 */}
-                <div className="flex items-center justify-between pt-3 mt-3 border-t border-gray-200">
+                <div className="flex justify-between items-center pt-3 mt-3 border-t border-gray-200">
                   {/* 배출량 수치 */}
                   <div
                     className={`text-lg font-bold transition-colors ${
@@ -216,7 +193,7 @@ export function CategorySelector<KeyType extends string>({
                 </div>
 
                 {/* 데이터 상태 표시 섹션 */}
-                <div className="flex items-center justify-between pt-3 mt-3 border-t border-gray-200">
+                <div className="flex justify-between items-center pt-3 mt-3 border-t border-gray-200">
                   {/* 데이터 상태 인디케이터 */}
                   <div
                     className={`flex items-center text-xs ${

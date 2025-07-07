@@ -1,27 +1,15 @@
-/**
- * 카테고리별 데이터 입력 화면 컴포넌트
- *
- * 주요 기능:
- * - 선택된 카테고리의 데이터 입력 관리
- * - 계산기 추가/삭제 기능
- * - 카테고리별 배출량 소계 표시
- * - 빈 상태 및 액션 버튼 관리
- * - 백엔드 API 연동으로 데이터 자동 저장/수정/삭제
- *
- * @author ESG Project Team
- * @version 1.0
- * @since 2024
- */
-
 import React, {useCallback} from 'react'
 import {motion, AnimatePresence} from 'framer-motion'
 import {Button} from '@/components/ui/button'
 import {Card, CardContent} from '@/components/ui/card'
-import {Plus} from 'lucide-react'
-import {CalculatorItem} from './CalculatorItem'
-import {scope3CategoryList, Scope3CategoryKey} from '../scopeTotal/CategorySelector'
-import {SelectorState, Scope3EmissionResponse} from '@/types/scopeTypes'
-import {createScope3Emission, updateScope3Emission} from '@/services/scopeService'
+import {Calculator, Plus, Save} from 'lucide-react'
+import {CalculatorItem} from './Scope3CalculatorItem'
+import {
+  scope3CategoryList,
+  Scope3CategoryKey
+} from '../scopeTotal/Scope123CategorySelector'
+import {SelectorState, ScopeEmissionResponse, InputType} from '@/types/scopeTypes'
+import {createScopeEmission, updateScopeEmission} from '@/services/scopeService'
 import {showError, showSuccess, showWarning} from '@/util/toast'
 
 /**
@@ -31,7 +19,7 @@ interface CalculatorData {
   id: number
   state: SelectorState
   emissionId?: number // 백엔드에서 받은 배출량 데이터 ID (수정/삭제용)
-  savedData?: Scope3EmissionResponse // 백엔드에서 받은 전체 데이터
+  savedData?: ScopeEmissionResponse // 백엔드에서 받은 전체 데이터
 }
 
 /**
@@ -92,7 +80,7 @@ export function CategoryDataInput({
   onDataChange
 }: CategoryDataInputProps) {
   const categoryTitle = scope3CategoryList[activeCategory]
-  const categoryNumber = activeCategory.replace('list', '')
+  const scope3CategoryNumber = activeCategory.replace('list', '')
   const totalEmission = getTotalEmission(activeCategory)
 
   const handleAddCalculator = useCallback(() => {
@@ -149,93 +137,31 @@ export function CategoryDataInput({
    */
   const saveAllCalculatorsToBackend = async (): Promise<boolean> => {
     if (!calculators || calculators.length === 0) {
-      console.log('저장할 계산기가 없습니다.')
       showError('저장할 데이터가 없습니다.')
       return false
-    }
-
-    console.log('===== 백엔드 저장 프로세스 시작 =====')
-    console.log('저장 대상 계산기 목록:', {
-      총개수: calculators.length,
-      계산기목록: calculators.map(calc => ({
-        id: calc.id,
-        ID타입: calc.id > 0 ? 'emissionId (저장된 데이터)' : '임시ID (새 데이터)',
-        저장여부: !!calc.savedData,
-        state: calc.state
-      }))
-    })
-
-    // 전체 검증 먼저 실행
-    const allValidationResults = calculators.map(calc => {
-      const isManualInput = calculatorModes[calc.id] || false
-      return {
-        calculatorId: calc.id,
-        validation: validateCalculatorData(calc, isManualInput),
-        isManualInput
-      }
-    })
-
-    // 검증 실패한 항목이 있는지 확인
-    const failedValidations = allValidationResults.filter(
-      result => !result.validation.isValid
-    )
-
-    if (failedValidations.length > 0) {
-      console.warn('검증 실패한 계산기들:', failedValidations)
-
-      // 검증 실패 메시지들을 합쳐서 표시
-      const errorMessages = failedValidations
-        .map(
-          failed =>
-            `계산기 ${failed.calculatorId}: ${failed.validation.errors.join(', ')}`
-        )
-        .join('\n')
-
-      showWarning(`입력 데이터를 확인해주세요:\n\n${errorMessages}`)
-      return false // 검증 실패 시 저장 중단
     }
 
     const results = []
 
     for (const calc of calculators) {
       try {
-        console.log(`\n----- 계산기 ${calc.id} 저장 시작 -----`)
-        console.log('계산기 상세 정보:', {
-          id: calc.id,
-          ID타입: calc.id > 0 ? 'emissionId (업데이트)' : '임시ID (신규 생성)',
-          저장여부: !!calc.savedData,
-          calculatorMode: calculatorModes[calc.id] || false,
-          state: calc.state
-        })
-
-        const isManualInput = calculatorModes[calc.id] || false
+        // 수정: mode와 isManualInput 매핑 수정
+        const isManualInput = !(calculatorModes[calc.id] || false)
 
         // 요청 데이터 구성
         const requestData = createRequestPayload(calc, isManualInput)
-        console.log('API 요청 데이터:', requestData)
 
         let response
 
         if (calc.id > 0) {
           // 저장된 데이터 업데이트 (emissionId 사용)
-          console.log(`기존 데이터 업데이트 시작 (emissionId: ${calc.id})`)
-          response = await updateScope3Emission(calc.id, requestData)
-          console.log('updateScope3Emission 응답:', response)
+          response = await updateScopeEmission(calc.id, requestData)
         } else {
           // 새 데이터 생성 (임시ID는 무시하고 새로 생성)
-          console.log(`새 데이터 생성 시작 (임시ID: ${calc.id})`)
-          response = await createScope3Emission(requestData)
-          console.log('createScope3Emission 응답:', response)
+          response = await createScopeEmission(requestData)
         }
 
         if (response && response.id) {
-          console.log(`계산기 ${calc.id} 저장 성공`)
-          console.log('저장 성공 상세:', {
-            기존ID: calc.id,
-            새ID: response.id,
-            처리방식: calc.id > 0 ? '업데이트' : '신규 생성'
-          })
-
           results.push({
             calculatorId: calc.id,
             success: true,
@@ -258,34 +184,22 @@ export function CategoryDataInput({
           error: error instanceof Error ? error.message : '알 수 없는 오류'
         })
       }
-
-      console.log(`계산기 ${calc.id} 저장 처리 완료`)
     }
 
     // 전체 저장 결과 요약
     const successCount = results.filter(r => r.success).length
     const failCount = results.filter(r => !r.success).length
 
-    console.log('백엔드 저장 프로세스 완료')
-    console.log('저장 결과 요약:', {
-      전체개수: results.length,
-      성공개수: successCount,
-      실패개수: failCount
-    })
-
     if (failCount > 0) {
       // scopeService에서 이미 상세한 토스트 메시지가 표시되므로 여기서는 추가 메시지 없음
       return false // 저장 실패가 있으면 false 반환
     } else {
-      console.log('모든 계산기 저장 성공')
       showSuccess(`${successCount}개의 데이터가 성공적으로 저장되었습니다.`)
     }
 
     // 저장 완료 후 데이터 새로고침
     if (successCount > 0) {
-      console.log('저장 성공한 항목이 있어 데이터 새로고침 진행')
       await handleDataChange()
-      console.log('데이터 새로고침 완료')
     }
 
     return successCount > 0 // 성공한 항목이 하나라도 있으면 true 반환
@@ -362,7 +276,7 @@ export function CategoryDataInput({
   }
 
   /**
-   * 개선된 API 요청 데이터 생성 (안전한 소수점 처리)
+   * 개선된 API 요청 데이터 생성 (통합 Scope 시스템에 맞춤)
    */
   const createRequestPayload = (calc: any, isManualInput: boolean) => {
     const state = calc.state
@@ -373,19 +287,26 @@ export function CategoryDataInput({
     const activityAmount = Math.round(parseFloat(state.quantity || '0') * 1000) / 1000 // 소수점 3자리
     const totalEmission = Math.round(emissionFactor * activityAmount * 1000000) / 1000000 // 소수점 6자리
 
+    // 통합 Scope 시스템에 맞는 요청 데이터 구성
     return {
+      // Scope 분류 정보
+      scopeType: 'SCOPE3' as const,
+      scope3CategoryNumber: Number(scope3CategoryNumber) || 1,
+
+      // 프론트엔드 입력 데이터
       majorCategory: state.category || '',
       subcategory: state.separate || '',
       rawMaterial: state.rawMaterial || '',
+      activityAmount: activityAmount,
       unit: state.unit || '',
       emissionFactor: emissionFactor,
-      activityAmount: activityAmount,
       totalEmission: totalEmission,
       reportingYear: selectedYear || new Date().getFullYear(),
       reportingMonth: selectedMonth || new Date().getMonth() + 1,
-      categoryNumber: Number(categoryNumber) || 1,
-      categoryName: categoryTitle,
-      isManualInput: isManualInput
+
+      // 입력 모드 제어 (수정: 논리 반전)
+      inputType: isManualInput ? 'MANUAL' : ('LCA' as InputType),
+      hasProductMapping: false // Scope 3는 제품 매핑 불가
     }
   }
 
@@ -394,20 +315,14 @@ export function CategoryDataInput({
    */
   const handleCompleteAsync = async () => {
     try {
-      console.log('입력 완료 버튼 클릭 - 저장 프로세스 시작')
-
       // 저장 및 검증 실행
       const saveSuccess = await saveAllCalculatorsToBackend()
 
       if (saveSuccess) {
-        console.log('저장 성공 - 화면 전환 진행')
         onComplete() // 저장 성공 시에만 화면 전환
-      } else {
-        console.log('저장 실패 또는 검증 실패 - 현재 화면 유지')
-        // 저장/검증 실패 시 화면 이동하지 않음 (토스트 메시지만 표시됨)
       }
+      // 저장/검증 실패 시 화면 이동하지 않음 (토스트 메시지만 표시됨)
     } catch (error) {
-      console.log('입력 완료 처리 중 오류 발생')
       // 오류 발생 시에도 화면 이동하지 않음 (scopeService에서 토스트 메시지 표시됨)
     }
   }
@@ -478,10 +393,11 @@ export function CategoryDataInput({
           - 현재 카테고리의 모든 계산기 표시
           ======================================================================== */}
       <div className="flex flex-col items-center space-y-8 w-full">
-        <AnimatePresence mode="popLayout">
+        <AnimatePresence mode="popLayout" initial={false}>
           {calculators.length > 0 ? (
             calculators.map((calc, index) => (
               <CalculatorItem
+                activeCategory={activeCategory}
                 key={calc.id}
                 id={calc.id}
                 index={index + 1}
@@ -569,15 +485,16 @@ export function CategoryDataInput({
           <Button
             onClick={handleAddCalculator}
             variant="outline"
-            className="px-8 py-3 text-base font-semibold text-blue-600 bg-white rounded-xl border-2 border-blue-500 transition-all duration-200 hover:bg-blue-50 hover:border-blue-600 hover:shadow-sm">
-            <Plus className="mr-2 w-5 h-5" />
-            항목 추가
+            className="px-8 py-4 text-lg font-semibold text-white bg-blue-500 rounded-xl shadow-lg transition-all duration-300 transform hover:bg-blue-600 hover:scale-105 hover:shadow-xl">
+            <Calculator className="mr-2 w-5 h-5" />
+            계산기 추가
           </Button>
 
           {/* 입력 완료 버튼 */}
           <Button
             onClick={handleCompleteAsync}
-            className="px-8 py-3 text-base font-semibold text-white bg-blue-500 rounded-xl shadow-sm transition-all duration-200 hover:bg-blue-600 hover:shadow-sm">
+            className="px-8 py-4 text-lg font-semibold text-green-700 bg-white rounded-xl border-2 border-green-500 shadow-lg transition-all duration-300 hover:bg-green-50 hover:scale-105 hover:shadow-xl">
+            <Save className="mr-2 w-5 h-5" />
             입력 완료
           </Button>
         </motion.div>

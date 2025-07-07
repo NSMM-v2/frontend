@@ -1,24 +1,3 @@
-/**
- * 파트너사 관리 기본 UI 컴포넌트들
- *
- * 이 파일은 파트너사 관리 페이지에서 사용되는 기본적인 UI 컴포넌트들을 포함합니다:
- * - 검색 섹션 (PartnerSearchSection)
- * - 로딩 상태 (PartnerLoadingState, PageLoadingState)
- * - 페이지네이션 (PartnerPagination)
- * - 빈 상태 (EmptyPartnerState, SearchEmptyState)
- *
- * 주요 기능:
- * - 파트너사 추가 버튼 제공
- * - 로딩 상태 시각화
- * - 페이지 네비게이션
- * - 빈 상태 안내 메시지
- *
- * @author ESG Project Team
- * @version 1.0
- * @since 2024
- * @lastModified 2024-12-20
- */
-
 'use client'
 
 import React from 'react'
@@ -54,10 +33,10 @@ interface SearchEmptyStateProps {
 // ============================================================================
 
 /**
- * 파트너사 검색 및 액션 버튼 섹션
+ * 협력사 검색 및 액션 버튼 섹션
  *
  * 기능:
- * - 새 파트너사 추가 버튼 제공
+ * - 새 협력사 추가 버튼 제공
  * - 향후 검색 필터 기능 확장 가능한 구조
  */
 export function PartnerSearchSection({onOpenAddDialog}: PartnerSearchSectionProps) {
@@ -68,7 +47,7 @@ export function PartnerSearchSection({onOpenAddDialog}: PartnerSearchSectionProp
         <Button
           onClick={onOpenAddDialog}
           className="px-6 h-12 font-semibold text-white bg-gradient-to-r from-blue-500 to-blue-600 rounded-xl shadow-lg transition-all duration-200 transform hover:from-blue-600 hover:to-blue-700 hover:shadow-xl hover:scale-105">
-          <Plus className="mr-2 w-5 h-5" />새 파트너사 추가
+          <Plus className="mr-2 w-5 h-5" />새 협력사 추가
         </Button>
       </div>
     </div>
@@ -80,9 +59,9 @@ export function PartnerSearchSection({onOpenAddDialog}: PartnerSearchSectionProp
 // ============================================================================
 
 /**
- * 파트너사 목록 로딩 상태 컴포넌트
+ * 협력사 목록 로딩 상태 컴포넌트
  *
- * 파트너사 데이터를 불러올 때 표시되는 로딩 UI
+ * 협력사 데이터를 불러올 때 표시되는 로딩 UI
  * 사용자에게 진행 상황을 알려주는 스피너와 메시지 포함
  */
 export function PartnerLoadingState() {
@@ -90,9 +69,7 @@ export function PartnerLoadingState() {
     <div className="flex justify-center items-center p-16">
       <div className="text-center">
         <Loader2 className="mx-auto mb-4 w-12 h-12 text-blue-500 animate-spin" />
-        <p className="text-lg font-medium text-slate-700">
-          파트너사 목록을 불러오는 중...
-        </p>
+        <p className="text-lg font-medium text-slate-700">협력사 목록을 불러오는 중...</p>
         <p className="mt-1 text-sm text-slate-500">잠시만 기다려주세요</p>
       </div>
     </div>
@@ -117,7 +94,7 @@ export function PageLoadingState() {
 // ============================================================================
 
 /**
- * 파트너사 목록 페이지네이션 컴포넌트
+ * 협력사 목록 페이지네이션 컴포넌트
  *
  * 기능:
  * - 이전/다음 페이지 버튼
@@ -198,11 +175,11 @@ export function PartnerPagination({
 // ============================================================================
 
 /**
- * 파트너사가 없을 때 표시되는 빈 상태 컴포넌트
+ * 협력사가 없을 때 표시되는 빈 상태 컴포넌트
  *
  * 기능:
- * - 파트너사가 등록되지 않았음을 안내
- * - 첫 번째 파트너사 등록 버튼 제공
+ * - 협력사가 등록되지 않았음을 안내
+ * - 첫 번째 협력사 등록 버튼 제공
  * - 사용자 친화적인 메시지와 아이콘
  */
 export function EmptyPartnerState({onOpenAddDialog}: EmptyStateProps) {
@@ -210,18 +187,18 @@ export function EmptyPartnerState({onOpenAddDialog}: EmptyStateProps) {
     <div className="bg-white rounded-2xl border-2 shadow-sm border-slate-200">
       <div className="py-16 text-center">
         {/* 아이콘 */}
-        <div className="flex justify-center items-center mx-auto mb-6 w-24 h-24 bg-gradient-to-br rounded-2xl from-blue-100 to-blue-200">
+        <div className="flex justify-center items-center mx-auto mb-6 w-24 h-24 bg-gradient-to-br from-blue-100 to-blue-200 rounded-2xl">
           <Users className="w-12 h-12 text-blue-500" />
         </div>
 
         {/* 메인 메시지 */}
         <h3 className="mb-2 text-2xl font-bold text-slate-800">
-          아직 등록된 파트너사가 없습니다
+          아직 등록된 협력사가 없습니다
         </h3>
 
         {/* 설명 메시지 */}
         <p className="mx-auto mb-8 max-w-md text-base text-slate-500">
-          ESG 경영을 함께할 파트너사를 등록해보세요. DART 데이터베이스와 연동하여 손쉽게
+          ESG 경영을 함께할 협력사를 등록해보세요. DART 데이터베이스와 연동하여 손쉽게
           관리할 수 있습니다.
         </p>
 
@@ -229,7 +206,7 @@ export function EmptyPartnerState({onOpenAddDialog}: EmptyStateProps) {
         <Button
           onClick={onOpenAddDialog}
           className="px-8 h-12 font-semibold text-white bg-gradient-to-r from-blue-500 to-blue-600 rounded-xl shadow-sm transition-all duration-200 transform hover:from-blue-600 hover:to-blue-700 hover:shadow-sm hover:scale-105">
-          <Plus className="mr-2 w-5 h-5" />첫 번째 파트너사 등록하기
+          <Plus className="mr-2 w-5 h-5" />첫 번째 협력사 등록하기
         </Button>
       </div>
     </div>
@@ -249,7 +226,7 @@ export function SearchEmptyState({searchQuery}: SearchEmptyStateProps) {
     <div className="bg-white rounded-2xl border-2 shadow-sm border-slate-200">
       <div className="py-16 text-center">
         {/* 검색 아이콘 */}
-        <div className="flex justify-center items-center mx-auto mb-6 w-24 h-24 bg-gradient-to-br rounded-2xl from-blue-100 to-blue-200">
+        <div className="flex justify-center items-center mx-auto mb-6 w-24 h-24 bg-gradient-to-br from-blue-100 to-blue-200 rounded-2xl">
           <Search className="w-12 h-12 text-blue-500" />
         </div>
 
@@ -259,12 +236,12 @@ export function SearchEmptyState({searchQuery}: SearchEmptyStateProps) {
         {/* 검색어 포함 설명 */}
         <p className="mb-2 text-base text-slate-500">
           '<span className="font-semibold text-slate-700">{searchQuery}</span>'와 일치하는
-          파트너사를 찾을 수 없습니다.
+          협력사를 찾을 수 없습니다.
         </p>
 
         {/* 안내 메시지 */}
         <p className="text-sm text-slate-400">
-          다른 검색어로 시도해보시거나, 새로운 파트너사를 등록해보세요.
+          다른 검색어로 시도해보시거나, 새로운 협력사를 등록해보세요.
         </p>
       </div>
     </div>

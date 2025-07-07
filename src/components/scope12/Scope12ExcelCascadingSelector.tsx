@@ -1,39 +1,22 @@
-/**
- * 엑셀 데이터 기반 계단식 선택기 컴포넌트
- *
- * 주요 기능:
- * - CSV 데이터에서 배출계수 정보 로드
- * - 계단식 선택을 통한 배출계수 자동 선택
- * - 실시간 배출량 계산 및 표시
- * - SelfInputCalculator와 통일된 NSMM 디자인
- *
- * 디자인 특징:
- * - 통일된 블루 색상 체계
- * - 섹션별 그룹화 레이아웃
- * - 단계별 번호 표시 및 아이콘
- * - 아름다운 결과 영역 3D 효과
- *
- * @author ESG Project Team
- * @version 3.0
- * @since 2024
- * @lastModified 2024-12-20
- */
+// 엑셀 데이터 기반 계단식 선택기 컴포넌트
+// CSV 데이터에서 배출계수 정보 로드, 계단식 선택을 통한 배출계수 자동 선택, 실시간 배출량 계산
 
-import React, {useState, useEffect, useRef} from 'react'
+import React, {useState, useEffect, useRef, useMemo} from 'react'
 import Papa from 'papaparse'
 import {motion} from 'framer-motion'
-import {Card, CardContent, CardHeader, CardTitle} from '@/components/ui/card'
-import {
-  Database,
-  Layers,
-  Tag,
-  Zap,
-  Ruler,
-  Calculator,
-  Hash,
-  TrendingUp
-} from 'lucide-react'
+import {Card, CardContent} from '@/components/ui/card'
+import {Layers, Tag, Zap, Ruler, Calculator, Hash, TrendingUp, Cog} from 'lucide-react'
 import type {SelectorState} from '@/types/scopeTypes'
+import {Switch} from '../ui/switch'
+import {Input} from '../ui/input'
+import {
+  Scope1PotentialCategoryKey,
+  Scope1KineticCategoryKey,
+  Scope1ProcessCategoryKey,
+  Scope1LeakCategoryKey,
+  Scope2ElectricCategoryKey,
+  Scope2SteamCategoryKey
+} from '@/components/scopeTotal/Scope123CategorySelector'
 
 export interface CO2Data {
   category: string
@@ -42,8 +25,15 @@ export interface CO2Data {
   unit: string
   kgCO2eq: number
 }
-
+type SeparateFilterRule = {include: string[]} | {exclude: string[]} | undefined
 interface ExcelCascadingSelectorProps {
+  activeCategory:
+    | Scope1PotentialCategoryKey
+    | Scope1KineticCategoryKey
+    | Scope1ProcessCategoryKey
+    | Scope1LeakCategoryKey
+    | Scope2ElectricCategoryKey
+    | Scope2SteamCategoryKey
   id: number
   state: SelectorState
   onChangeState: (state: SelectorState) => void
@@ -51,24 +41,22 @@ interface ExcelCascadingSelectorProps {
 }
 
 export function ExcelCascadingSelector({
+  activeCategory,
   id,
   state,
   onChangeState,
   onChangeTotal
 }: ExcelCascadingSelectorProps) {
-  // ========================================================================
-  // 상태 관리 (State Management)
-  // ========================================================================
+  // 상태 관리
 
   const [data, setData] = useState<CO2Data[]>([])
   const [selectedItem, setSelectedItem] = useState<CO2Data | null>(null)
+  const [isInitialized, setIsInitialized] = useState(false)
 
   const prevSelectedItemRef = useRef<CO2Data | null>(null)
   const isFirstRenderRef = useRef(true)
 
-  // ========================================================================
-  // 데이터 로딩 및 선택 리스트 생성 (Data Loading & List Generation)
-  // ========================================================================
+  // 데이터 로딩 및 초기 상태 복원
 
   useEffect(() => {
     const loadCSVData = async () => {
@@ -84,43 +72,110 @@ export function ExcelCascadingSelector({
             separate: row['구분'].trim(),
             RawMaterial: row['원료/에너지'].trim(),
             unit: row['단위']?.trim() || '',
-            kgCO2eq: parseFloat(row['탄소발자국']) || 0
+            kgCO2eq:
+              parseFloat((row['탄소발자국'] as string).replace(/(\.\d+)\.(?=E)/, '$1')) ||
+              0
           }))
 
-        console.log(`CSV 데이터 로딩 완료: ${parsed.length}개 항목`)
         setData(parsed)
+
+        // CSV 데이터 로딩 완료 후 초기 상태 복원
+        if (state.separate && state.rawMaterial && !isInitialized) {
+          restoreInitialSelection(parsed)
+        }
+
+        setIsInitialized(true)
       } catch (error) {
-        console.error('CSV 데이터 로딩 실패:', error)
         setData([])
+        setIsInitialized(true)
       }
     }
 
     loadCSVData()
   }, [])
 
+  // 백엔드에서 불러온 데이터로 초기 선택 상태 복원
+  const restoreInitialSelection = (csvData: CO2Data[]) => {
+    if (!state.separate || !state.rawMaterial) return
+
+    // CSV 데이터에서 매칭되는 항목 찾기
+    const matchingItem = csvData.find(
+      item => item.separate === state.separate && item.RawMaterial === state.rawMaterial
+    )
+
+    if (matchingItem) {
+      // 매칭되는 항목이 있으면 선택된 상태로 설정
+      setSelectedItem(matchingItem)
+
+      // 단위와 배출계수가 다르면 업데이트 (백엔드 데이터 우선)
+      if (
+        state.unit !== matchingItem.unit ||
+        state.kgCO2eq !== matchingItem.kgCO2eq.toString()
+      ) {
+        onChangeState({
+          ...state,
+          unit: matchingItem.unit,
+          kgCO2eq: matchingItem.kgCO2eq.toString()
+        })
+      }
+
+      // 수량이 있으면 배출량 계산
+      const quantity = parseFloat(state.quantity || '0')
+      if (quantity > 0) {
+        const emission = quantity * matchingItem.kgCO2eq
+        onChangeTotal(id, emission)
+      }
+    }
+  }
+
   const unique = (arr: string[]) => [...new Set(arr.filter(Boolean))]
 
-  const categoryList = unique(data.map(d => d.category))
-  const separateList = unique(
-    data.filter(d => d.category === state.category).map(d => d.separate)
-  )
+  const separateFilterMap: Record<typeof activeCategory, SeparateFilterRule> = {
+    list1: {include: ['에너지']}, // 예시
+    list2: {exclude: ['에너지']}, // list2는 필터링 안 함 → 전체 표시
+    list3: {include: ['에너지', '육상수송', '항공수송', '해상수송']}, // list3는 에너지, 육상수송, 항공수송, 해상수송만 표시
+    list4: undefined,
+    list5: undefined,
+    list6: undefined, // list6는 필터링 안 함 → 전체 표시
+    list7: undefined, // list7는 필터링 안 함 → 전체 표시
+    list8: undefined,
+    list9: undefined, // list9는 필터링 안 함 → 전체 표시
+    list10: undefined, // list15는 필터링 안 함 → 전체 표시
+    list11: undefined,
+    list12: undefined
+  }
+  // ... rest of the code remains the same ...
+  // const categoryList = unique(data.map(d => d.category))
+  const filteredSeparateList = useMemo(() => {
+    const rawList = unique(data.map(d => d.separate))
+
+    const rule = separateFilterMap[activeCategory]
+
+    if (!rule) return rawList
+
+    if ('include' in rule) {
+      return rawList.filter(sep => rule.include.includes(sep))
+    }
+
+    if ('exclude' in rule) {
+      return rawList.filter(sep => !rule.exclude.includes(sep))
+    }
+
+    return rawList
+  }, [data, state.category, activeCategory])
   const rawMaterialList = unique(
-    data
-      .filter(d => d.category === state.category && d.separate === state.separate)
-      .map(d => d.RawMaterial)
+    data.filter(d => d.separate === state.separate).map(d => d.RawMaterial)
   )
 
-  // ========================================================================
-  // 선택된 아이템 및 배출량 계산 (Selected Item & Emission Calculation)
-  // ========================================================================
+  // 선택된 아이템 및 배출량 계산
 
   useEffect(() => {
+    // CSV 데이터 로딩이 완료되고 초기화가 끝난 후에만 실행
+    if (!isInitialized || data.length === 0) return
+
     const selected =
       data.find(
-        d =>
-          d.category === state.category &&
-          d.separate === state.separate &&
-          d.RawMaterial === state.rawMaterial
+        d => d.separate === state.separate && d.RawMaterial === state.rawMaterial
       ) || null
 
     setSelectedItem(selected)
@@ -171,13 +226,11 @@ export function ExcelCascadingSelector({
     data,
     id,
     onChangeTotal,
-    onChangeState
+    onChangeState,
+    isInitialized
   ])
 
-  // ========================================================================
   // 이벤트 핸들러 (Event Handlers)
-  // ========================================================================
-
   const handleSelect = (value: string, type: 'category' | 'separate' | 'raw') => {
     if (type === 'category') {
       onChangeState({
@@ -215,7 +268,6 @@ export function ExcelCascadingSelector({
 
     const num = parseFloat(value)
     if (isNaN(num) || num < 0) {
-      console.warn('유효하지 않은 수량 입력:', value)
       onChangeTotal(id, 0)
       return
     }
@@ -228,39 +280,81 @@ export function ExcelCascadingSelector({
     }
   }
 
-  // ========================================================================
-  // 입력 필드 설정 데이터 (Input Field Configuration)
-  // ========================================================================
+  const [productEnabled, setProductEnabled] = useState(
+    !!(state.productName || state.productCode)
+  )
 
-  /**
-   * 선택 단계 필드 (대분류, 구분, 원료/에너지)
-   */
-  const selectionFields = [
+  useEffect(() => {
+    setProductEnabled(!!(state.productName || state.productCode))
+  }, [state.productName, state.productCode])
+
+  // 제품 정보 토글 변경 시 필드 초기화 핸들러 추가
+  const handleProductToggle = (checked: boolean) => {
+    setProductEnabled(checked)
+
+    // 토글을 끄면 제품 정보 필드 초기화
+    if (!checked) {
+      onChangeState({
+        ...state,
+        productName: '',
+        productCode: ''
+      })
+    }
+  }
+
+  // handleChange 함수 수정 - 제품 정보 변경 시 토글 상태도 업데이트
+  const handleChange =
+    (key: keyof SelectorState) => (e: React.ChangeEvent<HTMLInputElement>) => {
+      const newValue = e.target.value
+      const newState = {
+        ...state,
+        [key]: newValue
+      }
+
+      onChangeState(newState)
+
+      // 제품 정보 필드 변경 시 토글 상태 자동 업데이트
+      if (key === 'productName' || key === 'productCode') {
+        setProductEnabled(!!(newState.productName || newState.productCode))
+      }
+    }
+
+  // 입력 필드 설정 데이터 (Input Field Configuration)
+  const productInfoFields = [
     {
       step: '1',
-      label: '대분류',
-      type: 'select',
-      value: state.category,
-      options: categoryList,
-      placeholder: '대분류를 선택하세요',
-      icon: Layers,
-      description: 'ESG 데이터 카테고리를 선택하세요',
-      onChange: (value: string) => handleSelect(value, 'category')
+      label: '제품명',
+      key: 'productName' as keyof SelectorState,
+      type: 'text',
+      placeholder: '예: 타이어, 엔진',
+      icon: Cog,
+      description: '제품 명을 입력하세요'
     },
     {
       step: '2',
+      label: '제품 코드',
+      key: 'productCode' as keyof SelectorState,
+      type: 'text',
+      placeholder: '예: P12345',
+      icon: Cog,
+      description: '제품 코드를 입력하세요'
+    }
+  ]
+
+  const selectionFields = [
+    {
+      step: '1',
       label: '구분',
       type: 'select',
       value: state.separate,
-      options: separateList,
+      options: filteredSeparateList,
       placeholder: '구분을 선택하세요',
       icon: Tag,
       description: '세부 구분을 선택하세요',
-      onChange: (value: string) => handleSelect(value, 'separate'),
-      disabled: !state.category
+      onChange: (value: string) => handleSelect(value, 'separate')
     },
     {
-      step: '3',
+      step: '2',
       label: '원료/에너지',
       type: 'select',
       value: state.rawMaterial,
@@ -310,8 +404,8 @@ export function ExcelCascadingSelector({
       initial={{opacity: 0, scale: 0.95}}
       animate={{opacity: 1, scale: 1}}
       transition={{duration: 0.5, type: 'spring', stiffness: 100}}
-      className="w-full max-w-4xl mx-auto">
-      <Card className="overflow-hidden bg-white border-0 shadow-sm rounded-3xl">
+      className="mx-auto w-full max-w-4xl">
+      <Card className="overflow-hidden bg-white rounded-3xl border-0 shadow-sm">
         {/* ======================================================================
             카드 헤더 (Card Header)
             ====================================================================== */}
@@ -331,6 +425,56 @@ export function ExcelCascadingSelector({
               <span className="text-sm text-gray-500">배출계수 데이터 선택</span>
             </div>
 
+            <div className="flex items-center px-4 py-2 mb-4 space-x-3 bg-white rounded-xl border border-blue-200 shadow-sm transition-all hover:bg-blue-50">
+              {/* 토글 스위치 */}
+              <Switch
+                checked={productEnabled}
+                onCheckedChange={handleProductToggle}
+                className="data-[state=checked]:bg-blue-500"
+              />
+
+              {/* 라벨 */}
+              <span
+                className={`text-sm font-medium transition-colors ${
+                  productEnabled ? 'text-blue-600' : 'text-gray-500'
+                }`}>
+                제품 관련 정보 입력
+              </span>
+              {/* 상태 표시 */}
+              <span
+                className={`text-xs px-2 py-1 rounded-full font-medium transition-colors ${
+                  productEnabled
+                    ? 'text-blue-700 bg-blue-100'
+                    : 'text-gray-500 bg-gray-100'
+                }`}>
+                {productEnabled ? '활성' : '비활성'}
+              </span>
+            </div>
+
+            {/* 필드 렌더링 */}
+            {productEnabled && (
+              <div className="grid grid-cols-1 gap-6 md:grid-cols-2">
+                {productInfoFields.map(field => (
+                  <div key={field.key}>
+                    <div className="flex items-center mb-3 space-x-2">
+                      <field.icon className="w-4 h-4 text-blue-500" />
+                      <label className="text-sm font-semibold text-gray-700">
+                        {field.label}
+                      </label>
+                    </div>
+                    <Input
+                      type={field.type}
+                      value={state[field.key] || ''}
+                      onChange={handleChange(field.key)}
+                      placeholder={field.placeholder}
+                      className="px-4 py-2 w-full text-sm rounded-xl border-2 border-gray-200 transition-all duration-200 focus:border-blue-500 focus:ring-4 focus:ring-blue-100 hover:border-gray-300"
+                    />
+                    <p className="mt-2 text-xs text-gray-500">{field.description}</p>
+                  </div>
+                ))}
+              </div>
+            )}
+
             <div className="grid grid-cols-1 gap-6 md:grid-cols-3">
               {selectionFields.map((field, index) => (
                 <motion.div
@@ -341,7 +485,7 @@ export function ExcelCascadingSelector({
                   className="space-y-3">
                   {/* 필드 라벨 */}
                   <div className="flex items-center space-x-2">
-                    <span className="flex items-center justify-center text-xs font-bold text-white bg-blue-500 rounded-full w-7 h-7">
+                    <span className="flex justify-center items-center w-7 h-7 text-xs font-bold text-white bg-blue-500 rounded-full">
                       {field.step}
                     </span>
                     <field.icon className="w-4 h-4 text-blue-500" />
@@ -355,7 +499,7 @@ export function ExcelCascadingSelector({
                     value={field.value}
                     onChange={e => field.onChange(e.target.value)}
                     disabled={field.disabled}
-                    className="w-full px-4 py-3 text-sm transition-all duration-200 border-2 border-gray-200 rounded-xl focus:border-blue-500 focus:ring-4 focus:ring-blue-100 hover:border-gray-300 disabled:bg-gray-100 disabled:cursor-not-allowed">
+                    className="px-4 py-3 w-full text-sm rounded-xl border-2 border-gray-200 transition-all duration-200 focus:border-blue-500 focus:ring-4 focus:ring-blue-100 hover:border-gray-300 disabled:bg-gray-100 disabled:cursor-not-allowed">
                     <option value="">{field.placeholder}</option>
                     {field.options.map(option => (
                       <option key={option} value={option}>
@@ -395,7 +539,7 @@ export function ExcelCascadingSelector({
                   className="space-y-3">
                   {/* 필드 라벨 */}
                   <div className="flex items-center space-x-2">
-                    <span className="flex items-center justify-center text-xs font-bold text-white bg-blue-500 rounded-full w-7 h-7">
+                    <span className="flex justify-center items-center w-7 h-7 text-xs font-bold text-white bg-blue-500 rounded-full">
                       {field.step}
                     </span>
                     <field.icon className="w-4 h-4 text-blue-500" />
@@ -405,7 +549,7 @@ export function ExcelCascadingSelector({
                   </div>
 
                   {/* 정보 표시 필드 */}
-                  <div className="px-4 py-3 text-sm bg-gray-100 border-2 border-gray-200 min-h-12 rounded-xl">
+                  <div className="px-4 py-3 text-sm bg-gray-100 rounded-xl border-2 border-gray-200 min-h-12">
                     {field.value}
                     {field.unit && (
                       <span className="ml-1 text-xs text-gray-500">{field.unit}</span>
@@ -440,7 +584,7 @@ export function ExcelCascadingSelector({
               className="space-y-3">
               {/* 필드 라벨 */}
               <div className="flex items-center space-x-2">
-                <span className="flex items-center justify-center text-xs font-bold text-white bg-blue-500 rounded-full w-7 h-7">
+                <span className="flex justify-center items-center w-7 h-7 text-xs font-bold text-white bg-blue-500 rounded-full">
                   6
                 </span>
                 <Hash className="w-4 h-4 text-blue-500" />
@@ -482,14 +626,14 @@ export function ExcelCascadingSelector({
             animate={{opacity: 1, scale: 1}}
             transition={{delay: 1.0, duration: 0.5}}
             className="relative">
-            <div className="relative p-6 overflow-hidden border-2 border-blue-200 shadow-md bg-gradient-to-br from-blue-50 via-blue-100 to-blue-200 rounded-2xl">
+            <div className="overflow-hidden relative p-6 bg-gradient-to-br from-blue-50 via-blue-100 to-blue-200 rounded-2xl border-2 border-blue-200 shadow-md">
               {/* 배경 장식 */}
-              <div className="absolute w-16 h-16 bg-blue-300 rounded-full top-2 right-2 opacity-20 blur-xl" />
-              <div className="absolute w-12 h-12 transform bg-blue-400 rounded-lg bottom-2 left-2 rotate-12 opacity-15" />
+              <div className="absolute top-2 right-2 w-16 h-16 bg-blue-300 rounded-full opacity-20 blur-xl" />
+              <div className="absolute bottom-2 left-2 w-12 h-12 bg-blue-400 rounded-lg transform rotate-12 opacity-15" />
 
-              <div className="relative flex items-center justify-between">
+              <div className="flex relative justify-between items-center">
                 <div className="flex items-center space-x-3">
-                  <div className="flex items-center justify-center w-12 h-12 bg-blue-500 shadow-md rounded-xl">
+                  <div className="flex justify-center items-center w-12 h-12 bg-blue-500 rounded-xl shadow-md">
                     <TrendingUp className="w-6 h-6 text-white" />
                   </div>
                   <div>

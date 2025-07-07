@@ -1,23 +1,3 @@
-/**
- * 파트너사 관리 모달 컴포넌트들
- *
- * 이 파일은 파트너사 관리와 관련된 모든 모달/다이얼로그 컴포넌트들을 포함합니다:
- * - 파트너사 추가 모달 (PartnerCompanyModal)
- * - 파트너사 수정 모달 (EditPartnerModal)
- * - 파트너사 삭제 확인 다이얼로그 (PartnerDeleteDialog)
- *
- * 주요 기능:
- * - DART API를 통한 기업 정보 검색 및 등록
- * - 파트너사 정보 수정 (계약 시작일만 수정 가능)
- * - 파트너사 삭제 확인 및 실행
- * - 실시간 유효성 검증 및 중복 검사
- *
- * @author ESG Project Team
- * @version 1.0
- * @since 2024
- * @lastModified 2024-12-20
- */
-
 'use client'
 
 import React from 'react'
@@ -68,7 +48,7 @@ interface AddPartnerModalProps {
   isOpen: boolean
   /** 모달 닫기 함수 */
   onClose: () => void
-  /** 파트너사 저장 함수 */
+  /** 협력사 저장 함수 */
   onSubmit: () => Promise<void>
 
   /** 로딩 상태들 */
@@ -101,7 +81,7 @@ interface EditPartnerModalProps {
   isOpen: boolean
   /** 모달 닫기 함수 */
   onClose: () => void
-  /** 파트너사 수정 함수 */
+  /** 협력사 수정 함수 */
   onSubmit: () => Promise<void>
 
   /** 로딩 상태들 */
@@ -130,13 +110,13 @@ interface PartnerDeleteDialogProps {
 }
 
 // ============================================================================
-// 파트너사 추가 모달 (Partner Company Add Modal)
+// 협력사 추가 모달 (Partner Company Add Modal)
 // ============================================================================
 
 /**
- * 파트너사 추가 모달 컴포넌트
+ * 협력사 추가 모달 컴포넌트
  *
- * DART API를 통한 기업 검색 및 파트너사 등록 기능을 제공합니다.
+ * DART API를 통한 기업 검색 및 협력사 등록 기능을 제공합니다.
  * - 실시간 기업 검색 (디바운스 적용)
  * - 회사명 중복 검사
  * - 선택된 기업 정보 미리보기
@@ -166,7 +146,7 @@ export function PartnerCompanyModal({
             <div className="flex justify-center items-center w-8 h-8 bg-blue-50 rounded-full">
               <Building2 className="w-5 h-5 text-blue-600" />
             </div>
-            새 파트너사 등록
+            새 협력사 등록
           </DialogTitle>
         </DialogHeader>
 
@@ -266,16 +246,14 @@ export function PartnerCompanyModal({
           {!selectedDartCompany && companySearchQuery && dartSearchResults.length > 0 && (
             <div className="p-4 bg-blue-50 rounded-xl border border-blue-200">
               <p className="text-sm font-medium text-blue-700">
-                위 목록에서 등록할 파트너사를 선택해주세요.
+                위 목록에서 등록할 협력사를 선택해주세요.
               </p>
             </div>
           )}
 
           {selectedDartCompany && (
             <div className="p-4 bg-blue-50 rounded-xl border border-blue-200">
-              <h4 className="mb-2 text-sm font-semibold text-blue-700">
-                선택된 파트너사
-              </h4>
+              <h4 className="mb-2 text-sm font-semibold text-blue-700">선택된 협력사</h4>
               <p className="font-semibold text-blue-800">
                 {selectedDartCompany.corpName || selectedDartCompany.corp_name}
               </p>
@@ -306,7 +284,7 @@ export function PartnerCompanyModal({
                 disabled={isSubmitting}
               />
               <p className="text-xs text-gray-500">
-                파트너사와의 계약 시작일을 선택해주세요.
+                협력사와의 계약 시작일을 선택해주세요.
               </p>
             </div>
           )}
@@ -352,7 +330,7 @@ export function PartnerCompanyModal({
             ) : (
               <div className="flex gap-2 items-center">
                 <Plus className="w-4 h-4" />
-                <span>파트너사 등록</span>
+                <span>협력사 등록</span>
               </div>
             )}
           </Button>
@@ -363,13 +341,13 @@ export function PartnerCompanyModal({
 }
 
 // ============================================================================
-// 파트너사 수정 모달 (Partner Company Edit Modal)
+// 협력사 수정 모달 (Partner Company Edit Modal)
 // ============================================================================
 
 /**
- * 파트너사 수정 모달 컴포넌트
+ * 협력사 수정 모달 컴포넌트
  *
- * 기존 파트너사의 정보를 수정하는 기능을 제공합니다.
+ * 기존 협력사의 정보를 수정하는 기능을 제공합니다.
  * - 회사명 및 DART 코드는 읽기 전용 (수정 불가)
  * - 계약 시작일만 수정 가능
  * - 유효성 검증 및 폼 상태 관리
@@ -390,14 +368,14 @@ export function EditPartnerModal({
             <div className="p-2 bg-gradient-to-br from-blue-500 to-blue-600 rounded-lg">
               <Building2 className="w-6 h-6 text-white" />
             </div>
-            파트너사 정보 수정
+            협력사 정보 수정
           </DialogTitle>
         </DialogHeader>
 
         <div className="py-6 space-y-6">
-          {/* 파트너사 상세 정보 수정 섹션 */}
+          {/* 협력사 상세 정보 수정 섹션 */}
           <div className="p-6 space-y-6 rounded-xl border bg-slate-50 border-slate-200">
-            <h4 className="mb-4 text-lg font-semibold text-slate-800">파트너사 정보</h4>
+            <h4 className="mb-4 text-lg font-semibold text-slate-800">협력사 정보</h4>
 
             <div className="grid grid-cols-1 gap-6 md:grid-cols-2">
               {/* 회사명 (읽기 전용) */}
@@ -489,14 +467,14 @@ export function EditPartnerModal({
 }
 
 // ============================================================================
-// 파트너사 삭제 확인 다이얼로그 (Partner Company Delete Dialog)
+// 협력사 삭제 확인 다이얼로그 (Partner Company Delete Dialog)
 // ============================================================================
 
 /**
- * 파트너사 삭제 확인 다이얼로그 컴포넌트
+ * 협력사 삭제 확인 다이얼로그 컴포넌트
  *
- * 파트너사 삭제 전 사용자 확인을 받는 다이얼로그입니다.
- * - 삭제할 파트너사 정보 표시
+ * 협력사 삭제 전 사용자 확인을 받는 다이얼로그입니다.
+ * - 삭제할 협력사 정보 표시
  * - 영구 삭제 경고 메시지
  * - 확인/취소 액션 제공
  */
@@ -514,14 +492,14 @@ export function PartnerDeleteDialog({
         <AlertDialogHeader>
           <AlertDialogTitle className="flex items-center text-red-600">
             <AlertCircle className="mr-2 w-5 h-5" />
-            파트너사 삭제 확인
+            협력사 삭제 확인
           </AlertDialogTitle>
           <AlertDialogDescription>
             정말로{' '}
             <span className="font-semibold text-slate-800">
               {selectedPartner?.corpName || selectedPartner?.companyName}
             </span>{' '}
-            파트너사를 삭제하시겠습니까? 이 작업은 되돌릴 수 없으며, 모든 관련 데이터가
+            협력사를 삭제하시겠습니까? 이 작업은 되돌릴 수 없으며, 모든 관련 데이터가
             영구적으로 삭제됩니다.
           </AlertDialogDescription>
         </AlertDialogHeader>
