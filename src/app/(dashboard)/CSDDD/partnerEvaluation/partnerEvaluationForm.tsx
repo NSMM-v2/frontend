@@ -184,7 +184,13 @@ export default function PartnerEvaluationForm() {
   const filteredResults =
     selectedCompany === 'all'
       ? results
-      : results.filter(result => result.companyName === selectedCompany)
+      : results
+          .filter(result => result.companyName === selectedCompany)
+          .sort(
+            (a, b) =>
+              new Date(b.completedAt ?? new Date()).getTime() -
+              new Date(a.completedAt ?? new Date()).getTime()
+          )
 
   // Sub-company filter for PARTNER user
   const subFilteredResults =
@@ -296,7 +302,7 @@ export default function PartnerEvaluationForm() {
         <div className="lg:col-span-3">
           <div className="border shadow-xl rounded-xl backdrop-blur-sm bg-white/95 border-white/50">
             <div className="px-6 py-5 border-b border-gray-100">
-              <div className="flex flex-col gap-2">
+              <div className="flex items-center justify-between">
                 <div className="flex items-center space-x-2">
                   <h2 className="text-xl font-bold text-gray-900">
                     {userInfo?.userType === 'HEADQUARTERS'
@@ -322,57 +328,48 @@ export default function PartnerEvaluationForm() {
                   </div>
                 </div>
                 {userInfo?.userType === 'HEADQUARTERS' && (
-                  <div className="flex flex-col mt-2 sm:flex-row sm:items-center sm:space-x-4">
-                    <div className="flex items-center space-x-2">
-                      <label
-                        htmlFor="companyFilter"
-                        className="text-sm font-medium text-gray-700">
-                        협력사 선택:
-                      </label>
-                      <select
-                        id="companyFilter"
-                        className="px-2 py-1 text-sm border border-gray-300 rounded focus:outline-none focus:ring-2 focus:ring-blue-200"
-                        value={selectedCompany}
-                        onChange={e => setSelectedCompany(e.target.value)}>
-                        <option value="all">전체</option>
-                        {companyList.map((company, idx) => (
-                          <option key={idx} value={company}>
-                            {company}
-                          </option>
-                        ))}
-                      </select>
-                    </div>
+                  <div className="flex items-center p-2 space-x-2 bg-white border border-gray-200 rounded-lg shadow-sm">
+                    <label
+                      htmlFor="companyFilter"
+                      className="text-sm font-medium text-gray-700">
+                      협력사 선택
+                    </label>
+                    <select
+                      id="companyFilter"
+                      className="px-2 py-1 text-sm border border-gray-300 rounded focus:outline-none focus:ring-2 focus:ring-blue-200"
+                      value={selectedCompany}
+                      onChange={e => setSelectedCompany(e.target.value)}>
+                      <option value="all">전체</option>
+                      {companyList.map((company, idx) => (
+                        <option key={idx} value={company}>
+                          {company}
+                        </option>
+                      ))}
+                    </select>
                   </div>
                 )}
                 {/* Sub-company dropdown for PARTNER */}
                 {userInfo?.userType === 'PARTNER' && subCompanyList.length > 0 && (
-                  <div className="flex flex-col mt-2 sm:flex-row sm:items-center sm:space-x-4">
-                    <div className="flex items-center space-x-2">
-                      <label
-                        htmlFor="subCompanyFilter"
-                        className="text-sm font-medium text-gray-700">
-                        등록한 협력사 선택:
-                      </label>
-                      <select
-                        id="subCompanyFilter"
-                        className="px-2 py-1 text-sm border border-gray-300 rounded focus:outline-none focus:ring-2 focus:ring-blue-200"
-                        value={selectedSubCompany}
-                        onChange={e => setSelectedSubCompany(e.target.value)}>
-                        <option value="all">전체</option>
-                        {subCompanyList.map((company, idx) => (
-                          <option key={idx} value={company}>
-                            {company}
-                          </option>
-                        ))}
-                      </select>
-                    </div>
+                  <div className="flex items-center p-2 space-x-2 bg-white border border-gray-200 rounded-lg shadow-sm">
+                    <label
+                      htmlFor="subCompanyFilter"
+                      className="text-sm font-medium text-gray-700">
+                      등록한 협력사 선택:
+                    </label>
+                    <select
+                      id="subCompanyFilter"
+                      className="px-2 py-1 text-sm border border-gray-300 rounded focus:outline-none focus:ring-2 focus:ring-blue-200"
+                      value={selectedSubCompany}
+                      onChange={e => setSelectedSubCompany(e.target.value)}>
+                      <option value="all">전체</option>
+                      {subCompanyList.map((company, idx) => (
+                        <option key={idx} value={company}>
+                          {company}
+                        </option>
+                      ))}
+                    </select>
                   </div>
                 )}
-                <div className="mt-2 text-sm text-gray-600">
-                  {userInfo?.userType === 'HEADQUARTERS'
-                    ? '관할 협력사들의 CSDDD 자가진단 결과를 협력사별로 조회할 수 있습니다.'
-                    : '자가진단 결과 내역을 확인할 수 있습니다.'}
-                </div>
               </div>
             </div>
 
@@ -427,10 +424,10 @@ export default function PartnerEvaluationForm() {
                                 <span className="text-sm text-gray-500">
                                   {userInfo?.userType === 'HEADQUARTERS'
                                     ? selectedCompany === 'all'
-                                      ? `${
-                                          results.findIndex(r => r.id === result.id) + 1
-                                        }차 협력사 진단 결과`
-                                      : `${index + 1}차 협력사 진단 결과`
+                                      ? '' // 전체 선택 시 빈 문자열
+                                      : `${
+                                          filteredResults.length - index
+                                        }회 협력사 진단 결과`
                                     : selectedCompany === 'all'
                                     ? `${
                                         results.findIndex(r => r.id === result.id) + 1
@@ -451,6 +448,7 @@ export default function PartnerEvaluationForm() {
                                   minute: '2-digit'
                                 })}
                               </span>
+
                               <button
                                 onClick={async () => {
                                   if (!selectedResults[result.id]) {

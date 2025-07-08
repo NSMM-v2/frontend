@@ -16,7 +16,6 @@ export interface SelfAssessmentAnswerRequest {
   weight: number
   critical?: boolean
   criticalGrade?: string
-  remarks?: string
 }
 
 /**
@@ -27,7 +26,6 @@ export interface SelfAssessmentAnswerResponse {
   questionId: string
   category: string
   answer: boolean // 백엔드에서는 boolean으로 응답
-  remarks?: string
   weight: number
   earnedScore: number
   criticalViolation: boolean
