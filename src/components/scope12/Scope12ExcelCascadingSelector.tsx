@@ -284,6 +284,8 @@ export function ExcelCascadingSelector({
     !!(state.productName || state.productCode)
   )
 
+  const [factoryEnabled, setFactoryEnabled] = useState()
+
   useEffect(() => {
     setProductEnabled(!!(state.productName || state.productCode))
   }, [state.productName, state.productCode])
@@ -299,6 +301,12 @@ export function ExcelCascadingSelector({
         productName: '',
         productCode: ''
       })
+    }
+  }
+
+  const handleFactoryToggle = (checked: boolean) => {
+    setFactoryEnabled(checked)
+    if (!checked) {
     }
   }
 
@@ -404,8 +412,8 @@ export function ExcelCascadingSelector({
       initial={{opacity: 0, scale: 0.95}}
       animate={{opacity: 1, scale: 1}}
       transition={{duration: 0.5, type: 'spring', stiffness: 100}}
-      className="mx-auto w-full max-w-4xl">
-      <Card className="overflow-hidden bg-white rounded-3xl border-0 shadow-sm">
+      className="w-full max-w-4xl mx-auto">
+      <Card className="overflow-hidden bg-white border-0 shadow-sm rounded-3xl">
         {/* ======================================================================
             카드 헤더 (Card Header)
             ====================================================================== */}
@@ -425,30 +433,57 @@ export function ExcelCascadingSelector({
               <span className="text-sm text-gray-500">배출계수 데이터 선택</span>
             </div>
 
-            <div className="flex items-center px-4 py-2 mb-4 space-x-3 bg-white rounded-xl border border-blue-200 shadow-sm transition-all hover:bg-blue-50">
+            <div className="flex justify-between px-4 py-2 bg-white border border-blue-200 shadow-sm mb-4transition-all rounded-xl hover:bg-blue-50">
               {/* 토글 스위치 */}
-              <Switch
-                checked={productEnabled}
-                onCheckedChange={handleProductToggle}
-                className="data-[state=checked]:bg-blue-500"
-              />
+              <div className="flex items-center space-x-3">
+                <Switch
+                  checked={productEnabled}
+                  onCheckedChange={handleProductToggle}
+                  className="data-[state=checked]:bg-blue-500"
+                />
 
-              {/* 라벨 */}
-              <span
-                className={`text-sm font-medium transition-colors ${
-                  productEnabled ? 'text-blue-600' : 'text-gray-500'
-                }`}>
-                제품 관련 정보 입력
-              </span>
-              {/* 상태 표시 */}
-              <span
-                className={`text-xs px-2 py-1 rounded-full font-medium transition-colors ${
-                  productEnabled
-                    ? 'text-blue-700 bg-blue-100'
-                    : 'text-gray-500 bg-gray-100'
-                }`}>
-                {productEnabled ? '활성' : '비활성'}
-              </span>
+                {/* 라벨 */}
+
+                <span
+                  className={`text-sm font-medium transition-colors ${
+                    productEnabled ? 'text-blue-600' : 'text-gray-500'
+                  }`}>
+                  제품 관련 정보 입력
+                </span>
+                {/* 상태 표시 */}
+                <span
+                  className={`text-xs px-2 py-1 rounded-full font-medium transition-colors ${
+                    productEnabled
+                      ? 'text-blue-700 bg-blue-100'
+                      : 'text-gray-500 bg-gray-100'
+                  }`}>
+                  {productEnabled ? '활성' : '비활성'}
+                </span>
+              </div>
+              <div className="flex items-center space-x-3">
+                <Switch
+                  checked={factoryEnabled}
+                  // onCheckedChange={handleProductToggle}
+                  className="data-[state=checked]:bg-blue-500"
+                />
+
+                {/* 라벨 */}
+                <span
+                  className={`text-sm font-medium transition-colors ${
+                    factoryEnabled ? 'text-blue-600' : 'text-gray-500'
+                  }`}>
+                  공장 설비
+                </span>
+                {/* 상태 표시 */}
+                <span
+                  className={`text-xs px-2 py-1 rounded-full font-medium transition-colors ${
+                    factoryEnabled
+                      ? 'text-blue-700 bg-blue-100'
+                      : 'text-gray-500 bg-gray-100'
+                  }`}>
+                  {factoryEnabled ? '활성' : '비활성'}
+                </span>
+              </div>
             </div>
 
             {/* 필드 렌더링 */}
@@ -467,7 +502,7 @@ export function ExcelCascadingSelector({
                       value={state[field.key] || ''}
                       onChange={handleChange(field.key)}
                       placeholder={field.placeholder}
-                      className="px-4 py-2 w-full text-sm rounded-xl border-2 border-gray-200 transition-all duration-200 focus:border-blue-500 focus:ring-4 focus:ring-blue-100 hover:border-gray-300"
+                      className="w-full px-4 py-2 text-sm transition-all duration-200 border-2 border-gray-200 rounded-xl focus:border-blue-500 focus:ring-4 focus:ring-blue-100 hover:border-gray-300"
                     />
                     <p className="mt-2 text-xs text-gray-500">{field.description}</p>
                   </div>
@@ -485,7 +520,7 @@ export function ExcelCascadingSelector({
                   className="space-y-3">
                   {/* 필드 라벨 */}
                   <div className="flex items-center space-x-2">
-                    <span className="flex justify-center items-center w-7 h-7 text-xs font-bold text-white bg-blue-500 rounded-full">
+                    <span className="flex items-center justify-center text-xs font-bold text-white bg-blue-500 rounded-full w-7 h-7">
                       {field.step}
                     </span>
                     <field.icon className="w-4 h-4 text-blue-500" />
@@ -499,7 +534,7 @@ export function ExcelCascadingSelector({
                     value={field.value}
                     onChange={e => field.onChange(e.target.value)}
                     disabled={field.disabled}
-                    className="px-4 py-3 w-full text-sm rounded-xl border-2 border-gray-200 transition-all duration-200 focus:border-blue-500 focus:ring-4 focus:ring-blue-100 hover:border-gray-300 disabled:bg-gray-100 disabled:cursor-not-allowed">
+                    className="w-full px-4 py-3 text-sm transition-all duration-200 border-2 border-gray-200 rounded-xl focus:border-blue-500 focus:ring-4 focus:ring-blue-100 hover:border-gray-300 disabled:bg-gray-100 disabled:cursor-not-allowed">
                     <option value="">{field.placeholder}</option>
                     {field.options.map(option => (
                       <option key={option} value={option}>
@@ -539,7 +574,7 @@ export function ExcelCascadingSelector({
                   className="space-y-3">
                   {/* 필드 라벨 */}
                   <div className="flex items-center space-x-2">
-                    <span className="flex justify-center items-center w-7 h-7 text-xs font-bold text-white bg-blue-500 rounded-full">
+                    <span className="flex items-center justify-center text-xs font-bold text-white bg-blue-500 rounded-full w-7 h-7">
                       {field.step}
                     </span>
                     <field.icon className="w-4 h-4 text-blue-500" />
@@ -549,7 +584,7 @@ export function ExcelCascadingSelector({
                   </div>
 
                   {/* 정보 표시 필드 */}
-                  <div className="px-4 py-3 text-sm bg-gray-100 rounded-xl border-2 border-gray-200 min-h-12">
+                  <div className="px-4 py-3 text-sm bg-gray-100 border-2 border-gray-200 rounded-xl min-h-12">
                     {field.value}
                     {field.unit && (
                       <span className="ml-1 text-xs text-gray-500">{field.unit}</span>
@@ -584,7 +619,7 @@ export function ExcelCascadingSelector({
               className="space-y-3">
               {/* 필드 라벨 */}
               <div className="flex items-center space-x-2">
-                <span className="flex justify-center items-center w-7 h-7 text-xs font-bold text-white bg-blue-500 rounded-full">
+                <span className="flex items-center justify-center text-xs font-bold text-white bg-blue-500 rounded-full w-7 h-7">
                   6
                 </span>
                 <Hash className="w-4 h-4 text-blue-500" />
@@ -626,14 +661,14 @@ export function ExcelCascadingSelector({
             animate={{opacity: 1, scale: 1}}
             transition={{delay: 1.0, duration: 0.5}}
             className="relative">
-            <div className="overflow-hidden relative p-6 bg-gradient-to-br from-blue-50 via-blue-100 to-blue-200 rounded-2xl border-2 border-blue-200 shadow-md">
+            <div className="relative p-6 overflow-hidden border-2 border-blue-200 shadow-md bg-gradient-to-br from-blue-50 via-blue-100 to-blue-200 rounded-2xl">
               {/* 배경 장식 */}
-              <div className="absolute top-2 right-2 w-16 h-16 bg-blue-300 rounded-full opacity-20 blur-xl" />
-              <div className="absolute bottom-2 left-2 w-12 h-12 bg-blue-400 rounded-lg transform rotate-12 opacity-15" />
+              <div className="absolute w-16 h-16 bg-blue-300 rounded-full top-2 right-2 opacity-20 blur-xl" />
+              <div className="absolute w-12 h-12 transform bg-blue-400 rounded-lg bottom-2 left-2 rotate-12 opacity-15" />
 
-              <div className="flex relative justify-between items-center">
+              <div className="relative flex items-center justify-between">
                 <div className="flex items-center space-x-3">
-                  <div className="flex justify-center items-center w-12 h-12 bg-blue-500 rounded-xl shadow-md">
+                  <div className="flex items-center justify-center w-12 h-12 bg-blue-500 shadow-md rounded-xl">
                     <TrendingUp className="w-6 h-6 text-white" />
                   </div>
                   <div>
