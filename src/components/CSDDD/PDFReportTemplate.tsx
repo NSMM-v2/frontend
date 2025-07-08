@@ -1,18 +1,9 @@
+// PDFReportTemplate.tsx 수정 버전
 'use client'
 
-// ============================================================================
-// 외부 라이브러리 임포트 (External Library Imports)
-// ============================================================================
+import React from 'react'
 
-import React from 'react' // React 라이브러리
-
-// ============================================================================
-// 타입 정의 (Type Definitions)
-// ============================================================================
-
-/**
- * 자가진단 답변 인터페이스
- */
+// 기존 인터페이스들은 그대로 유지...
 interface Answer {
   questionId: string
   answer: boolean
@@ -23,25 +14,19 @@ interface Answer {
   questionText?: string
 }
 
-/**
- * 자가진단 질문 인터페이스
- */
 interface Question {
-  id: string // 질문 고유 식별자
-  category: string // 질문 카테고리
-  text: string // 질문 내용
-  weight: number // 가중치
+  id: string
+  category: string
+  text: string
+  weight: number
   criticalViolation?: {
-    grade: 'D' | 'C' | 'B' // 위반 시 등급
-    reason: string // 위반 사유
+    grade: 'D' | 'C' | 'B'
+    reason: string
   }
 }
 
-/**
- * 중대위반 정보 인터페이스
- */
 interface CriticalViolation {
-  question: Question // 위반 질문
+  question: Question
   violation: {
     grade: 'D' | 'C' | 'B'
     reason: string
@@ -50,29 +35,22 @@ interface CriticalViolation {
   legalBasis?: string
 }
 
-/**
- * PDF 보고서 템플릿 Props 인터페이스
- */
 interface PDFReportTemplateProps {
-  answers: Answer[] // 사용자 응답 데이터 (배열로 변경)
-  questions: Question[] // 전체 질문 목록
-  categories: string[] // 카테고리 목록
-  finalGrade: string // 최종 등급
-  baseScore: number // 기본 점수
-  criticalViolations: CriticalViolation[] // 중대위반 목록
-  companyName: string // 회사명
-  isVisible?: boolean // 화면 표시 여부 (기본값: false)
+  answers: Answer[]
+  questions: Question[]
+  categories: string[]
+  finalGrade: string
+  baseScore: number
+  criticalViolations: CriticalViolation[]
+  companyName: string
+  isVisible?: boolean
   noAnswerCount: number
   score: number
   actualScore: number
   totalPossibleScore: number
   criticalViolationCount: number
-  completedAt?: string // 완료 일시
+  completedAt?: string
 }
-
-// ============================================================================
-// PDF 보고서 HTML 템플릿 컴포넌트 (PDF Report HTML Template Component)
-// ============================================================================
 
 export const PDFReportTemplate: React.FC<PDFReportTemplateProps> = ({
   answers,
@@ -86,7 +64,6 @@ export const PDFReportTemplate: React.FC<PDFReportTemplateProps> = ({
   completedAt
 }) => {
   const styles = {
-    // 컨테이너 스타일
     container: {
       width: '794px',
       backgroundColor: '#ffffff',
@@ -104,7 +81,6 @@ export const PDFReportTemplate: React.FC<PDFReportTemplateProps> = ({
       MozOsxFontSmoothing: 'grayscale'
     },
 
-    // 페이지 컨테이너 스타일 (A4 기준)
     pageContainer: {
       width: '794px',
       minHeight: '1123px',
@@ -116,7 +92,6 @@ export const PDFReportTemplate: React.FC<PDFReportTemplateProps> = ({
       overflow: 'hidden' as const
     },
 
-    // 마지막 페이지 컨테이너 스타일
     lastPageContainer: {
       width: '794px',
       minHeight: '1123px',
@@ -128,7 +103,6 @@ export const PDFReportTemplate: React.FC<PDFReportTemplateProps> = ({
       overflow: 'hidden' as const
     },
 
-    // 헤더 스타일
     header: {
       marginBottom: '30px',
       textAlign: 'center' as const,
@@ -155,7 +129,6 @@ export const PDFReportTemplate: React.FC<PDFReportTemplateProps> = ({
       marginTop: '6px'
     },
 
-    // 섹션 스타일
     section: {
       marginBottom: '20px',
       pageBreakInside: 'avoid' as const
@@ -176,7 +149,6 @@ export const PDFReportTemplate: React.FC<PDFReportTemplateProps> = ({
       pageBreakInside: 'auto' as const
     },
 
-    // 테이블 스타일
     table: {
       width: '100%',
       borderCollapse: 'collapse' as const,
@@ -191,63 +163,83 @@ export const PDFReportTemplate: React.FC<PDFReportTemplateProps> = ({
       pageBreakAfter: 'avoid' as const
     },
     tableHeaderCell: {
-      padding: '6px 8px',
+      padding: '15px 8px', // 패딩 증가
       textAlign: 'center' as const,
-      verticalAlign: 'middle' as const,
       fontWeight: 'bold',
-      fontSize: '11px',
+      fontSize: '12px',
       color: '#2d3748',
       border: '1px solid #e2e8f0',
       whiteSpace: 'nowrap' as const,
-      height: '40px',
-      display: 'table-cell' as const
-    },
-    tableCell: {
-      padding: '6px 8px',
-      border: '1px solid #e2e8f0',
-      fontSize: '10px',
-      color: '#4a5568',
-      textAlign: 'center' as const,
-      verticalAlign: 'top' as const,
+      // 단순한 방식으로 세로정렬
       lineHeight: '1.2',
+      backgroundColor: '#edf2f7',
+      borderBottom: '2px solid #cbd5e0'
+    },
+
+    // 수정된 테이블 셀 스타일 - 세로 정렬 강화
+    tableCell: {
+      padding: '12px 8px',
+      border: '1px solid #e2e8f0',
+      fontSize: '11px',
+      color: '#4a5568',
+      textAlign: 'center' as const,
+      lineHeight: '1.4',
       wordBreak: 'break-word' as const,
-      minHeight: '35px',
-      maxHeight: '50px',
-      overflow: 'hidden' as const
+      // 고정 높이 제거하고 최소 높이만 설정
+      minHeight: '45px',
+      // 단순한 세로정렬
+      verticalAlign: 'middle' as const
     },
-    // 기본 정보 테이블 셀
+
+    // 왼쪽 정렬 셀 (질문 내용용)
+    tableCellLeft: {
+      padding: '12px 8px',
+      border: '1px solid #e2e8f0',
+      fontSize: '11px',
+      color: '#4a5568',
+      textAlign: 'left' as const,
+      lineHeight: '1.4',
+      wordBreak: 'break-word' as const,
+      minHeight: '45px',
+      verticalAlign: 'middle' as const
+    },
+
+    // 기본 정보 테이블 셀 - 세로 정렬 강화
     basicInfoCell: {
-      padding: '8px 10px',
+      padding: '15px 12px', // 패딩 증가
       border: '1px solid #e2e8f0',
-      fontSize: '11px',
+      fontSize: '12px',
       color: '#4a5568',
       textAlign: 'center' as const,
-      verticalAlign: 'middle' as const,
       lineHeight: '1.3',
-      height: '35px'
+      minHeight: '50px',
+      verticalAlign: 'middle' as const
     },
+
     basicInfoLabelCell: {
-      padding: '8px 10px',
+      padding: '15px 12px', // 패딩 증가
       border: '1px solid #e2e8f0',
-      fontSize: '11px',
+      fontSize: '12px',
       color: '#4a5568',
       textAlign: 'center' as const,
-      verticalAlign: 'middle' as const,
       fontWeight: 'bold',
       backgroundColor: '#f7fafc',
       lineHeight: '1.3',
-      height: '35px'
+      minHeight: '50px',
+      verticalAlign: 'middle' as const
     },
+
+    // 테이블 행 수정
     tableRow: {
       borderBottom: '1px solid #e2e8f0',
       pageBreakInside: 'avoid' as const,
-      height: '35px'
+      // 고정 높이 제거
+      minHeight: '45px'
     },
     tableBody: {
       pageBreakInside: 'auto' as const
     },
 
-    // 그리드 스타일
     grid4: {
       display: 'grid',
       gridTemplateColumns: '1fr 1fr 1fr 1fr',
@@ -255,13 +247,17 @@ export const PDFReportTemplate: React.FC<PDFReportTemplateProps> = ({
       marginBottom: '12px'
     },
 
-    // 정보 박스 스타일
     infoBox: {
       padding: '10px',
       backgroundColor: '#ffffff',
       border: '1px solid #e2e8f0',
       textAlign: 'center' as const,
-      minHeight: '60px'
+      minHeight: '60px',
+      // 세로 정렬 추가
+      display: 'flex' as const,
+      flexDirection: 'column' as const,
+      justifyContent: 'center' as const,
+      alignItems: 'center' as const
     },
     infoValue: {
       fontSize: '24px',
@@ -275,13 +271,17 @@ export const PDFReportTemplate: React.FC<PDFReportTemplateProps> = ({
       fontWeight: 'normal'
     },
 
-    // 등급 스타일
     gradeBox: {
       padding: '12px',
       backgroundColor: '#ffffff',
       border: '2px solid #2d3748',
       textAlign: 'center' as const,
-      minHeight: '60px'
+      minHeight: '60px',
+      // 세로 정렬 추가
+      display: 'flex' as const,
+      flexDirection: 'column' as const,
+      justifyContent: 'center' as const,
+      alignItems: 'center' as const
     },
     gradeValue: {
       fontSize: '26px',
@@ -295,13 +295,11 @@ export const PDFReportTemplate: React.FC<PDFReportTemplateProps> = ({
       fontWeight: 'normal'
     },
 
-    // 카테고리 컨테이너 스타일
     categoryContainer: {
       marginBottom: '15px',
       pageBreakAfter: 'avoid' as const
     },
 
-    // 카테고리 제목 스타일
     categoryTitle: {
       fontSize: '13px',
       fontWeight: 'bold',
@@ -312,7 +310,6 @@ export const PDFReportTemplate: React.FC<PDFReportTemplateProps> = ({
       pageBreakAfter: 'avoid' as const
     },
 
-    // 경고 박스 스타일
     warningBox: {
       padding: '12px',
       backgroundColor: '#fffbf0',
@@ -333,7 +330,6 @@ export const PDFReportTemplate: React.FC<PDFReportTemplateProps> = ({
       lineHeight: '1.3'
     },
 
-    // 푸터 스타일
     footer: {
       marginTop: '20px',
       paddingTop: '12px',
@@ -344,7 +340,6 @@ export const PDFReportTemplate: React.FC<PDFReportTemplateProps> = ({
       pageBreakInside: 'avoid' as const
     },
 
-    // 페이지 분할 유틸리티
     pageBreak: {
       pageBreakBefore: 'always' as const,
       height: '0px',
@@ -352,13 +347,7 @@ export const PDFReportTemplate: React.FC<PDFReportTemplateProps> = ({
     }
   }
 
-  // ========================================================================
-  // 유틸리티 함수들 (Utility Functions)
-  // ========================================================================
-
-  /**
-   * 현재 날짜를 한국어 형식으로 반환
-   */
+  // 유틸리티 함수들은 그대로 유지...
   const getCurrentDate = () => {
     if (completedAt) {
       return new Date(completedAt).toLocaleDateString('ko-KR', {
@@ -376,9 +365,6 @@ export const PDFReportTemplate: React.FC<PDFReportTemplateProps> = ({
     })
   }
 
-  /**
-   * 카테고리 이름 매핑
-   */
   const getCategoryName = (categoryId: string) => {
     const categoryNames: {[key: string]: string} = {
       '1': '인권 및 노동',
@@ -390,9 +376,6 @@ export const PDFReportTemplate: React.FC<PDFReportTemplateProps> = ({
     return categoryNames[categoryId] || `카테고리 ${categoryId}`
   }
 
-  /**
-   * 위반 항목들을 카테고리별로 그룹화
-   */
   const groupViolationsByCategory = () => {
     const violations = answers.filter(a => a.answer === false)
     const grouped: {[key: string]: Answer[]} = {}
@@ -408,9 +391,6 @@ export const PDFReportTemplate: React.FC<PDFReportTemplateProps> = ({
     return grouped
   }
 
-  /**
-   * 테이블 행을 페이지별로 분할 - 더 보수적인 분할
-   */
   const chunkTableRows = (rows: any[], maxRowsPerPage: number) => {
     const chunks = []
     for (let i = 0; i < rows.length; i += maxRowsPerPage) {
@@ -419,9 +399,6 @@ export const PDFReportTemplate: React.FC<PDFReportTemplateProps> = ({
     return chunks
   }
 
-  /**
-   * 중대위반 항목을 페이지별로 분할
-   */
   const chunkCriticalViolations = (
     violations: CriticalViolation[],
     maxRowsPerPage: number
@@ -433,21 +410,14 @@ export const PDFReportTemplate: React.FC<PDFReportTemplateProps> = ({
     return chunks
   }
 
-  // ========================================================================
-  // 렌더링 (Rendering)
-  // ========================================================================
-
   const violationsByCategory = groupViolationsByCategory()
   const hasViolations = Object.keys(violationsByCategory).length > 0
-
-  // 중대위반 테이블을 여러 페이지로 분할 (페이지당 최대 8개 행)
   const criticalViolationChunks = chunkCriticalViolations(criticalViolations, 8)
 
   return (
     <div style={styles.container}>
-      {/* 첫 번째 페이지 - 기본 정보 및 종합 평가 */}
+      {/* 첫 번째 페이지 */}
       <div style={styles.pageContainer}>
-        {/* 보고서 헤더 */}
         <div style={styles.header}>
           <h1 style={styles.headerTitle}>공급망 실사 자가진단 보고서</h1>
           <p style={styles.headerSubtitle}>
@@ -456,7 +426,6 @@ export const PDFReportTemplate: React.FC<PDFReportTemplateProps> = ({
           <p style={styles.headerDate}>발행일: {getCurrentDate()}</p>
         </div>
 
-        {/* 평가 기본 정보 */}
         <div style={styles.section}>
           <h2 style={styles.sectionTitle}>1. 평가 기본 정보</h2>
           <div style={styles.sectionContent}>
@@ -485,7 +454,6 @@ export const PDFReportTemplate: React.FC<PDFReportTemplateProps> = ({
           </div>
         </div>
 
-        {/* 종합 평가 결과 */}
         <div style={styles.section}>
           <h2 style={styles.sectionTitle}>2. 종합 평가 결과</h2>
           <div style={styles.sectionContent}>
@@ -510,7 +478,6 @@ export const PDFReportTemplate: React.FC<PDFReportTemplateProps> = ({
           </div>
         </div>
 
-        {/* 중대위반 개요 (첫 페이지) */}
         <div style={styles.section}>
           <h2 style={styles.sectionTitle}>3. 중대 위반 개요</h2>
           {criticalViolations.length > 0 ? (
@@ -559,13 +526,9 @@ export const PDFReportTemplate: React.FC<PDFReportTemplateProps> = ({
                     {chunk.map((cv, index) => (
                       <tr key={cv.question.id} style={styles.tableRow}>
                         <td style={styles.tableCell}>{cv.question.id}</td>
-                        <td style={{...styles.tableCell, textAlign: 'left'}}>
-                          {cv.question.text}
-                        </td>
+                        <td style={styles.tableCellLeft}>{cv.question.text}</td>
                         <td style={styles.tableCell}>{cv.violation.grade}등급</td>
-                        <td style={{...styles.tableCell, textAlign: 'left'}}>
-                          {cv.violation.reason}
-                        </td>
+                        <td style={styles.tableCellLeft}>{cv.violation.reason}</td>
                       </tr>
                     ))}
                   </tbody>
@@ -581,7 +544,7 @@ export const PDFReportTemplate: React.FC<PDFReportTemplateProps> = ({
         <>
           {Object.entries(violationsByCategory).map(
             ([categoryId, violations], categoryIndex) => {
-              const chunks = chunkTableRows(violations, 10) // 페이지당 최대 10개 행으로 조정
+              const chunks = chunkTableRows(violations, 10)
 
               return chunks.map((chunk, chunkIndex) => (
                 <div
@@ -629,22 +592,15 @@ export const PDFReportTemplate: React.FC<PDFReportTemplateProps> = ({
                         {chunk.map((violation, index) => (
                           <tr key={index} style={styles.tableRow}>
                             <td style={styles.tableCell}>{violation.questionId}</td>
-                            <td style={{...styles.tableCell, textAlign: 'left'}}>
-                              {violation.questionText}
-                            </td>
-                            <td style={{...styles.tableCell, textAlign: 'left'}}>
-                              {violation.penaltyInfo}
-                            </td>
-                            <td style={{...styles.tableCell, textAlign: 'left'}}>
-                              {violation.legalBasis}
-                            </td>
+                            <td style={styles.tableCellLeft}>{violation.questionText}</td>
+                            <td style={styles.tableCellLeft}>{violation.penaltyInfo}</td>
+                            <td style={styles.tableCellLeft}>{violation.legalBasis}</td>
                           </tr>
                         ))}
                       </tbody>
                     </table>
                   </div>
 
-                  {/* 마지막 페이지에 푸터 추가 */}
                   {categoryIndex === Object.keys(violationsByCategory).length - 1 &&
                     chunkIndex === chunks.length - 1 && (
                       <div style={styles.footer}>
@@ -661,7 +617,6 @@ export const PDFReportTemplate: React.FC<PDFReportTemplateProps> = ({
         </>
       )}
 
-      {/* 위반 항목이 없는 경우 푸터 */}
       {!hasViolations && (
         <div style={styles.pageContainer}>
           <div style={styles.section}>
@@ -688,9 +643,5 @@ export const PDFReportTemplate: React.FC<PDFReportTemplateProps> = ({
     </div>
   )
 }
-
-// ============================================================================
-// 기본 내보내기 (Default Export)
-// ============================================================================
 
 export default PDFReportTemplate
