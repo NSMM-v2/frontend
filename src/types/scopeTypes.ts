@@ -222,3 +222,64 @@ export interface YearMonthOption {
   month: number
   label: string
 }
+
+// ============================================================================
+// 집계 관련 타입 정의 (Aggregation Types)
+// ============================================================================
+
+/**
+ * Scope 배출량 종합 집계 응답 (백엔드 ScopeAggregationResponse와 1:1 매핑)
+ */
+export interface ScopeAggregationResponse {
+  reportingYear: number
+  reportingMonth: number
+  scope1Total: number
+  scope2Total: number
+  scope3Total: number
+  totalEmission: number
+  
+  // Scope 3 특수 집계 결과
+  scope3Category1Aggregated: number
+  scope3Category2Aggregated: number
+  scope3Category4Aggregated: number
+  scope3Category5Aggregated: number
+  
+  // 상세 정보 (옵션)
+  aggregationDetails?: AggregationDetails
+  productSummaries?: ProductEmissionSummary[]
+  hierarchicalSummaries?: HierarchicalEmissionSummary[]
+}
+
+/**
+ * 계층별 배출량 집계 요약 (백엔드 HierarchicalEmissionSummary와 1:1 매핑)
+ */
+export interface HierarchicalEmissionSummary {
+  treePath: string
+  companyName: string
+  level: number
+  scope1Emission: number
+  scope2Emission: number
+  scope3Emission: number
+  totalEmission: number
+  childCount: number
+}
+
+/**
+ * 제품별 배출량 집계 요약 (백엔드 ProductEmissionSummary와 1:1 매핑)
+ */
+export interface ProductEmissionSummary {
+  productCode: string
+  productName: string
+  scope1Emission: number
+  scope2Emission: number
+  scope3Emission: number
+  totalEmission: number
+}
+
+/**
+ * 집계 상세 정보 (백엔드 AggregationDetails와 1:1 매핑)
+ */
+export interface AggregationDetails {
+  // 집계 과정의 상세 정보 (필요 시 확장)
+  [key: string]: any
+}

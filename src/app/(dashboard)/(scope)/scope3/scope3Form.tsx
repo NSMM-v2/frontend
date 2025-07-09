@@ -32,13 +32,15 @@ import {scope3CategoryList} from '@/components/scopeTotal/Scope123CategorySelect
 import {
   SelectorState,
   ScopeEmissionResponse,
-  ScopeCategorySummary
+  ScopeCategorySummary,
+  ScopeAggregationResponse
 } from '@/types/scopeTypes'
 import {
   fetchEmissionsByYearAndMonth,
   fetchCategorySummaryByScope,
   deleteScopeEmission
 } from '@/services/scopeService'
+import {fetchComprehensiveAggregation} from '@/services/aggregationService'
 import {DirectionButton} from '@/components/layout/direction'
 
 // ============================================================================
@@ -149,6 +151,9 @@ export default function Scope3Form() {
 
   // 카테고리별 요약 데이터 (CategorySummaryCard용)
   const [categorySummary, setCategorySummary] = useState<ScopeCategorySummary>({})
+
+  // 종합 집계 데이터 (계층적 집계 표시용)
+  const [aggregationData, setAggregationData] = useState<ScopeAggregationResponse | null>(null)
 
   // 로딩 상태 관리
   const [isLoading, setIsLoading] = useState<boolean>(false)
@@ -484,7 +489,11 @@ export default function Scope3Form() {
       )
       setCategorySummary(summaryData)
 
-      // 3. 기존 데이터를 카테고리별 계산기로 변환
+      // 3. 종합 집계 데이터 조회 (계층적 집계 표시용)
+      const aggregationData = await fetchComprehensiveAggregation(selectedYear, selectedMonth)
+      setAggregationData(aggregationData)
+
+      // 4. 기존 데이터를 카테고리별 계산기로 변환
       convertBackendDataToCalculators(emissionsData)
     } catch (error) {
     } finally {
@@ -714,8 +723,8 @@ export default function Scope3Form() {
           transition={{duration: 0.4, delay: 0.1}}>
           <Card className="overflow-hidden mb-4 shadow-sm">
             <CardContent className="p-4">
-              <div className="grid grid-cols-1 gap-8 justify-center items-center h-24 md:grid-cols-3">
-                {/* 백엔드 데이터 기반 총 배출량 카드 */}
+              <div className="grid grid-cols-1 gap-4 justify-center items-center md:grid-cols-3">
+                {/* 본인 입력 배출량 카드 */}
                 <motion.div
                   initial={{opacity: 0, scale: 0.95}}
                   animate={{opacity: 1, scale: 1}}
@@ -728,7 +737,7 @@ export default function Scope3Form() {
                       </div>
                       <div>
                         <p className="text-sm font-medium text-gray-500">
-                          전체 Scope 3 배출량
+                          본인 입력 배출량
                         </p>
                         <h3 className="text-2xl font-bold text-gray-900">
                           {Object.values(categorySummary)
@@ -737,6 +746,47 @@ export default function Scope3Form() {
                               maximumFractionDigits: 2,
                               minimumFractionDigits: 2
                             })}
+                          <span className="ml-1 text-sm font-normal text-gray-500">
+                            kgCO₂eq
+                          </span>
+                        </h3>
+                      </div>
+                    </CardContent>
+                  </Card>
+                </motion.div>
+
+                {/* 누적 집계 배출량 카드 */}
+                <motion.div
+                  initial={{opacity: 0, scale: 0.95}}
+                  animate={{opacity: 1, scale: 1}}
+                  transition={{delay: 0.2, duration: 0.5}}
+                  className="max-w-md">
+                  <Card className="justify-center h-24 bg-gradient-to-br from-green-50 to-green-100 border-green-200 shadow-sm">
+                    <CardContent className="flex items-center p-4">
+                      <div className="p-2 mr-3 bg-green-100 rounded-full">
+                        <TrendingUp className="w-5 h-5 text-green-600" />
+                      </div>
+                      <div>
+                        <p className="text-sm font-medium text-gray-500">
+                          누적 집계 배출량
+                        </p>
+                        <h3 className="text-2xl font-bold text-gray-900">
+                          {aggregationData ? (
+                            (aggregationData.scope3Category1Aggregated + 
+                             aggregationData.scope3Category2Aggregated + 
+                             aggregationData.scope3Category4Aggregated + 
+                             aggregationData.scope3Category5Aggregated +
+                             // 나머지 카테고리는 본인 입력값 사용
+                             Object.entries(categorySummary)
+                               .filter(([catNum]) => ![1, 2, 4, 5].includes(Number(catNum)))
+                               .reduce((sum, [, emission]) => sum + emission, 0)
+                            ).toLocaleString(undefined, {
+                              maximumFractionDigits: 2,
+                              minimumFractionDigits: 2
+                            })
+                          ) : (
+                            '0.00'
+                          )}
                           <span className="ml-1 text-sm font-normal text-gray-500">
                             kgCO₂eq
                           </span>
@@ -805,6 +855,7 @@ export default function Scope3Form() {
           selectedYear={selectedYear} // 백엔드 저장용 연도
           selectedMonth={selectedMonth} // 백엔드 저장용 월
           onDataChange={refreshData} // CRUD 작업 후 데이터 새로고침 콜백
+          aggregationData={aggregationData} // 집계 데이터 전달
         />
       )}
 
