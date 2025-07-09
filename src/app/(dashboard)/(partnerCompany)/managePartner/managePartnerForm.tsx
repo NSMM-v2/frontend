@@ -599,7 +599,7 @@ export default function ManagePartnerForm() {
   }
 
   return (
-    <div className="flex flex-col p-4 w-full">
+    <div className="flex flex-col w-full p-4">
       {/* ======================================================================
           상단 네비게이션 섹션 (Top Navigation Section)
           ====================================================================== */}
@@ -607,7 +607,7 @@ export default function ManagePartnerForm() {
         <Breadcrumb>
           <BreadcrumbList>
             <BreadcrumbItem>
-              <Home className="mr-1 w-4 h-4" />
+              <Home className="w-4 h-4 mr-1" />
               <BreadcrumbLink href="/dashboard">대시보드</BreadcrumbLink>
             </BreadcrumbItem>
             <BreadcrumbSeparator />
@@ -621,11 +621,8 @@ export default function ManagePartnerForm() {
       {/* ======================================================================
           헤더 섹션 (Header Section)
           ====================================================================== */}
-      <div className="flex flex-row mb-4 w-full">
-        <Link
-          href="/dashboard"
-          className="flex flex-row items-center p-3 space-x-4 rounded-md transition cursor-pointer hover:bg-gray-200">
-          <ArrowLeft className="w-6 h-6 text-gray-500 group-hover:text-blue-600" />
+      <div className="flex flex-row justify-between w-full mb-4">
+        <div className="flex flex-row items-center p-3 space-x-4 transition rounded-md">
           <PageHeader
             icon={<Users className="w-6 h-6 text-blue-600" />}
             title="협력사 추가"
@@ -633,7 +630,13 @@ export default function ManagePartnerForm() {
             module="PARTNERCOMPANY"
             submodule="managePartner"
           />
-        </Link>
+        </div>
+        {/* 협력\사 검색 섹션 */}
+        <PartnerSearchSection
+          searchQuery={searchQuery}
+          onSearchQueryChange={handleSearchChange}
+          onOpenAddDialog={openAddDialog}
+        />
       </div>
 
       {/* ======================================================================
@@ -649,13 +652,6 @@ export default function ManagePartnerForm() {
           <PageLoadingState />
         ) : (
           <>
-            {/* 협력\사 검색 섹션 */}
-            <PartnerSearchSection
-              searchQuery={searchQuery}
-              onSearchQueryChange={handleSearchChange}
-              onOpenAddDialog={openAddDialog}
-            />
-
             {/* 협력\사 목록 테이블 또는 빈 상태 */}
             {partners.length === 0 ? (
               searchQuery ? (
