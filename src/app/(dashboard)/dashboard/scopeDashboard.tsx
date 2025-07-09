@@ -270,7 +270,7 @@ export default function ScopeDashboard() {
           {/* ======================================================================
               협력사 리스트 섹션 (Partner List Section)
               ====================================================================== */}
-          <Card className="w-[30%] bg-white rounded-lg p-4 flex flex-col">
+          <Card className="w-[30%] h-full bg-white rounded-lg p-4 flex flex-col">
             <Tabs defaultValue="company" className="w-full">
               <div className="flex flex-row items-center justify-between gap-2">
                 <TabsList>
@@ -291,7 +291,7 @@ export default function ScopeDashboard() {
               </div>
 
               <TabsContent value="company">
-                <div className="flex flex-col flex-1 gap-2 p-2 border rounded-lg max-h-80 scroll-auto custom-scrollbar">
+                <div className="flex flex-col flex-1 gap-2 p-2 border rounded-lg max-h-[70%] scroll-auto custom-scrollbar">
                   {loading && (
                     <div className="flex items-center justify-center h-full">
                       <div className="text-sm text-gray-500">

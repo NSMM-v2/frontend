@@ -409,10 +409,7 @@ export function CSDDDLayout() {
       </div>
 
       <div className="flex flex-row w-full h-24 mb-6">
-        <Link
-          href="/dashboard"
-          className="flex flex-row items-center p-4 space-x-4 transition rounded-md cursor-pointer hover:bg-gray-200">
-          <ArrowLeft className="w-6 h-6 text-gray-500 group-hover:text-blue-600" />
+        <div className="flex flex-row items-center p-4 space-x-4 transition rounded-md">
           <PageHeader
             icon={<Shield className="w-6 h-6 text-blue-600" />}
             title="CSDDD 자가진단 시스템"
@@ -420,7 +417,7 @@ export function CSDDDLayout() {
             module="CSDDD"
             submodule="assessment"
           />
-        </Link>
+        </div>
       </div>
 
       <motion.div
