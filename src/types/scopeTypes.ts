@@ -41,6 +41,9 @@ export interface ScopeEmissionRequest {
   companyProductCode?: string // 회사별 제품 코드
   productName?: string // 제품명
 
+  //==============================================================================================================================공장 설비
+  factoryEnabled?: boolean
+
   // 프론트엔드 입력 데이터
   majorCategory: string // 대분류
   subcategory: string // 구분
@@ -77,6 +80,9 @@ export interface ScopeEmissionResponse {
   companyProductCode?: string
   productName?: string
 
+  //=======================================================================================================================================공장 설비
+  factoryEnabled?: boolean
+
   // 프론트엔드 입력 데이터
   majorCategory: string
   subcategory: string
@@ -110,6 +116,9 @@ export interface ScopeEmissionUpdateRequest {
   // 제품 코드 매핑 정보
   companyProductCode?: string
   productName?: string
+
+  // ======================================================================================================================공장 설비
+  factoryEnabled?: boolean
 
   // 프론트엔드 입력 데이터
   majorCategory?: string
@@ -180,6 +189,7 @@ export interface ScopeFormState {
   scopeType: ScopeType
   categoryNumber: number
   hasProductMapping: boolean
+  isFactoryMapping: boolean //======================================================================================================================================추가됨
   productCode?: string
   productName?: string
   majorCategory: string

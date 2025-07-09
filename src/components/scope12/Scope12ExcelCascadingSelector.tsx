@@ -284,8 +284,6 @@ export function ExcelCascadingSelector({
     !!(state.productName || state.productCode)
   )
 
-  const [factoryEnabled, setFactoryEnabled] = useState()
-
   useEffect(() => {
     setProductEnabled(!!(state.productName || state.productCode))
   }, [state.productName, state.productCode])
@@ -301,12 +299,6 @@ export function ExcelCascadingSelector({
         productName: '',
         productCode: ''
       })
-    }
-  }
-
-  const handleFactoryToggle = (checked: boolean) => {
-    setFactoryEnabled(checked)
-    if (!checked) {
     }
   }
 
@@ -458,30 +450,6 @@ export function ExcelCascadingSelector({
                       : 'text-gray-500 bg-gray-100'
                   }`}>
                   {productEnabled ? '활성' : '비활성'}
-                </span>
-              </div>
-              <div className="flex items-center space-x-3">
-                <Switch
-                  checked={factoryEnabled}
-                  // onCheckedChange={handleProductToggle}
-                  className="data-[state=checked]:bg-blue-500"
-                />
-
-                {/* 라벨 */}
-                <span
-                  className={`text-sm font-medium transition-colors ${
-                    factoryEnabled ? 'text-blue-600' : 'text-gray-500'
-                  }`}>
-                  공장 설비
-                </span>
-                {/* 상태 표시 */}
-                <span
-                  className={`text-xs px-2 py-1 rounded-full font-medium transition-colors ${
-                    factoryEnabled
-                      ? 'text-blue-700 bg-blue-100'
-                      : 'text-gray-500 bg-gray-100'
-                  }`}>
-                  {factoryEnabled ? '활성' : '비활성'}
                 </span>
               </div>
             </div>

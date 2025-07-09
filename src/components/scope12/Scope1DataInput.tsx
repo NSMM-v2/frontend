@@ -123,13 +123,18 @@ export function Scope1DataInput({
   const [deleteDialogStates, setDeleteDialogStates] = useState<Record<number, boolean>>(
     {}
   )
+  const [factoryEnabled, setFactoryEnabled] = useState(false)
+  const handleFactoryToggle = (checked: boolean) => {
+    setFactoryEnabled(checked)
+  }
 
   // 백엔드 API 연동 함수
 
   // 계산기 데이터 저장/수정 처리 (임시 ID면 생성, 양수 ID면 수정)
   const saveCalculatorData = async (
     calc: Scope1CalculatorData,
-    isManualInput: boolean
+    isManualInput: boolean,
+    factoryEnabled: boolean
   ) => {
     if (!selectedYear || !selectedMonth) {
       showError('보고연도와 보고월을 먼저 선택해주세요.')
@@ -137,7 +142,7 @@ export function Scope1DataInput({
     }
 
     try {
-      const requestData = createRequestPayload(calc, isManualInput)
+      const requestData = createRequestPayload(calc, isManualInput, factoryEnabled)
       let response: ScopeEmissionResponse
 
       if (isTemporaryId(calc.id)) {
@@ -159,49 +164,45 @@ export function Scope1DataInput({
   // API 요청 데이터 생성 (통합 Scope 시스템에 맞춤)
   const createRequestPayload = (
     calc: Scope1CalculatorData,
-    isManualInput: boolean
+    isManualInput: boolean,
+    factoryEnabled: boolean
   ): ScopeEmissionRequest => {
     const state = calc.state
 
-    // 안전한 숫자 변환 및 정밀도 제한
     const emissionFactor =
-      Math.round(parseFloat(state.kgCO2eq || '0') * 1000000) / 1000000 // 소수점 6자리
-    const activityAmount = Math.round(parseFloat(state.quantity || '0') * 1000) / 1000 // 소수점 3자리
-    const totalEmission = Math.round(emissionFactor * activityAmount * 1000000) / 1000000 // 소수점 6자리
+      Math.round(parseFloat(state.kgCO2eq || '0') * 1000000) / 1000000
+    const activityAmount = Math.round(parseFloat(state.quantity || '0') * 1000) / 1000
+    const totalEmission = Math.round(emissionFactor * activityAmount * 1000000) / 1000000
 
     const categoryMapping = {
-      // 고정연소
       list1: {number: 1, major: '고정연소', sub: '액체 연료'},
       list2: {number: 2, major: '고정연소', sub: '가스 연료'},
       list3: {number: 3, major: '고정연소', sub: '고체 연료'},
-      // 이동연소
       list4: {number: 4, major: '이동연소', sub: '차량'},
       list5: {number: 5, major: '이동연소', sub: '항공기'},
       list6: {number: 6, major: '이동연소', sub: '선박'},
-      // 공정배출
       list7: {number: 7, major: '공정배출', sub: '제조 배출'},
       list8: {number: 8, major: '공정배출', sub: '폐수 처리'},
-      // 냉매누출
       list9: {number: 9, major: '냉매누출', sub: '냉동/냉방 설비 냉매'},
       list10: {number: 10, major: '냉매누출', sub: '소화기 방출'}
     }
 
     const category = categoryMapping[activeCategory]
+
     if (!category) {
       throw new Error('유효하지 않은 카테고리입니다.')
     }
-
+    // -------------------------------------------------------------------------------
+    console.log('공정설비: ', factoryEnabled)
     return {
-      // Scope 분류 정보
       scopeType: 'SCOPE1',
       scope1CategoryNumber: category.number,
-      majorCategory: category.major,
+      majorCategory: category.major, //  major는 유지
+      factoryEnabled,
 
-      // 배출원 정보
       subcategory: state.separate || '',
       rawMaterial: state.rawMaterial || '',
 
-      // 제품 관련 정보
       ...(state.productName || state.productCode
         ? {
             companyProductCode: state.productCode || '',
@@ -209,17 +210,14 @@ export function Scope1DataInput({
           }
         : {}),
 
-      // 수치 데이터
       activityAmount,
       unit: state.unit || '',
       emissionFactor,
       totalEmission,
 
-      // 시간 정보
       reportingYear: selectedYear,
       reportingMonth: selectedMonth || 1,
 
-      // 입력 모드 제어
       inputType: isManualInput ? 'MANUAL' : 'LCA',
       hasProductMapping: !!(state.productName || state.productCode)
     }
@@ -304,7 +302,7 @@ export function Scope1DataInput({
       // 각 계산기별로 저장 처리
       const savePromises = calculatorsToSave.map(async calc => {
         const isManualInput = !(calculatorModes[calc.id] || false) // 기본값 false(Manual)
-        return await saveCalculatorData(calc, isManualInput)
+        return await saveCalculatorData(calc, isManualInput, factoryEnabled)
       })
 
       await Promise.all(savePromises)
@@ -517,7 +515,30 @@ export function Scope1DataInput({
                             <p className="text-sm text-gray-600">{description}</p>
                           </motion.div>
                         </div>
+                        <div className="flex items-center space-x-3">
+                          <Switch
+                            checked={factoryEnabled}
+                            onCheckedChange={handleFactoryToggle}
+                            className="data-[state=checked]:bg-blue-500"
+                          />
 
+                          {/* 라벨 */}
+                          <span
+                            className={`text-sm font-medium transition-colors ${
+                              factoryEnabled ? 'text-blue-600' : 'text-gray-500'
+                            }`}>
+                            공장 설비
+                          </span>
+                          {/* 상태 표시 */}
+                          <span
+                            className={`text-xs px-2 py-1 rounded-full font-medium transition-colors ${
+                              factoryEnabled
+                                ? 'text-blue-700 bg-blue-100'
+                                : 'text-gray-500 bg-gray-100'
+                            }`}>
+                            {factoryEnabled ? '활성' : '비활성'}
+                          </span>
+                        </div>
                         {/* 오른쪽 컨트롤 영역 */}
                         <div className="flex items-center space-x-4">
                           {/* 수동 입력 모드 토글 */}
