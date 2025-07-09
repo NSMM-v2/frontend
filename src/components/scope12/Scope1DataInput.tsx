@@ -123,13 +123,18 @@ export function Scope1DataInput({
   const [deleteDialogStates, setDeleteDialogStates] = useState<Record<number, boolean>>(
     {}
   )
+  const [factoryEnabled, setFactoryEnabled] = useState(false)
+  const handleFactoryToggle = (checked: boolean) => {
+    setFactoryEnabled(checked)
+  }
 
   // 백엔드 API 연동 함수
 
   // 계산기 데이터 저장/수정 처리 (임시 ID면 생성, 양수 ID면 수정)
   const saveCalculatorData = async (
     calc: Scope1CalculatorData,
-    isManualInput: boolean
+    isManualInput: boolean,
+    factoryEnabled: boolean
   ) => {
     if (!selectedYear || !selectedMonth) {
       showError('보고연도와 보고월을 먼저 선택해주세요.')
@@ -137,7 +142,7 @@ export function Scope1DataInput({
     }
 
     try {
-      const requestData = createRequestPayload(calc, isManualInput)
+      const requestData = createRequestPayload(calc, isManualInput, factoryEnabled)
       let response: ScopeEmissionResponse
 
       if (isTemporaryId(calc.id)) {
@@ -159,49 +164,45 @@ export function Scope1DataInput({
   // API 요청 데이터 생성 (통합 Scope 시스템에 맞춤)
   const createRequestPayload = (
     calc: Scope1CalculatorData,
-    isManualInput: boolean
+    isManualInput: boolean,
+    factoryEnabled: boolean
   ): ScopeEmissionRequest => {
     const state = calc.state
 
-    // 안전한 숫자 변환 및 정밀도 제한
     const emissionFactor =
-      Math.round(parseFloat(state.kgCO2eq || '0') * 1000000) / 1000000 // 소수점 6자리
-    const activityAmount = Math.round(parseFloat(state.quantity || '0') * 1000) / 1000 // 소수점 3자리
-    const totalEmission = Math.round(emissionFactor * activityAmount * 1000000) / 1000000 // 소수점 6자리
+      Math.round(parseFloat(state.kgCO2eq || '0') * 1000000) / 1000000
+    const activityAmount = Math.round(parseFloat(state.quantity || '0') * 1000) / 1000
+    const totalEmission = Math.round(emissionFactor * activityAmount * 1000000) / 1000000
 
     const categoryMapping = {
-      // 고정연소
       list1: {number: 1, major: '고정연소', sub: '액체 연료'},
       list2: {number: 2, major: '고정연소', sub: '가스 연료'},
       list3: {number: 3, major: '고정연소', sub: '고체 연료'},
-      // 이동연소
       list4: {number: 4, major: '이동연소', sub: '차량'},
       list5: {number: 5, major: '이동연소', sub: '항공기'},
       list6: {number: 6, major: '이동연소', sub: '선박'},
-      // 공정배출
       list7: {number: 7, major: '공정배출', sub: '제조 배출'},
       list8: {number: 8, major: '공정배출', sub: '폐수 처리'},
-      // 냉매누출
       list9: {number: 9, major: '냉매누출', sub: '냉동/냉방 설비 냉매'},
       list10: {number: 10, major: '냉매누출', sub: '소화기 방출'}
     }
 
     const category = categoryMapping[activeCategory]
+
     if (!category) {
       throw new Error('유효하지 않은 카테고리입니다.')
     }
-
+    // -------------------------------------------------------------------------------
+    console.log('공정설비: ', factoryEnabled)
     return {
-      // Scope 분류 정보
       scopeType: 'SCOPE1',
       scope1CategoryNumber: category.number,
-      majorCategory: category.major,
+      majorCategory: category.major, //  major는 유지
+      factoryEnabled,
 
-      // 배출원 정보
       subcategory: state.separate || '',
       rawMaterial: state.rawMaterial || '',
 
-      // 제품 관련 정보
       ...(state.productName || state.productCode
         ? {
             companyProductCode: state.productCode || '',
@@ -209,17 +210,14 @@ export function Scope1DataInput({
           }
         : {}),
 
-      // 수치 데이터
       activityAmount,
       unit: state.unit || '',
       emissionFactor,
       totalEmission,
 
-      // 시간 정보
       reportingYear: selectedYear,
       reportingMonth: selectedMonth || 1,
 
-      // 입력 모드 제어
       inputType: isManualInput ? 'MANUAL' : 'LCA',
       hasProductMapping: !!(state.productName || state.productCode)
     }
@@ -304,7 +302,7 @@ export function Scope1DataInput({
       // 각 계산기별로 저장 처리
       const savePromises = calculatorsToSave.map(async calc => {
         const isManualInput = !(calculatorModes[calc.id] || false) // 기본값 false(Manual)
-        return await saveCalculatorData(calc, isManualInput)
+        return await saveCalculatorData(calc, isManualInput, factoryEnabled)
       })
 
       await Promise.all(savePromises)
@@ -394,17 +392,17 @@ export function Scope1DataInput({
       initial={{opacity: 0, scale: 0.95}}
       animate={{opacity: 1, scale: 1}}
       transition={{delay: 0.6, duration: 0.5}}
-      className="flex flex-col justify-center space-y-4 w-full">
+      className="flex flex-col justify-center w-full space-y-4">
       {/* 카테고리 헤더 */}
-      <div className="overflow-hidden bg-white rounded-3xl border-0 shadow-sm">
+      <div className="overflow-hidden bg-white border-0 shadow-sm rounded-3xl">
         <div className="p-6 bg-white">
-          <div className="flex flex-row justify-between items-center">
+          <div className="flex flex-row items-center justify-between">
             <motion.div
               initial={{opacity: 0, x: -20}}
               animate={{opacity: 1, x: 0}}
               transition={{delay: 0.1, duration: 0.5}}
               onClick={onBackToList}
-              className="flex flex-row items-center p-4 rounded-xl transition-all duration-200 hover:cursor-pointer hover:bg-blue-50">
+              className="flex flex-row items-center p-4 transition-all duration-200 rounded-xl hover:cursor-pointer hover:bg-blue-50">
               <div className="mr-4 text-2xl text-blue-500">←</div>
               <div>
                 <h1 className="text-3xl font-bold text-gray-900">{categoryInfo.title}</h1>
@@ -422,8 +420,8 @@ export function Scope1DataInput({
               initial={{opacity: 0, x: 20}}
               animate={{opacity: 1, x: 0}}
               transition={{delay: 0.1, duration: 0.5}}>
-              <Card className="bg-white rounded-2xl border-2 border-blue-200 shadow-sm min-w-md">
-                <CardContent className="flex justify-between items-center p-6">
+              <Card className="bg-white border-2 border-blue-200 shadow-sm rounded-2xl min-w-md">
+                <CardContent className="flex items-center justify-between p-6">
                   <div>
                     <span className="text-lg font-semibold text-gray-900">
                       현재 카테고리 소계:
@@ -446,7 +444,7 @@ export function Scope1DataInput({
       </div>
 
       {/* 계산기 목록 섹션 */}
-      <div className="flex flex-col items-center space-y-8 w-full">
+      <div className="flex flex-col items-center w-full space-y-8">
         <AnimatePresence mode="popLayout" initial={false}>
           {calculators.map((calculator, index) => {
             // 모드별 제목 및 설명 설정
@@ -472,7 +470,7 @@ export function Scope1DataInput({
                     <div className="h-px bg-blue-200" />
 
                     {/* 중앙 포인트 */}
-                    <div className="absolute top-1/2 left-1/2 w-3 h-3 bg-blue-500 rounded-full border-2 border-white transform -translate-x-1/2 -translate-y-1/2" />
+                    <div className="absolute w-3 h-3 transform -translate-x-1/2 -translate-y-1/2 bg-blue-500 border-2 border-white rounded-full top-1/2 left-1/2" />
                   </motion.div>
                 )}
 
@@ -486,10 +484,10 @@ export function Scope1DataInput({
                     duration: 0.5
                   }}
                   className="w-[80%]">
-                  <Card className="overflow-hidden bg-white rounded-3xl border-0 shadow-lg">
+                  <Card className="overflow-hidden bg-white border-0 shadow-lg rounded-3xl">
                     {/* 계산기 헤더 */}
                     <div className="p-6 bg-gradient-to-r from-blue-50 to-blue-100">
-                      <div className="flex relative items-center">
+                      <div className="relative flex items-center">
                         {/* 계산기 번호 배지 */}
                         <motion.div
                           initial={{scale: 0}}
@@ -498,7 +496,7 @@ export function Scope1DataInput({
                             delay: 0,
                             duration: 0.3
                           }}
-                          className="flex justify-center items-center mr-5 w-14 h-14 bg-blue-500 rounded-2xl shadow-md">
+                          className="flex items-center justify-center mr-5 bg-blue-500 shadow-md w-14 h-14 rounded-2xl">
                           <span className="text-lg font-bold text-white">
                             {index + 1}
                           </span>
@@ -517,7 +515,30 @@ export function Scope1DataInput({
                             <p className="text-sm text-gray-600">{description}</p>
                           </motion.div>
                         </div>
+                        <div className="flex items-center space-x-3">
+                          <Switch
+                            checked={factoryEnabled}
+                            onCheckedChange={handleFactoryToggle}
+                            className="data-[state=checked]:bg-blue-500"
+                          />
 
+                          {/* 라벨 */}
+                          <span
+                            className={`text-sm font-medium transition-colors ${
+                              factoryEnabled ? 'text-blue-600' : 'text-gray-500'
+                            }`}>
+                            공장 설비
+                          </span>
+                          {/* 상태 표시 */}
+                          <span
+                            className={`text-xs px-2 py-1 rounded-full font-medium transition-colors ${
+                              factoryEnabled
+                                ? 'text-blue-700 bg-blue-100'
+                                : 'text-gray-500 bg-gray-100'
+                            }`}>
+                            {factoryEnabled ? '활성' : '비활성'}
+                          </span>
+                        </div>
                         {/* 오른쪽 컨트롤 영역 */}
                         <div className="flex items-center space-x-4">
                           {/* 수동 입력 모드 토글 */}
@@ -525,7 +546,7 @@ export function Scope1DataInput({
                             initial={{opacity: 0, scale: 0.8}}
                             animate={{opacity: 1, scale: 1}}
                             transition={{delay: 0, duration: 0.3}}
-                            className="flex items-center px-4 py-2 space-x-3 bg-white rounded-xl border border-blue-200 shadow-sm transition-all hover:bg-blue-50">
+                            className="flex items-center px-4 py-2 space-x-3 transition-all bg-white border border-blue-200 shadow-sm rounded-xl hover:bg-blue-50">
                             {/* 토글 스위치 */}
                             <Switch
                               checked={mode}
@@ -556,8 +577,8 @@ export function Scope1DataInput({
                                 onClick={() =>
                                   handleShowDeleteDialog(calculator.id, true)
                                 }
-                                className="px-4 py-2 text-red-500 bg-red-50 rounded-xl border border-red-200 transition-all duration-200 hover:text-red-700 hover:bg-red-100 hover:border-red-300 hover:scale-105">
-                                <Trash2 className="mr-2 w-4 h-4" />
+                                className="px-4 py-2 text-red-500 transition-all duration-200 border border-red-200 bg-red-50 rounded-xl hover:text-red-700 hover:bg-red-100 hover:border-red-300 hover:scale-105">
+                                <Trash2 className="w-4 h-4 mr-2" />
                                 <span className="font-medium">삭제</span>
                               </Button>
                             </motion.div>
@@ -611,7 +632,7 @@ export function Scope1DataInput({
                     <AlertDialogContent className="max-w-md">
                       <AlertDialogHeader>
                         <div className="flex items-center mb-2 space-x-3">
-                          <div className="flex justify-center items-center w-12 h-12 bg-red-100 rounded-full">
+                          <div className="flex items-center justify-center w-12 h-12 bg-red-100 rounded-full">
                             <AlertTriangle className="w-6 h-6 text-red-600" />
                           </div>
                           <div>
@@ -641,12 +662,12 @@ export function Scope1DataInput({
                       </AlertDialogDescription>
 
                       <AlertDialogFooter className="gap-3">
-                        <AlertDialogCancel className="px-6 py-2 text-gray-700 bg-gray-100 rounded-lg border-0 transition-all hover:bg-gray-200">
+                        <AlertDialogCancel className="px-6 py-2 text-gray-700 transition-all bg-gray-100 border-0 rounded-lg hover:bg-gray-200">
                           취소
                         </AlertDialogCancel>
                         <AlertDialogAction
                           onClick={() => handleDeleteConfirm(calculator.id, index, mode)}
-                          className="px-6 py-2 text-white bg-red-500 rounded-lg border-0 transition-all hover:bg-red-600">
+                          className="px-6 py-2 text-white transition-all bg-red-500 border-0 rounded-lg hover:bg-red-600">
                           삭제
                         </AlertDialogAction>
                       </AlertDialogFooter>
@@ -664,18 +685,18 @@ export function Scope1DataInput({
         initial={{opacity: 0, y: 20}}
         animate={{opacity: 1, y: 0}}
         transition={{delay: 0.8, duration: 0.4}}
-        className="flex gap-4 justify-center items-center pt-8 border-t border-gray-200">
+        className="flex items-center justify-center gap-4 pt-8 border-t border-gray-200">
         <Button
           onClick={onAddCalculator}
-          className="px-8 py-4 text-lg font-semibold text-white bg-blue-500 rounded-xl shadow-lg transition-all duration-300 transform hover:bg-blue-600 hover:scale-105 hover:shadow-xl">
-          <Calculator className="mr-2 w-5 h-5" />
+          className="px-8 py-4 text-lg font-semibold text-white transition-all duration-300 transform bg-blue-500 shadow-lg rounded-xl hover:bg-blue-600 hover:scale-105 hover:shadow-xl">
+          <Calculator className="w-5 h-5 mr-2" />
           계산기 추가
         </Button>
         <Button
           onClick={handleComplete}
           variant="outline"
-          className="px-8 py-4 text-lg font-semibold text-green-700 bg-white rounded-xl border-2 border-green-500 shadow-lg transition-all duration-300 hover:bg-green-50 hover:scale-105 hover:shadow-xl">
-          <Save className="mr-2 w-5 h-5" />
+          className="px-8 py-4 text-lg font-semibold text-green-700 transition-all duration-300 bg-white border-2 border-green-500 shadow-lg rounded-xl hover:bg-green-50 hover:scale-105 hover:shadow-xl">
+          <Save className="w-5 h-5 mr-2" />
           입력 완료
         </Button>
       </motion.div>

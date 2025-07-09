@@ -264,14 +264,15 @@ export default function ScopeDashboard() {
 
   return (
     <div className="h-[calc(100vh-80px)] w-full p-4">
-      <div className="flex flex-col gap-4 w-full h-full">
+      <div className="flex flex-col w-full h-full gap-4">
+        {/* 윗쪽 셀 2개------------------------------------------------------------------------------ */}
         <div className="flex flex-row h-[50%] w-full gap-4">
           {/* ======================================================================
               협력사 리스트 섹션 (Partner List Section)
               ====================================================================== */}
           <Card className="w-[30%] bg-white rounded-lg p-4 flex flex-col">
             <Tabs defaultValue="company" className="w-full">
-              <div className="flex flex-row justify-between items-center">
+              <div className="flex flex-row items-center justify-between gap-2">
                 <TabsList>
                   <TabsTrigger value="company" onClick={() => setActiveTab('company')}>
                     협력사
@@ -285,14 +286,14 @@ export default function ScopeDashboard() {
                   value={searchQuery}
                   onChange={e => setSearchQuery(e.target.value)}
                   placeholder={activeTab === 'company' ? '협력사 검색' : '제품코드 검색'}
-                  className="p-2 h-8 rounded-md border border-gray-300 focus:ring-2 focus:ring-blue-500"
+                  className="h-8 p-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500"
                 />
               </div>
 
               <TabsContent value="company">
-                <div className="flex overflow-y-auto flex-col flex-1 gap-2 p-2 rounded-lg border scroll-auto custom-scrollbar">
+                <div className="flex flex-col flex-1 gap-2 p-2 border rounded-lg max-h-80 scroll-auto custom-scrollbar">
                   {loading && (
-                    <div className="flex justify-center items-center h-full">
+                    <div className="flex items-center justify-center h-full">
                       <div className="text-sm text-gray-500">
                         협력사 목록을 불러오는 중...
                       </div>
@@ -301,7 +302,7 @@ export default function ScopeDashboard() {
 
                   {/* 에러 상태 */}
                   {error && (
-                    <div className="flex justify-center items-center h-full">
+                    <div className="flex items-center justify-center h-full">
                       <div className="text-sm text-center text-red-500">
                         <div>오류가 발생했습니다</div>
                         <div className="mt-1 text-xs">{error}</div>
@@ -316,7 +317,7 @@ export default function ScopeDashboard() {
 
                   {/* 협력사 목록 */}
                   {!loading && !error && partners.length === 0 && (
-                    <div className="flex justify-center items-center h-full">
+                    <div className="flex items-center justify-center h-full">
                       <div className="text-sm text-center text-gray-500">
                         <div>등록된 협력사가 없습니다</div>
                         {userInfo?.userType === 'HEADQUARTERS' && (
@@ -344,7 +345,7 @@ export default function ScopeDashboard() {
                           </div>
 
                           {/* 계층적 ID와 레벨 */}
-                          <div className="flex gap-2 items-center">
+                          <div className="flex items-center gap-2">
                             <span className="font-mono text-xs text-gray-500">
                               {partner.hierarchicalId}
                             </span>
@@ -367,9 +368,9 @@ export default function ScopeDashboard() {
                     ))}
                 </div>
               </TabsContent>
-
+              {/* 제품 탭 -------------------------------------------------- */}
               <TabsContent value="product">
-                <div className="flex overflow-y-auto flex-col flex-1 gap-2 p-2 rounded-lg border scroll-auto custom-scrollbar">
+                <div className="flex flex-col flex-1 gap-2 p-2 overflow-y-auto border rounded-lg scroll-auto custom-scrollbar">
                   {filteredProducts.map(product => (
                     <div
                       key={product.productCode}
@@ -386,14 +387,6 @@ export default function ScopeDashboard() {
                 </div>
               </TabsContent>
             </Tabs>
-            {/* <CardHeader className="p-0">
-              <CardTitle className="text-lg font-bold">협력사 리스트</CardTitle>
-              <CardDescription className="text-sm text-gray-500">
-                {loading
-                  ? '로딩 중...'
-                  : `총 ${partners.length}개 · ${getAccessInfoText()}`}
-              </CardDescription>
-            </CardHeader> */}
           </Card>
 
           {/* ======================================================================
@@ -406,13 +399,13 @@ export default function ScopeDashboard() {
                 {selectedPartner ? selectedPartner.companyName : '협력사를 선택해주세요'}
               </CardDescription>
             </CardHeader>
-            <CardContent className="flex-1 p-2 rounded-lg border">
+            <CardContent className="flex-1 p-2 border rounded-lg">
               {selectedPartner ? (
                 <div className="w-full h-full">
                   <Bar options={chartOptions} data={chartData} />
                 </div>
               ) : (
-                <div className="flex justify-center items-center w-full h-full">
+                <div className="flex items-center justify-center w-full h-full">
                   <div className="text-center text-gray-500">
                     <div className="mb-2 text-lg">📊</div>
                     <div>협력사를 선택하면</div>
@@ -436,7 +429,7 @@ export default function ScopeDashboard() {
                 : '협력사를 선택해주세요'}
             </CardDescription>
           </CardHeader>
-          <CardContent className="overflow-y-auto flex-1 p-2 rounded-lg border scroll-auto custom-scrollbar">
+          <CardContent className="flex-1 p-2 overflow-y-auto border rounded-lg scroll-auto custom-scrollbar">
             {selectedPartner ? (
               <div className="flex-1 max-h-0">
                 <table className="min-w-full text-sm border">
@@ -488,7 +481,7 @@ export default function ScopeDashboard() {
                 </table>
               </div>
             ) : (
-              <div className="flex justify-center items-center h-full">
+              <div className="flex items-center justify-center h-full">
                 <div className="text-center text-gray-500">
                   <div className="mb-2 text-lg">📋</div>
                   <div>협력사를 선택하면</div>
