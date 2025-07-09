@@ -129,6 +129,21 @@ export function Scope2DataInput({
     setFactoryEnabled(checked)
   }
 
+  // 백엔드 데이터에서 factoryEnabled 값을 추출하여 상태 설정
+  useEffect(() => {
+    // 모든 카테고리의 계산기에서 저장된 데이터가 있는 것을 찾아서 factoryEnabled 설정
+    const allCalculators = [
+      ...electricCategoryCalculators.list11,
+      ...steamCategoryCalculators.list12,
+      ...steamCategoryCalculators.list13
+    ]
+    
+    const firstCalculatorWithData = allCalculators.find(calc => calc.savedData)
+    if (firstCalculatorWithData?.savedData?.factoryEnabled !== undefined) {
+      setFactoryEnabled(firstCalculatorWithData.savedData.factoryEnabled)
+    }
+  }, [electricCategoryCalculators, steamCategoryCalculators])
+
   // 카테고리별 계산기 목록 관리
   const [electricCategoryCalculators, setElectricCategoryCalculators] = useState<
     Record<Scope2ElectricCategoryKey, CalculatorData[]>

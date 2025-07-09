@@ -189,7 +189,7 @@ export interface ScopeFormState {
   scopeType: ScopeType
   categoryNumber: number
   hasProductMapping: boolean
-  isFactoryMapping: boolean //======================================================================================================================================추가됨
+  factoryEnabled: boolean //======================================================================================================================================추가됨
   productCode?: string
   productName?: string
   majorCategory: string
