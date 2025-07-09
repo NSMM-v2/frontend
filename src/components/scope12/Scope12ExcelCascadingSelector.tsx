@@ -73,8 +73,10 @@ export function ExcelCascadingSelector({
             RawMaterial: row['원료/에너지'].trim(),
             unit: row['단위']?.trim() || '',
             kgCO2eq:
-              parseFloat((row['탄소발자국'] as string).replace(/(\.\d+)\.(?=E)/, '$1')) ||
-              0
+              parseFloat(row['탄소발자국 (CO2e)']) ||
+              0,
+            materialState: row['상태'],
+            scopeCategory: row['ESG Scope 분류 (추정)']
           }))
 
         setData(parsed)
