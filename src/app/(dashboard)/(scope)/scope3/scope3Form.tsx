@@ -147,7 +147,7 @@ export default function Scope3Form() {
   // ========================================================================
 
   // 전체 Scope3 배출량 데이터 (년/월 기준)
-  const [scope3Data, setScope3Data] = useState<ScopeEmissionResponse[]>([])
+  const [, setScope3Data] = useState<ScopeEmissionResponse[]>([])
 
   // 카테고리별 요약 데이터 (CategorySummaryCard용)
   const [categorySummary, setCategorySummary] = useState<ScopeCategorySummary>({})
@@ -158,7 +158,7 @@ export default function Scope3Form() {
   )
 
   // 로딩 상태 관리
-  const [isLoading, setIsLoading] = useState<boolean>(false)
+  const [, setIsLoading] = useState<boolean>(false)
 
   // 데이터 새로고침 트리거 (CRUD 작업 후 데이터 다시 로드용)
   const [refreshTrigger, setRefreshTrigger] = useState<number>(0)
@@ -204,7 +204,7 @@ export default function Scope3Form() {
   /**
    * ID가 임시 ID인지 확인 (음수면 임시 ID)
    */
-  const isTemporaryId = (id: number): boolean => id < 0
+  // const isTemporaryId = (id: number): boolean => id < 0
 
   /**
    * ID가 저장된 데이터 ID인지 확인 (양수면 emissionId)
@@ -375,7 +375,7 @@ export default function Scope3Form() {
 
       // 백엔드 데이터가 있었던 경우 전체 데이터 새로고침
       if (isEmissionId(targetCalculator.id)) {
-        await refreshData()
+        refreshData()
       }
     } catch (error) {
       alert('데이터 삭제 중 오류가 발생했습니다. 콘솔을 확인해주세요.')
@@ -444,23 +444,23 @@ export default function Scope3Form() {
   }
 
   // 전체 총 배출량 계산
-  const grandTotal = Object.keys({
-    list1: '',
-    list2: '',
-    list3: '',
-    list4: '',
-    list5: '',
-    list6: '',
-    list7: '',
-    list8: '',
-    list9: '',
-    list10: '',
-    list11: '',
-    list12: '',
-    list13: '',
-    list14: '',
-    list15: ''
-  }).reduce((sum, key) => sum + getTotalEmission(key as Scope3CategoryKey), 0)
+  // const grandTotal = Object.keys({
+  //   list1: '',
+  //   list2: '',
+  //   list3: '',
+  //   list4: '',
+  //   list5: '',
+  //   list6: '',
+  //   list7: '',
+  //   list8: '',
+  //   list9: '',
+  //   list10: '',
+  //   list11: '',
+  //   list12: '',
+  //   list13: '',
+  //   list14: '',
+  //   list15: ''
+  // }).reduce((sum, key) => sum + getTotalEmission(key as Scope3CategoryKey), 0)
 
   // ========================================================================
   // 백엔드 데이터 로드 함수 (Backend Data Loading Functions)
@@ -790,39 +790,39 @@ export default function Scope3Form() {
                     onSelect={setSelectedMonth}
                   />
                 </div>
+              </div>
               </CardContent>
             </Card>
-          </div>
 
-          {/* 카테고리 선택 그리드 */}
-          <CategorySelector
-            categoryList={scope3CategoryList}
-            getTotalEmission={getTotalEmission}
-            onCategorySelect={handleCategorySelect}
-            animationDelay={0.2}
-          />
-        </motion.div>
+            {/* 카테고리 선택 그리드 */}
+            <CategorySelector
+              categoryList={scope3CategoryList}
+              getTotalEmission={getTotalEmission}
+              onCategorySelect={handleCategorySelect}
+              animationDelay={0.2}
+            />
+          </motion.div>
       ) : (
-        /* ====================================================================
-            카테고리별 데이터 입력 화면 (Category Data Input Screen)
-            ==================================================================== */
-        <CategoryDataInput
-          activeCategory={activeCategory}
-          calculators={getCurrentCalculators()}
-          getTotalEmission={getTotalEmission}
-          onAddCalculator={addCalculator}
-          onRemoveCalculator={removeCalculator}
-          onUpdateCalculatorState={updateCalculatorState}
-          onChangeTotal={updateTotal}
-          onComplete={handleComplete}
-          onBackToList={handleBackToList}
-          calculatorModes={calculatorModes[activeCategory] || {}} // 현재 카테고리만 전달
-          onModeChange={handleModeChange}
-          selectedYear={selectedYear} // 백엔드 저장용 연도
-          selectedMonth={selectedMonth} // 백엔드 저장용 월
-          onDataChange={refreshData} // CRUD 작업 후 데이터 새로고침 콜백
-          aggregationData={aggregationData} // 집계 데이터 전달
-        />
+        // 카테고리별 데이터 입력 화면 (Category Data Input Screen)
+        activeCategory && (
+          <CategoryDataInput
+            activeCategory={activeCategory}
+            calculators={getCurrentCalculators()}
+            getTotalEmission={getTotalEmission}
+            onAddCalculator={addCalculator}
+            onRemoveCalculator={removeCalculator}
+            onUpdateCalculatorState={updateCalculatorState}
+            onChangeTotal={updateTotal}
+            onComplete={handleComplete}
+            onBackToList={handleBackToList}
+            calculatorModes={calculatorModes[activeCategory] || {}} // 현재 카테고리만 전달
+            onModeChange={handleModeChange}
+            selectedYear={selectedYear} // 백엔드 저장용 연도
+            selectedMonth={selectedMonth} // 백엔드 저장용 월
+            onDataChange={refreshData} // CRUD 작업 후 데이터 새로고침 콜백
+            aggregationData={aggregationData} // 집계 데이터 전달
+          />
+        )
       )}
 
       <DirectionButton
