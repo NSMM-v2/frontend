@@ -376,9 +376,23 @@ export default function CSDDDDashboard() {
     <div className="h-[calc(100vh-80px)] w-full p-4">
       {userInfo && (
         <div className="p-4 mb-6 border rounded-lg shadow bg-white/80 border-white/60">
-          <h2 className="mb-3 text-lg font-semibold text-gray-800">
-            자사 자가진단 결과 요약
-          </h2>
+          <div className="flex items-center justify-between mb-3">
+            <h2 className="text-lg font-semibold text-gray-800">
+              자사 최신 자가진단 결과 요약
+            </h2>
+            {myResults.length > 0 && myResults[0].completedAt && (
+              <div className="text-sm text-gray-500">
+                완료일시:{' '}
+                {new Date(myResults[0].completedAt).toLocaleString('ko-KR', {
+                  year: 'numeric',
+                  month: '2-digit',
+                  day: '2-digit',
+                  hour: '2-digit',
+                  minute: '2-digit'
+                })}
+              </div>
+            )}
+          </div>
           <div className="grid grid-cols-2 gap-4 sm:grid-cols-3 lg:grid-cols-5">
             {(() => {
               const myResult = myResults.length > 0 ? myResults[0] : null
@@ -648,7 +662,7 @@ export default function CSDDDDashboard() {
                         })}
                     </div>
 
-                    <div className="grid grid-cols-2 gap-4">
+                    <div className="grid grid-cols-3 gap-4">
                       {getCategoryInfo()
                         .slice(3, 5)
                         .map(category => {
@@ -785,8 +799,8 @@ export default function CSDDDDashboard() {
           <DialogHeader className="pb-4 border-b">
             <DialogTitle className="text-xl font-bold">위반 항목 상세 정보</DialogTitle>
             <DialogDescription>
-              항목 ID:{' '}
-              <span className="font-mono font-medium text-blue-600">
+              항목 번호:{' '}
+              <span className="font-mono font-medium text-black-600">
                 {selectedViolationId}
               </span>
             </DialogDescription>
