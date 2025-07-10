@@ -12,7 +12,7 @@ import type {
   PaginatedSelfAssessmentResponse
 } from '@/types/csdddType'
 import {Card, CardContent, CardHeader, CardTitle} from '@/components/ui/card'
-import {Button} from '@/components/ui/button'
+
 import {Badge} from '@/components/ui/badge'
 import {
   Dialog,
@@ -27,13 +27,15 @@ import {
   TrendingUp,
   Shield,
   BarChart3,
-  RefreshCw,
-  ChevronDown,
-  ChevronUp,
-  ExternalLink
+  ExternalLink,
+  Users,
+  HardHat,
+  Leaf,
+  Package,
+  ShieldCheck,
+  ChevronRight
 } from 'lucide-react'
 
-// 수정된 PartnerInfo 인터페이스
 interface PartnerInfo {
   partnerId: number
   uuid: string
@@ -51,11 +53,26 @@ interface DetailedResult {
   [key: number]: SelfAssessmentResponse
 }
 
+interface CategoryInfo {
+  id: string
+  name: string
+  icon: React.ComponentType<{className?: string}>
+  violations: any[]
+}
+
 const gradeColors: Record<string, string> = {
   A: 'bg-emerald-500 text-white',
   B: 'bg-blue-500 text-white',
   C: 'bg-yellow-500 text-white',
   D: 'bg-red-500 text-white'
+}
+
+const categoryIcons = {
+  '1': Users,
+  '2': HardHat,
+  '3': Leaf,
+  '4': Package,
+  '5': ShieldCheck
 }
 
 export default function CSDDDDashboard() {
@@ -67,9 +84,6 @@ export default function CSDDDDashboard() {
   const [selectedResultIndex, setSelectedResultIndex] = useState<number>(0)
   const [searchQuery, setSearchQuery] = useState('')
   const [detailedResults, setDetailedResults] = useState<DetailedResult>({})
-  const [expandedViolations, setExpandedViolations] = useState<{[key: number]: boolean}>(
-    {}
-  )
   const [violationMeta, setViolationMeta] = useState<{
     category: string
     penaltyInfo: string
@@ -77,18 +91,17 @@ export default function CSDDDDashboard() {
   } | null>(null)
   const [selectedViolationId, setSelectedViolationId] = useState<string | null>(null)
   const [detailLoading, setDetailLoading] = useState(false)
+  const [selectedCategoryId, setSelectedCategoryId] = useState<string | null>(null)
 
   useEffect(() => {
     loadPartnerData()
   }, [])
 
-  // 수정된 데이터 로드 함수
   const loadPartnerData = async () => {
     try {
       setLoading(true)
       setError(null)
 
-      // 현재 사용자 정보 조회
       const userResponse = await authService.getCurrentUserByType()
       if (!userResponse || !userResponse.success) {
         throw new Error('사용자 정보를 가져올 수 없습니다')
@@ -97,13 +110,11 @@ export default function CSDDDDashboard() {
       const userData = userResponse.data
       setUserInfo(userData)
 
-      // 접근 가능한 협력사 목록 조회
       const partnersResponse = await authService.getAccessiblePartners()
       if (!partnersResponse || !partnersResponse.success) {
         throw new Error('협력사 목록을 가져올 수 없습니다')
       }
 
-      // 실제 자가진단 결과 데이터 가져오기
       let response: PaginatedSelfAssessmentResponse
 
       if (userData.userType === 'HEADQUARTERS') {
@@ -119,7 +130,6 @@ export default function CSDDDDashboard() {
         return
       }
 
-      // 협력사별로 결과 그룹화
       const resultsByCompany = (response.content || []).reduce(
         (
           acc: {[key: string]: SelfAssessmentResponse[]},
@@ -135,7 +145,6 @@ export default function CSDDDDashboard() {
         {}
       )
 
-      // 협력사 기본 정보와 결과 매핑
       const partnerData: PartnerInfo[] = partnersResponse.data.map((partner: any) => {
         const partnerResults = resultsByCompany[partner.companyName] || []
 
@@ -157,7 +166,6 @@ export default function CSDDDDashboard() {
         }
       })
 
-      // 레벨별로 정렬 (1차 -> 2차 -> 3차 순)
       const sortedPartners = partnerData.sort((a, b) => {
         if (a.level !== b.level) {
           return a.level - b.level
@@ -167,7 +175,6 @@ export default function CSDDDDashboard() {
 
       setPartners(sortedPartners)
 
-      // 첫 번째 협력사를 기본 선택
       if (sortedPartners.length > 0) {
         setSelectedPartner(sortedPartners[0])
         setSelectedResultIndex(0)
@@ -206,16 +213,16 @@ export default function CSDDDDashboard() {
     }
   }
 
-  const toggleViolationExpansion = async (resultId: number) => {
-    setExpandedViolations(prev => ({
-      ...prev,
-      [resultId]: !prev[resultId]
-    }))
+  const currentResult = useMemo(() => {
+    if (!selectedPartner || !selectedPartner.results[selectedResultIndex]) return null
+    return selectedPartner.results[selectedResultIndex]
+  }, [selectedPartner, selectedResultIndex])
 
-    if (!expandedViolations[resultId]) {
-      await fetchDetailResult(resultId)
+  useEffect(() => {
+    if (currentResult) {
+      fetchDetailResult(currentResult.id)
     }
-  }
+  }, [currentResult])
 
   const groupViolationsByCategory = (answers: any[]) => {
     const violations = answers.filter(a => a.answer === false)
@@ -241,6 +248,21 @@ export default function CSDDDDashboard() {
       '5': '윤리경영 및 정보보호'
     }
     return categoryNames[categoryId] || `카테고리 ${categoryId}`
+  }
+
+  const getCategoryInfo = (): CategoryInfo[] => {
+    const allCategories = ['1', '2', '3', '4', '5']
+    const violationsByCategory =
+      currentResult && detailedResults[currentResult.id]
+        ? groupViolationsByCategory(detailedResults[currentResult.id].answers || [])
+        : {}
+
+    return allCategories.map(categoryId => ({
+      id: categoryId,
+      name: getCategoryName(categoryId),
+      icon: categoryIcons[categoryId as keyof typeof categoryIcons],
+      violations: violationsByCategory[categoryId] || []
+    }))
   }
 
   const getGradeStyle = (grade: string) => {
@@ -283,7 +305,6 @@ export default function CSDDDDashboard() {
     }
   }
 
-  // 수정된 필터링 로직
   const filteredPartners = useMemo(() => {
     const q = searchQuery.toLowerCase()
     if (!q) return partners
@@ -317,19 +338,23 @@ export default function CSDDDDashboard() {
     setSelectedResultIndex(0)
   }
 
-  // 현재 선택된 결과
-  const currentResult = useMemo(() => {
-    if (!selectedPartner || !selectedPartner.results[selectedResultIndex]) return null
-    return selectedPartner.results[selectedResultIndex]
-  }, [selectedPartner, selectedResultIndex])
+  const handleCategoryClick = (categoryId: string) => {
+    setSelectedCategoryId(categoryId)
+  }
 
-  // 대시보드 통계
+  const getSelectedCategoryViolations = () => {
+    if (!selectedCategoryId || !currentResult || !detailedResults[currentResult.id])
+      return []
+
+    const violationsByCategory = groupViolationsByCategory(
+      detailedResults[currentResult.id].answers || []
+    )
+    return violationsByCategory[selectedCategoryId] || []
+  }
 
   return (
     <div className="h-[calc(100vh-80px)] w-full p-4">
-      {/* 메인 레이아웃 */}
       <div className="flex flex-row gap-6 min-h-[450px]">
-        {/* 협력사 목록 사이드바 */}
         <Card className="w-[30%] bg-white rounded-lg p-4 flex flex-col">
           <div className="flex flex-row items-center justify-between gap-2 mb-2">
             <input
@@ -370,12 +395,10 @@ export default function CSDDDDashboard() {
                       : 'border-gray-200 bg-white hover:bg-gray-50'
                   }`}>
                   <div className="flex flex-col gap-1">
-                    {/* 회사명 */}
                     <div className="text-sm font-medium text-gray-900 truncate">
                       {partner.companyName}
                     </div>
 
-                    {/* 계층적 ID와 레벨 */}
                     <div className="flex items-center gap-2">
                       <span className="font-mono text-xs text-gray-500">
                         {partner.hierarchicalId}
@@ -388,7 +411,6 @@ export default function CSDDDDashboard() {
                       </span>
                     </div>
 
-                    {/* 상위 협력사 정보 (2차, 3차인 경우) */}
                     {partner.parentPartnerName && (
                       <div className="text-xs text-gray-400">
                         상위: {partner.parentPartnerName}
@@ -401,10 +423,9 @@ export default function CSDDDDashboard() {
           </div>
         </Card>
 
-        {/* 협력사 상세 패널 */}
         <Card className="flex-1 flex flex-col bg-white rounded-lg shadow-md min-h-[400px]">
           <CardHeader className="flex flex-row items-center gap-4 p-6 border-b border-gray-100">
-            <div className="flex-1">
+            <div className="flex items-center flex-1">
               <CardTitle className="flex items-center gap-3 text-2xl font-bold">
                 {currentResult && (
                   <Badge
@@ -416,47 +437,34 @@ export default function CSDDDDashboard() {
                 )}
                 {selectedPartner ? selectedPartner.companyName : '협력사 상세'}
               </CardTitle>
+
+              {selectedPartner?.results?.length && selectedPartner.results.length > 0 && (
+                <select
+                  value={selectedResultIndex}
+                  onChange={e => setSelectedResultIndex(Number(e.target.value))}
+                  className="px-2 py-1 ml-auto text-sm text-gray-700 bg-white border rounded-md shadow-sm">
+                  {[...selectedPartner.results]
+                    .sort(
+                      (a, b) =>
+                        new Date(b.completedAt || 0).getTime() -
+                        new Date(a.completedAt || 0).getTime()
+                    )
+                    .map((result, index) => (
+                      <option key={result.id} value={index}>
+                        {selectedPartner.results.length - index}회차 (
+                        {new Date(result.completedAt || '').toLocaleDateString('ko-KR')})
+                      </option>
+                    ))}
+                </select>
+              )}
             </div>
           </CardHeader>
           <CardContent className="flex flex-col gap-6 p-6">
             {selectedPartner && currentResult ? (
               <>
-                {/* 회차 선택 탭 */}
-                {selectedPartner.results.length > 0 && (
-                  <div className="flex flex-wrap gap-2 p-3 border rounded-lg bg-gray-50">
-                    {[...selectedPartner.results]
-                      .sort(
-                        (a, b) =>
-                          new Date(b.completedAt || 0).getTime() -
-                          new Date(a.completedAt || 0).getTime()
-                      )
-                      .map((result, index) => (
-                        <button
-                          key={result.id}
-                          onClick={() => setSelectedResultIndex(index)}
-                          className={`px-3 py-1.5 text-sm font-medium rounded-md transition-colors ${
-                            selectedResultIndex === index
-                              ? 'bg-blue-600 text-white'
-                              : 'bg-white text-gray-700 hover:bg-gray-100'
-                          }`}>
-                          {selectedPartner.results.length - index}회차
-                          <span className="ml-1 text-xs opacity-75">
-                            (
-                            {new Date(result.completedAt || '').toLocaleDateString(
-                              'ko-KR'
-                            )}
-                            )
-                          </span>
-                        </button>
-                      ))}
-                  </div>
-                )}
-
-                {/* 기본 정보 */}
                 <div className="grid grid-cols-2 gap-4">
                   <div className="flex flex-row items-center gap-2 p-3 border rounded-lg bg-gradient-to-br from-blue-50 to-white">
                     <BarChart3 className="w-5 h-5 text-blue-600" />
-
                     <div>
                       <div className="text-xs text-gray-500">진단 점수</div>
                       <div className="font-semibold text-gray-900">
@@ -493,78 +501,131 @@ export default function CSDDDDashboard() {
                   </div>
                 </div>
 
-                {/* 위반 항목 상세 */}
                 <div className="border rounded-lg">
                   <div className="flex items-center justify-between p-4 border-b bg-gray-50">
                     <h3 className="font-medium text-gray-900">위반 항목 상세</h3>
-                    <button
-                      onClick={() => toggleViolationExpansion(currentResult.id)}
-                      className="p-2 transition-colors rounded-full hover:bg-gray-100"
-                      disabled={detailLoading}>
-                      {detailLoading ? (
-                        <div className="w-5 h-5 border-2 border-blue-600 rounded-full animate-spin border-t-transparent"></div>
-                      ) : expandedViolations[currentResult.id] ? (
-                        <ChevronUp className="w-5 h-5 text-gray-600" />
-                      ) : (
-                        <ChevronDown className="w-5 h-5 text-gray-600" />
-                      )}
-                    </button>
                   </div>
 
-                  {expandedViolations[currentResult.id] &&
-                    detailedResults[currentResult.id] && (
-                      <div className="p-4">
-                        {detailedResults[currentResult.id].answers?.filter(
-                          a => a.answer === false
-                        ).length === 0 ? (
-                          <div className="py-8 text-center">
-                            <CheckCircle className="w-12 h-12 mx-auto mb-4 text-green-500" />
-                            <p className="font-medium text-green-600">모든 항목 준수</p>
-                            <p className="text-sm text-gray-500">위반 항목이 없습니다.</p>
-                          </div>
-                        ) : (
-                          <div className="space-y-4">
-                            {Object.entries(
-                              groupViolationsByCategory(
-                                detailedResults[currentResult.id].answers || []
-                              )
-                            ).map(([categoryId, violations]) => (
-                              <div
-                                key={categoryId}
-                                className="border border-red-200 rounded-lg bg-red-50">
-                                <div className="px-4 py-3 bg-red-100 border-b border-red-200">
-                                  <div className="flex items-center justify-between">
-                                    <h4 className="font-medium text-red-800">
-                                      {getCategoryName(categoryId)}
-                                    </h4>
-                                    <Badge variant="destructive" className="text-xs">
-                                      {violations.length}건
-                                    </Badge>
-                                  </div>
-                                </div>
-                                <div className="p-4">
-                                  <div className="grid grid-cols-3 gap-2 sm:grid-cols-4 lg:grid-cols-6">
-                                    {violations.map((violation, i) => (
-                                      <button
-                                        key={i}
-                                        onClick={() =>
-                                          handleViolationClick(violation.questionId)
-                                        }
-                                        className="flex items-center justify-center p-2 text-xs font-medium text-red-800 transition-colors bg-white border border-red-300 rounded-md hover:bg-red-50">
-                                        <span className="font-mono truncate">
-                                          {violation.questionId}
-                                        </span>
-                                        <ExternalLink className="w-3 h-3 ml-1" />
-                                      </button>
-                                    ))}
-                                  </div>
-                                </div>
+                  <div className="p-6">
+                    {/* 카테고리 그리드 */}
+                    <div className="grid grid-cols-3 gap-4 mb-6">
+                      {getCategoryInfo()
+                        .slice(0, 3)
+                        .map(category => {
+                          const IconComponent = category.icon
+                          const hasViolations = category.violations.length > 0
+
+                          return (
+                            <div
+                              key={category.id}
+                              onClick={() => handleCategoryClick(category.id)}
+                              className={`
+                              relative p-4 rounded-lg border-2 cursor-pointer transition-all duration-200 hover:shadow-md
+                              ${
+                                hasViolations
+                                  ? 'border-red-300 bg-red-50 hover:bg-red-100'
+                                  : 'border-green-300 bg-green-50 hover:bg-green-100'
+                              }
+                            `}>
+                              <div className="flex items-center justify-between mb-2">
+                                <IconComponent
+                                  className={`w-6 h-6 ${
+                                    hasViolations ? 'text-red-600' : 'text-green-600'
+                                  }`}
+                                />
+                                <ChevronRight
+                                  className={`w-4 h-4 ${
+                                    hasViolations ? 'text-red-400' : 'text-green-400'
+                                  }`}
+                                />
                               </div>
-                            ))}
-                          </div>
-                        )}
-                      </div>
-                    )}
+                              <h4
+                                className={`font-medium text-sm mb-1 ${
+                                  hasViolations ? 'text-red-800' : 'text-green-800'
+                                }`}>
+                                {category.name}
+                              </h4>
+                              <div className="flex items-center justify-between">
+                                <span
+                                  className={`text-xs ${
+                                    hasViolations ? 'text-red-600' : 'text-green-600'
+                                  }`}>
+                                  {hasViolations
+                                    ? `${category.violations.length}건 위반`
+                                    : '준수'}
+                                </span>
+                                {hasViolations && (
+                                  <Badge
+                                    variant="destructive"
+                                    className="text-xs px-2 py-0.5">
+                                    {category.violations.length}
+                                  </Badge>
+                                )}
+                              </div>
+                            </div>
+                          )
+                        })}
+                    </div>
+
+                    <div className="grid grid-cols-2 gap-4">
+                      {getCategoryInfo()
+                        .slice(3, 5)
+                        .map(category => {
+                          const IconComponent = category.icon
+                          const hasViolations = category.violations.length > 0
+
+                          return (
+                            <div
+                              key={category.id}
+                              onClick={() => handleCategoryClick(category.id)}
+                              className={`
+                              relative p-4 rounded-lg border-2 cursor-pointer transition-all duration-200 hover:shadow-md
+                              ${
+                                hasViolations
+                                  ? 'border-red-300 bg-red-50 hover:bg-red-100'
+                                  : 'border-green-300 bg-green-50 hover:bg-green-100'
+                              }
+                            `}>
+                              <div className="flex items-center justify-between mb-2">
+                                <IconComponent
+                                  className={`w-6 h-6 ${
+                                    hasViolations ? 'text-red-600' : 'text-green-600'
+                                  }`}
+                                />
+                                <ChevronRight
+                                  className={`w-4 h-4 ${
+                                    hasViolations ? 'text-red-400' : 'text-green-400'
+                                  }`}
+                                />
+                              </div>
+                              <h4
+                                className={`font-medium text-sm mb-1 ${
+                                  hasViolations ? 'text-red-800' : 'text-green-800'
+                                }`}>
+                                {category.name}
+                              </h4>
+                              <div className="flex items-center justify-between">
+                                <span
+                                  className={`text-xs ${
+                                    hasViolations ? 'text-red-600' : 'text-green-600'
+                                  }`}>
+                                  {hasViolations
+                                    ? `${category.violations.length}건 위반`
+                                    : '준수'}
+                                </span>
+                                {hasViolations && (
+                                  <Badge
+                                    variant="destructive"
+                                    className="text-xs px-2 py-0.5">
+                                    {category.violations.length}
+                                  </Badge>
+                                )}
+                              </div>
+                            </div>
+                          )
+                        })}
+                    </div>
+                  </div>
                 </div>
               </>
             ) : (
@@ -580,7 +641,59 @@ export default function CSDDDDashboard() {
         </Card>
       </div>
 
-      {/* 위반 항목 상세 모달 */}
+      {/* 카테고리 상세 다이얼로그 */}
+      <Dialog
+        open={!!selectedCategoryId}
+        onOpenChange={() => setSelectedCategoryId(null)}>
+        <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
+          <DialogHeader className="pb-4 border-b">
+            <DialogTitle className="text-xl font-bold">
+              {selectedCategoryId && getCategoryName(selectedCategoryId)} 상세 위반 항목
+            </DialogTitle>
+            <DialogDescription>
+              해당 카테고리의 위반 항목들을 확인하실 수 있습니다.
+            </DialogDescription>
+          </DialogHeader>
+
+          <div className="pt-6">
+            {getSelectedCategoryViolations().length === 0 ? (
+              <div className="py-16 text-center">
+                <CheckCircle className="w-16 h-16 mx-auto mb-4 text-green-500" />
+                <h3 className="mb-2 text-lg font-semibold text-green-600">
+                  모든 항목 준수
+                </h3>
+                <p className="text-sm text-gray-500">
+                  이 카테고리에서는 위반 항목이 없습니다.
+                </p>
+              </div>
+            ) : (
+              <div className="space-y-4">
+                <div className="p-4 border border-red-200 rounded-lg bg-red-50">
+                  <div className="flex items-center gap-2 mb-3">
+                    <AlertTriangle className="w-5 h-5 text-red-600" />
+                    <h4 className="font-medium text-red-800">
+                      총 {getSelectedCategoryViolations().length}건의 위반 항목
+                    </h4>
+                  </div>
+                  <div className="grid grid-cols-3 gap-2 sm:grid-cols-4 lg:grid-cols-6">
+                    {getSelectedCategoryViolations().map((violation, i) => (
+                      <button
+                        key={i}
+                        onClick={() => handleViolationClick(violation.questionId)}
+                        className="flex items-center justify-center p-2 text-xs font-medium text-red-800 transition-colors bg-white border border-red-300 rounded-md hover:bg-red-50">
+                        <span className="font-mono truncate">{violation.questionId}</span>
+                        <ExternalLink className="w-3 h-3 ml-1" />
+                      </button>
+                    ))}
+                  </div>
+                </div>
+              </div>
+            )}
+          </div>
+        </DialogContent>
+      </Dialog>
+
+      {/* 위반 항목 상세 다이얼로그 */}
       <Dialog
         open={!!selectedViolationId}
         onOpenChange={() => {
@@ -614,7 +727,6 @@ export default function CSDDDDashboard() {
                   <h4 className="pb-2 mb-4 text-lg font-semibold text-gray-800 border-b border-gray-100">
                     벌칙 및 제재 내용
                   </h4>
-
                   <p className="text-base leading-relaxed text-gray-900 whitespace-pre-wrap">
                     {violationMeta.penaltyInfo}
                   </p>
@@ -624,7 +736,6 @@ export default function CSDDDDashboard() {
                   <h4 className="pb-2 mb-4 text-lg font-semibold text-gray-800 border-b border-gray-100">
                     관련 법적 근거
                   </h4>
-
                   <p className="text-base leading-relaxed text-gray-900 whitespace-pre-wrap">
                     {violationMeta.legalBasis}
                   </p>
