@@ -1030,69 +1030,63 @@ export default function Scope1Form() {
           initial={{opacity: 0}}
           animate={{opacity: 1}}
           transition={{duration: 0.4, delay: 0.1}}>
-          <Card className="mb-4 overflow-hidden shadow-sm">
-            <CardContent className="p-4">
-              <div className="grid items-center justify-center h-24 grid-cols-1 gap-8 md:grid-cols-3">
-                {/* 백엔드 데이터 기반 총 배출량 카드 */}
-                <motion.div
-                  initial={{opacity: 0, scale: 0.95}}
-                  animate={{opacity: 1, scale: 1}}
-                  transition={{delay: 0.1, duration: 0.5}}
-                  className="max-w-md">
-                  <Card className="justify-center h-24 border-blue-100 bg-gradient-to-br from-blue-50 to-white">
-                    <CardContent className="flex items-center p-4">
-                      <div className="p-2 mr-3 bg-blue-100 rounded-full">
-                        <TrendingUp className="w-5 h-5 text-blue-600" />
-                      </div>
-                      <div>
-                        <p className="text-sm font-medium text-gray-500">
-                          총 Scope 1 배출량
-                        </p>
-                        <h3 className="text-2xl font-bold text-gray-900">
-                          {grandTotal.toLocaleString(undefined, {
-                            maximumFractionDigits: 2,
-                            minimumFractionDigits: 2
-                          })}
-                          <span className="ml-1 text-sm font-normal text-gray-500">
-                            kgCO₂eq
-                          </span>
-                        </h3>
-                      </div>
-                    </CardContent>
-                  </Card>
-                </motion.div>
+          <div className="grid items-center justify-center h-24 grid-cols-1 gap-8 md:grid-cols-3">
+            {/* 백엔드 데이터 기반 총 배출량 카드 */}
+            <motion.div
+              initial={{opacity: 0, scale: 0.95}}
+              animate={{opacity: 1, scale: 1}}
+              transition={{delay: 0.1, duration: 0.5}}
+              className="max-w-md">
+              <Card className="justify-center h-24 border-blue-100 bg-gradient-to-br from-blue-50 to-white">
+                <CardContent className="flex items-center p-4">
+                  <div className="p-2 mr-3 bg-blue-100 rounded-full">
+                    <TrendingUp className="w-5 h-5 text-blue-600" />
+                  </div>
+                  <div>
+                    <p className="text-sm font-medium text-gray-500">총 Scope 1 배출량</p>
+                    <h3 className="text-2xl font-bold text-gray-900">
+                      {grandTotal.toLocaleString(undefined, {
+                        maximumFractionDigits: 2,
+                        minimumFractionDigits: 2
+                      })}
+                      <span className="ml-1 text-sm font-normal text-gray-500">
+                        kgCO₂eq
+                      </span>
+                    </h3>
+                  </div>
+                </CardContent>
+              </Card>
+            </motion.div>
 
-                {/* 보고연도 입력 필드 */}
-                <div className="space-y-3">
-                  <label className="flex items-center gap-2 text-sm font-semibold text-customG-700">
-                    <CalendarDays className="w-4 h-4" />
-                    보고연도
-                  </label>
-                  <Input
-                    type="number"
-                    value={selectedYear}
-                    onChange={e => setSelectedYear(parseInt(e.target.value))}
-                    min="1900"
-                    max="2200"
-                    className="w-full px-3 py-2 text-sm h-9 backdrop-blur-sm border-customG-200 focus:border-customG-400 focus:ring-customG-100 bg-white/80"
-                  />
-                </div>
+            {/* 보고연도 입력 필드 */}
+            <div className="space-y-3">
+              <label className="flex items-center gap-2 text-sm font-semibold text-customG-700">
+                <CalendarDays className="w-4 h-4" />
+                보고연도
+              </label>
+              <Input
+                type="number"
+                value={selectedYear}
+                onChange={e => setSelectedYear(parseInt(e.target.value))}
+                min="1900"
+                max="2200"
+                className="w-full px-3 py-2 text-sm h-9 backdrop-blur-sm border-customG-200 focus:border-customG-400 focus:ring-customG-100 bg-white/80"
+              />
+            </div>
 
-                {/* 보고월 선택 드롭다운 (선택사항) */}
-                <div className="space-y-3">
-                  <label className="flex items-center gap-2 text-sm font-semibold text-customG-700">
-                    <CalendarDays className="w-4 h-4" />
-                    보고월 (선택사항)
-                  </label>
-                  <MonthSelector
-                    className="w-full"
-                    selectedMonth={selectedMonth}
-                    onSelect={setSelectedMonth}
-                  />
-                </div>
-              </div>
-            </CardContent>
-          </Card>
+            {/* 보고월 선택 드롭다운 (선택사항) */}
+            <div className="space-y-3">
+              <label className="flex items-center gap-2 text-sm font-semibold text-customG-700">
+                <CalendarDays className="w-4 h-4" />
+                보고월 (선택사항)
+              </label>
+              <MonthSelector
+                className="w-full"
+                selectedMonth={selectedMonth}
+                onSelect={setSelectedMonth}
+              />
+            </div>
+          </div>
 
           {/* 카테고리 선택 영역 */}
           <div className="space-y-8">
