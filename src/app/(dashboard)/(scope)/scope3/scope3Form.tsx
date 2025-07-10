@@ -153,7 +153,9 @@ export default function Scope3Form() {
   const [categorySummary, setCategorySummary] = useState<ScopeCategorySummary>({})
 
   // 종합 집계 데이터 (계층적 집계 표시용)
-  const [aggregationData, setAggregationData] = useState<ScopeAggregationResponse | null>(null)
+  const [aggregationData, setAggregationData] = useState<ScopeAggregationResponse | null>(
+    null
+  )
 
   // 로딩 상태 관리
   const [isLoading, setIsLoading] = useState<boolean>(false)
@@ -490,7 +492,10 @@ export default function Scope3Form() {
       setCategorySummary(summaryData)
 
       // 3. 종합 집계 데이터 조회 (계층적 집계 표시용)
-      const aggregationData = await fetchComprehensiveAggregation(selectedYear, selectedMonth)
+      const aggregationData = await fetchComprehensiveAggregation(
+        selectedYear,
+        selectedMonth
+      )
       setAggregationData(aggregationData)
 
       // 4. 기존 데이터를 카테고리별 계산기로 변환
@@ -672,7 +677,7 @@ export default function Scope3Form() {
   // ========================================================================
 
   return (
-    <div className="flex flex-col p-4 w-full h-full">
+    <div className="flex flex-col w-full h-full p-4">
       {/* ========================================================================
           상단 네비게이션 (Top Navigation)
           - 브레드크럼을 통한 현재 위치 표시
@@ -681,7 +686,7 @@ export default function Scope3Form() {
         <Breadcrumb>
           <BreadcrumbList>
             <BreadcrumbItem>
-              <Home className="mr-1 w-4 h-4" />
+              <Home className="w-4 h-4 mr-1" />
               <BreadcrumbLink href="/dashboard">대시보드</BreadcrumbLink>
             </BreadcrumbItem>
             <BreadcrumbSeparator />
@@ -696,7 +701,7 @@ export default function Scope3Form() {
           헤더 섹션 (Header Section)
           - 뒤로가기 버튼과 페이지 제목/설명
           ======================================================================== */}
-      <div className="flex flex-row justify-between mb-4 w-full h-24">
+      <div className="flex flex-row justify-between w-full h-24 mb-4">
         <div className="flex flex-row items-center p-4">
           <PageHeader
             icon={<Factory className="w-6 h-6 text-blue-600" />}
@@ -721,84 +726,32 @@ export default function Scope3Form() {
           initial={{opacity: 0}}
           animate={{opacity: 1}}
           transition={{duration: 0.4, delay: 0.1}}>
-          <Card className="overflow-hidden mb-4 shadow-sm">
-            <CardContent className="p-4">
-              <div className="grid grid-cols-1 gap-4 justify-center items-center md:grid-cols-3">
-                {/* 본인 입력 배출량 카드 */}
-                <motion.div
-                  initial={{opacity: 0, scale: 0.95}}
-                  animate={{opacity: 1, scale: 1}}
-                  transition={{delay: 0.1, duration: 0.5}}
-                  className="max-w-md">
-                  <Card className="justify-center h-24 bg-gradient-to-br from-blue-50 to-blue-100 border-blue-200 shadow-sm">
-                    <CardContent className="flex items-center p-4">
-                      <div className="p-2 mr-3 bg-blue-100 rounded-full">
-                        <TrendingUp className="w-5 h-5 text-blue-600" />
-                      </div>
-                      <div>
-                        <p className="text-sm font-medium text-gray-500">
-                          본인 입력 배출량
-                        </p>
-                        <h3 className="text-2xl font-bold text-gray-900">
-                          {Object.values(categorySummary)
-                            .reduce((sum, emission) => sum + emission, 0)
-                            .toLocaleString(undefined, {
-                              maximumFractionDigits: 2,
-                              minimumFractionDigits: 2
-                            })}
-                          <span className="ml-1 text-sm font-normal text-gray-500">
-                            kgCO₂eq
-                          </span>
-                        </h3>
-                      </div>
-                    </CardContent>
-                  </Card>
-                </motion.div>
-
-                {/* 누적 집계 배출량 카드 */}
-                <motion.div
-                  initial={{opacity: 0, scale: 0.95}}
-                  animate={{opacity: 1, scale: 1}}
-                  transition={{delay: 0.2, duration: 0.5}}
-                  className="max-w-md">
-                  <Card className="justify-center h-24 bg-gradient-to-br from-green-50 to-green-100 border-green-200 shadow-sm">
-                    <CardContent className="flex items-center p-4">
-                      <div className="p-2 mr-3 bg-green-100 rounded-full">
-                        <TrendingUp className="w-5 h-5 text-green-600" />
-                      </div>
-                      <div>
-                        <p className="text-sm font-medium text-gray-500">
-                          누적 집계 배출량
-                        </p>
-                        <h3 className="text-2xl font-bold text-gray-900">
-                          {aggregationData ? (
-                            (aggregationData.scope3Category1Aggregated + 
-                             aggregationData.scope3Category2Aggregated + 
-                             aggregationData.scope3Category4Aggregated + 
-                             aggregationData.scope3Category5Aggregated +
-                             // 나머지 카테고리는 본인 입력값 사용
-                             Object.entries(categorySummary)
-                               .filter(([catNum]) => ![1, 2, 4, 5].includes(Number(catNum)))
-                               .reduce((sum, [, emission]) => sum + emission, 0)
-                            ).toLocaleString(undefined, {
-                              maximumFractionDigits: 2,
-                              minimumFractionDigits: 2
-                            })
-                          ) : (
-                            '0.00'
-                          )}
-                          <span className="ml-1 text-sm font-normal text-gray-500">
-                            kgCO₂eq
-                          </span>
-                        </h3>
-                      </div>
-                    </CardContent>
-                  </Card>
-                </motion.div>
-
-                {/* 보고연도 입력 필드 */}
-                <div className="space-y-3">
-                  <label className="flex gap-2 items-center text-sm font-semibold text-customG-700">
+          {/* header card ================================================================================================================== */}
+          <div className="flex flex-row justify-between w-full gap-4 mb-4">
+            {/* 연도 총 배출량 카드 ============================================================================================================== */}
+            <Card className="justify-center w-full h-24 border-blue-200 shadow-sm bg-gradient-to-br from-blue-50 to-blue-100">
+              <CardContent className="flex items-center justify-between gap-6 p-4">
+                <div className="flex flex-row items-center">
+                  <div className="p-2 mr-3 bg-blue-100 rounded-full">
+                    <TrendingUp className="w-5 h-5 text-blue-600" />
+                  </div>
+                  <div>
+                    <p className="text-sm font-medium text-gray-500">연 배출량</p>
+                    <h3 className="text-2xl font-bold text-gray-900">
+                      {Object.values(categorySummary)
+                        .reduce((sum, emission) => sum + emission, 0)
+                        .toLocaleString(undefined, {
+                          maximumFractionDigits: 2,
+                          minimumFractionDigits: 2
+                        })}
+                      <span className="ml-1 text-sm font-normal text-gray-500">
+                        kgCO₂eq
+                      </span>
+                    </h3>
+                  </div>
+                </div>
+                <div className="flex flex-col w-full space-y-3">
+                  <label className="flex items-center gap-2 text-sm font-semibold text-customG-700 whitespace-nowrap">
                     <CalendarDays className="w-4 h-4" />
                     보고연도
                   </label>
@@ -808,15 +761,49 @@ export default function Scope3Form() {
                     onChange={e => setSelectedYear(parseInt(e.target.value))}
                     min="1900"
                     max="2200"
-                    className="px-3 py-2 w-full h-9 text-sm backdrop-blur-sm border-customG-200 focus:border-customG-400 focus:ring-customG-100 bg-white/80"
+                    className="w-full px-3 py-2 text-sm h-9 backdrop-blur-sm border-customG-200 focus:border-customG-400 focus:ring-customG-100 bg-white/80"
                   />
                 </div>
+              </CardContent>
+            </Card>
 
-                {/* 보고월 선택 드롭다운 (선택사항) */}
-                <div className="space-y-3">
-                  <label className="flex gap-2 items-center text-sm font-semibold text-customG-700">
+            {/* 월 총 배출량 카드 ============================================================================================================== */}
+            <Card className="justify-center w-full h-24 border-blue-200 shadow-sm bg-gradient-to-br from-blue-50 to-blue-100">
+              <CardContent className="flex items-center justify-between gap-6 p-4">
+                <div className="flex flex-row items-center">
+                  <div className="p-2 mr-3 bg-blue-100 rounded-full">
+                    <TrendingUp className="w-5 h-5 text-blue-600" />
+                  </div>
+                  <div>
+                    <p className="text-sm font-medium text-gray-500">월 배출량</p>
+                    <h3 className="text-2xl font-bold text-gray-900">
+                      {aggregationData
+                        ? (
+                            aggregationData.scope3Category1Aggregated +
+                            aggregationData.scope3Category2Aggregated +
+                            aggregationData.scope3Category4Aggregated +
+                            aggregationData.scope3Category5Aggregated +
+                            // 나머지 카테고리는 본인 입력값 사용
+                            Object.entries(categorySummary)
+                              .filter(
+                                ([catNum]) => ![1, 2, 4, 5].includes(Number(catNum))
+                              )
+                              .reduce((sum, [, emission]) => sum + emission, 0)
+                          ).toLocaleString(undefined, {
+                            maximumFractionDigits: 2,
+                            minimumFractionDigits: 2
+                          })
+                        : '0.00'}
+                      <span className="ml-1 text-sm font-normal text-gray-500">
+                        kgCO₂eq
+                      </span>
+                    </h3>
+                  </div>
+                </div>
+                <div className="flex flex-col w-full space-y-3">
+                  <label className="flex items-center gap-2 text-sm font-semibold text-customG-700">
                     <CalendarDays className="w-4 h-4" />
-                    보고월 (선택사항)
+                    보고월
                   </label>
                   <MonthSelector
                     className="w-full"
@@ -824,9 +811,9 @@ export default function Scope3Form() {
                     onSelect={setSelectedMonth}
                   />
                 </div>
-              </div>
-            </CardContent>
-          </Card>
+              </CardContent>
+            </Card>
+          </div>
 
           {/* 카테고리 선택 그리드 */}
           <CategorySelector
