@@ -828,7 +828,7 @@ export default function CSAssessmentPage() {
       <UnansweredQuestionsModal />
 
       <div className="p-4 pb-0">
-        <div className="flex flex-row items-center p-4 mb-6 text-sm text-gray-600 border shadow-sm rounded-2xl backdrop-blur-sm bg-white/90 border-white/50">
+        <div className="flex flex-row items-center p-4 mb-4 text-sm text-gray-600 border shadow-sm rounded-2xl backdrop-blur-sm bg-white/90 border-white/50">
           <Breadcrumb>
             <BreadcrumbList>
               <BreadcrumbItem>
@@ -857,7 +857,7 @@ export default function CSAssessmentPage() {
       </div>
 
       <div className="px-4 pb-0">
-        <div className="flex flex-row w-full mb-6">
+        <div className="flex flex-row w-full mb-4">
           <Link
             href="/CSDDD"
             className="flex flex-row items-center p-4 space-x-4 transition-all rounded-2xl backdrop-blur-sm hover:bg-white/30 group">
