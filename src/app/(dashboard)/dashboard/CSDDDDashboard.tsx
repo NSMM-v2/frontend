@@ -110,6 +110,24 @@ export default function CSDDDDashboard() {
       const userData = userResponse.data
       setUserInfo(userData)
 
+      const myResultsResponse = await getSelfAssessmentResults({
+        onlyPartners: false
+      })
+
+      const myResultsFiltered = (myResultsResponse.content || [])
+        .filter(
+          result =>
+            result.companyName.trim().toLowerCase() ===
+            userData.companyName.trim().toLowerCase()
+        )
+        .sort(
+          (a, b) =>
+            new Date(b.completedAt ?? new Date()).getTime() -
+            new Date(a.completedAt ?? new Date()).getTime()
+        )
+
+      setMyResults(myResultsFiltered)
+
       const partnersResponse = await authService.getAccessiblePartners()
       if (!partnersResponse || !partnersResponse.success) {
         throw new Error('협력사 목록을 가져올 수 없습니다')
@@ -119,11 +137,11 @@ export default function CSDDDDashboard() {
 
       if (userData.userType === 'HEADQUARTERS') {
         response = await getSelfAssessmentResults({
-          onlyPartners: true
+          onlyPartners: true // 협력사 결과만 가져오기
         })
       } else if (userData.userType === 'PARTNER') {
         response = await getSelfAssessmentResults({
-          onlyPartners: true
+          onlyPartners: true // 협력사 결과만 가져오기
         })
       } else {
         setPartners([])
@@ -212,6 +230,8 @@ export default function CSDDDDashboard() {
       console.error('Violation meta 불러오기 실패:', error)
     }
   }
+
+  const [myResults, setMyResults] = useState<SelfAssessmentResponse[]>([])
 
   const currentResult = useMemo(() => {
     if (!selectedPartner || !selectedPartner.results[selectedResultIndex]) return null
@@ -354,6 +374,67 @@ export default function CSDDDDashboard() {
 
   return (
     <div className="h-[calc(100vh-80px)] w-full p-4">
+      {userInfo && (
+        <div className="p-4 mb-6 border rounded-lg shadow bg-white/80 border-white/60">
+          <h2 className="mb-3 text-lg font-semibold text-gray-800">
+            자사 자가진단 결과 요약
+          </h2>
+          <div className="grid grid-cols-2 gap-4 sm:grid-cols-3 lg:grid-cols-5">
+            {(() => {
+              const myResult = myResults.length > 0 ? myResults[0] : null
+
+              if (!myResult) {
+                return (
+                  <div className="p-4 text-center text-gray-500 border rounded-lg col-span-full bg-gray-50">
+                    <div className="text-sm">아직 자가진단 결과가 없습니다.</div>
+                    <div className="mt-1 text-xs">
+                      자가진단을 완료하시면 결과가 표시됩니다.
+                    </div>
+                  </div>
+                )
+              }
+
+              const gradeStyle = getGradeStyle(myResult.finalGrade || 'D')
+              return (
+                <>
+                  <div className="p-3 border rounded-lg bg-gradient-to-br from-blue-50 to-white">
+                    <div className="mb-1 text-xs text-gray-500">등급</div>
+                    <div className={`text-lg font-bold ${gradeStyle.text}`}>
+                      {myResult.finalGrade || 'D'}
+                    </div>
+                  </div>
+                  <div className="p-3 border rounded-lg bg-gradient-to-br from-blue-50 to-white">
+                    <div className="mb-1 text-xs text-gray-500">진단 점수</div>
+                    <div className="text-lg font-bold text-gray-900">
+                      {myResult.score || 0}/100
+                    </div>
+                  </div>
+                  <div className="p-3 border rounded-lg bg-gradient-to-br from-blue-50 to-white">
+                    <div className="mb-1 text-xs text-gray-500">종합 점수</div>
+                    <div className="text-lg font-bold text-gray-900">
+                      {myResult.actualScore?.toFixed(1) || 0}/
+                      {myResult.totalPossibleScore?.toFixed(1) || 0}
+                    </div>
+                  </div>
+                  <div className="p-3 border rounded-lg bg-gradient-to-br from-blue-50 to-white">
+                    <div className="mb-1 text-xs text-gray-500">총 위반</div>
+                    <div className="text-lg font-bold text-gray-900">
+                      {myResult.noAnswerCount || 0}건
+                    </div>
+                  </div>
+                  <div className="p-3 border rounded-lg bg-gradient-to-br from-blue-50 to-white">
+                    <div className="mb-1 text-xs text-gray-500">중대 위반</div>
+                    <div className="text-lg font-bold text-gray-900">
+                      {myResult.criticalViolationCount || 0}건
+                    </div>
+                  </div>
+                </>
+              )
+            })()}
+          </div>
+        </div>
+      )}
+
       <div className="flex flex-row gap-6 min-h-[450px]">
         <Card className="w-[30%] bg-white rounded-lg p-4 flex flex-col">
           <div className="flex flex-row items-center justify-between gap-2 mb-2">
