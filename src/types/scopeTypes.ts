@@ -283,3 +283,16 @@ export interface AggregationDetails {
   // 집계 과정의 상세 정보 (필요 시 확장)
   [key: string]: any
 }
+
+/**
+ * 월별 배출량 집계 요약 (백엔드 MonthlyEmissionSummary와 1:1 매핑)
+ */
+export interface MonthlyEmissionSummary {
+  year: number
+  month: number
+  scope1Total: number
+  scope2Total: number
+  scope3Total: number
+  totalEmission: number
+  dataCount: number
+}
