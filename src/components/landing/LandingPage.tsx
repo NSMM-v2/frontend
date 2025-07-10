@@ -51,9 +51,9 @@ export default function LandingPage() {
     <div className="min-h-screen bg-white">
       {/* Navigation */}
       <nav className="relative z-10 px-6 py-6 bg-white">
-        <div className="flex justify-between items-center mx-auto max-w-6xl">
+        <div className="flex items-center justify-between max-w-6xl mx-auto">
           <div className="flex items-center space-x-2">
-            <div className="flex justify-center items-center w-8 h-8 bg-blue-500 rounded-lg">
+            <div className="flex items-center justify-center w-8 h-8 bg-blue-500 rounded-lg">
               <span className="text-sm font-bold text-white">N</span>
             </div>
             <span className="text-xl font-bold text-gray-900">NSMM</span>
@@ -88,7 +88,7 @@ export default function LandingPage() {
 
       {/* Hero Section */}
       <div className="relative px-6 py-20 bg-white">
-        <div className="mx-auto max-w-4xl text-center">
+        <div className="max-w-4xl mx-auto text-center">
           <div
             className={`transition-all duration-1000 ${
               isVisible ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-10'
@@ -98,18 +98,18 @@ export default function LandingPage() {
               <span className="text-blue-500">간편하게</span>
             </h1>
 
-            <p className="mx-auto mb-12 max-w-2xl text-xl leading-relaxed text-gray-600">
+            <p className="max-w-2xl mx-auto mb-12 text-xl leading-relaxed text-gray-600">
               본사와 협력사의 ESG 데이터를 체계적으로 관리하고
               <br />
               지속가능경영을 효율적으로 쉽게 실현하세요.
             </p>
 
-            <div className="flex flex-col gap-4 justify-center items-center sm:flex-row">
+            <div className="flex flex-col items-center justify-center gap-4 sm:flex-row">
               {isLoggedIn ? (
                 <button
                   onClick={handleLoginClick}
                   disabled={isCheckingAuth}
-                  className="px-8 py-4 text-lg font-semibold text-white bg-blue-500 rounded-xl shadow-lg transition-all duration-300 transform hover:bg-blue-600 hover:scale-105 hover:shadow-xl disabled:opacity-50 disabled:transform-none">
+                  className="px-8 py-4 text-lg font-semibold text-white transition-all duration-300 transform bg-blue-500 shadow-lg rounded-xl hover:bg-blue-600 hover:scale-105 hover:shadow-xl disabled:opacity-50 disabled:transform-none">
                   대시보드로 이동
                 </button>
               ) : (
@@ -117,13 +117,13 @@ export default function LandingPage() {
                   <button
                     onClick={handleSignupClick}
                     disabled={isCheckingAuth}
-                    className="px-8 py-4 text-lg font-semibold text-white bg-blue-500 rounded-xl shadow-lg transition-all duration-300 transform hover:bg-blue-600 hover:scale-105 hover:shadow-xl disabled:opacity-50 disabled:transform-none">
+                    className="px-8 py-4 text-lg font-semibold text-white transition-all duration-300 transform bg-blue-500 shadow-lg rounded-xl hover:bg-blue-600 hover:scale-105 hover:shadow-xl disabled:opacity-50 disabled:transform-none">
                     무료로 시작하기
                   </button>
                   <button
                     onClick={handleLoginClick}
                     disabled={isCheckingAuth}
-                    className="px-8 py-4 text-lg font-semibold text-gray-700 bg-gray-100 rounded-xl transition-all duration-300 hover:bg-gray-200 disabled:opacity-50">
+                    className="px-8 py-4 text-lg font-semibold text-gray-700 transition-all duration-300 bg-gray-100 rounded-xl hover:bg-gray-200 disabled:opacity-50">
                     기존 계정으로 로그인
                   </button>
                 </>
@@ -133,14 +133,14 @@ export default function LandingPage() {
         </div>
 
         {/* Floating 3D Elements */}
-        <div className="absolute left-20 top-32 w-20 h-20 bg-blue-100 rounded-2xl opacity-60 transform rotate-12"></div>
-        <div className="absolute right-32 top-40 w-16 h-16 bg-green-100 rounded-xl opacity-40 transform -rotate-6"></div>
-        <div className="absolute bottom-32 left-32 w-12 h-12 bg-purple-100 rounded-lg opacity-50 transform rotate-45"></div>
+        <div className="absolute w-20 h-20 transform bg-blue-100 left-20 top-32 rounded-2xl opacity-60 rotate-12"></div>
+        <div className="absolute w-16 h-16 transform bg-green-100 right-32 top-40 rounded-xl opacity-40 -rotate-6"></div>
+        <div className="absolute w-12 h-12 transform rotate-45 bg-purple-100 rounded-lg opacity-50 bottom-32 left-32"></div>
       </div>
 
       {/* Features Section */}
       <div className="px-6 py-20 bg-gray-50">
-        <div className="mx-auto max-w-6xl">
+        <div className="max-w-6xl mx-auto">
           <div
             className={`text-center mb-16 transition-all duration-1000 delay-300 ${
               isVisible ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-10'
@@ -148,7 +148,7 @@ export default function LandingPage() {
             <h2 className="mb-4 text-4xl font-bold text-gray-900">
               모든 ESG 관리를 한 번에
             </h2>
-            <p className="mx-auto max-w-2xl text-xl text-gray-600">
+            <p className="max-w-2xl mx-auto text-xl text-gray-600">
               복잡한 ESG 데이터 관리, 이제 간단하게 해결하세요
             </p>
           </div>
@@ -159,9 +159,9 @@ export default function LandingPage() {
               className={`bg-white rounded-2xl p-8 shadow-sm border border-gray-100 transition-all duration-500 delay-500 hover:shadow-lg hover:transform hover:scale-105 ${
                 isVisible ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-10'
               }`}>
-              <div className="flex justify-center items-center mb-6 w-14 h-14 bg-green-100 rounded-2xl">
+              <div className="flex items-center justify-center mb-6 bg-green-100 w-14 h-14 rounded-2xl">
                 <svg
-                  className="w-7 h-7 text-green-600"
+                  className="text-green-600 w-7 h-7"
                   fill="none"
                   stroke="currentColor"
                   viewBox="0 0 24 24">
@@ -188,9 +188,9 @@ export default function LandingPage() {
               className={`bg-white rounded-2xl p-8 shadow-sm border border-gray-100 transition-all duration-500 delay-700 hover:shadow-lg hover:transform hover:scale-105 ${
                 isVisible ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-10'
               }`}>
-              <div className="flex justify-center items-center mb-6 w-14 h-14 bg-blue-100 rounded-2xl">
+              <div className="flex items-center justify-center mb-6 bg-blue-100 w-14 h-14 rounded-2xl">
                 <svg
-                  className="w-7 h-7 text-blue-600"
+                  className="text-blue-600 w-7 h-7"
                   fill="none"
                   stroke="currentColor"
                   viewBox="0 0 24 24">
@@ -217,9 +217,9 @@ export default function LandingPage() {
               className={`bg-white rounded-2xl p-8 shadow-sm border border-gray-100 transition-all duration-500 delay-900 hover:shadow-lg hover:transform hover:scale-105 ${
                 isVisible ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-10'
               }`}>
-              <div className="flex justify-center items-center mb-6 w-14 h-14 bg-purple-100 rounded-2xl">
+              <div className="flex items-center justify-center mb-6 bg-purple-100 w-14 h-14 rounded-2xl">
                 <svg
-                  className="w-7 h-7 text-purple-600"
+                  className="text-purple-600 w-7 h-7"
                   fill="none"
                   stroke="currentColor"
                   viewBox="0 0 24 24">
@@ -246,8 +246,8 @@ export default function LandingPage() {
 
       {/* Benefits Section */}
       <div className="px-6 py-20 bg-white">
-        <div className="mx-auto max-w-6xl">
-          <div className="grid gap-12 items-center lg:grid-cols-2">
+        <div className="max-w-6xl mx-auto">
+          <div className="grid items-center gap-12 lg:grid-cols-2">
             <div
               className={`transition-all duration-1000 delay-300 ${
                 isVisible ? 'opacity-100 translate-x-0' : 'opacity-0 -translate-x-10'
@@ -260,7 +260,7 @@ export default function LandingPage() {
 
               <div className="space-y-6">
                 <div className="flex items-start space-x-4">
-                  <div className="flex flex-shrink-0 justify-center items-center mt-1 w-6 h-6 bg-blue-500 rounded-full">
+                  <div className="flex items-center justify-center flex-shrink-0 w-6 h-6 mt-1 bg-blue-500 rounded-full">
                     <svg
                       className="w-4 h-4 text-white"
                       fill="none"
@@ -285,7 +285,7 @@ export default function LandingPage() {
                 </div>
 
                 <div className="flex items-start space-x-4">
-                  <div className="flex flex-shrink-0 justify-center items-center mt-1 w-6 h-6 bg-blue-500 rounded-full">
+                  <div className="flex items-center justify-center flex-shrink-0 w-6 h-6 mt-1 bg-blue-500 rounded-full">
                     <svg
                       className="w-4 h-4 text-white"
                       fill="none"
@@ -310,7 +310,7 @@ export default function LandingPage() {
                 </div>
 
                 <div className="flex items-start space-x-4">
-                  <div className="flex flex-shrink-0 justify-center items-center mt-1 w-6 h-6 bg-blue-500 rounded-full">
+                  <div className="flex items-center justify-center flex-shrink-0 w-6 h-6 mt-1 bg-blue-500 rounded-full">
                     <svg
                       className="w-4 h-4 text-white"
                       fill="none"
@@ -367,7 +367,7 @@ export default function LandingPage() {
 
       {/* CTA Section */}
       <div className="px-6 py-20 bg-blue-50">
-        <div className="mx-auto max-w-4xl text-center">
+        <div className="max-w-4xl mx-auto text-center">
           <div
             className={`transition-all duration-1000 delay-300 ${
               isVisible ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-10'
@@ -375,15 +375,15 @@ export default function LandingPage() {
             <h2 className="mb-6 text-4xl font-bold text-gray-900">
               지금 바로 시작하세요
             </h2>
-            <p className="mx-auto mb-8 max-w-2xl text-xl text-gray-600">
+            <p className="max-w-2xl mx-auto mb-8 text-xl text-gray-600">
               5분이면 충분합니다. 복잡한 ESG 관리를 간단하게 만들어보세요
             </p>
-            <div className="flex flex-col gap-4 justify-center sm:flex-row">
+            <div className="flex flex-col justify-center gap-4 sm:flex-row">
               {isLoggedIn ? (
                 <button
                   onClick={handleLoginClick}
                   disabled={isCheckingAuth}
-                  className="px-8 py-4 text-lg font-semibold text-white bg-blue-500 rounded-xl shadow-lg transition-all duration-300 transform hover:bg-blue-600 hover:scale-105 hover:shadow-xl disabled:opacity-50 disabled:transform-none">
+                  className="px-8 py-4 text-lg font-semibold text-white transition-all duration-300 transform bg-blue-500 shadow-lg rounded-xl hover:bg-blue-600 hover:scale-105 hover:shadow-xl disabled:opacity-50 disabled:transform-none">
                   대시보드로 이동
                 </button>
               ) : (
@@ -391,13 +391,13 @@ export default function LandingPage() {
                   <button
                     onClick={handleSignupClick}
                     disabled={isCheckingAuth}
-                    className="px-8 py-4 text-lg font-semibold text-white bg-blue-500 rounded-xl shadow-lg transition-all duration-300 transform hover:bg-blue-600 hover:scale-105 hover:shadow-xl disabled:opacity-50 disabled:transform-none">
+                    className="px-8 py-4 text-lg font-semibold text-white transition-all duration-300 transform bg-blue-500 shadow-lg rounded-xl hover:bg-blue-600 hover:scale-105 hover:shadow-xl disabled:opacity-50 disabled:transform-none">
                     무료로 시작하기
                   </button>
                   <button
                     onClick={handleLoginClick}
                     disabled={isCheckingAuth}
-                    className="px-8 py-4 text-lg font-semibold text-gray-700 bg-white rounded-xl border border-gray-200 transition-all duration-300 hover:bg-gray-50 disabled:opacity-50">
+                    className="px-8 py-4 text-lg font-semibold text-gray-700 transition-all duration-300 bg-white border border-gray-200 rounded-xl hover:bg-gray-50 disabled:opacity-50">
                     기존 계정으로 로그인
                   </button>
                 </>
@@ -408,16 +408,16 @@ export default function LandingPage() {
       </div>
 
       {/* Footer */}
-      <footer className="px-6 py-12 bg-white border-t border-gray-100">
-        <div className="mx-auto max-w-6xl">
-          <div className="flex flex-col justify-between items-center md:flex-row">
+      <footer className="px-6 py-12 bg-gray-700 border-t border-gray-100">
+        <div className="max-w-6xl mx-auto">
+          <div className="flex flex-col items-center justify-between md:flex-row">
             <div className="flex items-center mb-4 space-x-2 md:mb-0">
-              <div className="flex justify-center items-center w-6 h-6 bg-blue-500 rounded-lg">
+              <div className="flex items-center justify-center w-6 h-6 bg-blue-500 rounded-lg">
                 <span className="text-xs font-bold text-white">N</span>
               </div>
-              <span className="text-lg font-bold text-gray-900">NSMM</span>
+              <span className="text-lg font-bold text-white">NSMM</span>
             </div>
-            <p className="text-sm text-gray-500">© 2024 NSMM. All rights reserved.</p>
+            <p className="text-sm text-white">© 2024 NSMM. All rights reserved.</p>
           </div>
         </div>
       </footer>

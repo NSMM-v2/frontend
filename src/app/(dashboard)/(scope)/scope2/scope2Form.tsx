@@ -675,7 +675,7 @@ export default function Scope2Form() {
   // ========================================================================
 
   return (
-    <div className="flex flex-col p-4 w-full h-full">
+    <div className="flex flex-col w-full h-full p-4">
       {/* ========================================================================
           상단 네비게이션 (Top Navigation)
           - 브레드크럼을 통한 현재 위치 표시
@@ -684,7 +684,7 @@ export default function Scope2Form() {
         <Breadcrumb>
           <BreadcrumbList>
             <BreadcrumbItem>
-              <Home className="mr-1 w-4 h-4" />
+              <Home className="w-4 h-4 mr-1" />
               <BreadcrumbLink href="/dashboard">대시보드</BreadcrumbLink>
             </BreadcrumbItem>
             <BreadcrumbSeparator />
@@ -699,7 +699,7 @@ export default function Scope2Form() {
           헤더 섹션 (Header Section)
           - 뒤로가기 버튼과 페이지 제목/설명
           ======================================================================== */}
-      <div className="flex flex-row justify-between mb-4 w-full h-24">
+      <div className="flex flex-row justify-between w-full mb-4">
         <div className="flex flex-row items-center p-4">
           <PageHeader
             icon={<Factory className="w-6 h-6 text-blue-600" />}
@@ -724,16 +724,16 @@ export default function Scope2Form() {
           initial={{opacity: 0}}
           animate={{opacity: 1}}
           transition={{duration: 0.4, delay: 0.1}}>
-          <Card className="overflow-hidden mb-4 shadow-sm">
+          <Card className="mb-4 overflow-hidden shadow-sm">
             <CardContent className="p-4">
-              <div className="grid grid-cols-1 gap-8 justify-center items-center h-24 md:grid-cols-3">
+              <div className="grid items-center justify-center h-24 grid-cols-1 gap-8 md:grid-cols-3">
                 {/* 백엔드 데이터 기반 총 배출량 카드 */}
                 <motion.div
                   initial={{opacity: 0, scale: 0.95}}
                   animate={{opacity: 1, scale: 1}}
                   transition={{delay: 0.1, duration: 0.5}}
                   className="max-w-md">
-                  <Card className="justify-center h-24 bg-gradient-to-br from-blue-50 to-white border-blue-100">
+                  <Card className="justify-center h-24 border-blue-100 bg-gradient-to-br from-blue-50 to-white">
                     <CardContent className="flex items-center p-4">
                       <div className="p-2 mr-3 bg-blue-100 rounded-full">
                         <TrendingUp className="w-5 h-5 text-blue-600" />
@@ -765,7 +765,7 @@ export default function Scope2Form() {
 
                 {/* 보고연도 입력 필드 */}
                 <div className="space-y-3">
-                  <label className="flex gap-2 items-center text-sm font-semibold text-customG-700">
+                  <label className="flex items-center gap-2 text-sm font-semibold text-customG-700">
                     <CalendarDays className="w-4 h-4" />
                     보고연도
                   </label>
@@ -775,13 +775,13 @@ export default function Scope2Form() {
                     onChange={e => setSelectedYear(parseInt(e.target.value))}
                     min="1900"
                     max="2200"
-                    className="px-3 py-2 w-full h-9 text-sm backdrop-blur-sm border-customG-200 focus:border-customG-400 focus:ring-customG-100 bg-white/80"
+                    className="w-full px-3 py-2 text-sm h-9 backdrop-blur-sm border-customG-200 focus:border-customG-400 focus:ring-customG-100 bg-white/80"
                   />
                 </div>
 
                 {/* 보고월 선택 드롭다운 (선택사항) */}
                 <div className="space-y-3">
-                  <label className="flex gap-2 items-center text-sm font-semibold text-customG-700">
+                  <label className="flex items-center gap-2 text-sm font-semibold text-customG-700">
                     <CalendarDays className="w-4 h-4" />
                     보고월 (선택사항)
                   </label>

@@ -393,7 +393,7 @@ export function CSDDDLayout() {
 
   return (
     <div className="flex flex-col w-full h-full p-4">
-      <div className="flex flex-row items-center p-2 px-2 mb-6 text-sm text-gray-500 bg-white rounded-lg shadow-sm">
+      <div className="flex flex-row items-center p-2 px-2 mb-4 text-sm text-gray-500 bg-white rounded-lg shadow-sm">
         <Breadcrumb>
           <BreadcrumbList>
             <BreadcrumbItem>
@@ -408,7 +408,7 @@ export function CSDDDLayout() {
         </Breadcrumb>
       </div>
 
-      <div className="flex flex-row w-full h-24 mb-6">
+      <div className="flex flex-row w-full h-24 mb-4">
         <div className="flex flex-row items-center p-4 space-x-4 transition rounded-md">
           <PageHeader
             icon={<Shield className="w-6 h-6 text-blue-600" />}

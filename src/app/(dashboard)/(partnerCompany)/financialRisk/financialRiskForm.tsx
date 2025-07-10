@@ -802,7 +802,7 @@ export default function FinancialRiskForm() {
       {/* ======================================================================
           상단 네비게이션 섹션 (Top Navigation Section)
           ====================================================================== */}
-      <div className="flex flex-row items-center p-2 px-2 mb-6 text-sm text-gray-500 bg-white rounded-lg shadow-sm">
+      <div className="flex flex-row items-center p-2 px-2 mb-4 text-sm text-gray-500 bg-white rounded-lg shadow-sm">
         <Breadcrumb>
           <BreadcrumbList>
             <BreadcrumbItem>
