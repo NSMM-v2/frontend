@@ -32,13 +32,15 @@ import {scope3CategoryList} from '@/components/scopeTotal/Scope123CategorySelect
 import {
   SelectorState,
   ScopeEmissionResponse,
-  ScopeCategorySummary
+  ScopeCategorySummary,
+  ScopeAggregationResponse
 } from '@/types/scopeTypes'
 import {
   fetchEmissionsByYearAndMonth,
   fetchCategorySummaryByScope,
   deleteScopeEmission
 } from '@/services/scopeService'
+import {fetchComprehensiveAggregation} from '@/services/aggregationService'
 import {DirectionButton} from '@/components/layout/direction'
 
 // ============================================================================
@@ -149,6 +151,11 @@ export default function Scope3Form() {
 
   // 카테고리별 요약 데이터 (CategorySummaryCard용)
   const [categorySummary, setCategorySummary] = useState<ScopeCategorySummary>({})
+
+  // 종합 집계 데이터 (계층적 집계 표시용)
+  const [aggregationData, setAggregationData] = useState<ScopeAggregationResponse | null>(
+    null
+  )
 
   // 로딩 상태 관리
   const [isLoading, setIsLoading] = useState<boolean>(false)
@@ -484,7 +491,14 @@ export default function Scope3Form() {
       )
       setCategorySummary(summaryData)
 
-      // 3. 기존 데이터를 카테고리별 계산기로 변환
+      // 3. 종합 집계 데이터 조회 (계층적 집계 표시용)
+      const aggregationData = await fetchComprehensiveAggregation(
+        selectedYear,
+        selectedMonth
+      )
+      setAggregationData(aggregationData)
+
+      // 4. 기존 데이터를 카테고리별 계산기로 변환
       convertBackendDataToCalculators(emissionsData)
     } catch (error) {
     } finally {
@@ -749,6 +763,7 @@ export default function Scope3Form() {
                 {/* 보고연도 입력 필드 */}
                 <div className="space-y-3">
                   <label className="flex items-center gap-2 text-sm font-semibold text-customG-700">
+
                     <CalendarDays className="w-4 h-4" />
                     보고연도
                   </label>
@@ -764,9 +779,10 @@ export default function Scope3Form() {
 
                 {/* 보고월 선택 드롭다운 (선택사항) */}
                 <div className="space-y-3">
+
                   <label className="flex items-center gap-2 text-sm font-semibold text-customG-700">
                     <CalendarDays className="w-4 h-4" />
-                    보고월 (선택사항)
+                    보고월
                   </label>
                   <MonthSelector
                     className="w-full"
@@ -774,9 +790,9 @@ export default function Scope3Form() {
                     onSelect={setSelectedMonth}
                   />
                 </div>
-              </div>
-            </CardContent>
-          </Card>
+              </CardContent>
+            </Card>
+          </div>
 
           {/* 카테고리 선택 그리드 */}
           <CategorySelector
@@ -805,6 +821,7 @@ export default function Scope3Form() {
           selectedYear={selectedYear} // 백엔드 저장용 연도
           selectedMonth={selectedMonth} // 백엔드 저장용 월
           onDataChange={refreshData} // CRUD 작업 후 데이터 새로고침 콜백
+          aggregationData={aggregationData} // 집계 데이터 전달
         />
       )}
 

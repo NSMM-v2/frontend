@@ -20,6 +20,8 @@ import {Tabs, TabsContent, TabsList, TabsTrigger} from '@/components/ui/tabs'
 import {Bar} from 'react-chartjs-2'
 import {useState, useEffect} from 'react'
 import authService, {UserInfo} from '@/services/authService'
+import {fetchPartnerMonthlyEmissions} from '@/services/scopeService'
+import {MonthlyEmissionSummary} from '@/types/scopeTypes'
 
 // ============================================================================
 // Chart.js 설정 (Chart.js Configuration)
@@ -40,26 +42,7 @@ const chartOptions = {
   }
 }
 
-const chartData = {
-  labels: ['1월', '2월', '3월', '4월'],
-  datasets: [
-    {
-      label: 'Scope 1',
-      data: [100, 200, 150, 250],
-      backgroundColor: 'rgba(255, 99, 132, 0.5)'
-    },
-    {
-      label: 'Scope 2',
-      data: [50, 100, 200, 100],
-      backgroundColor: 'rgba(53, 162, 235, 0.5)'
-    },
-    {
-      label: 'Scope 3',
-      data: [75, 150, 125, 175],
-      backgroundColor: 'rgba(75, 192, 192, 0.5)'
-    }
-  ]
-}
+// 차트 데이터는 이제 동적으로 생성됩니다.
 
 // ============================================================================
 // 타입 정의 (Type Definitions)
@@ -101,6 +84,10 @@ export default function ScopeDashboard() {
   const [error, setError] = useState<string | null>(null) // 에러 상태
   const [selectedPartner, setSelectedPartner] = useState<PartnerInfo | null>(null) // 선택된 협력사
   const [selectedProduct, setSelectedProduct] = useState<Product | null>(null) //선택한 제품============================================================================================
+  const [selectedYear, setSelectedYear] = useState<number>(new Date().getFullYear()) // 선택된 년도
+  const [monthlyData, setMonthlyData] = useState<MonthlyEmissionSummary[]>([]) // 월별 배출량 데이터
+  const [chartLoading, setChartLoading] = useState(false) // 차트 로딩 상태
+  const [chartError, setChartError] = useState<string | null>(null) // 차트 에러 상태
 
   // ========================================================================
   // 생명주기 관리 (Lifecycle Management)
@@ -109,6 +96,13 @@ export default function ScopeDashboard() {
   useEffect(() => {
     loadPartnerData()
   }, [])
+
+  // 선택된 협력사가 있으면 자동으로 현재 년도 데이터 로드
+  useEffect(() => {
+    if (selectedPartner?.partnerId !== undefined && !chartLoading) {
+      loadPartnerMonthlyData(selectedPartner.partnerId, selectedYear)
+    }
+  }, [selectedPartner?.partnerId])
 
   // ========================================================================
   // API 호출 함수 (API Call Functions)
@@ -189,10 +183,40 @@ export default function ScopeDashboard() {
   // ========================================================================
 
   /**
+   * 협력사별 월별 배출량 데이터 로드
+   */
+  const loadPartnerMonthlyData = async (partnerId: number, year: number) => {
+    try {
+      setChartLoading(true)
+      setChartError(null)
+      const data = await fetchPartnerMonthlyEmissions(partnerId, year)
+      setMonthlyData(data)
+    } catch (error) {
+      console.error('월별 배출량 데이터 로드 실패:', error)
+      setChartError(error instanceof Error ? error.message : '데이터 로드 중 오류가 발생했습니다')
+      setMonthlyData([])
+    } finally {
+      setChartLoading(false)
+    }
+  }
+
+  /**
    * 협력사 선택 핸들러
    */
   const handlePartnerSelect = (partner: PartnerInfo) => {
     setSelectedPartner(partner)
+    // useEffect에서 자동으로 데이터를 로드하므로 여기서는 호출하지 않음
+  }
+
+  /**
+   * 년도 선택 핸들러
+   */
+  const handleYearSelect = (year: number) => {
+    setSelectedYear(year)
+    // 년도 변경 시 선택된 협력사가 있으면 데이터 다시 로드
+    if (selectedPartner?.partnerId !== undefined) {
+      loadPartnerMonthlyData(selectedPartner.partnerId, year)
+    }
   }
   //============================================================================================================제품 선택 부분
   const handleProductSelect = (product: Product) => {
@@ -226,6 +250,8 @@ export default function ScopeDashboard() {
    */
   const getLevelStyle = (level: number) => {
     switch (level) {
+      case 0:
+        return 'bg-yellow-50 border-yellow-200 text-yellow-800' // 본사
       case 1:
         return 'bg-blue-50 border-blue-200 text-blue-800'
       case 2:
@@ -241,6 +267,9 @@ export default function ScopeDashboard() {
    * 협력사 레벨 표시 텍스트 반환
    */
   const getLevelText = (level: number) => {
+    if (level === 0) {
+      return '본사'
+    }
     return `${level}차 협력사`
   }
 
@@ -256,6 +285,56 @@ export default function ScopeDashboard() {
       const level = userInfo.level || 1
       return `본인 + ${level + 1}차 협력사 조회 가능`
     }
+  }
+
+  /**
+   * 월별 데이터를 기반으로 차트 데이터 생성
+   */
+  const generateChartData = () => {
+    if (!monthlyData.length) {
+      return {
+        labels: [],
+        datasets: []
+      }
+    }
+
+    const labels = monthlyData.map(item => `${item.month}월`)
+    const scope1Data = monthlyData.map(item => item.scope1Total)
+    const scope2Data = monthlyData.map(item => item.scope2Total)
+    const scope3Data = monthlyData.map(item => item.scope3Total)
+
+    return {
+      labels,
+      datasets: [
+        {
+          label: 'Scope 1',
+          data: scope1Data,
+          backgroundColor: 'rgba(255, 99, 132, 0.5)'
+        },
+        {
+          label: 'Scope 2',
+          data: scope2Data,
+          backgroundColor: 'rgba(53, 162, 235, 0.5)'
+        },
+        {
+          label: 'Scope 3',
+          data: scope3Data,
+          backgroundColor: 'rgba(75, 192, 192, 0.5)'
+        }
+      ]
+    }
+  }
+
+  /**
+   * 년도 옵션 생성 (현재년도 기준 ±2년)
+   */
+  const generateYearOptions = () => {
+    const currentYear = new Date().getFullYear()
+    const years = []
+    for (let i = currentYear - 2; i <= currentYear + 2; i++) {
+      years.push(i)
+    }
+    return years
   }
 
   // ========================================================================
@@ -393,17 +472,66 @@ export default function ScopeDashboard() {
               탄소 배출량 차트 섹션 (Carbon Emissions Chart Section)
               ====================================================================== */}
           <Card className="w-[70%] bg-white rounded-lg p-4 flex flex-col">
-            <CardHeader className="p-0">
-              <CardTitle className="text-lg font-bold">총 탄소 배출량</CardTitle>
-              <CardDescription>
-                {selectedPartner ? selectedPartner.companyName : '협력사를 선택해주세요'}
-              </CardDescription>
+            <CardHeader className="p-0 pb-4">
+              <div className="flex items-center justify-between">
+                <div>
+                  <CardTitle className="text-lg font-bold">총 탄소 배출량</CardTitle>
+                  <CardDescription>
+                    {selectedPartner ? selectedPartner.companyName : '협력사를 선택해주세요'}
+                  </CardDescription>
+                </div>
+                {/* 년도 선택 드롭다운 */}
+                <div className="flex items-center gap-2">
+                  <label className="text-sm font-medium text-gray-700">년도:</label>
+                  <select
+                    value={selectedYear}
+                    onChange={(e) => handleYearSelect(Number(e.target.value))}
+                    className="px-3 py-1 text-sm border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                  >
+                    {generateYearOptions().map(year => (
+                      <option key={year} value={year}>
+                        {year}년
+                      </option>
+                    ))}
+                  </select>
+                </div>
+              </div>
             </CardHeader>
             <CardContent className="flex-1 p-2 border rounded-lg">
               {selectedPartner ? (
-                <div className="w-full h-full">
-                  <Bar options={chartOptions} data={chartData} />
-                </div>
+                chartLoading ? (
+                  <div className="flex items-center justify-center w-full h-full">
+                    <div className="text-center text-gray-500">
+                      <div className="mb-2 text-lg">⏳</div>
+                      <div>데이터를 불러오는 중...</div>
+                    </div>
+                  </div>
+                ) : chartError ? (
+                  <div className="flex items-center justify-center w-full h-full">
+                    <div className="text-center text-red-500">
+                      <div className="mb-2 text-lg">❌</div>
+                      <div>데이터 로드 실패</div>
+                      <div className="text-sm mt-1">{chartError}</div>
+                      <button
+                        onClick={() => selectedPartner && selectedPartner.partnerId !== undefined && loadPartnerMonthlyData(selectedPartner.partnerId, selectedYear)}
+                        className="px-3 py-1 mt-2 text-xs text-red-700 bg-red-100 rounded hover:bg-red-200">
+                        다시 시도
+                      </button>
+                    </div>
+                  </div>
+                ) : monthlyData.length > 0 ? (
+                  <div className="w-full h-full">
+                    <Bar options={chartOptions} data={generateChartData()} />
+                  </div>
+                ) : (
+                  <div className="flex items-center justify-center w-full h-full">
+                    <div className="text-center text-gray-500">
+                      <div className="mb-2 text-lg">📝</div>
+                      <div>{selectedYear}년 배출량 데이터가 없습니다</div>
+                      <div className="text-sm">다른 년도를 선택해보세요</div>
+                    </div>
+                  </div>
+                )
               ) : (
                 <div className="flex items-center justify-center w-full h-full">
                   <div className="text-center text-gray-500">
@@ -431,61 +559,100 @@ export default function ScopeDashboard() {
           </CardHeader>
           <CardContent className="flex-1 p-2 overflow-y-auto border rounded-lg scroll-auto custom-scrollbar">
             {selectedPartner ? (
-              <div className="flex-1 max-h-0">
-                <table className="min-w-full text-sm border">
-                  <thead className="bg-gray-100">
-                    <tr>
-                      <th className="px-4 py-2 text-center border">#</th>
-                      <th className="px-4 py-2 text-center border">연도</th>
-                      <th className="px-4 py-2 text-center border">일련번호</th>
-                      <th className="px-4 py-2 text-center border">내부시설명</th>
-                      <th className="px-4 py-2 text-center border">배출활동</th>
-                      <th className="px-4 py-2 text-center border">활동자료</th>
-                      <th className="px-4 py-2 text-center border">단위</th>
-                      <th className="px-4 py-2 text-center border">수치</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {[...Array(20)].map((_, index) => (
-                      <tr key={index} className="hover:bg-gray-50">
-                        <td className="px-4 py-2 border">{index + 1}</td>
-                        <td className="px-4 py-2 border">2025</td>
-                        <td className="px-4 py-2 border">
-                          {selectedPartner.hierarchicalId}-
-                          {String(index + 1).padStart(3, '0')}
+              chartLoading ? (
+                <div className="flex items-center justify-center h-full">
+                  <div className="text-center text-gray-500">
+                    <div className="mb-2 text-lg">⏳</div>
+                    <div>데이터를 불러오는 중...</div>
+                  </div>
+                </div>
+              ) : chartError ? (
+                <div className="flex items-center justify-center h-full">
+                  <div className="text-center text-red-500">
+                    <div className="mb-2 text-lg">❌</div>
+                    <div>데이터 로드 실패</div>
+                    <div className="text-sm mt-1">{chartError}</div>
+                    <button
+                      onClick={() => selectedPartner && selectedPartner.partnerId !== undefined && loadPartnerMonthlyData(selectedPartner.partnerId, selectedYear)}
+                      className="px-3 py-1 mt-2 text-xs text-red-700 bg-red-100 rounded hover:bg-red-200">
+                      다시 시도
+                    </button>
+                  </div>
+                </div>
+              ) : monthlyData.length > 0 ? (
+                <div className="flex-1 max-h-0">
+                  <table className="min-w-full text-sm border">
+                    <thead className="bg-gray-100">
+                      <tr>
+                        <th className="px-4 py-2 text-center border">월</th>
+                        <th className="px-4 py-2 text-center border">Scope 1 (tCO₂eq)</th>
+                        <th className="px-4 py-2 text-center border">Scope 2 (tCO₂eq)</th>
+                        <th className="px-4 py-2 text-center border">Scope 3 (tCO₂eq)</th>
+                        <th className="px-4 py-2 text-center border">총 배출량 (tCO₂eq)</th>
+                        <th className="px-4 py-2 text-center border">데이터 건수</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {monthlyData.map((item) => (
+                        <tr key={item.month} className="hover:bg-gray-50">
+                          <td className="px-4 py-2 text-center border font-medium">
+                            {selectedYear}년 {item.month}월
+                          </td>
+                          <td className="px-4 py-2 text-right border">
+                            {item.scope1Total.toLocaleString()}
+                          </td>
+                          <td className="px-4 py-2 text-right border">
+                            {item.scope2Total.toLocaleString()}
+                          </td>
+                          <td className="px-4 py-2 text-right border">
+                            {item.scope3Total.toLocaleString()}
+                          </td>
+                          <td className="px-4 py-2 text-right border font-medium">
+                            {item.totalEmission.toLocaleString()}
+                          </td>
+                          <td className="px-4 py-2 text-center border text-gray-600">
+                            {item.dataCount}건
+                          </td>
+                        </tr>
+                      ))}
+                    </tbody>
+                    <tfoot className="bg-gray-50">
+                      <tr className="font-bold">
+                        <td className="px-4 py-2 text-center border">합계</td>
+                        <td className="px-4 py-2 text-right border">
+                          {monthlyData.reduce((sum, item) => sum + item.scope1Total, 0).toLocaleString()}
                         </td>
-                        <td className="px-4 py-2 border">
-                          제{Math.floor(index / 5) + 1}공장
+                        <td className="px-4 py-2 text-right border">
+                          {monthlyData.reduce((sum, item) => sum + item.scope2Total, 0).toLocaleString()}
                         </td>
-                        <td className="px-4 py-2 border">
-                          {index % 3 === 0
-                            ? '연료 연소'
-                            : index % 3 === 1
-                            ? '전력 사용'
-                            : '기타 배출'}
+                        <td className="px-4 py-2 text-right border">
+                          {monthlyData.reduce((sum, item) => sum + item.scope3Total, 0).toLocaleString()}
                         </td>
-                        <td className="px-4 py-2 border">
-                          {index % 3 === 0
-                            ? '가스 사용량'
-                            : index % 3 === 1
-                            ? '전력 사용량'
-                            : '기타 활동'}
+                        <td className="px-4 py-2 text-right border">
+                          {monthlyData.reduce((sum, item) => sum + item.totalEmission, 0).toLocaleString()}
                         </td>
-                        <td className="px-4 py-2 border">tCO₂eq</td>
-                        <td className="px-4 py-2 border">
-                          {(Math.random() * 1000).toFixed(2)}
+                        <td className="px-4 py-2 text-center border">
+                          {monthlyData.reduce((sum, item) => sum + item.dataCount, 0)}건
                         </td>
                       </tr>
-                    ))}
-                  </tbody>
-                </table>
-              </div>
+                    </tfoot>
+                  </table>
+                </div>
+              ) : (
+                <div className="flex items-center justify-center h-full">
+                  <div className="text-center text-gray-500">
+                    <div className="mb-2 text-lg">📝</div>
+                    <div>{selectedYear}년 배출량 데이터가 없습니다</div>
+                    <div className="text-sm">다른 년도를 선택해보세요</div>
+                  </div>
+                </div>
+              )
             ) : (
               <div className="flex items-center justify-center h-full">
                 <div className="text-center text-gray-500">
                   <div className="mb-2 text-lg">📋</div>
                   <div>협력사를 선택하면</div>
-                  <div>해당 협력사의 상세 배출량 데이터를 표시합니다</div>
+                  <div>해당 협력사의 월별 배출량 데이터를 표시합니다</div>
                 </div>
               </div>
             )}

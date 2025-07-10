@@ -95,10 +95,10 @@ export function ExcelCascadingSelector({
             RawMaterial: row['원료/에너지'].trim(),
             unit: row['단위']?.trim() || '',
             kgCO2eq:
-              parseFloat((row['탄소발자국'] as string).replace(/(\.\d+)\.(?=E)/, '$1')) ||
+              parseFloat(row['탄소발자국 (CO2e)'])||
               0
           }))
-
+        
         setData(parsed)
       } catch (error) {
         console.error('CSV 데이터 로딩 실패:', error)

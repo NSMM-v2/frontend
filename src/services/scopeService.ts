@@ -14,7 +14,8 @@ import {
   ScopeSummary,
   ScopeCategorySummary,
   ApiResponse,
-  ScopeType
+  ScopeType,
+  MonthlyEmissionSummary
 } from '@/types/scopeTypes'
 
 // ============================================================================
@@ -273,6 +274,40 @@ export const fetchEmissionsByProductCode = async (
 // ============================================================================
 // 집계 및 요약 API (Summary & Aggregation APIs)
 // ============================================================================
+
+/**
+ * 협력사별 월별 배출량 집계 조회
+ * 백엔드 엔드포인트: GET /api/v1/scope/aggregation/partner/{partnerId}/year/{year}/monthly-summary
+ * @param partnerId 협력사 ID
+ * @param year 보고년도
+ * @returns Promise<MonthlyEmissionSummary[]> 월별 배출량 집계 데이터
+ */
+export const fetchPartnerMonthlyEmissions = async (
+  partnerId: number,
+  year: number
+): Promise<MonthlyEmissionSummary[]> => {
+  try {
+    showLoading('월별 배출량 데이터를 조회중입니다...')
+
+    const response = await api.get<ApiResponse<MonthlyEmissionSummary[]>>(
+      `/api/v1/scope/aggregation/partner/${partnerId}/year/${year}/monthly-summary`
+    )
+
+    dismissLoading()
+
+    if (response.data.success && response.data.data) {
+      return response.data.data
+    } else {
+      throw new Error(response.data.message || '월별 배출량 집계 조회에 실패했습니다.')
+    }
+  } catch (error: any) {
+    dismissLoading()
+    showError(
+      error.response?.data?.message || '월별 배출량 집계 조회 중 오류가 발생했습니다.'
+    )
+    return []
+  }
+}
 
 /**
  * 연도/월별 Scope 타입별 총계 조회

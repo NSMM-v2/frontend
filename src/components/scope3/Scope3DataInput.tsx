@@ -8,8 +8,9 @@ import {
   scope3CategoryList,
   Scope3CategoryKey
 } from '../scopeTotal/Scope123CategorySelector'
-import {SelectorState, ScopeEmissionResponse, InputType} from '@/types/scopeTypes'
+import {SelectorState, ScopeEmissionResponse, InputType, ScopeAggregationResponse} from '@/types/scopeTypes'
 import {createScopeEmission, updateScopeEmission} from '@/services/scopeService'
+import {getScope3CategoryAggregation, hasSpecialAggregation} from '@/services/aggregationService'
 import {showError, showSuccess, showWarning} from '@/util/toast'
 
 /**
@@ -57,6 +58,8 @@ interface CategoryDataInputProps {
   selectedMonth?: number | null
   /** 데이터 변경 후 콜백 (CRUD 작업 완료 후 부모 컴포넌트에서 데이터 새로고침) */
   onDataChange?: () => void
+  /** 집계 데이터 (특수 집계 표시용) */
+  aggregationData?: ScopeAggregationResponse | null
 }
 
 /**
@@ -77,11 +80,17 @@ export function CategoryDataInput({
   onModeChange,
   selectedYear,
   selectedMonth,
-  onDataChange
+  onDataChange,
+  aggregationData
 }: CategoryDataInputProps) {
   const categoryTitle = scope3CategoryList[activeCategory]
   const scope3CategoryNumber = activeCategory.replace('list', '')
   const totalEmission = getTotalEmission(activeCategory)
+  
+  // 특수 집계 카테고리인지 확인
+  const categoryNumber = Number(scope3CategoryNumber)
+  const showAggregation = hasSpecialAggregation(categoryNumber)
+  const aggregatedEmission = showAggregation ? getScope3CategoryAggregation(aggregationData, categoryNumber) : null
 
   const handleAddCalculator = useCallback(() => {
     onAddCalculator()
@@ -356,35 +365,71 @@ export function CategoryDataInput({
             </motion.div>
 
             {/* ========================================================================
-              현재 카테고리 소계 카드 (Category Summary Card)
-              - 현재 카테고리의 총 배출량 표시
+              소계 카드들 (Summary Cards)
+              - 현재 카테고리 소계 + 누적 집계 (특수 카테고리만)
               ======================================================================== */}
-            <motion.div
-              initial={{opacity: 0, x: 20}}
-              animate={{opacity: 1, x: 0}}
-              transition={{delay: 0.1, duration: 0.5}}>
-              <Card className="bg-white rounded-2xl border-2 border-blue-200 shadow-sm min-w-md">
-                <CardContent className="flex justify-between items-center p-6">
-                  <div>
-                    <span className="text-lg font-semibold text-gray-900">
-                      현재 카테고리 소계:
-                    </span>
-                    <div className="mt-1 text-xs text-gray-500">
-                      {calculators.length}개 항목 입력됨
+            <div className="flex gap-4">
+              {/* 현재 카테고리 소계 카드 */}
+              <motion.div
+                initial={{opacity: 0, x: 20}}
+                animate={{opacity: 1, x: 0}}
+                transition={{delay: 0.1, duration: 0.5}}>
+                <Card className="bg-white rounded-2xl border-2 border-blue-200 shadow-sm min-w-md">
+                  <CardContent className="flex justify-between items-center p-6">
+                    <div>
+                      <span className="text-lg font-semibold text-gray-900">
+                        현재 카테고리 소계:
+                      </span>
+                      <div className="mt-1 text-xs text-gray-500">
+                        {calculators.length}개 항목 입력됨
+                      </div>
                     </div>
-                  </div>
-                  <div className="text-right">
-                    <span className="text-2xl font-bold text-blue-600">
-                      {totalEmission.toLocaleString(undefined, {
-                        maximumFractionDigits: 2,
-                        minimumFractionDigits: 2
-                      })}
-                    </span>
-                    <div className="text-sm text-gray-500">kgCO₂</div>
-                  </div>
-                </CardContent>
-              </Card>
-            </motion.div>
+                    <div className="text-right">
+                      <span className="text-2xl font-bold text-blue-600">
+                        {totalEmission.toLocaleString(undefined, {
+                          maximumFractionDigits: 2,
+                          minimumFractionDigits: 2
+                        })}
+                      </span>
+                      <div className="text-sm text-gray-500">kgCO₂</div>
+                    </div>
+                  </CardContent>
+                </Card>
+              </motion.div>
+
+              {/* 누적 집계 카드 (Cat.1, 2, 4, 5만 표시) */}
+              {showAggregation && (
+                <motion.div
+                  initial={{opacity: 0, x: 30}}
+                  animate={{opacity: 1, x: 0}}
+                  transition={{delay: 0.2, duration: 0.5}}>
+                  <Card className="bg-white rounded-2xl border-2 border-green-200 shadow-sm min-w-md">
+                    <CardContent className="flex justify-between items-center p-6">
+                      <div>
+                        <span className="text-lg font-semibold text-gray-900">
+                          누적된 소계:
+                        </span>
+                        <div className="mt-1 text-xs text-gray-500">
+                          공식 기반 계층적 집계
+                        </div>
+                      </div>
+                      <div className="text-right">
+                        <span className="text-2xl font-bold text-green-600">
+                          {aggregatedEmission !== null 
+                            ? aggregatedEmission.toLocaleString(undefined, {
+                                maximumFractionDigits: 2,
+                                minimumFractionDigits: 2
+                              })
+                            : '0.00'
+                          }
+                        </span>
+                        <div className="text-sm text-gray-500">kgCO₂</div>
+                      </div>
+                    </CardContent>
+                  </Card>
+                </motion.div>
+              )}
+            </div>
           </div>
         </div>
       </div>

@@ -123,10 +123,21 @@ export function Scope1DataInput({
   const [deleteDialogStates, setDeleteDialogStates] = useState<Record<number, boolean>>(
     {}
   )
-  const [factoryEnabled, setFactoryEnabled] = useState(false)
+  const [factoryEnabled, setFactoryEnabled] = useState(false) // 공장 설비 활성화 상태
   const handleFactoryToggle = (checked: boolean) => {
     setFactoryEnabled(checked)
   }
+
+  // 백엔드 데이터에서 factoryEnabled 값을 추출하여 상태 설정
+  useEffect(() => {
+    if (calculators.length > 0) {
+      // 첫 번째 계산기의 저장된 데이터에서 factoryEnabled 값을 가져옴
+      const firstCalculatorWithData = calculators.find(calc => calc.savedData)
+      if (firstCalculatorWithData?.savedData?.factoryEnabled !== undefined) {
+        setFactoryEnabled(firstCalculatorWithData.savedData.factoryEnabled)
+      }
+    }
+  }, [calculators])
 
   // 백엔드 API 연동 함수
 
