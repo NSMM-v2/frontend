@@ -24,8 +24,11 @@ export interface CO2Data {
   RawMaterial: string
   unit: string
   kgCO2eq: number
+  materialState?: string // 상태 (예: 액체, 고체 등)
+  scopeCategory?: string // ESG Scope 분류 (추정)
 }
 type SeparateFilterRule = {include: string[]} | {exclude: string[]} | undefined
+type StateFilterRule = {include: string[]} | {exclude: string[]} | undefined
 interface ExcelCascadingSelectorProps {
   activeCategory:
     | Scope1PotentialCategoryKey
@@ -73,8 +76,10 @@ export function ExcelCascadingSelector({
             RawMaterial: row['원료/에너지'].trim(),
             unit: row['단위']?.trim() || '',
             kgCO2eq:
-              parseFloat((row['탄소발자국'] as string).replace(/(\.\d+)\.(?=E)/, '$1')) ||
-              0
+              parseFloat(row['탄소발자국 (CO2e)']) ||
+              0,
+            materialState: row['종류'],
+            scopeCategory: row['ESG Scope 분류 (추정)']
           }))
 
         setData(parsed)
@@ -131,9 +136,37 @@ export function ExcelCascadingSelector({
   const unique = (arr: string[]) => [...new Set(arr.filter(Boolean))]
 
   const separateFilterMap: Record<typeof activeCategory, SeparateFilterRule> = {
-    list1: {include: ['에너지']}, // 예시
-    list2: {exclude: ['에너지']}, // list2는 필터링 안 함 → 전체 표시
-    list3: {include: ['에너지', '육상수송', '항공수송', '해상수송']}, // list3는 에너지, 육상수송, 항공수송, 해상수송만 표시
+    list1: undefined, // 예시
+    list2: undefined, // list2는 필터링 안 함 → 전체 표시
+    list3: undefined, // list3는 에너지, 육상수송, 항공수송, 해상수송만 표시
+    list4: undefined,
+    list5: undefined,
+    list6: undefined, // list6는 필터링 안 함 → 전체 표시
+    list7: undefined, // list7는 필터링 안 함 → 전체 표시
+    list8: {include:['매립','소각']},
+    list9: undefined, // list9는 필터링 안 함 → 전체 표시
+    list10: undefined, // list15는 필터링 안 함 → 전체 표시
+    list11: undefined,
+    list12: undefined
+  }
+  const scopeCategoryFilterMap: Record<typeof activeCategory, SeparateFilterRule> = {
+    list1: {include: ['고정']}, // 예시
+    list2: {include: ['고정']}, // list2는 필터링 안 함 → 전체 표시
+    list3: {include: ['고정']}, // list3는 에너지, 육상수송, 항공수송, 해상수송만 표시
+    list4: {include: ['이동']},
+    list5: {include: ['이동']},
+    list6: {include: ['이동']}, // list6는 필터링 안 함 → 전체 표시
+    list7: {include: ['공정']}, // list7는 필터링 안 함 → 전체 표시
+    list8: {include: ['공정']},
+    list9: {include: ['냉매']}, // list9는 필터링 안 함 → 전체 표시
+    list10: {include: ['냉매']}, // list15는 필터링 안 함 → 전체 표시
+    list11: {include: ['전기']},
+    list12: {include: ['스팀']}
+  }
+    const stateFilterMap: Record<typeof activeCategory, StateFilterRule> = {
+    list1: {include: ['액체']}, // 예시
+    list2: {include: ['기체']}, // list2는 필터링 안 함 → 전체 표시
+    list3: {include: ['고체']}, // list3는 에너지, 육상수송, 항공수송, 해상수송만 표시
     list4: undefined,
     list5: undefined,
     list6: undefined, // list6는 필터링 안 함 → 전체 표시
@@ -146,26 +179,76 @@ export function ExcelCascadingSelector({
   }
   // ... rest of the code remains the same ...
   // const categoryList = unique(data.map(d => d.category))
-  const filteredSeparateList = useMemo(() => {
-    const rawList = unique(data.map(d => d.separate))
+const filteredSeparateList = useMemo(() => {
+  const validSeparates = unique(
+    data
+      .filter(item => {
+        // 1️⃣ scopeCategory 조건
+        const scopeRule = scopeCategoryFilterMap[activeCategory]
+        const scopeOK = scopeRule
+          ? ('include' in scopeRule
+              ? scopeRule.include.some(inc => (item.scopeCategory || '').trim().includes(inc))
+              : scopeRule.exclude.every(exc => !(item.scopeCategory || '').trim().includes(exc))
+            )
+          : true
 
-    const rule = separateFilterMap[activeCategory]
+        // 2️⃣ materialState 조건
+        const stateRule = stateFilterMap[activeCategory]
+        const stateOK = stateRule
+          ? ('include' in stateRule
+              ? stateRule.include.includes((item.materialState || '').trim())
+              : !stateRule.exclude.includes((item.materialState || '').trim())
+            )
+          : true
 
-    if (!rule) return rawList
+        // 3️⃣ separateFilterMap 조건
+        const separateRule = separateFilterMap[activeCategory]
+        const separateOK = separateRule
+          ? ('include' in separateRule
+              ? separateRule.include.some(inc => (item.separate || '').trim().includes(inc))
+              : separateRule.exclude.every(exc => !(item.separate || '').trim().includes(exc))
+            )
+          : true
 
-    if ('include' in rule) {
-      return rawList.filter(sep => rule.include.includes(sep))
-    }
-
-    if ('exclude' in rule) {
-      return rawList.filter(sep => !rule.exclude.includes(sep))
-    }
-
-    return rawList
-  }, [data, state.category, activeCategory])
-  const rawMaterialList = unique(
-    data.filter(d => d.separate === state.separate).map(d => d.RawMaterial)
+        return scopeOK && stateOK && separateOK
+      })
+      .map(item => item.separate)
   )
+
+  return validSeparates
+}, [data, activeCategory])
+  
+
+const rawMaterialList = useMemo(() => {
+  // 1️⃣ 먼저 선택된 separate로 필터링
+  let filtered = data.filter(d => d.separate === state.separate)
+
+  // 2️⃣ scopeCategoryFilterMap 규칙 적용 (separate처럼)
+  const separateRule = scopeCategoryFilterMap[activeCategory]
+  if (separateRule) {
+    if ('include' in separateRule) {
+      filtered = filtered.filter(d =>
+        separateRule.include.some(inc => (d.scopeCategory || '').includes(inc))
+      )
+    } else if ('exclude' in separateRule) {
+      filtered = filtered.filter(d =>
+        separateRule.exclude.every(exc => !(d.scopeCategory || '').includes(exc))
+      )
+    }
+  }
+
+  // 3️⃣ 상태 필터 (기존)
+  const stateRule = stateFilterMap[activeCategory]
+  if (stateRule) {
+    if ('include' in stateRule) {
+      filtered = filtered.filter(d => stateRule.include.includes(d.materialState || ''))
+    } else if ('exclude' in stateRule) {
+      filtered = filtered.filter(d => !stateRule.exclude.includes(d.materialState || ''))
+    }
+  }
+
+  return unique(filtered.map(d => d.RawMaterial))
+}, [data, state.separate, activeCategory])
 
   // 선택된 아이템 및 배출량 계산
 
@@ -478,7 +561,7 @@ export function ExcelCascadingSelector({
               </div>
             )}
 
-            <div className="grid grid-cols-1 gap-6 md:grid-cols-3">
+            <div className="grid grid-cols-1 gap-6 md:grid-cols-2">
               {selectionFields.map((field, index) => (
                 <motion.div
                   key={field.step}
