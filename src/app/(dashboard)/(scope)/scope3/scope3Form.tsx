@@ -724,6 +724,7 @@ export default function Scope3Form() {
                   <div>
                     <p className="text-sm font-medium text-gray-500">연 배출량</p>
                     <h3 className="text-2xl font-bold text-gray-900">
+
                       {Object.values(categorySummary).length > 0
                         ? Object.values(categorySummary)
                             .reduce((sum, emission) => sum + emission, 0)
@@ -735,6 +736,7 @@ export default function Scope3Form() {
                             maximumFractionDigits: 2,
                             minimumFractionDigits: 2
                           })}
+
                       <span className="ml-1 text-sm font-normal text-gray-500">
                         kgCO₂eq
                       </span>
@@ -768,6 +770,7 @@ export default function Scope3Form() {
                   <div>
                     <p className="text-sm font-medium text-gray-500">월 배출량</p>
                     <h3 className="text-2xl font-bold text-gray-900">
+
                       {Object.values(categorySummary).length > 0
                         ? Object.values(categorySummary)
                             .reduce((sum, emission) => sum + emission, 0)
@@ -779,6 +782,7 @@ export default function Scope3Form() {
                             maximumFractionDigits: 2,
                             minimumFractionDigits: 2
                           })}
+
                       <span className="ml-1 text-sm font-normal text-gray-500">
                         kgCO₂eq
                       </span>

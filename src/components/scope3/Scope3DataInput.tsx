@@ -10,6 +10,7 @@ import {
 } from '../scopeTotal/Scope123CategorySelector'
 import {SelectorState, ScopeEmissionResponse, InputType} from '@/types/scopeTypes'
 import {createScopeEmission, updateScopeEmission} from '@/services/scopeService'
+
 import {showError, showSuccess, showWarning} from '@/util/toast'
 
 /**
@@ -82,6 +83,7 @@ export function CategoryDataInput({
   const categoryTitle = scope3CategoryList[activeCategory]
   const scope3CategoryNumber = activeCategory.replace('list', '')
   const totalEmission = getTotalEmission(activeCategory)
+
 
   const handleAddCalculator = useCallback(() => {
     onAddCalculator()
@@ -339,13 +341,15 @@ export function CategoryDataInput({
           ======================================================================== */}
       <div className="overflow-hidden bg-white border-0 shadow-sm rounded-3xl">
         <div className="p-6 bg-white">
-          <div className="flex flex-row items-center justify-between">
+
+          <div className="flex flex-row items-center justify-between w-full">
             <motion.div
               initial={{opacity: 0, x: -20}}
               animate={{opacity: 1, x: 0}}
               transition={{delay: 0.1, duration: 0.5}}
               onClick={handleBackToList}
-              className="flex flex-row items-center p-4 transition-all duration-200 rounded-xl hover:cursor-pointer hover:bg-blue-50">
+
+              className="flex flex-row items-center h-full p-4 transition-all duration-200 rounded-xl hover:cursor-pointer hover:bg-blue-50">
               <div className="mr-4 text-2xl text-blue-500">←</div>
               <div>
                 <h1 className="text-3xl font-bold text-gray-900">{categoryTitle}</h1>
@@ -359,7 +363,7 @@ export function CategoryDataInput({
               소계 카드들 (Summary Cards)
               - 현재 카테고리 소계 + 누적 집계 (특수 카테고리만)
               ======================================================================== */}
-            <div className="flex gap-4">
+            <div className="flex flex-col gap-4">
               {/* 현재 카테고리 소계 카드 */}
               <motion.div
                 initial={{opacity: 0, x: 20}}
@@ -387,6 +391,7 @@ export function CategoryDataInput({
                   </CardContent>
                 </Card>
               </motion.div>
+
             </div>
           </div>
         </div>
