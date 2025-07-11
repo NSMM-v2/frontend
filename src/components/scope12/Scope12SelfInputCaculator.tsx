@@ -249,8 +249,8 @@ export function SelfInputScope12Calculator({
       initial={{opacity: 0, scale: 0.95}}
       animate={{opacity: 1, scale: 1}}
       transition={{duration: 0.5, type: 'spring', stiffness: 100}}
-      className="mx-auto w-full max-w-4xl">
-      <Card className="overflow-hidden bg-white rounded-3xl border-0 shadow-sm">
+      className="w-full max-w-4xl mx-auto">
+      <Card className="overflow-hidden bg-white border-0 shadow-sm rounded-3xl">
         <CardContent className="p-8 space-y-8">
           {/* ====================================================================
               기본 정보 섹션 (Basic Information Section)
@@ -267,7 +267,7 @@ export function SelfInputScope12Calculator({
             </div>
 
             {/* 제품 관련 토글 - Scope 1/2 모드 토글과 동일한 스타일 적용 */}
-            <div className="flex items-center px-4 py-3 mb-4 space-x-3 bg-white rounded-xl border border-blue-200 shadow-sm transition-all hover:bg-blue-50">
+            <div className="flex items-center px-4 py-3 mb-4 space-x-3 transition-all bg-white border border-blue-200 shadow-sm rounded-xl hover:bg-blue-50">
               {/* 토글 스위치 */}
               <Switch
                 checked={productEnabled}
@@ -310,7 +310,7 @@ export function SelfInputScope12Calculator({
                       value={state[field.key] || ''}
                       onChange={handleChange(field.key)}
                       placeholder={field.placeholder}
-                      className="px-4 py-2 w-full text-sm rounded-xl border-2 border-gray-200 transition-all duration-200 focus:border-blue-500 focus:ring-4 focus:ring-blue-100 hover:border-gray-300"
+                      className="w-full px-4 py-2 text-sm transition-all duration-200 border-2 border-gray-200 rounded-xl focus:border-blue-500 focus:ring-4 focus:ring-blue-100 hover:border-gray-300"
                     />
                     <p className="mt-2 text-xs text-gray-500">{field.description}</p>
                   </div>
@@ -327,7 +327,7 @@ export function SelfInputScope12Calculator({
                   className="space-y-3">
                   {/* 필드 라벨 */}
                   <div className="flex items-center space-x-2">
-                    <span className="flex justify-center items-center w-7 h-7 text-xs font-bold text-white bg-blue-500 rounded-full">
+                    <span className="flex items-center justify-center text-xs font-bold text-white bg-blue-500 rounded-full w-7 h-7">
                       {field.step}
                     </span>
                     <field.icon className="w-4 h-4 text-blue-500" />
@@ -341,7 +341,7 @@ export function SelfInputScope12Calculator({
                     type={field.type}
                     value={state[field.key] || ''}
                     onChange={handleChange(field.key)}
-                    className="px-4 py-3 text-sm rounded-xl border-2 border-gray-200 transition-all duration-200 focus:border-blue-500 focus:ring-4 focus:ring-blue-100 hover:border-gray-300"
+                    className="px-4 py-3 text-sm transition-all duration-200 border-2 border-gray-200 rounded-xl focus:border-blue-500 focus:ring-4 focus:ring-blue-100 hover:border-gray-300"
                     placeholder={field.placeholder}
                   />
 
@@ -376,7 +376,7 @@ export function SelfInputScope12Calculator({
                   className="space-y-3">
                   {/* 필드 라벨 */}
                   <div className="flex items-center space-x-2">
-                    <span className="flex justify-center items-center w-7 h-7 text-xs font-bold text-white bg-blue-500 rounded-full">
+                    <span className="flex items-center justify-center text-xs font-bold text-white bg-blue-500 rounded-full w-7 h-7">
                       {field.step}
                     </span>
                     <field.icon className="w-4 h-4 text-blue-500" />
@@ -395,7 +395,7 @@ export function SelfInputScope12Calculator({
                         ? handleNumberInput(field.key)
                         : handleChange(field.key)
                     }
-                    className="px-4 py-3 text-sm rounded-xl border-2 border-gray-200 transition-all duration-200 focus:border-blue-500 focus:ring-4 focus:ring-blue-100 hover:border-gray-300"
+                    className="px-4 py-3 text-sm transition-all duration-200 border-2 border-gray-200 rounded-xl focus:border-blue-500 focus:ring-4 focus:ring-blue-100 hover:border-gray-300"
                     placeholder={field.placeholder}
                   />
 
@@ -421,14 +421,14 @@ export function SelfInputScope12Calculator({
             animate={{opacity: 1, scale: 1}}
             transition={{delay: 1.0, duration: 0.5}}
             className="relative">
-            <div className="overflow-hidden relative p-6 bg-gradient-to-br from-blue-50 via-blue-100 to-blue-200 rounded-2xl border-2 border-blue-200 shadow-md">
+            <div className="relative p-6 overflow-hidden border-2 border-blue-200 shadow-md bg-gradient-to-br from-blue-50 via-blue-100 to-blue-200 rounded-2xl">
               {/* 배경 장식 */}
-              <div className="absolute top-2 right-2 w-16 h-16 bg-blue-300 rounded-full opacity-20 blur-xl" />
-              <div className="absolute bottom-2 left-2 w-12 h-12 bg-blue-400 rounded-lg transform rotate-12 opacity-15" />
+              <div className="absolute w-16 h-16 bg-blue-300 rounded-full top-2 right-2 opacity-20 blur-xl" />
+              <div className="absolute w-12 h-12 transform bg-blue-400 rounded-lg bottom-2 left-2 rotate-12 opacity-15" />
 
-              <div className="flex relative justify-between items-center">
+              <div className="relative flex items-center justify-between">
                 <div className="flex items-center space-x-3">
-                  <div className="flex justify-center items-center w-12 h-12 bg-blue-500 rounded-xl shadow-md">
+                  <div className="flex items-center justify-center w-12 h-12 bg-blue-500 shadow-md rounded-xl">
                     <TrendingUp className="w-6 h-6 text-white" />
                   </div>
                   <div>
@@ -452,7 +452,7 @@ export function SelfInputScope12Calculator({
 
               {/* 계산 공식 표시 */}
               {state.quantity && state.kgCO2eq && (
-                <div className="pt-4 mt-4 border-t border-green-200">
+                <div className="pt-4 mt-4 border-t border-blue-200">
                   <p className="text-sm text-gray-600">
                     <span className="font-medium">계산 공식:</span>{' '}
                     {parseFloat(state.quantity).toLocaleString()} ×{' '}

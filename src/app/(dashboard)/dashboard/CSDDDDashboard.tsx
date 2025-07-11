@@ -373,7 +373,7 @@ export default function CSDDDDashboard() {
   }
 
   return (
-    <div className="h-[calc(100vh-80px)] w-full p-4">
+    <div className="h-[calc(100vh-80px)] w-full py-4">
       {userInfo && (
         <div className="p-8 mb-6 border rounded-lg shadow bg-white/80 border-white/60">
           <div className="flex items-center justify-between mb-3">

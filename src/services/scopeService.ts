@@ -185,7 +185,7 @@ export const fetchEmissionsByYearAndMonth = async (
   scopeType?: ScopeType
 ): Promise<ScopeEmissionResponse[]> => {
   try {
-    showLoading('배출량 데이터를 조회중입니다...')
+    // showLoading('배출량 데이터를 조회중입니다...')
 
     const params = scopeType ? `?scopeType=${scopeType}` : ''
     const response = await api.get<ApiResponse<ScopeEmissionResponse[]>>(
@@ -223,7 +223,7 @@ export const fetchEmissionsByYearAndMonthForInput = async (
   scopeType?: ScopeType
 ): Promise<ScopeEmissionResponse[]> => {
   try {
-    showLoading('입력 데이터를 조회중입니다...')
+    // showLoading('입력 데이터를 조회중입니다...')
 
     const params = scopeType ? `?scopeType=${scopeType}` : ''
     const response = await api.get<ApiResponse<ScopeEmissionResponse[]>>(
@@ -323,7 +323,7 @@ export const fetchPartnerMonthlyEmissions = async (
   year: number
 ): Promise<MonthlyEmissionSummary[]> => {
   try {
-    showLoading('월별 배출량 데이터를 조회중입니다...')
+    // showLoading('월별 배출량 데이터를 조회중입니다...')
 
     const response = await api.get<ApiResponse<MonthlyEmissionSummary[]>>(
       `/api/v1/scope/aggregation/partner/${partnerId}/year/${year}/monthly-summary`

@@ -33,7 +33,7 @@ export default function Dashboard() {
   }, [])
 
   return (
-    <div className="relative flex flex-col flex-1">
+    <div className="relative flex flex-col w-full h-full">
       <DotIndicator
         total={2}
         currentIndex={currentIndex}
