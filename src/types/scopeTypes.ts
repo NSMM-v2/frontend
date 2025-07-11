@@ -202,7 +202,7 @@ export interface CategoryMonthlyEmission {
 
 /**
  * Scope 3 특수 집계 응답 (백엔드 Scope3SpecialAggregationResponse와 1:1 매핑)
- * Cat.1, 2, 4, 5에 대한 특수 집계 규칙 적용 결과
+ * Cat.1, 2, 4, 5에 대한 특수 집계 규칙 적용 결과 (계층적 롤업 포함)
  */
 export interface Scope3SpecialAggregationResponse {
   // 기본 정보
@@ -211,20 +211,20 @@ export interface Scope3SpecialAggregationResponse {
   userType: string // 사용자 타입 (HEADQUARTERS/PARTNER)
   organizationId: number // 조직 ID (본사 ID 또는 협력사 ID)
 
-  // Cat.1: 구매한 상품 및 서비스 (특수 집계)
-  category1TotalEmission: number // Cat.1 총 배출량
+  // Cat.1: 구매한 상품 및 서비스 (특수 집계 + 계층적 롤업)
+  category1TotalEmission: number // Cat.1 총 배출량 (본인 + 하위 조직)
   category1Detail: Category1Detail // Cat.1 상세 계산 내역
 
-  // Cat.2: 자본재 (특수 집계)
-  category2TotalEmission: number // Cat.2 총 배출량
+  // Cat.2: 자본재 (특수 집계 + 계층적 롤업)
+  category2TotalEmission: number // Cat.2 총 배출량 (본인 + 하위 조직)
   category2Detail: Category2Detail // Cat.2 상세 계산 내역
 
-  // Cat.4: 업스트림 운송 및 유통 (특수 집계)
-  category4TotalEmission: number // Cat.4 총 배출량
+  // Cat.4: 업스트림 운송 및 유통 (특수 집계 + 계층적 롤업)
+  category4TotalEmission: number // Cat.4 총 배출량 (본인 + 하위 조직)
   category4Detail: Category4Detail // Cat.4 상세 계산 내역
 
-  // Cat.5: 폐기물 처리 (특수 집계)
-  category5TotalEmission: number // Cat.5 총 배출량
+  // Cat.5: 폐기물 처리 (특수 집계 + 계층적 롤업)
+  category5TotalEmission: number // Cat.5 총 배출량 (본인 + 하위 조직)
   category5Detail: Category5Detail // Cat.5 상세 계산 내역
 }
 

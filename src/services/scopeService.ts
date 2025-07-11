@@ -364,15 +364,36 @@ export const fetchScope3SpecialAggregation = async (
 
       // 집계 결과 로그 출력 (개발 환경에서만)
       if (process.env.NODE_ENV === 'development') {
-        console.log('[Scope3 특수 집계] 조회 완료:', {
+        console.log('[Scope3 특수 집계] 계층적 롤업 결과 조회 완료:', {
           연도: result.reportingYear,
           월: result.reportingMonth,
-          'Cat.1 총 배출량': result.category1TotalEmission,
-          'Cat.2 총 배출량': result.category2TotalEmission,
-          'Cat.4 총 배출량': result.category4TotalEmission,
-          'Cat.5 총 배출량': result.category5TotalEmission
+          사용자타입: result.userType,
+          조직ID: result.organizationId,
+          'Cat.1 총 배출량 (롤업 포함)': result.category1TotalEmission,
+          'Cat.2 총 배출량 (롤업 포함)': result.category2TotalEmission,
+          'Cat.4 총 배출량 (롤업 포함)': result.category4TotalEmission,
+          'Cat.5 총 배출량 (롤업 포함)': result.category5TotalEmission
+        })
+
+        // Cat.1 상세 분석 로그
+        const cat1 = result.category1Detail
+        console.log('[Cat.1 상세 분석]:', {
+          'Scope1 전체': cat1.scope1Total,
+          'Scope1 이동연소 (제외)': cat1.scope1MobileCombustion,
+          'Scope1 공장설비 (제외)': cat1.scope1Factory,
+          'Scope1 폐수처리 (제외)': cat1.scope1WasteWater,
+          'Scope1 잔여 (포함)': cat1.scope1Remaining,
+          'Scope2 전체': cat1.scope2Total,
+          'Scope2 공장설비 (제외)': cat1.scope2Factory,
+          'Scope2 잔여 (포함)': cat1.scope2Remaining,
+          'Scope3 Cat.1 (하위 조직 포함)': cat1.scope3Category1,
+          '최종 Cat.1 총계': cat1.finalTotal
         })
       }
+
+      showSuccess(
+        `${year}년 ${month}월 Scope 3 특수 집계 결과가 조회되었습니다. (계층적 롤업 포함)`
+      )
 
       showSuccess(`${year}년 ${month}월 Scope 3 특수 집계 결과가 조회되었습니다.`)
       return result
