@@ -20,7 +20,7 @@ export default function DotIndicator({
           key={i}
           onClick={() => onDotClick?.(i)}
           className={cn(
-            'rounded-full border-2 transition-colors duration-300',
+            'rounded-full border-2 transition-colors duration-300 hover:cursor-pointer',
             currentIndex === i
               ? 'w-4 h-6 bg-blue-500 border-blue-500'
               : 'w-4 h-4 bg-white border-gray-400'
