@@ -738,12 +738,23 @@ export default function Scope3Form() {
                   <div>
                     <p className="text-sm font-medium text-gray-500">연 배출량</p>
                     <h3 className="text-2xl font-bold text-gray-900">
-                      {Object.values(categorySummary)
-                        .reduce((sum, emission) => sum + emission, 0)
-                        .toLocaleString(undefined, {
-                          maximumFractionDigits: 2,
-                          minimumFractionDigits: 2
-                        })}
+                      {aggregationData
+                        ? (
+                            aggregationData.scope3Category1Aggregated +
+                            aggregationData.scope3Category2Aggregated +
+                            aggregationData.scope3Category4Aggregated +
+                            aggregationData.scope3Category5Aggregated +
+                            // 나머지 카테고리는 본인 입력값 사용
+                            Object.entries(categorySummary)
+                              .filter(
+                                ([catNum]) => ![1, 2, 4, 5].includes(Number(catNum))
+                              )
+                              .reduce((sum, [, emission]) => sum + emission, 0)
+                          ).toLocaleString(undefined, {
+                            maximumFractionDigits: 2,
+                            minimumFractionDigits: 2
+                          })
+                        : '0.00'}
                       <span className="ml-1 text-sm font-normal text-gray-500">
                         kgCO₂eq
                       </span>
@@ -777,23 +788,12 @@ export default function Scope3Form() {
                   <div>
                     <p className="text-sm font-medium text-gray-500">월 배출량</p>
                     <h3 className="text-2xl font-bold text-gray-900">
-                      {aggregationData
-                        ? (
-                            aggregationData.scope3Category1Aggregated +
-                            aggregationData.scope3Category2Aggregated +
-                            aggregationData.scope3Category4Aggregated +
-                            aggregationData.scope3Category5Aggregated +
-                            // 나머지 카테고리는 본인 입력값 사용
-                            Object.entries(categorySummary)
-                              .filter(
-                                ([catNum]) => ![1, 2, 4, 5].includes(Number(catNum))
-                              )
-                              .reduce((sum, [, emission]) => sum + emission, 0)
-                          ).toLocaleString(undefined, {
-                            maximumFractionDigits: 2,
-                            minimumFractionDigits: 2
-                          })
-                        : '0.00'}
+                      {Object.values(categorySummary)
+                        .reduce((sum, emission) => sum + emission, 0)
+                        .toLocaleString(undefined, {
+                          maximumFractionDigits: 2,
+                          minimumFractionDigits: 2
+                        })}
                       <span className="ml-1 text-sm font-normal text-gray-500">
                         kgCO₂eq
                       </span>
