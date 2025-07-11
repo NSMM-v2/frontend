@@ -646,7 +646,6 @@ export default function CSAssessmentPage() {
         exit={{opacity: 0, x: -40}}
         transition={{duration: 0.5}}
         className="mb-2">
-        {/* 모두 예 선택 버튼 추가 */}
         <div className="flex justify-end mb-2">
           <button
             onClick={() => {
