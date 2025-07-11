@@ -32,15 +32,13 @@ import {scope3CategoryList} from '@/components/scopeTotal/Scope123CategorySelect
 import {
   SelectorState,
   ScopeEmissionResponse,
-  ScopeCategorySummary,
-  ScopeAggregationResponse
+  ScopeCategorySummary
 } from '@/types/scopeTypes'
 import {
-  fetchEmissionsByYearAndMonth,
+  fetchEmissionsByYearAndMonthForInput,
   fetchCategorySummaryByScope,
   deleteScopeEmission
 } from '@/services/scopeService'
-import {fetchComprehensiveAggregation} from '@/services/aggregationService'
 import {DirectionButton} from '@/components/layout/direction'
 
 // ============================================================================
@@ -151,11 +149,6 @@ export default function Scope3Form() {
 
   // 카테고리별 요약 데이터 (CategorySummaryCard용)
   const [categorySummary, setCategorySummary] = useState<ScopeCategorySummary>({})
-
-  // 종합 집계 데이터 (계층적 집계 표시용)
-  const [aggregationData, setAggregationData] = useState<ScopeAggregationResponse | null>(
-    null
-  )
 
   // 로딩 상태 관리
   const [, setIsLoading] = useState<boolean>(false)
@@ -444,23 +437,23 @@ export default function Scope3Form() {
   }
 
   // 전체 총 배출량 계산
-  // const grandTotal = Object.keys({
-  //   list1: '',
-  //   list2: '',
-  //   list3: '',
-  //   list4: '',
-  //   list5: '',
-  //   list6: '',
-  //   list7: '',
-  //   list8: '',
-  //   list9: '',
-  //   list10: '',
-  //   list11: '',
-  //   list12: '',
-  //   list13: '',
-  //   list14: '',
-  //   list15: ''
-  // }).reduce((sum, key) => sum + getTotalEmission(key as Scope3CategoryKey), 0)
+  const grandTotal = Object.keys({
+    list1: '',
+    list2: '',
+    list3: '',
+    list4: '',
+    list5: '',
+    list6: '',
+    list7: '',
+    list8: '',
+    list9: '',
+    list10: '',
+    list11: '',
+    list12: '',
+    list13: '',
+    list14: '',
+    list15: ''
+  }).reduce((sum, key) => sum + getTotalEmission(key as Scope3CategoryKey), 0)
 
   // ========================================================================
   // 백엔드 데이터 로드 함수 (Backend Data Loading Functions)
@@ -475,15 +468,15 @@ export default function Scope3Form() {
 
     setIsLoading(true)
     try {
-      // 1. 전체 배출량 데이터 조회 (Scope 3만 필터링)
-      const emissionsData = await fetchEmissionsByYearAndMonth(
+      // 1. 전체 배출량 데이터 조회 (Scope 3만 필터링, 본인 데이터만)
+      const emissionsData = await fetchEmissionsByYearAndMonthForInput(
         selectedYear,
         selectedMonth,
         'SCOPE3'
       )
       setScope3Data(emissionsData)
 
-      // 2. 카테고리별 요약 데이터 조회
+      // 2. 카테고리별 요약 데이터 조회 (본인 데이터만)
       const summaryData = await fetchCategorySummaryByScope(
         'SCOPE3',
         selectedYear,
@@ -491,14 +484,7 @@ export default function Scope3Form() {
       )
       setCategorySummary(summaryData)
 
-      // 3. 종합 집계 데이터 조회 (계층적 집계 표시용)
-      const aggregationData = await fetchComprehensiveAggregation(
-        selectedYear,
-        selectedMonth
-      )
-      setAggregationData(aggregationData)
-
-      // 4. 기존 데이터를 카테고리별 계산기로 변환
+      // 5. 기존 데이터를 카테고리별 계산기로 변환
       convertBackendDataToCalculators(emissionsData)
     } catch (error) {
     } finally {
@@ -738,23 +724,19 @@ export default function Scope3Form() {
                   <div>
                     <p className="text-sm font-medium text-gray-500">연 배출량</p>
                     <h3 className="text-2xl font-bold text-gray-900">
-                      {aggregationData
-                        ? (
-                            aggregationData.scope3Category1Aggregated +
-                            aggregationData.scope3Category2Aggregated +
-                            aggregationData.scope3Category4Aggregated +
-                            aggregationData.scope3Category5Aggregated +
-                            // 나머지 카테고리는 본인 입력값 사용
-                            Object.entries(categorySummary)
-                              .filter(
-                                ([catNum]) => ![1, 2, 4, 5].includes(Number(catNum))
-                              )
-                              .reduce((sum, [, emission]) => sum + emission, 0)
-                          ).toLocaleString(undefined, {
+
+                      {Object.values(categorySummary).length > 0
+                        ? Object.values(categorySummary)
+                            .reduce((sum, emission) => sum + emission, 0)
+                            .toLocaleString(undefined, {
+                              maximumFractionDigits: 2,
+                              minimumFractionDigits: 2
+                            })
+                        : grandTotal.toLocaleString(undefined, {
                             maximumFractionDigits: 2,
                             minimumFractionDigits: 2
-                          })
-                        : '0.00'}
+                          })}
+
                       <span className="ml-1 text-sm font-normal text-gray-500">
                         kgCO₂eq
                       </span>
@@ -788,12 +770,19 @@ export default function Scope3Form() {
                   <div>
                     <p className="text-sm font-medium text-gray-500">월 배출량</p>
                     <h3 className="text-2xl font-bold text-gray-900">
-                      {Object.values(categorySummary)
-                        .reduce((sum, emission) => sum + emission, 0)
-                        .toLocaleString(undefined, {
-                          maximumFractionDigits: 2,
-                          minimumFractionDigits: 2
-                        })}
+
+                      {Object.values(categorySummary).length > 0
+                        ? Object.values(categorySummary)
+                            .reduce((sum, emission) => sum + emission, 0)
+                            .toLocaleString(undefined, {
+                              maximumFractionDigits: 2,
+                              minimumFractionDigits: 2
+                            })
+                        : grandTotal.toLocaleString(undefined, {
+                            maximumFractionDigits: 2,
+                            minimumFractionDigits: 2
+                          })}
+
                       <span className="ml-1 text-sm font-normal text-gray-500">
                         kgCO₂eq
                       </span>
@@ -818,7 +807,9 @@ export default function Scope3Form() {
           {/* 카테고리 선택 그리드 */}
           <CategorySelector
             categoryList={scope3CategoryList}
-            getTotalEmission={getTotalEmission}
+            getTotalEmission={(categoryKey: string) => {
+              return getTotalEmission(categoryKey as Scope3CategoryKey)
+            }}
             onCategorySelect={handleCategorySelect}
             animationDelay={0.2}
           />
@@ -841,7 +832,6 @@ export default function Scope3Form() {
             selectedYear={selectedYear} // 백엔드 저장용 연도
             selectedMonth={selectedMonth} // 백엔드 저장용 월
             onDataChange={refreshData} // CRUD 작업 후 데이터 새로고침 콜백
-            aggregationData={aggregationData} // 집계 데이터 전달
           />
         )
       )}
