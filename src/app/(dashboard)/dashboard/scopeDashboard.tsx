@@ -193,7 +193,9 @@ export default function ScopeDashboard() {
       setMonthlyData(data)
     } catch (error) {
       console.error('월별 배출량 데이터 로드 실패:', error)
-      setChartError(error instanceof Error ? error.message : '데이터 로드 중 오류가 발생했습니다')
+      setChartError(
+        error instanceof Error ? error.message : '데이터 로드 중 오류가 발생했습니다'
+      )
       setMonthlyData([])
     } finally {
       setChartLoading(false)
@@ -477,7 +479,9 @@ export default function ScopeDashboard() {
                 <div>
                   <CardTitle className="text-lg font-bold">총 탄소 배출량</CardTitle>
                   <CardDescription>
-                    {selectedPartner ? selectedPartner.companyName : '협력사를 선택해주세요'}
+                    {selectedPartner
+                      ? selectedPartner.companyName
+                      : '협력사를 선택해주세요'}
                   </CardDescription>
                 </div>
                 {/* 년도 선택 드롭다운 */}
@@ -485,9 +489,8 @@ export default function ScopeDashboard() {
                   <label className="text-sm font-medium text-gray-700">년도:</label>
                   <select
                     value={selectedYear}
-                    onChange={(e) => handleYearSelect(Number(e.target.value))}
-                    className="px-3 py-1 text-sm border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-                  >
+                    onChange={e => handleYearSelect(Number(e.target.value))}
+                    className="px-3 py-1 text-sm border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
                     {generateYearOptions().map(year => (
                       <option key={year} value={year}>
                         {year}년
@@ -511,9 +514,13 @@ export default function ScopeDashboard() {
                     <div className="text-center text-red-500">
                       <div className="mb-2 text-lg">❌</div>
                       <div>데이터 로드 실패</div>
-                      <div className="text-sm mt-1">{chartError}</div>
+                      <div className="mt-1 text-sm">{chartError}</div>
                       <button
-                        onClick={() => selectedPartner && selectedPartner.partnerId !== undefined && loadPartnerMonthlyData(selectedPartner.partnerId, selectedYear)}
+                        onClick={() =>
+                          selectedPartner &&
+                          selectedPartner.partnerId !== undefined &&
+                          loadPartnerMonthlyData(selectedPartner.partnerId, selectedYear)
+                        }
                         className="px-3 py-1 mt-2 text-xs text-red-700 bg-red-100 rounded hover:bg-red-200">
                         다시 시도
                       </button>
@@ -571,9 +578,13 @@ export default function ScopeDashboard() {
                   <div className="text-center text-red-500">
                     <div className="mb-2 text-lg">❌</div>
                     <div>데이터 로드 실패</div>
-                    <div className="text-sm mt-1">{chartError}</div>
+                    <div className="mt-1 text-sm">{chartError}</div>
                     <button
-                      onClick={() => selectedPartner && selectedPartner.partnerId !== undefined && loadPartnerMonthlyData(selectedPartner.partnerId, selectedYear)}
+                      onClick={() =>
+                        selectedPartner &&
+                        selectedPartner.partnerId !== undefined &&
+                        loadPartnerMonthlyData(selectedPartner.partnerId, selectedYear)
+                      }
                       className="px-3 py-1 mt-2 text-xs text-red-700 bg-red-100 rounded hover:bg-red-200">
                       다시 시도
                     </button>
@@ -588,14 +599,16 @@ export default function ScopeDashboard() {
                         <th className="px-4 py-2 text-center border">Scope 1 (tCO₂eq)</th>
                         <th className="px-4 py-2 text-center border">Scope 2 (tCO₂eq)</th>
                         <th className="px-4 py-2 text-center border">Scope 3 (tCO₂eq)</th>
-                        <th className="px-4 py-2 text-center border">총 배출량 (tCO₂eq)</th>
+                        <th className="px-4 py-2 text-center border">
+                          총 배출량 (tCO₂eq)
+                        </th>
                         <th className="px-4 py-2 text-center border">데이터 건수</th>
                       </tr>
                     </thead>
                     <tbody>
-                      {monthlyData.map((item) => (
+                      {monthlyData.map(item => (
                         <tr key={item.month} className="hover:bg-gray-50">
-                          <td className="px-4 py-2 text-center border font-medium">
+                          <td className="px-4 py-2 font-medium text-center border">
                             {selectedYear}년 {item.month}월
                           </td>
                           <td className="px-4 py-2 text-right border">
@@ -607,10 +620,10 @@ export default function ScopeDashboard() {
                           <td className="px-4 py-2 text-right border">
                             {item.scope3Total.toLocaleString()}
                           </td>
-                          <td className="px-4 py-2 text-right border font-medium">
+                          <td className="px-4 py-2 font-medium text-right border">
                             {item.totalEmission.toLocaleString()}
                           </td>
-                          <td className="px-4 py-2 text-center border text-gray-600">
+                          <td className="px-4 py-2 text-center text-gray-600 border">
                             {item.dataCount}건
                           </td>
                         </tr>
@@ -620,16 +633,24 @@ export default function ScopeDashboard() {
                       <tr className="font-bold">
                         <td className="px-4 py-2 text-center border">합계</td>
                         <td className="px-4 py-2 text-right border">
-                          {monthlyData.reduce((sum, item) => sum + item.scope1Total, 0).toLocaleString()}
+                          {monthlyData
+                            .reduce((sum, item) => sum + item.scope1Total, 0)
+                            .toLocaleString()}
                         </td>
                         <td className="px-4 py-2 text-right border">
-                          {monthlyData.reduce((sum, item) => sum + item.scope2Total, 0).toLocaleString()}
+                          {monthlyData
+                            .reduce((sum, item) => sum + item.scope2Total, 0)
+                            .toLocaleString()}
                         </td>
                         <td className="px-4 py-2 text-right border">
-                          {monthlyData.reduce((sum, item) => sum + item.scope3Total, 0).toLocaleString()}
+                          {monthlyData
+                            .reduce((sum, item) => sum + item.scope3Total, 0)
+                            .toLocaleString()}
                         </td>
                         <td className="px-4 py-2 text-right border">
-                          {monthlyData.reduce((sum, item) => sum + item.totalEmission, 0).toLocaleString()}
+                          {monthlyData
+                            .reduce((sum, item) => sum + item.totalEmission, 0)
+                            .toLocaleString()}
                         </td>
                         <td className="px-4 py-2 text-center border">
                           {monthlyData.reduce((sum, item) => sum + item.dataCount, 0)}건

@@ -24,7 +24,6 @@ import {
 import {
   AlertTriangle,
   CheckCircle,
-  TrendingUp,
   Shield,
   BarChart3,
   ExternalLink,
@@ -33,7 +32,8 @@ import {
   Leaf,
   Package,
   ShieldCheck,
-  ChevronRight
+  ChevronRight,
+  AlertCircle
 } from 'lucide-react'
 
 interface PartnerInfo {
@@ -375,10 +375,10 @@ export default function CSDDDDashboard() {
   return (
     <div className="h-[calc(100vh-80px)] w-full p-4">
       {userInfo && (
-        <div className="p-4 mb-6 border rounded-lg shadow bg-white/80 border-white/60">
+        <div className="p-8 mb-6 border rounded-lg shadow bg-white/80 border-white/60">
           <div className="flex items-center justify-between mb-3">
             <h2 className="text-lg font-semibold text-gray-800">
-              자사 최신 자가진단 결과 요약
+              {userInfo?.companyName} 최신 자가진단 결과 요약
             </h2>
             {myResults.length > 0 && myResults[0].completedAt && (
               <div className="text-sm text-gray-500">
@@ -577,7 +577,7 @@ export default function CSDDDDashboard() {
                     </div>
                   </div>
                   <div className="flex flex-row items-center gap-2 p-3 border rounded-lg bg-gradient-to-br from-blue-50 to-white">
-                    <TrendingUp className="w-5 h-5 text-yellow-600" />
+                    <AlertCircle className="w-5 h-5 text-yellow-600" />
                     <div>
                       <div className="text-xs text-gray-500">총 위반</div>
                       <div className="font-semibold text-gray-900">
@@ -601,9 +601,9 @@ export default function CSDDDDashboard() {
                     <h3 className="font-medium text-gray-900">위반 항목 상세</h3>
                   </div>
 
-                  <div className="p-6">
+                  <div className="p-1.5">
                     {/* 카테고리 그리드 */}
-                    <div className="grid grid-cols-3 gap-4 mb-6">
+                    <div className="grid grid-cols-3 gap-2 mb-2">
                       {getCategoryInfo()
                         .slice(0, 3)
                         .map(category => {
@@ -615,7 +615,7 @@ export default function CSDDDDashboard() {
                               key={category.id}
                               onClick={() => handleCategoryClick(category.id)}
                               className={`
-                              relative p-4 rounded-lg border-2 cursor-pointer transition-all duration-200 hover:shadow-md
+                              relative p-4 min-h-[120px] rounded-lg border-2 cursor-pointer transition-all duration-200 hover:shadow-md
                               ${
                                 hasViolations
                                   ? 'border-red-300 bg-red-50 hover:bg-red-100'
@@ -623,24 +623,26 @@ export default function CSDDDDashboard() {
                               }
                             `}>
                               <div className="flex items-center justify-between mb-2">
-                                <IconComponent
-                                  className={`w-6 h-6 ${
-                                    hasViolations ? 'text-red-600' : 'text-green-600'
-                                  }`}
-                                />
+                                <div className="flex items-center gap-2">
+                                  <IconComponent
+                                    className={`w-5 h-5 ${
+                                      hasViolations ? 'text-red-600' : 'text-green-600'
+                                    }`}
+                                  />
+                                  <h4
+                                    className={`font-medium text-sm ${
+                                      hasViolations ? 'text-red-800' : 'text-green-800'
+                                    }`}>
+                                    {category.name}
+                                  </h4>
+                                </div>
                                 <ChevronRight
                                   className={`w-4 h-4 ${
                                     hasViolations ? 'text-red-400' : 'text-green-400'
                                   }`}
                                 />
                               </div>
-                              <h4
-                                className={`font-medium text-sm mb-1 ${
-                                  hasViolations ? 'text-red-800' : 'text-green-800'
-                                }`}>
-                                {category.name}
-                              </h4>
-                              <div className="flex items-center justify-between">
+                              <div className="absolute flex items-center gap-2 bottom-3 left-4">
                                 <span
                                   className={`text-xs ${
                                     hasViolations ? 'text-red-600' : 'text-green-600'
@@ -649,20 +651,13 @@ export default function CSDDDDashboard() {
                                     ? `${category.violations.length}건 위반`
                                     : '준수'}
                                 </span>
-                                {hasViolations && (
-                                  <Badge
-                                    variant="destructive"
-                                    className="text-xs px-2 py-0.5">
-                                    {category.violations.length}
-                                  </Badge>
-                                )}
                               </div>
                             </div>
                           )
                         })}
                     </div>
 
-                    <div className="grid grid-cols-3 gap-4">
+                    <div className="grid grid-cols-3 gap-2">
                       {getCategoryInfo()
                         .slice(3, 5)
                         .map(category => {
@@ -674,7 +669,7 @@ export default function CSDDDDashboard() {
                               key={category.id}
                               onClick={() => handleCategoryClick(category.id)}
                               className={`
-                              relative p-4 rounded-lg border-2 cursor-pointer transition-all duration-200 hover:shadow-md
+                              relative p-4 min-h-[120px] rounded-lg border-2 cursor-pointer transition-all duration-200 hover:shadow-md
                               ${
                                 hasViolations
                                   ? 'border-red-300 bg-red-50 hover:bg-red-100'
@@ -682,24 +677,26 @@ export default function CSDDDDashboard() {
                               }
                             `}>
                               <div className="flex items-center justify-between mb-2">
-                                <IconComponent
-                                  className={`w-6 h-6 ${
-                                    hasViolations ? 'text-red-600' : 'text-green-600'
-                                  }`}
-                                />
+                                <div className="flex items-center gap-2">
+                                  <IconComponent
+                                    className={`w-5 h-5 ${
+                                      hasViolations ? 'text-red-600' : 'text-green-600'
+                                    }`}
+                                  />
+                                  <h4
+                                    className={`font-medium text-sm ${
+                                      hasViolations ? 'text-red-800' : 'text-green-800'
+                                    }`}>
+                                    {category.name}
+                                  </h4>
+                                </div>
                                 <ChevronRight
                                   className={`w-4 h-4 ${
                                     hasViolations ? 'text-red-400' : 'text-green-400'
                                   }`}
                                 />
                               </div>
-                              <h4
-                                className={`font-medium text-sm mb-1 ${
-                                  hasViolations ? 'text-red-800' : 'text-green-800'
-                                }`}>
-                                {category.name}
-                              </h4>
-                              <div className="flex items-center justify-between">
+                              <div className="absolute flex items-center gap-2 bottom-3 left-4">
                                 <span
                                   className={`text-xs ${
                                     hasViolations ? 'text-red-600' : 'text-green-600'
@@ -708,13 +705,6 @@ export default function CSDDDDashboard() {
                                     ? `${category.violations.length}건 위반`
                                     : '준수'}
                                 </span>
-                                {hasViolations && (
-                                  <Badge
-                                    variant="destructive"
-                                    className="text-xs px-2 py-0.5">
-                                    {category.violations.length}
-                                  </Badge>
-                                )}
                               </div>
                             </div>
                           )
