@@ -1,11 +1,5 @@
 import api from '@/lib/axios'
-import {
-  showError,
-  showSuccess,
-  showLoading,
-  showWarning,
-  dismissLoading
-} from '@/util/toast'
+import {showError, showSuccess, showWarning, dismissLoading} from '@/util/toast'
 import {
   ScopeEmissionRequest,
   ScopeEmissionResponse,
@@ -23,8 +17,6 @@ export const createScopeEmission = async (
   data: ScopeEmissionRequest
 ): Promise<ScopeEmissionResponse> => {
   try {
-    showLoading(`${data.scopeType} 배출량 데이터를 저장중입니다...`)
-
     const response = await api.post<ApiResponse<ScopeEmissionResponse>>(
       '/api/v1/scope/emissions',
       data
@@ -257,8 +249,6 @@ export const fetchCategoryYearlyEmissions = async (
   year: number
 ): Promise<CategoryYearlyEmission[]> => {
   try {
-    showLoading('카테고리별 연간 배출량을 조회중입니다...')
-
     const response = await api.get<ApiResponse<CategoryYearlyEmission[]>>(
       `/api/v1/scope/aggregation/category/${scopeType}/year/${year}`
     )
@@ -295,8 +285,6 @@ export const fetchCategoryMonthlyEmissions = async (
   year: number
 ): Promise<CategoryMonthlyEmission[]> => {
   try {
-    showLoading('카테고리별 월간 배출량을 조회중입니다...')
-
     const response = await api.get<ApiResponse<CategoryMonthlyEmission[]>>(
       `/api/v1/scope/aggregation/category/${scopeType}/year/${year}/monthly`
     )
@@ -344,8 +332,6 @@ export const fetchScope3SpecialAggregation = async (
   month: number
 ): Promise<Scope3SpecialAggregationResponse | null> => {
   try {
-    showLoading('Scope 3 특수 집계 결과를 조회중입니다...')
-
     // 월 값 유효성 검증 (클라이언트 측)
     if (month < 1 || month > 12) {
       dismissLoading()
@@ -390,10 +376,6 @@ export const fetchScope3SpecialAggregation = async (
           '최종 Cat.1 총계': cat1.finalTotal
         })
       }
-
-      showSuccess(
-        `${year}년 ${month}월 Scope 3 특수 집계 결과가 조회되었습니다. (계층적 롤업 포함)`
-      )
 
       showSuccess(`${year}년 ${month}월 Scope 3 특수 집계 결과가 조회되었습니다.`)
       return result
