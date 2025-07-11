@@ -344,14 +344,14 @@ export default function ScopeDashboard() {
   // ========================================================================
 
   return (
-    <div className="h-[calc(100vh-80px)] w-full py-4">
+    <div className="w-full h-screen py-4 pt-20">
       <div className="flex flex-col w-full h-full gap-4">
         {/* 윗쪽 셀 2개------------------------------------------------------------------------------ */}
         <div className="flex flex-row h-[50%] w-full gap-4">
           {/* ======================================================================
               협력사 리스트 섹션 (Partner List Section)
               ====================================================================== */}
-          <Card className="w-[30%] h-full bg-white rounded-lg p-4 flex flex-col">
+          <Card className="w-[30%] flex-1 bg-white rounded-lg p-4 flex flex-col">
             <Tabs defaultValue="company" className="w-full">
               <div className="flex flex-row items-center justify-between gap-2">
                 <TabsList>
@@ -370,103 +370,104 @@ export default function ScopeDashboard() {
                   className="w-full h-8 p-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500"
                 />
               </div>
-
-              <TabsContent value="company">
-                <div className="flex flex-col flex-1 gap-2 p-2 border rounded-lg max-h-[55%] overflow-hidden scroll-auto custom-scrollbar">
-                  {loading && (
-                    <div className="flex items-center justify-center h-full">
-                      <div className="text-sm text-gray-500">
-                        협력사 목록을 불러오는 중...
+              <CardContent className="flex w-full max-h-[280px] p-0 overflow-hidden overflow-y-auto border rounded-lg custom-scrollbar">
+                <TabsContent value="company">
+                  <div className="flex flex-col h-full gap-2 p-2">
+                    {loading && (
+                      <div className="flex items-center justify-center h-full">
+                        <div className="text-sm text-gray-500">
+                          협력사 목록을 불러오는 중...
+                        </div>
                       </div>
-                    </div>
-                  )}
+                    )}
 
-                  {/* 에러 상태 */}
-                  {error && (
-                    <div className="flex items-center justify-center h-full">
-                      <div className="text-sm text-center text-red-500">
-                        <div>오류가 발생했습니다</div>
-                        <div className="mt-1 text-xs">{error}</div>
-                        <button
-                          onClick={loadPartnerData}
-                          className="px-3 py-1 mt-2 text-xs text-red-700 bg-red-100 rounded hover:bg-red-200">
-                          다시 시도
-                        </button>
+                    {/* 에러 상태 */}
+                    {error && (
+                      <div className="flex items-center justify-center h-full">
+                        <div className="text-sm text-center text-red-500">
+                          <div>오류가 발생했습니다</div>
+                          <div className="mt-1 text-xs">{error}</div>
+                          <button
+                            onClick={loadPartnerData}
+                            className="px-3 py-1 mt-2 text-xs text-red-700 bg-red-100 rounded hover:bg-red-200">
+                            다시 시도
+                          </button>
+                        </div>
                       </div>
-                    </div>
-                  )}
+                    )}
 
-                  {/* 협력사 목록 */}
-                  {!loading && !error && partners.length === 0 && (
-                    <div className="flex items-center justify-center h-full">
-                      <div className="text-sm text-center text-gray-500">
-                        <div>등록된 협력사가 없습니다</div>
-                        {userInfo?.userType === 'HEADQUARTERS' && (
-                          <div className="mt-1 text-xs">협력사를 먼저 등록해주세요</div>
-                        )}
-                      </div>
-                    </div>
-                  )}
-
-                  {!loading &&
-                    !error &&
-                    filteredPartners.map(partner => (
-                      <div
-                        key={partner.partnerId}
-                        onClick={() => handlePartnerSelect(partner)}
-                        className={`rounded-lg border shadow-sm min-h-16 p-3 cursor-pointer transition-all duration-200 hover:shadow-md ${
-                          selectedPartner?.partnerId === partner.partnerId
-                            ? 'border-blue-500 bg-blue-50'
-                            : 'border-gray-200 bg-white hover:bg-gray-50'
-                        }`}>
-                        <div className="flex flex-col gap-1">
-                          {/* 회사명 */}
-                          <div className="text-sm font-medium text-gray-900 truncate">
-                            {partner.companyName}
-                          </div>
-
-                          {/* 계층적 ID와 레벨 */}
-                          <div className="flex items-center gap-2">
-                            <span className="font-mono text-xs text-gray-500">
-                              {partner.hierarchicalId}
-                            </span>
-                            <span
-                              className={`text-xs px-2 py-0.5 rounded-full border ${getLevelStyle(
-                                partner.level
-                              )}`}>
-                              {getLevelText(partner.level)}
-                            </span>
-                          </div>
-
-                          {/* 상위 협력사 정보 (2차, 3차인 경우) */}
-                          {partner.parentPartnerName && (
-                            <div className="text-xs text-gray-400">
-                              상위: {partner.parentPartnerName}
-                            </div>
+                    {/* 협력사 목록 */}
+                    {!loading && !error && partners.length === 0 && (
+                      <div className="flex items-center justify-center h-full">
+                        <div className="text-sm text-center text-gray-500">
+                          <div>등록된 협력사가 없습니다</div>
+                          {userInfo?.userType === 'HEADQUARTERS' && (
+                            <div className="mt-1 text-xs">협력사를 먼저 등록해주세요</div>
                           )}
                         </div>
                       </div>
+                    )}
+
+                    {!loading &&
+                      !error &&
+                      filteredPartners.map(partner => (
+                        <div
+                          key={partner.partnerId}
+                          onClick={() => handlePartnerSelect(partner)}
+                          className={`rounded-lg border shadow-sm min-h-16 p-3 cursor-pointer transition-all duration-200 hover:shadow-md ${
+                            selectedPartner?.partnerId === partner.partnerId
+                              ? 'border-blue-500 bg-blue-50'
+                              : 'border-gray-200 bg-white hover:bg-gray-50'
+                          }`}>
+                          <div className="flex flex-col gap-1">
+                            {/* 회사명 */}
+                            <div className="text-sm font-medium text-gray-900 truncate">
+                              {partner.companyName}
+                            </div>
+
+                            {/* 계층적 ID와 레벨 */}
+                            <div className="flex items-center gap-2">
+                              <span className="font-mono text-xs text-gray-500">
+                                {partner.hierarchicalId}
+                              </span>
+                              <span
+                                className={`text-xs px-2 py-0.5 rounded-full border ${getLevelStyle(
+                                  partner.level
+                                )}`}>
+                                {getLevelText(partner.level)}
+                              </span>
+                            </div>
+
+                            {/* 상위 협력사 정보 (2차, 3차인 경우) */}
+                            {partner.parentPartnerName && (
+                              <div className="text-xs text-gray-400">
+                                상위: {partner.parentPartnerName}
+                              </div>
+                            )}
+                          </div>
+                        </div>
+                      ))}
+                  </div>
+                </TabsContent>
+                {/* 제품 탭 -------------------------------------------------- */}
+                <TabsContent value="product">
+                  <div className="flex flex-col flex-1 gap-2 p-2 overflow-y-auto border rounded-lg scroll-auto custom-scrollbar">
+                    {filteredProducts.map(product => (
+                      <div
+                        key={product.productCode}
+                        onClick={() => handleProductSelect(product)}
+                        className={`rounded-lg border shadow-sm min-h-16 p-3 cursor-pointer transition-all duration-200 hover:shadow-md ${
+                          selectedProduct?.productCode === product.productCode
+                            ? 'border-blue-500 bg-blue-50'
+                            : 'border-gray-200 bg-white hover:bg-gray-50'
+                        }}`}>
+                        <div className="font-medium">{product.productName}</div>
+                        <div className="text-sm text-gray-500">{product.productCode}</div>
+                      </div>
                     ))}
-                </div>
-              </TabsContent>
-              {/* 제품 탭 -------------------------------------------------- */}
-              <TabsContent value="product">
-                <div className="flex flex-col flex-1 gap-2 p-2 overflow-y-auto border rounded-lg scroll-auto custom-scrollbar">
-                  {filteredProducts.map(product => (
-                    <div
-                      key={product.productCode}
-                      onClick={() => handleProductSelect(product)}
-                      className={`rounded-lg border shadow-sm min-h-16 p-3 cursor-pointer transition-all duration-200 hover:shadow-md ${
-                        selectedProduct?.productCode === product.productCode
-                          ? 'border-blue-500 bg-blue-50'
-                          : 'border-gray-200 bg-white hover:bg-gray-50'
-                      }}`}>
-                      <div className="font-medium">{product.productName}</div>
-                      <div className="text-sm text-gray-500">{product.productCode}</div>
-                    </div>
-                  ))}
-                </div>
-              </TabsContent>
+                  </div>
+                </TabsContent>
+              </CardContent>
             </Tabs>
           </Card>
 
