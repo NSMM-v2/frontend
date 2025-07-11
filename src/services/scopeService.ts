@@ -53,7 +53,6 @@ export const updateScopeEmission = async (
   data: ScopeEmissionUpdateRequest
 ): Promise<ScopeEmissionResponse> => {
   try {
-    showLoading('배출량 데이터를 수정중입니다...')
 
     const response = await api.put<ApiResponse<ScopeEmissionResponse>>(
       `/api/v1/scope/emissions/${id}`,
@@ -79,7 +78,6 @@ export const updateScopeEmission = async (
 // 통합 Scope 배출량 데이터 삭제 API (Delete APIs)
 export const deleteScopeEmission = async (id: number): Promise<boolean> => {
   try {
-    showLoading('배출량 데이터를 삭제중입니다...')
 
     const response = await api.delete<ApiResponse<string>>(
       `/api/v1/scope/emissions/${id}`
@@ -161,7 +159,7 @@ export const fetchPartnerMonthlyEmissions = async (
   year: number
 ): Promise<MonthlyEmissionSummary[]> => {
   try {
-    showLoading('월별 배출량 데이터를 조회중입니다...')
+    // showLoading('월별 배출량 데이터를 조회중입니다...')
 
     const response = await api.get<ApiResponse<MonthlyEmissionSummary[]>>(
       `/api/v1/scope/aggregation/partner/${partnerId}/year/${year}/monthly-summary`

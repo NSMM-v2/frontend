@@ -1,11 +1,9 @@
-import ScopeDashboard from './scopeDashboard'
-import CSDDDDashboard from './CSDDDDashboard'
+import Page from './dashboard'
 
 export default function Dashboard() {
   return (
-    <div className="flex flex-col flex-1">
-      <ScopeDashboard />
-      <CSDDDDashboard />
+    <div className="flex flex-col w-full h-full">
+      <Page />
     </div>
   )
 }

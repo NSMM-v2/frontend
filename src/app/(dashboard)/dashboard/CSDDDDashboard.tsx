@@ -24,7 +24,6 @@ import {
 import {
   AlertTriangle,
   CheckCircle,
-  TrendingUp,
   Shield,
   BarChart3,
   ExternalLink,
@@ -33,7 +32,8 @@ import {
   Leaf,
   Package,
   ShieldCheck,
-  ChevronRight
+  ChevronRight,
+  AlertCircle
 } from 'lucide-react'
 
 interface PartnerInfo {
@@ -373,144 +373,146 @@ export default function CSDDDDashboard() {
   }
 
   return (
-    <div className="h-[calc(100vh-80px)] w-full p-4">
-      {userInfo && (
-        <div className="p-4 mb-6 border rounded-lg shadow bg-white/80 border-white/60">
-          <div className="flex items-center justify-between mb-3">
-            <h2 className="text-lg font-semibold text-gray-800">
-              자사 최신 자가진단 결과 요약
-            </h2>
-            {myResults.length > 0 && myResults[0].completedAt && (
-              <div className="text-sm text-gray-500">
-                완료일시:{' '}
-                {new Date(myResults[0].completedAt).toLocaleString('ko-KR', {
-                  year: 'numeric',
-                  month: '2-digit',
-                  day: '2-digit',
-                  hour: '2-digit',
-                  minute: '2-digit'
-                })}
-              </div>
-            )}
-          </div>
-          <div className="grid grid-cols-2 gap-4 sm:grid-cols-3 lg:grid-cols-5">
-            {(() => {
-              const myResult = myResults.length > 0 ? myResults[0] : null
+    <div className="h-[calc(100vh-80px)] w-full py-4">
+      <div className="flex flex-col w-full h-full gap-4">
+        {userInfo && (
+          <div className="p-8 border rounded-lg shadow bg-white/80 border-white/60">
+            <div className="flex items-center justify-between mb-3">
+              <h2 className="text-lg font-semibold text-gray-800">
+                {userInfo?.companyName} 최신 자가진단 결과 요약
+              </h2>
+              {myResults.length > 0 && myResults[0].completedAt && (
+                <div className="text-sm text-gray-500">
+                  완료일시:{' '}
+                  {new Date(myResults[0].completedAt).toLocaleString('ko-KR', {
+                    year: 'numeric',
+                    month: '2-digit',
+                    day: '2-digit',
+                    hour: '2-digit',
+                    minute: '2-digit'
+                  })}
+                </div>
+              )}
+            </div>
+            <div className="flex flex-row justify-between gap-4">
+              {(() => {
+                const myResult = myResults.length > 0 ? myResults[0] : null
 
-              if (!myResult) {
-                return (
-                  <div className="p-4 text-center text-gray-500 border rounded-lg col-span-full bg-gray-50">
-                    <div className="text-sm">아직 자가진단 결과가 없습니다.</div>
-                    <div className="mt-1 text-xs">
-                      자가진단을 완료하시면 결과가 표시됩니다.
-                    </div>
-                  </div>
-                )
-              }
-
-              const gradeStyle = getGradeStyle(myResult.finalGrade || 'D')
-              return (
-                <>
-                  <div className="p-3 border rounded-lg bg-gradient-to-br from-blue-50 to-white">
-                    <div className="mb-1 text-xs text-gray-500">등급</div>
-                    <div className={`text-lg font-bold ${gradeStyle.text}`}>
-                      {myResult.finalGrade || 'D'}
-                    </div>
-                  </div>
-                  <div className="p-3 border rounded-lg bg-gradient-to-br from-blue-50 to-white">
-                    <div className="mb-1 text-xs text-gray-500">진단 점수</div>
-                    <div className="text-lg font-bold text-gray-900">
-                      {myResult.score || 0}/100
-                    </div>
-                  </div>
-                  <div className="p-3 border rounded-lg bg-gradient-to-br from-blue-50 to-white">
-                    <div className="mb-1 text-xs text-gray-500">종합 점수</div>
-                    <div className="text-lg font-bold text-gray-900">
-                      {myResult.actualScore?.toFixed(1) || 0}/
-                      {myResult.totalPossibleScore?.toFixed(1) || 0}
-                    </div>
-                  </div>
-                  <div className="p-3 border rounded-lg bg-gradient-to-br from-blue-50 to-white">
-                    <div className="mb-1 text-xs text-gray-500">총 위반</div>
-                    <div className="text-lg font-bold text-gray-900">
-                      {myResult.noAnswerCount || 0}건
-                    </div>
-                  </div>
-                  <div className="p-3 border rounded-lg bg-gradient-to-br from-blue-50 to-white">
-                    <div className="mb-1 text-xs text-gray-500">중대 위반</div>
-                    <div className="text-lg font-bold text-gray-900">
-                      {myResult.criticalViolationCount || 0}건
-                    </div>
-                  </div>
-                </>
-              )
-            })()}
-          </div>
-        </div>
-      )}
-
-      <div className="flex flex-row gap-6 min-h-[450px]">
-        <Card className="w-[30%] bg-white rounded-lg p-4 flex flex-col">
-          <div className="flex flex-row items-center justify-between gap-2 mb-2">
-            <input
-              type="text"
-              value={searchQuery}
-              onChange={e => setSearchQuery(e.target.value)}
-              placeholder="협력사 검색"
-              className="w-full h-8 p-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500"
-            />
-          </div>
-          <div className="flex flex-col flex-1 gap-2 p-2 border rounded-lg max-h-[500px] overflow-y-auto custom-scrollbar">
-            {loading ? (
-              <div className="flex items-center justify-center h-full text-sm text-gray-500">
-                협력사 목록을 불러오는 중...
-              </div>
-            ) : error ? (
-              <div className="flex items-center justify-center h-full text-sm text-center text-red-500">
-                <div>오류가 발생했습니다</div>
-                <div className="mt-1 text-xs">{error}</div>
-                <button
-                  onClick={loadPartnerData}
-                  className="px-3 py-1 mt-2 text-xs text-red-700 bg-red-100 rounded hover:bg-red-200">
-                  다시 시도
-                </button>
-              </div>
-            ) : filteredPartners.length === 0 ? (
-              <div className="flex items-center justify-center h-full text-sm text-gray-500">
-                {searchQuery ? '검색 결과가 없습니다' : '등록된 협력사가 없습니다'}
-              </div>
-            ) : (
-              filteredPartners.map(partner => (
-                <div
-                  key={partner.partnerId}
-                  onClick={() => handlePartnerSelect(partner)}
-                  className={`rounded-lg border shadow-sm min-h-16 p-3 cursor-pointer transition-all duration-200 hover:shadow-md ${
-                    selectedPartner?.partnerId === partner.partnerId
-                      ? 'border-blue-500 bg-blue-50'
-                      : 'border-gray-200 bg-white hover:bg-gray-50'
-                  }`}>
-                  <div className="flex flex-col gap-1">
-                    <div className="text-sm font-medium text-gray-900 truncate">
-                      {partner.companyName}
-                    </div>
-
-                    <div className="flex items-center gap-2">
-                      <span className="font-mono text-xs text-gray-500">
-                        {partner.hierarchicalId}
-                      </span>
-                      <span
-                        className={`text-xs px-2 py-0.5 rounded-full border ${getLevelStyle(
-                          partner.level
-                        )}`}>
-                        {getLevelText(partner.level)}
-                      </span>
-                    </div>
-
-                    {partner.parentPartnerName && (
-                      <div className="text-xs text-gray-400">
-                        상위: {partner.parentPartnerName}
+                if (!myResult) {
+                  return (
+                    <div className="p-4 text-center text-gray-500 border rounded-lg col-span-full bg-gray-50">
+                      <div className="text-sm">아직 자가진단 결과가 없습니다.</div>
+                      <div className="mt-1 text-xs">
+                        자가진단을 완료하시면 결과가 표시됩니다.
                       </div>
-                    )}
+                    </div>
+                  )
+                }
+
+                const gradeStyle = getGradeStyle(myResult.finalGrade || 'D')
+                return (
+                  <>
+                    <div className="w-full p-3 border rounded-lg bg-gradient-to-br from-blue-50 to-white">
+                      <div className="mb-1 text-xs text-gray-500">등급</div>
+                      <div className={`text-lg font-bold ${gradeStyle.text}`}>
+                        {myResult.finalGrade || 'D'}
+                      </div>
+                    </div>
+                    <div className="w-full p-3 border rounded-lg bg-gradient-to-br from-blue-50 to-white">
+                      <div className="mb-1 text-xs text-gray-500">진단 점수</div>
+                      <div className="text-lg font-bold text-gray-900">
+                        {myResult.score || 0}/100
+                      </div>
+                    </div>
+                    <div className="w-full p-3 border rounded-lg bg-gradient-to-br from-blue-50 to-white">
+                      <div className="mb-1 text-xs text-gray-500">종합 점수</div>
+                      <div className="text-lg font-bold text-gray-900">
+                        {myResult.actualScore?.toFixed(1) || 0}/
+                        {myResult.totalPossibleScore?.toFixed(1) || 0}
+                      </div>
+                    </div>
+                    <div className="w-full p-3 border rounded-lg bg-gradient-to-br from-blue-50 to-white">
+                      <div className="mb-1 text-xs text-gray-500">총 위반</div>
+                      <div className="text-lg font-bold text-gray-900">
+                        {myResult.noAnswerCount || 0}건
+                      </div>
+                    </div>
+                    <div className="w-full p-3 border rounded-lg bg-gradient-to-br from-blue-50 to-white">
+                      <div className="mb-1 text-xs text-gray-500">중대 위반</div>
+                      <div className="text-lg font-bold text-gray-900">
+                        {myResult.criticalViolationCount || 0}건
+                      </div>
+                    </div>
+                  </>
+                )
+              })()}
+            </div>
+          </div>
+        )}
+
+        <div className="flex flex-row gap-4 min-h-[450px]">
+          <Card className="w-[30%] bg-white rounded-lg p-4 flex flex-col">
+            <div className="flex flex-row items-center justify-between gap-2 mb-2">
+              <input
+                type="text"
+                value={searchQuery}
+                onChange={e => setSearchQuery(e.target.value)}
+                placeholder="협력사 검색"
+                className="w-full h-8 p-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500"
+              />
+            </div>
+            <div className="flex flex-col flex-1 gap-2 p-2 border rounded-lg max-h-[500px] overflow-y-auto custom-scrollbar">
+              {loading ? (
+                <div className="flex items-center justify-center h-full text-sm text-gray-500">
+                  협력사 목록을 불러오는 중...
+                </div>
+              ) : error ? (
+                <div className="flex items-center justify-center h-full text-sm text-center text-red-500">
+                  <div>오류가 발생했습니다</div>
+                  <div className="mt-1 text-xs">{error}</div>
+                  <button
+                    onClick={loadPartnerData}
+                    className="px-3 py-1 mt-2 text-xs text-red-700 bg-red-100 rounded hover:bg-red-200">
+                    다시 시도
+                  </button>
+                </div>
+              ) : filteredPartners.length === 0 ? (
+                <div className="flex items-center justify-center h-full text-sm text-gray-500">
+                  {searchQuery ? '검색 결과가 없습니다' : '등록된 협력사가 없습니다'}
+                </div>
+              ) : (
+                filteredPartners.map(partner => (
+                  <div
+                    key={partner.partnerId}
+                    onClick={() => handlePartnerSelect(partner)}
+                    className={`rounded-lg border shadow-sm min-h-16 p-3 cursor-pointer transition-all duration-200 hover:shadow-md ${
+                      selectedPartner?.partnerId === partner.partnerId
+                        ? 'border-blue-500 bg-blue-50'
+                        : 'border-gray-200 bg-white hover:bg-gray-50'
+                    }`}>
+                    <div className="flex flex-col gap-1">
+                      <div className="text-sm font-medium text-gray-900 truncate">
+                        {partner.companyName}
+                      </div>
+
+                      <div className="flex items-center gap-2">
+                        <span className="font-mono text-xs text-gray-500">
+                          {partner.hierarchicalId}
+                        </span>
+                        <span
+                          className={`text-xs px-2 py-0.5 rounded-full border ${getLevelStyle(
+                            partner.level
+                          )}`}>
+                          {getLevelText(partner.level)}
+                        </span>
+                      </div>
+
+                      {partner.parentPartnerName && (
+                        <div className="text-xs text-gray-400">
+                          상위: {partner.parentPartnerName}
+                        </div>
+                      )}
+                    </div>
                   </div>
                 </div>
               ))
@@ -533,7 +535,7 @@ export default function CSDDDDashboard() {
                 {selectedPartner ? selectedPartner.companyName : '협력사 상세'}
               </CardTitle>
 
-              {selectedPartner?.results?.length && selectedPartner.results.length > 0 && (
+              {selectedPartner?.results && selectedPartner.results.length > 0 && (
                 <select
                   value={selectedResultIndex}
                   onChange={e => setSelectedResultIndex(Number(e.target.value))}
@@ -553,182 +555,214 @@ export default function CSDDDDashboard() {
                 </select>
               )}
             </div>
-          </CardHeader>
-          <CardContent className="flex flex-col gap-6 p-6">
-            {selectedPartner && currentResult ? (
-              <>
-                <div className="grid grid-cols-2 gap-4">
-                  <div className="flex flex-row items-center gap-2 p-3 border rounded-lg bg-gradient-to-br from-blue-50 to-white">
-                    <BarChart3 className="w-5 h-5 text-blue-600" />
-                    <div>
-                      <div className="text-xs text-gray-500">진단 점수</div>
-                      <div className="font-semibold text-gray-900">
-                        {currentResult.score || 0}/100
-                      </div>
-                    </div>
-                  </div>
-                  <div className="flex flex-row items-center gap-2 p-3 border rounded-lg bg-gradient-to-br from-blue-50 to-white">
-                    <BarChart3 className="w-5 h-5 text-gray-700" />
-                    <div>
-                      <div className="text-xs text-gray-500">종합 점수</div>
-                      <div className="font-semibold text-gray-900">
-                        {currentResult.actualScore?.toFixed(1) || '0.0'}/132.5
-                      </div>
-                    </div>
-                  </div>
-                  <div className="flex flex-row items-center gap-2 p-3 border rounded-lg bg-gradient-to-br from-blue-50 to-white">
-                    <TrendingUp className="w-5 h-5 text-yellow-600" />
-                    <div>
-                      <div className="text-xs text-gray-500">총 위반</div>
-                      <div className="font-semibold text-gray-900">
-                        {currentResult.noAnswerCount || 0}건
-                      </div>
-                    </div>
-                  </div>
-                  <div className="flex flex-row items-center gap-2 p-3 border rounded-lg bg-gradient-to-br from-blue-50 to-white">
-                    <AlertTriangle className="w-5 h-5 text-red-600" />
-                    <div>
-                      <div className="text-xs text-gray-500">중대 위반</div>
-                      <div className="font-semibold text-gray-900">
-                        {currentResult.criticalViolationCount || 0}건
-                      </div>
-                    </div>
-                  </div>
-                </div>
+          </Card>
 
-                <div className="border rounded-lg">
-                  <div className="flex items-center justify-between p-4 border-b bg-gray-50">
-                    <h3 className="font-medium text-gray-900">위반 항목 상세</h3>
+          <Card className="flex-1 flex flex-col bg-white rounded-lg shadow-md min-h-[400px] p-6">
+            <CardHeader className="flex flex-row items-center gap-4 pb-6 border-b border-gray-100">
+              <div className="flex items-center flex-1">
+                <CardTitle className="flex items-center gap-3 text-2xl font-bold">
+                  {currentResult && (
+                    <Badge
+                      className={`px-3 py-1 text-base font-bold rounded-full border ${
+                        gradeColors[currentResult.finalGrade || 'D']
+                      }`}>
+                      {currentResult.finalGrade || 'D'}
+                    </Badge>
+                  )}
+                  {selectedPartner ? selectedPartner.companyName : '협력사 상세'}
+                </CardTitle>
+
+                {selectedPartner?.results?.length &&
+                  selectedPartner.results.length > 0 && (
+                    <select
+                      value={selectedResultIndex}
+                      onChange={e => setSelectedResultIndex(Number(e.target.value))}
+                      className="px-2 py-1 ml-auto text-sm text-gray-700 bg-white border rounded-md shadow-sm">
+                      {[...selectedPartner.results]
+                        .sort(
+                          (a, b) =>
+                            new Date(b.completedAt || 0).getTime() -
+                            new Date(a.completedAt || 0).getTime()
+                        )
+                        .map((result, index) => (
+                          <option key={result.id} value={index}>
+                            {selectedPartner.results.length - index}회차 (
+                            {new Date(result.completedAt || '').toLocaleDateString(
+                              'ko-KR'
+                            )}
+                            )
+                          </option>
+                        ))}
+                    </select>
+                  )}
+              </div>
+            </CardHeader>
+            <CardContent className="flex flex-col gap-6 p-6 overflow-hidden overflow-y-auto">
+              {selectedPartner && currentResult ? (
+                <>
+                  <div className="grid grid-cols-2 gap-4">
+                    <div className="flex flex-row items-center gap-2 p-3 border rounded-lg bg-gradient-to-br from-blue-50 to-white">
+                      <BarChart3 className="w-5 h-5 text-blue-600" />
+                      <div>
+                        <div className="text-xs text-gray-500">진단 점수</div>
+                        <div className="font-semibold text-gray-900">
+                          {currentResult.score || 0}/100
+                        </div>
+                      </div>
+                    </div>
+                    <div className="flex flex-row items-center gap-2 p-3 border rounded-lg bg-gradient-to-br from-blue-50 to-white">
+                      <BarChart3 className="w-5 h-5 text-gray-700" />
+                      <div>
+                        <div className="text-xs text-gray-500">종합 점수</div>
+                        <div className="font-semibold text-gray-900">
+                          {currentResult.actualScore?.toFixed(1) || '0.0'}/132.5
+                        </div>
+                      </div>
+                    </div>
+                    <div className="flex flex-row items-center gap-2 p-3 border rounded-lg bg-gradient-to-br from-blue-50 to-white">
+                      <AlertCircle className="w-5 h-5 text-yellow-600" />
+                      <div>
+                        <div className="text-xs text-gray-500">총 위반</div>
+                        <div className="font-semibold text-gray-900">
+                          {currentResult.noAnswerCount || 0}건
+                        </div>
+                      </div>
+                    </div>
+                    <div className="flex flex-row items-center gap-2 p-3 border rounded-lg bg-gradient-to-br from-blue-50 to-white">
+                      <AlertTriangle className="w-5 h-5 text-red-600" />
+                      <div>
+                        <div className="text-xs text-gray-500">중대 위반</div>
+                        <div className="font-semibold text-gray-900">
+                          {currentResult.criticalViolationCount || 0}건
+                        </div>
+                      </div>
+                    </div>
                   </div>
 
-                  <div className="p-6">
-                    {/* 카테고리 그리드 */}
-                    <div className="grid grid-cols-3 gap-4 mb-6">
-                      {getCategoryInfo()
-                        .slice(0, 3)
-                        .map(category => {
-                          const IconComponent = category.icon
-                          const hasViolations = category.violations.length > 0
+                  <div className="border rounded-lg">
+                    <div className="flex items-center justify-between p-4 border-b bg-gray-50">
+                      <h3 className="font-medium text-gray-900">위반 항목 상세</h3>
+                    </div>
 
-                          return (
-                            <div
-                              key={category.id}
-                              onClick={() => handleCategoryClick(category.id)}
-                              className={`
-                              relative p-4 rounded-lg border-2 cursor-pointer transition-all duration-200 hover:shadow-md
+                    <div className="p-1.5">
+                      {/* 카테고리 그리드 */}
+                      <div className="grid grid-cols-3 gap-2 mb-2">
+                        {getCategoryInfo()
+                          .slice(0, 3)
+                          .map(category => {
+                            const IconComponent = category.icon
+                            const hasViolations = category.violations.length > 0
+
+                            return (
+                              <div
+                                key={category.id}
+                                onClick={() => handleCategoryClick(category.id)}
+                                className={`
+                              relative p-4 min-h-[120px] rounded-lg border-2 cursor-pointer transition-all duration-200 hover:shadow-md
                               ${
                                 hasViolations
                                   ? 'border-red-300 bg-red-50 hover:bg-red-100'
                                   : 'border-green-300 bg-green-50 hover:bg-green-100'
                               }
                             `}>
-                              <div className="flex items-center justify-between mb-2">
-                                <IconComponent
-                                  className={`w-6 h-6 ${
-                                    hasViolations ? 'text-red-600' : 'text-green-600'
-                                  }`}
-                                />
-                                <ChevronRight
-                                  className={`w-4 h-4 ${
-                                    hasViolations ? 'text-red-400' : 'text-green-400'
-                                  }`}
-                                />
+                                <div className="flex items-center justify-between mb-2">
+                                  <div className="flex items-center gap-2">
+                                    <IconComponent
+                                      className={`w-5 h-5 ${
+                                        hasViolations ? 'text-red-600' : 'text-green-600'
+                                      }`}
+                                    />
+                                    <h4
+                                      className={`font-medium text-sm ${
+                                        hasViolations ? 'text-red-800' : 'text-green-800'
+                                      }`}>
+                                      {category.name}
+                                    </h4>
+                                  </div>
+                                  <ChevronRight
+                                    className={`w-4 h-4 ${
+                                      hasViolations ? 'text-red-400' : 'text-green-400'
+                                    }`}
+                                  />
+                                </div>
+                                <div className="absolute flex items-center gap-2 bottom-3 left-4">
+                                  <span
+                                    className={`text-xs ${
+                                      hasViolations ? 'text-red-600' : 'text-green-600'
+                                    }`}>
+                                    {hasViolations
+                                      ? `${category.violations.length}건 위반`
+                                      : '준수'}
+                                  </span>
+                                </div>
                               </div>
-                              <h4
-                                className={`font-medium text-sm mb-1 ${
-                                  hasViolations ? 'text-red-800' : 'text-green-800'
-                                }`}>
-                                {category.name}
-                              </h4>
-                              <div className="flex items-center justify-between">
-                                <span
-                                  className={`text-xs ${
-                                    hasViolations ? 'text-red-600' : 'text-green-600'
-                                  }`}>
-                                  {hasViolations
-                                    ? `${category.violations.length}건 위반`
-                                    : '준수'}
-                                </span>
-                                {hasViolations && (
-                                  <Badge
-                                    variant="destructive"
-                                    className="text-xs px-2 py-0.5">
-                                    {category.violations.length}
-                                  </Badge>
-                                )}
-                              </div>
-                            </div>
-                          )
-                        })}
-                    </div>
+                            )
+                          })}
+                      </div>
 
-                    <div className="grid grid-cols-3 gap-4">
-                      {getCategoryInfo()
-                        .slice(3, 5)
-                        .map(category => {
-                          const IconComponent = category.icon
-                          const hasViolations = category.violations.length > 0
+                      <div className="grid grid-cols-3 gap-2">
+                        {getCategoryInfo()
+                          .slice(3, 5)
+                          .map(category => {
+                            const IconComponent = category.icon
+                            const hasViolations = category.violations.length > 0
 
-                          return (
-                            <div
-                              key={category.id}
-                              onClick={() => handleCategoryClick(category.id)}
-                              className={`
-                              relative p-4 rounded-lg border-2 cursor-pointer transition-all duration-200 hover:shadow-md
+                            return (
+                              <div
+                                key={category.id}
+                                onClick={() => handleCategoryClick(category.id)}
+                                className={`
+                              relative p-4 min-h-[120px] rounded-lg border-2 cursor-pointer transition-all duration-200 hover:shadow-md
                               ${
                                 hasViolations
                                   ? 'border-red-300 bg-red-50 hover:bg-red-100'
                                   : 'border-green-300 bg-green-50 hover:bg-green-100'
                               }
                             `}>
-                              <div className="flex items-center justify-between mb-2">
-                                <IconComponent
-                                  className={`w-6 h-6 ${
-                                    hasViolations ? 'text-red-600' : 'text-green-600'
-                                  }`}
-                                />
-                                <ChevronRight
-                                  className={`w-4 h-4 ${
-                                    hasViolations ? 'text-red-400' : 'text-green-400'
-                                  }`}
-                                />
+                                <div className="flex items-center justify-between mb-2">
+                                  <div className="flex items-center gap-2">
+                                    <IconComponent
+                                      className={`w-5 h-5 ${
+                                        hasViolations ? 'text-red-600' : 'text-green-600'
+                                      }`}
+                                    />
+                                    <h4
+                                      className={`font-medium text-sm ${
+                                        hasViolations ? 'text-red-800' : 'text-green-800'
+                                      }`}>
+                                      {category.name}
+                                    </h4>
+                                  </div>
+                                  <ChevronRight
+                                    className={`w-4 h-4 ${
+                                      hasViolations ? 'text-red-400' : 'text-green-400'
+                                    }`}
+                                  />
+                                </div>
+                                <div className="absolute flex items-center gap-2 bottom-3 left-4">
+                                  <span
+                                    className={`text-xs ${
+                                      hasViolations ? 'text-red-600' : 'text-green-600'
+                                    }`}>
+                                    {hasViolations
+                                      ? `${category.violations.length}건 위반`
+                                      : '준수'}
+                                  </span>
+                                </div>
                               </div>
-                              <h4
-                                className={`font-medium text-sm mb-1 ${
-                                  hasViolations ? 'text-red-800' : 'text-green-800'
-                                }`}>
-                                {category.name}
-                              </h4>
-                              <div className="flex items-center justify-between">
-                                <span
-                                  className={`text-xs ${
-                                    hasViolations ? 'text-red-600' : 'text-green-600'
-                                  }`}>
-                                  {hasViolations
-                                    ? `${category.violations.length}건 위반`
-                                    : '준수'}
-                                </span>
-                                {hasViolations && (
-                                  <Badge
-                                    variant="destructive"
-                                    className="text-xs px-2 py-0.5">
-                                    {category.violations.length}
-                                  </Badge>
-                                )}
-                              </div>
-                            </div>
-                          )
-                        })}
+                            )
+                          })}
+                      </div>
                     </div>
                   </div>
+
                 </div>
               </>
             ) : (
               <div className="flex flex-col items-center justify-center h-full py-24 text-gray-400">
                 <Shield className="w-16 h-16 mb-4 text-gray-200" />
-                <div className="text-lg font-bold">협력사를 선택하세요</div>
-                <div className="mt-2 text-sm text-center">
-                  왼쪽 목록에서 협력사를 클릭하면 상세 정보를 볼 수 있습니다.
+                <div className="text-lg font-bold">
+                  협력사의 자가진단 결과가 없습니다.
                 </div>
               </div>
             )}
@@ -780,89 +814,152 @@ export default function CSDDDDashboard() {
                         <ExternalLink className="w-3 h-3 ml-1" />
                       </button>
                     ))}
+
+                </>
+              ) : (
+                <div className="flex flex-col items-center justify-center h-full py-24 text-gray-400">
+                  <Shield className="w-16 h-16 mb-4 text-gray-200" />
+                  <div className="text-lg font-bold">협력사를 선택하세요</div>
+                  <div className="mt-2 text-sm text-center">
+                    왼쪽 목록에서 협력사를 클릭하면 상세 정보를 볼 수 있습니다.
+
                   </div>
                 </div>
-              </div>
-            )}
-          </div>
-        </DialogContent>
-      </Dialog>
+              )}
+            </CardContent>
+          </Card>
+        </div>
 
-      {/* 위반 항목 상세 다이얼로그 */}
-      <Dialog
-        open={!!selectedViolationId}
-        onOpenChange={() => {
-          setSelectedViolationId(null)
-          setViolationMeta(null)
-        }}>
-        <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
-          <DialogHeader className="pb-4 border-b">
-            <DialogTitle className="text-xl font-bold">위반 항목 상세 정보</DialogTitle>
-            <DialogDescription>
-              항목 번호:{' '}
-              <span className="font-mono font-medium text-black-600">
-                {selectedViolationId}
-              </span>
-            </DialogDescription>
-          </DialogHeader>
+        {/* 카테고리 상세 다이얼로그 */}
+        <Dialog
+          open={!!selectedCategoryId}
+          onOpenChange={() => setSelectedCategoryId(null)}>
+          <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
+            <DialogHeader className="pb-4 border-b">
+              <DialogTitle className="text-xl font-bold">
+                {selectedCategoryId && getCategoryName(selectedCategoryId)} 상세 위반 항목
+              </DialogTitle>
+              <DialogDescription>
+                해당 카테고리의 위반 항목들을 확인하실 수 있습니다.
+              </DialogDescription>
+            </DialogHeader>
 
-          <div className="pt-6">
-            {violationMeta ? (
-              <div className="space-y-6">
-                <div className="p-6 bg-white border border-gray-200 rounded-lg">
-                  <h4 className="pb-2 mb-4 text-lg font-semibold text-gray-800 border-b border-gray-100">
-                    카테고리 분류
-                  </h4>
-                  <p className="text-base leading-relaxed text-gray-900">
-                    {violationMeta.category}
+            <div className="pt-6">
+              {getSelectedCategoryViolations().length === 0 ? (
+                <div className="py-16 text-center">
+                  <CheckCircle className="w-16 h-16 mx-auto mb-4 text-green-500" />
+                  <h3 className="mb-2 text-lg font-semibold text-green-600">
+                    모든 항목 준수
+                  </h3>
+                  <p className="text-sm text-gray-500">
+                    이 카테고리에서는 위반 항목이 없습니다.
                   </p>
                 </div>
-
-                <div className="p-6 bg-white border border-gray-200 rounded-lg">
-                  <h4 className="pb-2 mb-4 text-lg font-semibold text-gray-800 border-b border-gray-100">
-                    벌칙 및 제재 내용
-                  </h4>
-                  <p className="text-base leading-relaxed text-gray-900 whitespace-pre-wrap">
-                    {violationMeta.penaltyInfo}
-                  </p>
+              ) : (
+                <div className="space-y-4">
+                  <div className="p-4 border border-red-200 rounded-lg bg-red-50">
+                    <div className="flex items-center gap-2 mb-3">
+                      <AlertTriangle className="w-5 h-5 text-red-600" />
+                      <h4 className="font-medium text-red-800">
+                        총 {getSelectedCategoryViolations().length}건의 위반 항목
+                      </h4>
+                    </div>
+                    <div className="grid grid-cols-3 gap-2 sm:grid-cols-4 lg:grid-cols-6">
+                      {getSelectedCategoryViolations().map((violation, i) => (
+                        <button
+                          key={i}
+                          onClick={() => handleViolationClick(violation.questionId)}
+                          className="flex items-center justify-center p-2 text-xs font-medium text-red-800 transition-colors bg-white border border-red-300 rounded-md hover:bg-red-50">
+                          <span className="font-mono truncate">
+                            {violation.questionId}
+                          </span>
+                          <ExternalLink className="w-3 h-3 ml-1" />
+                        </button>
+                      ))}
+                    </div>
+                  </div>
                 </div>
+              )}
+            </div>
+          </DialogContent>
+        </Dialog>
 
-                <div className="p-6 bg-white border border-gray-200 rounded-lg">
-                  <h4 className="pb-2 mb-4 text-lg font-semibold text-gray-800 border-b border-gray-100">
-                    관련 법적 근거
-                  </h4>
-                  <p className="text-base leading-relaxed text-gray-900 whitespace-pre-wrap">
-                    {violationMeta.legalBasis}
-                  </p>
+        {/* 위반 항목 상세 다이얼로그 */}
+        <Dialog
+          open={!!selectedViolationId}
+          onOpenChange={() => {
+            setSelectedViolationId(null)
+            setViolationMeta(null)
+          }}>
+          <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
+            <DialogHeader className="pb-4 border-b">
+              <DialogTitle className="text-xl font-bold">위반 항목 상세 정보</DialogTitle>
+              <DialogDescription>
+                항목 번호:{' '}
+                <span className="font-mono font-medium text-black-600">
+                  {selectedViolationId}
+                </span>
+              </DialogDescription>
+            </DialogHeader>
+
+            <div className="pt-6">
+              {violationMeta ? (
+                <div className="space-y-6">
+                  <div className="p-6 bg-white border border-gray-200 rounded-lg">
+                    <h4 className="pb-2 mb-4 text-lg font-semibold text-gray-800 border-b border-gray-100">
+                      카테고리 분류
+                    </h4>
+                    <p className="text-base leading-relaxed text-gray-900">
+                      {violationMeta.category}
+                    </p>
+                  </div>
+
+                  <div className="p-6 bg-white border border-gray-200 rounded-lg">
+                    <h4 className="pb-2 mb-4 text-lg font-semibold text-gray-800 border-b border-gray-100">
+                      벌칙 및 제재 내용
+                    </h4>
+                    <p className="text-base leading-relaxed text-gray-900 whitespace-pre-wrap">
+                      {violationMeta.penaltyInfo}
+                    </p>
+                  </div>
+
+                  <div className="p-6 bg-white border border-gray-200 rounded-lg">
+                    <h4 className="pb-2 mb-4 text-lg font-semibold text-gray-800 border-b border-gray-100">
+                      관련 법적 근거
+                    </h4>
+                    <p className="text-base leading-relaxed text-gray-900 whitespace-pre-wrap">
+                      {violationMeta.legalBasis}
+                    </p>
+                  </div>
+
+                  <div className="p-4 border border-gray-200 rounded-lg bg-gray-50">
+                    <div className="text-sm text-gray-700">
+                      <p className="mb-2 font-medium">참고사항</p>
+                      <p className="leading-relaxed">
+                        위 정보는 CSDDD(Corporate Sustainability Due Diligence Directive)
+                        지침에 따른 것으로, 실제 적용 시에는 관련 법무팀 또는 전문가와
+                        상담하시기 바랍니다.
+                      </p>
+                    </div>
+                  </div>
                 </div>
-
-                <div className="p-4 border border-gray-200 rounded-lg bg-gray-50">
-                  <div className="text-sm text-gray-700">
-                    <p className="mb-2 font-medium">참고사항</p>
-                    <p className="leading-relaxed">
-                      위 정보는 CSDDD(Corporate Sustainability Due Diligence Directive)
-                      지침에 따른 것으로, 실제 적용 시에는 관련 법무팀 또는 전문가와
-                      상담하시기 바랍니다.
+              ) : (
+                <div className="py-16 text-center">
+                  <div className="w-12 h-12 mx-auto mb-6 border-4 border-blue-500 rounded-full animate-spin border-t-transparent"></div>
+                  <div className="space-y-3">
+                    <h3 className="text-lg font-semibold text-gray-900">
+                      상세 정보를 불러오는 중입니다
+                    </h3>
+                    <p className="text-sm text-gray-500">
+                      법적 근거와 벌칙 정보를 조회하고 있습니다. 잠시만 기다려주세요.
                     </p>
                   </div>
                 </div>
-              </div>
-            ) : (
-              <div className="py-16 text-center">
-                <div className="w-12 h-12 mx-auto mb-6 border-4 border-blue-500 rounded-full animate-spin border-t-transparent"></div>
-                <div className="space-y-3">
-                  <h3 className="text-lg font-semibold text-gray-900">
-                    상세 정보를 불러오는 중입니다
-                  </h3>
-                  <p className="text-sm text-gray-500">
-                    법적 근거와 벌칙 정보를 조회하고 있습니다. 잠시만 기다려주세요.
-                  </p>
-                </div>
-              </div>
-            )}
-          </div>
-        </DialogContent>
-      </Dialog>
+              )}
+            </div>
+          </DialogContent>
+        </Dialog>
+      </div>
     </div>
   )
 }
