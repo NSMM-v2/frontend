@@ -33,7 +33,10 @@ import {
   Package,
   ShieldCheck,
   ChevronRight,
-  AlertCircle
+  AlertCircle,
+  AlertOctagon,
+  Scale,
+  InfoIcon
 } from 'lucide-react'
 
 interface PartnerInfo {
@@ -376,7 +379,7 @@ export default function CSDDDDashboard() {
     <div className="h-[calc(100vh-80px)] w-full py-22">
       <div className="flex flex-col gap-4 w-full h-full">
         {userInfo && (
-          <div className="p-8 rounded-lg border shadow bg-white/80 border-white/60">
+          <div className="p-8 rounded-lg border shadow-sm bg-white/80 border-white/60">
             <div className="flex justify-between items-center mb-3">
               <h2 className="text-lg font-semibold text-gray-800">
                 {userInfo?.companyName} 최신 자가진단 결과 요약
@@ -485,7 +488,7 @@ export default function CSDDDDashboard() {
                   <div
                     key={partner.partnerId}
                     onClick={() => handlePartnerSelect(partner)}
-                    className={`rounded-lg border shadow-sm min-h-16 p-3 cursor-pointer transition-all duration-200 hover:shadow-md ${
+                    className={`rounded-lg border shadow-sm min-h-16 p-3 cursor-pointer transition-all duration-200 hover:shadow-sm ${
                       selectedPartner?.partnerId === partner.partnerId
                         ? 'border-blue-500 bg-blue-50'
                         : 'border-gray-200 bg-white hover:bg-gray-50'
@@ -617,7 +620,7 @@ export default function CSDDDDashboard() {
                                 key={category.id}
                                 onClick={() => handleCategoryClick(category.id)}
                                 className={`
-                              relative p-4 min-h-[120px] rounded-lg border-2 cursor-pointer transition-all duration-200 hover:shadow-md
+                              relative p-4 min-h-[120px] rounded-lg border-2 cursor-pointer transition-all duration-200 hover:shadow-sm
                               ${
                                 hasViolations
                                   ? 'bg-red-50 border-red-300 hover:bg-red-100'
@@ -671,7 +674,7 @@ export default function CSDDDDashboard() {
                                 key={category.id}
                                 onClick={() => handleCategoryClick(category.id)}
                                 className={`
-                              relative p-4 min-h-[120px] rounded-lg border-2 cursor-pointer transition-all duration-200 hover:shadow-md
+                              relative p-4 min-h-[120px] rounded-lg border-2 cursor-pointer transition-all duration-200 hover:shadow-sm
                               ${
                                 hasViolations
                                   ? 'bg-red-50 border-red-300 hover:bg-red-100'
@@ -789,10 +792,12 @@ export default function CSDDDDashboard() {
           }}>
           <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
             <DialogHeader className="pb-4 border-b">
-              <DialogTitle className="text-xl font-bold">위반 항목 상세 정보</DialogTitle>
-              <DialogDescription>
-                항목 번호:{' '}
-                <span className="font-mono font-medium text-black-600">
+              <DialogTitle className="flex gap-2 items-center text-xl font-bold">
+                <AlertTriangle className="w-6 h-6 text-red-500" />
+                위반 항목 상세 정보
+              </DialogTitle>
+              <DialogDescription className="flex gap-2 items-center mt-2">
+                <span className="px-3 py-1 font-mono text-sm font-medium text-blue-800 bg-blue-50 rounded-full border border-blue-200">
                   {selectedViolationId}
                 </span>
               </DialogDescription>
@@ -800,9 +805,11 @@ export default function CSDDDDashboard() {
 
             <div className="pt-6">
               {violationMeta ? (
-                <div className="space-y-6">
-                  <div className="p-6 bg-white rounded-lg border border-gray-200">
-                    <h4 className="pb-2 mb-4 text-lg font-semibold text-gray-800 border-b border-gray-100">
+                <div className="space-y-4">
+                  {/* 카테고리 분류 */}
+                  <div className="p-6 bg-gradient-to-br from-blue-50 to-white rounded-xl border border-blue-200 shadow-sm">
+                    <h4 className="flex gap-2 items-center pb-3 mb-4 text-lg font-semibold text-blue-900 border-b border-blue-100">
+                      <Users className="w-5 h-5" />
                       카테고리 분류
                     </h4>
                     <p className="text-base leading-relaxed text-gray-900">
@@ -810,8 +817,10 @@ export default function CSDDDDashboard() {
                     </p>
                   </div>
 
-                  <div className="p-6 bg-white rounded-lg border border-gray-200">
-                    <h4 className="pb-2 mb-4 text-lg font-semibold text-gray-800 border-b border-gray-100">
+                  {/* 벌칙 및 제재 내용 */}
+                  <div className="p-6 bg-gradient-to-br from-red-50 to-white rounded-xl border border-red-200 shadow-sm">
+                    <h4 className="flex gap-2 items-center pb-3 mb-4 text-lg font-semibold text-red-900 border-b border-red-100">
+                      <AlertOctagon className="w-5 h-5" />
                       벌칙 및 제재 내용
                     </h4>
                     <p className="text-base leading-relaxed text-gray-900 whitespace-pre-wrap">
@@ -819,8 +828,10 @@ export default function CSDDDDashboard() {
                     </p>
                   </div>
 
-                  <div className="p-6 bg-white rounded-lg border border-gray-200">
-                    <h4 className="pb-2 mb-4 text-lg font-semibold text-gray-800 border-b border-gray-100">
+                  {/* 관련 법적 근거 */}
+                  <div className="p-6 bg-gradient-to-br from-purple-50 to-white rounded-xl border border-purple-200 shadow-sm">
+                    <h4 className="flex gap-2 items-center pb-3 mb-4 text-lg font-semibold text-purple-900 border-b border-purple-100">
+                      <Scale className="w-5 h-5" />
                       관련 법적 근거
                     </h4>
                     <p className="text-base leading-relaxed text-gray-900 whitespace-pre-wrap">
@@ -828,14 +839,18 @@ export default function CSDDDDashboard() {
                     </p>
                   </div>
 
-                  <div className="p-4 bg-gray-50 rounded-lg border border-gray-200">
-                    <div className="text-sm text-gray-700">
-                      <p className="mb-2 font-medium">참고사항</p>
-                      <p className="leading-relaxed">
-                        위 정보는 CSDDD(Corporate Sustainability Due Diligence Directive)
-                        지침에 따른 것으로, 실제 적용 시에는 관련 법무팀 또는 전문가와
-                        상담하시기 바랍니다.
-                      </p>
+                  {/* 참고사항 */}
+                  <div className="p-4 bg-gradient-to-br from-gray-50 to-white rounded-xl border border-gray-200">
+                    <div className="flex gap-3 items-start text-sm text-gray-700">
+                      <InfoIcon className="w-5 h-5 text-gray-400 mt-0.5" />
+                      <div>
+                        <p className="mb-2 font-medium">참고사항</p>
+                        <p className="leading-relaxed">
+                          위 정보는 CSDDD(Corporate Sustainability Due Diligence
+                          Directive) 지침에 따른 것으로, 실제 적용 시에는 관련 법무팀 또는
+                          전문가와 상담하시기 바랍니다.
+                        </p>
+                      </div>
                     </div>
                   </div>
                 </div>
