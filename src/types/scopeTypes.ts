@@ -296,3 +296,30 @@ export interface MonthlyEmissionSummary {
   totalEmission: number
   dataCount: number
 }
+
+/**
+ * 카테고리별 연간 배출량 집계 (백엔드 CategoryYearlyEmission과 1:1 매핑)
+ */
+export interface CategoryYearlyEmission {
+  categoryNumber: number
+  categoryName: string
+  year: number
+  totalEmission: number
+  dataCount: number
+  scopeType: string
+  totalSumAllCategories: number
+}
+
+/**
+ * 카테고리별 월간 배출량 집계 (백엔드 CategoryMonthlyEmission과 1:1 매핑)
+ */
+export interface CategoryMonthlyEmission {
+  categoryNumber: number
+  categoryName: string
+  year: number
+  month: number
+  totalEmission: number
+  dataCount: number
+  scopeType: string
+  totalSumAllCategories: number
+}
