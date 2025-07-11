@@ -37,7 +37,7 @@ import {
   ScopeCategorySummary
 } from '@/types/scopeTypes'
 import {
-  fetchEmissionsByYearAndMonthForInput,
+  // fetchEmissionsByYearAndMonthForInput,
   fetchCategorySummaryByScope,
   deleteScopeEmission
 } from '@/services/scopeService'
@@ -786,12 +786,12 @@ export default function Scope1Form() {
     setIsLoading(true)
     try {
       // 1. 전체 배출량 데이터 조회 (Scope 1만 필터링, 본인 데이터만)
-      const emissionsData = await fetchEmissionsByYearAndMonthForInput(
-        selectedYear,
-        selectedMonth,
-        'SCOPE1'
-      )
-      setScope1Data(emissionsData)
+      // const emissionsData = await fetchEmissionsByYearAndMonthForInput(
+      //   selectedYear,
+      //   selectedMonth,
+      //   'SCOPE1'
+      // )
+      // setScope1Data(emissionsData)
 
       // 2. 카테고리별 요약 데이터 조회
       const summaryData = await fetchCategorySummaryByScope(
@@ -802,7 +802,7 @@ export default function Scope1Form() {
       setCategorySummary(summaryData)
 
       // 4. 기존 데이터를 카테고리별 계산기로 변환
-      convertBackendDataToCalculators(emissionsData)
+      // convertBackendDataToCalculators(emissionsData)
     } catch (error) {
       // console.error('Scope1 데이터 로드 오류:', error)
     } finally {

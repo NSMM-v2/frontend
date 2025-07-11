@@ -35,7 +35,7 @@ import {
   ScopeCategorySummary
 } from '@/types/scopeTypes'
 import {
-  fetchEmissionsByYearAndMonthForInput,
+  // fetchEmissionsByYearAndMonthForInput,
   fetchCategorySummaryByScope,
   deleteScopeEmission
 } from '@/services/scopeService'
@@ -151,10 +151,33 @@ export default function Scope3Form() {
   const [categorySummary, setCategorySummary] = useState<ScopeCategorySummary>({})
 
   // 로딩 상태 관리
-  const [, setIsLoading] = useState<boolean>(false)
+  const [isLoading, setIsLoading] = useState<boolean>(false)
 
   // 데이터 새로고침 트리거 (CRUD 작업 후 데이터 다시 로드용)
   const [refreshTrigger, setRefreshTrigger] = useState<number>(0)
+
+  // 기간별 데이터 상태 관리 (Period-specific Data State)
+  const [periodEmissions, setPeriodEmissions] = useState<ScopeEmissionResponse[]>([])
+  const [periodTotal, setPeriodTotal] = useState<number>(0)
+  const [filteredCategoryTotals, setFilteredCategoryTotals] = useState<
+    Record<Scope3CategoryKey, number>
+  >({
+    list1: 0,
+    list2: 0,
+    list3: 0,
+    list4: 0,
+    list5: 0,
+    list6: 0,
+    list7: 0,
+    list8: 0,
+    list9: 0,
+    list10: 0,
+    list11: 0,
+    list12: 0,
+    list13: 0,
+    list14: 0,
+    list15: 0
+  })
 
   // ========================================================================
   // 유틸리티 함수 (Utility Functions)
@@ -469,12 +492,12 @@ export default function Scope3Form() {
     setIsLoading(true)
     try {
       // 1. 전체 배출량 데이터 조회 (Scope 3만 필터링, 본인 데이터만)
-      const emissionsData = await fetchEmissionsByYearAndMonthForInput(
-        selectedYear,
-        selectedMonth,
-        'SCOPE3'
-      )
-      setScope3Data(emissionsData)
+      // const emissionsData = await fetchEmissionsByYearAndMonthForInput(
+      //   selectedYear,
+      //   selectedMonth,
+      //   'SCOPE3'
+      // )
+      // setScope3Data(emissionsData)
 
       // 2. 카테고리별 요약 데이터 조회 (본인 데이터만)
       const summaryData = await fetchCategorySummaryByScope(
@@ -485,7 +508,7 @@ export default function Scope3Form() {
       setCategorySummary(summaryData)
 
       // 5. 기존 데이터를 카테고리별 계산기로 변환
-      convertBackendDataToCalculators(emissionsData)
+      // convertBackendDataToCalculators(emissionsData)
     } catch (error) {
     } finally {
       setIsLoading(false)
@@ -724,7 +747,6 @@ export default function Scope3Form() {
                   <div>
                     <p className="text-sm font-medium text-gray-500">연 배출량</p>
                     <h3 className="text-2xl font-bold text-gray-900">
-
                       {Object.values(categorySummary).length > 0
                         ? Object.values(categorySummary)
                             .reduce((sum, emission) => sum + emission, 0)
@@ -770,7 +792,6 @@ export default function Scope3Form() {
                   <div>
                     <p className="text-sm font-medium text-gray-500">월 배출량</p>
                     <h3 className="text-2xl font-bold text-gray-900">
-
                       {Object.values(categorySummary).length > 0
                         ? Object.values(categorySummary)
                             .reduce((sum, emission) => sum + emission, 0)

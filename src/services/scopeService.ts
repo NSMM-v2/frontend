@@ -15,42 +15,14 @@ import {
   ScopeCategorySummary,
   ApiResponse,
   ScopeType,
-  MonthlyEmissionSummary
+  MonthlyEmissionSummary,
+  CategoryYearlyEmission,
+  CategoryMonthlyEmission
 } from '@/types/scopeTypes'
 
 // ============================================================================
 // 카테고리 조회 API (Category APIs)
 // ============================================================================
-
-/**
- * 모든 Scope 타입의 카테고리 목록 조회
- * 백엔드 엔드포인트: GET /api/v1/scope/categories
- * @returns Promise<{scope1, scope2, scope3}> 모든 Scope 카테고리
- */
-export const fetchAllScopeCategories = async (): Promise<{
-  scope1: ScopeCategoryResponse[]
-  scope2: ScopeCategoryResponse[]
-  scope3: ScopeCategoryResponse[]
-}> => {
-  try {
-    const response = await api.get<
-      ApiResponse<{
-        scope1: ScopeCategoryResponse[]
-        scope2: ScopeCategoryResponse[]
-        scope3: ScopeCategoryResponse[]
-      }>
-    >('/api/v1/scope/categories')
-
-    if (response.data.success && response.data.data) {
-      return response.data.data
-    } else {
-      throw new Error(response.data.message || '카테고리 조회에 실패했습니다.')
-    }
-  } catch (error: any) {
-    showError(error.response?.data?.message || '카테고리 조회 중 오류가 발생했습니다.')
-    return {scope1: [], scope2: [], scope3: []}
-  }
-}
 
 /**
  * 특정 Scope 타입의 카테고리 목록 조회
@@ -172,79 +144,6 @@ export const fetchEmissionsByScope = async (
 }
 
 /**
- * 연도/월별 전체 배출량 데이터 조회
- * 백엔드 엔드포인트: GET /api/v1/scope/emissions/year/{year}/month/{month}
- * @param year 보고년도
- * @param month 보고월
- * @param scopeType Scope 타입 필터 (선택적)
- * @returns Promise<ScopeEmissionResponse[]> 배출량 데이터 목록
- */
-export const fetchEmissionsByYearAndMonth = async (
-  year: number,
-  month: number,
-  scopeType?: ScopeType
-): Promise<ScopeEmissionResponse[]> => {
-  try {
-    showLoading('배출량 데이터를 조회중입니다...')
-
-    const params = scopeType ? `?scopeType=${scopeType}` : ''
-    const response = await api.get<ApiResponse<ScopeEmissionResponse[]>>(
-      `/api/v1/scope/emissions/year/${year}/month/${month}${params}`
-    )
-
-    dismissLoading()
-
-    if (response.data.success && response.data.data) {
-      return response.data.data
-    } else {
-      throw new Error(response.data.message || '배출량 데이터 조회에 실패했습니다.')
-    }
-  } catch (error: any) {
-    dismissLoading()
-    showError(
-      error.response?.data?.message || '배출량 데이터 조회 중 오류가 발생했습니다.'
-    )
-    return []
-  }
-}
-
-/**
- * 연도/월별 배출량 데이터 조회 (데이터 입력용 - 본인 데이터만)
- * 데이터 입력 폼에서 사용하며, 하위 조직 데이터를 제외하고 현재 사용자의 데이터만 조회
- * 백엔드 엔드포인트: GET /api/v1/scope/emissions/input/year/{year}/month/{month}
- * @param year 보고년도
- * @param month 보고월
- * @param scopeType Scope 타입 필터 (선택적)
- * @returns Promise<ScopeEmissionResponse[]> 현재 사용자의 배출량 데이터 목록
- */
-export const fetchEmissionsByYearAndMonthForInput = async (
-  year: number,
-  month: number,
-  scopeType?: ScopeType
-): Promise<ScopeEmissionResponse[]> => {
-  try {
-    showLoading('입력 데이터를 조회중입니다...')
-
-    const params = scopeType ? `?scopeType=${scopeType}` : ''
-    const response = await api.get<ApiResponse<ScopeEmissionResponse[]>>(
-      `/api/v1/scope/emissions/input/year/${year}/month/${month}${params}`
-    )
-
-    dismissLoading()
-
-    if (response.data.success && response.data.data) {
-      return response.data.data
-    } else {
-      throw new Error(response.data.message || '입력 데이터 조회에 실패했습니다.')
-    }
-  } catch (error: any) {
-    dismissLoading()
-    showError(error.response?.data?.message || '입력 데이터 조회 중 오류가 발생했습니다.')
-    return []
-  }
-}
-
-/**
  * 연도/월/카테고리별 배출량 데이터 조회
  * 백엔드 엔드포인트: GET /api/v1/scope/emissions/year/{year}/month/{month}/scope/{scopeType}/category/{categoryNumber}
  * @param year 보고년도
@@ -342,35 +241,6 @@ export const fetchPartnerMonthlyEmissions = async (
       error.response?.data?.message || '월별 배출량 집계 조회 중 오류가 발생했습니다.'
     )
     return []
-  }
-}
-
-/**
- * 연도/월별 Scope 타입별 총계 조회
- * 백엔드 엔드포인트: GET /api/v1/scope/emissions/summary/year/{year}/month/{month}
- * @param year 보고년도
- * @param month 보고월
- * @returns Promise<ScopeSummary> Scope 타입별 총 배출량
- */
-export const fetchScopeSummaryByYearAndMonth = async (
-  year: number,
-  month: number
-): Promise<ScopeSummary> => {
-  try {
-    const response = await api.get<ApiResponse<ScopeSummary>>(
-      `/api/v1/scope/emissions/summary/year/${year}/month/${month}`
-    )
-
-    if (response.data.success && response.data.data) {
-      return response.data.data
-    } else {
-      throw new Error(response.data.message || 'Scope 요약 데이터 조회에 실패했습니다.')
-    }
-  } catch (error: any) {
-    showError(
-      error.response?.data?.message || 'Scope 요약 데이터 조회 중 오류가 발생했습니다.'
-    )
-    return {}
   }
 }
 
@@ -563,5 +433,73 @@ const handleScopeEmissionError = (error: any, operation: string) => {
     showError('네트워크 연결을 확인해주세요.')
   } else {
     showError(`배출량 데이터 ${operation} 중 오류가 발생했습니다.`)
+  }
+}
+
+// ============================================================================
+// 카테고리별 집계 API (Category Aggregation APIs)
+// ============================================================================
+
+/**
+ * 카테고리별 연간 배출량 집계 조회
+ * 백엔드 엔드포인트: GET /api/v1/scope/aggregation/category/{scopeType}/year/{year}
+ * @param scopeType Scope 타입 (SCOPE1, SCOPE2, SCOPE3)
+ * @param year 보고년도
+ * @returns Promise<CategoryYearlyEmission[]> 카테고리별 연간 배출량 목록
+ */
+export const fetchCategoryYearlyEmissions = async (
+  scopeType: ScopeType,
+  year: number
+): Promise<CategoryYearlyEmission[]> => {
+  try {
+    showLoading('카테고리별 연간 배출량을 조회중입니다...')
+
+    const response = await api.get<ApiResponse<CategoryYearlyEmission[]>>(
+      `/api/v1/scope/aggregation/category/${scopeType}/year/${year}`
+    )
+
+    dismissLoading()
+
+    if (response.data.success && response.data.data) {
+      return response.data.data
+    } else {
+      throw new Error(response.data.message || '카테고리별 연간 배출량 조회에 실패했습니다.')
+    }
+  } catch (error: any) {
+    dismissLoading()
+    showError(error.response?.data?.message || '카테고리별 연간 배출량 조회 중 오류가 발생했습니다.')
+    return []
+  }
+}
+
+/**
+ * 카테고리별 월간 배출량 집계 조회
+ * 백엔드 엔드포인트: GET /api/v1/scope/aggregation/category/{scopeType}/year/{year}/monthly
+ * @param scopeType Scope 타입 (SCOPE1, SCOPE2, SCOPE3)
+ * @param year 보고년도
+ * @returns Promise<CategoryMonthlyEmission[]> 카테고리별 월간 배출량 목록
+ */
+export const fetchCategoryMonthlyEmissions = async (
+  scopeType: ScopeType,
+  year: number
+): Promise<CategoryMonthlyEmission[]> => {
+  try {
+    showLoading('카테고리별 월간 배출량을 조회중입니다...')
+
+    const response = await api.get<ApiResponse<CategoryMonthlyEmission[]>>(
+      `/api/v1/scope/aggregation/category/${scopeType}/year/${year}/monthly`
+    )
+
+    dismissLoading()
+
+    if (response.data.success && response.data.data) {
+      return response.data.data
+    } else {
+      throw new Error(response.data.message || '카테고리별 월간 배출량 조회에 실패했습니다.')
+    }
+  } catch (error: any) {
+    dismissLoading()
+    showError(error.response?.data?.message || '카테고리별 월간 배출량 조회 중 오류가 발생했습니다.')
+    return []
   }
 }
