@@ -30,12 +30,14 @@ import {Card, CardContent} from '@/components/ui/card'
 import {
   SelectorState,
   ScopeEmissionResponse,
-  ScopeCategorySummary
+  CategoryYearlyEmission,
+  CategoryMonthlyEmission
 } from '@/types/scopeTypes'
 import {
-  // fetchEmissionsByYearAndMonthForInput,
-  fetchCategorySummaryByScope,
-  deleteScopeEmission
+  deleteScopeEmission,
+  fetchCategoryYearlyEmissions,
+  fetchCategoryMonthlyEmissions,
+  fetchEmissionsByScope
 } from '@/services/scopeService'
 import {DirectionButton} from '@/components/layout/direction'
 /**
@@ -50,7 +52,7 @@ interface CalculatorData {
 
 /**
  * Scope 2 배출량 관리 메인 컴포넌트
- * scope3Form.tsx와 동일한 레이아웃 구조를 적용하여 일관성 있는 UI 제공
+ * Scope3와 동일한 구조와 기능을 제공하여 일관성 있는 UI 경험 제공
  */
 export default function Scope2Form() {
   // ========================================================================
@@ -101,14 +103,15 @@ export default function Scope2Form() {
   // 백엔드 연동 상태 관리 (Backend Integration State)
   // ========================================================================
 
-  // 전체 Scope2 배출량 데이터 (년/월 기준)
-  const [scope2Data, setScope2Data] = useState<ScopeEmissionResponse[]>([])
-
-  // 카테고리별 요약 데이터 (CategorySummaryCard용)
-  const [categorySummary, setCategorySummary] = useState<ScopeCategorySummary>({})
-
-  // 로딩 상태 관리
-  const [isLoading, setIsLoading] = useState<boolean>(false)
+  // 카테고리별 집계 데이터 (새로운 API 사용)
+  const [categoryYearlyData, setCategoryYearlyData] = useState<CategoryYearlyEmission[]>(
+    []
+  )
+  const [categoryMonthlyData, setCategoryMonthlyData] = useState<
+    CategoryMonthlyEmission[]
+  >([])
+  const [yearlyTotalEmission, setYearlyTotalEmission] = useState<number>(0) // 연 배출량 (고정)
+  const [monthlyTotalEmission, setMonthlyTotalEmission] = useState<number>(0) // 월 배출량 (월 선택시)
 
   // 데이터 새로고침 트리거 (CRUD 작업 후 데이터 다시 로드용)
   const [refreshTrigger, setRefreshTrigger] = useState<number>(0)
@@ -131,13 +134,42 @@ export default function Scope2Form() {
   }
 
   /**
-   * 특정 카테고리의 총 배출량 계산
+   * 특정 카테고리의 총 배출량 계산 (백엔드 집계 데이터 우선 사용)
    */
-  const getElectricTotalEmission = (category: Scope2ElectricCategoryKey): number =>
-    (electricCategoryTotals[category] || []).reduce((sum, t) => sum + t.emission, 0)
+  const getElectricTotalEmission = (category: Scope2ElectricCategoryKey): number => {
+    // 백엔드 집계 데이터에서 Electric 카테고리(카테고리 번호 1) 데이터 조회
+    const targetData = selectedMonth
+      ? categoryMonthlyData.filter(
+          data => data.month === selectedMonth && data.categoryNumber === 1
+        )
+      : categoryYearlyData.filter(data => data.categoryNumber === 1)
 
-  const getSteamTotalEmission = (category: Scope2SteamCategoryKey): number =>
-    (steamCategoryTotals[category] || []).reduce((sum, t) => sum + t.emission, 0)
+    if (targetData.length > 0) {
+      return targetData.reduce((sum, data) => sum + data.totalEmission, 0)
+    }
+
+    // 백엔드 데이터가 없으면 프론트엔드 계산값 사용 (fallback)
+    return (electricCategoryTotals[category] || []).reduce(
+      (sum, t) => sum + t.emission,
+      0
+    )
+  }
+
+  const getSteamTotalEmission = (category: Scope2SteamCategoryKey): number => {
+    // 백엔드 집계 데이터에서 Steam 카테고리(카테고리 번호 2) 데이터 조회
+    const targetData = selectedMonth
+      ? categoryMonthlyData.filter(
+          data => data.month === selectedMonth && data.categoryNumber === 2
+        )
+      : categoryYearlyData.filter(data => data.categoryNumber === 2)
+
+    if (targetData.length > 0) {
+      return targetData.reduce((sum, data) => sum + data.totalEmission, 0)
+    }
+
+    // 백엔드 데이터가 없으면 프론트엔드 계산값 사용 (fallback)
+    return (steamCategoryTotals[category] || []).reduce((sum, t) => sum + t.emission, 0)
+  }
 
   // ========================================================================
   // 유틸리티 함수 - ID 생성 (Utility Functions - ID Generation)
@@ -537,16 +569,7 @@ export default function Scope2Form() {
     setActiveSteamCategory(null)
   }
 
-  // 전체 총 배출량 계산
-  const grandTotal =
-    Object.keys(scope2ElectricCategoryList).reduce(
-      (sum, key) => sum + getElectricTotalEmission(key as Scope2ElectricCategoryKey),
-      0
-    ) +
-    Object.keys(scope2SteamCategoryList).reduce(
-      (sum, key) => sum + getSteamTotalEmission(key as Scope2SteamCategoryKey),
-      0
-    )
+  // 전체 총 배출량은 totalSumAllCategories로 관리
 
   // ========================================================================
   // 백엔드 데이터 로드 함수 (Backend Data Loading Functions)
@@ -554,42 +577,71 @@ export default function Scope2Form() {
 
   /**
    * 연도/월별 Scope2 데이터 전체 조회
-   * selectedYear, selectedMonth 변경 시 자동 호출
+   * Scope3와 동일한 로직으로 완전 재구현
    */
   const loadScope2Data = async () => {
-    if (!selectedYear || !selectedMonth) return
+    if (!selectedYear) return
 
-    setIsLoading(true)
     try {
-      // 1. 전체 배출량 데이터 조회 (Scope 2만 필터링, 본인 데이터만)
-      // const emissionsData = await fetchEmissionsByYearAndMonthForInput(
-      //   selectedYear,
-      //   selectedMonth,
-      //   'SCOPE2'
-      // )
-      // setScope2Data(emissionsData)
+      // 1. 항상 연간 데이터 조회 (연간 배출량 카드용)
+      const yearlyData = await fetchCategoryYearlyEmissions('SCOPE2', selectedYear)
+      setCategoryYearlyData(yearlyData)
 
-      // 2. 카테고리별 요약 데이터 조회
-      const summaryData = await fetchCategorySummaryByScope(
-        'SCOPE2',
-        selectedYear,
-        selectedMonth
-      )
-      setCategorySummary(summaryData)
+      // 연간 데이터에서 총합 계산 및 설정 (연도 변경시에만 업데이트)
+      const yearlyTotal = yearlyData.reduce((sum, data) => sum + data.totalEmission, 0)
+      setYearlyTotalEmission(yearlyTotal)
 
-      // 4. 기존 데이터를 카테고리별 계산기로 변환
-      // convertBackendDataToCalculators(emissionsData)
+      // 2. 월간 데이터 조회 및 처리
+      if (selectedMonth) {
+        const monthlyData = await fetchCategoryMonthlyEmissions('SCOPE2', selectedYear)
+        setCategoryMonthlyData(monthlyData)
+
+        // 선택된 월에 해당하는 데이터만 필터링하여 총합 계산
+        const monthlyFilteredData = monthlyData.filter(
+          data => data.month === selectedMonth
+        )
+        const monthlyTotal = monthlyFilteredData.reduce(
+          (sum, data) => sum + data.totalEmission,
+          0
+        )
+        setMonthlyTotalEmission(monthlyTotal)
+      } else {
+        // 월이 선택되지 않았으면 월간 데이터 및 월 배출량 초기화
+        setCategoryMonthlyData([])
+        setMonthlyTotalEmission(0)
+      }
+
+      // 4. 항상 전체 배출량 데이터 조회 (계산기용)
+      const emissionsData = await fetchEmissionsByScope('SCOPE2')
+
+      // 5. 선택된 기간에 맞는 데이터만 필터링
+      const filteredEmissions = selectedMonth
+        ? emissionsData.filter(
+            emission =>
+              emission.reportingYear === selectedYear &&
+              emission.reportingMonth === selectedMonth
+          )
+        : emissionsData.filter(emission => emission.reportingYear === selectedYear)
+
+      // 6. 백엔드 데이터를 계산기 형식으로 변환 (완전 초기화)
+      convertBackendDataToCalculators(filteredEmissions)
     } catch (error) {
       console.error('Scope2 데이터 로드 오류:', error)
-    } finally {
-      setIsLoading(false)
     }
   }
 
-  // 백엔드 데이터를 프론트엔드 계산기 형식으로 변환
+  /**
+   * 백엔드 데이터를 프론트엔드 계산기 형식으로 변환
+   * Scope3와 동일한 완전 초기화 방식 적용
+   */
   const convertBackendDataToCalculators = (data: ScopeEmissionResponse[]) => {
-    const electricData: CalculatorData[] = []
-    const steamData: CalculatorData[] = []
+    // 완전 초기화를 위한 임시 데이터 구조
+    const newElectricData: CalculatorData[] = []
+    const newSteamData: CalculatorData[] = []
+    const newCalculatorModes: Record<string, Record<number, boolean>> = {
+      list11: {},
+      list12: {}
+    }
 
     data.forEach(emission => {
       const calculatorId =
@@ -612,41 +664,41 @@ export default function Scope2Form() {
 
       // 카테고리 번호에 따라 분류
       if (emission.scope2CategoryNumber === 1) {
-        electricData.push(calculatorData)
+        newElectricData.push(calculatorData)
       } else if (emission.scope2CategoryNumber === 2) {
-        steamData.push(calculatorData)
+        newSteamData.push(calculatorData)
       }
 
-      // 수동 입력 모드 상태 복원 (화면 반전 로직 고려)
+      // 수동 입력 모드 상태 설정 (화면 반전 로직 고려)
       if (emission.inputType !== undefined) {
         const categoryKey = emission.scope2CategoryNumber === 1 ? 'list11' : 'list12'
-        setCalculatorModes(prev => ({
-          ...prev,
-          [categoryKey]: {
-            ...prev[categoryKey],
-            [calculatorId]: emission.inputType === 'LCA' // 수정: 화면에서 반전되므로 LCA일 때 true
-          }
-        }))
+        newCalculatorModes[categoryKey][calculatorId] = emission.inputType === 'LCA'
       }
     })
 
-    // 상태 업데이트
-    setElectricCategoryCalculators({list11: electricData})
-    setSteamCategoryCalculators({list12: steamData})
+    // 완전 새로운 상태로 교체 (이전 데이터 잔존 방지)
+    setElectricCategoryCalculators({list11: newElectricData})
+    setSteamCategoryCalculators({list12: newSteamData})
 
     setElectricCategoryTotals({
-      list11: electricData.map(calc => ({
+      list11: newElectricData.map(calc => ({
         id: calc.id,
         emission: calc.savedData?.totalEmission || 0
       }))
     })
 
     setSteamCategoryTotals({
-      list12: steamData.map(calc => ({
+      list12: newSteamData.map(calc => ({
         id: calc.id,
         emission: calc.savedData?.totalEmission || 0
       }))
     })
+
+    // 계산기 모드 완전 교체
+    setCalculatorModes(prev => ({
+      ...prev,
+      ...newCalculatorModes
+    }))
   }
 
   // ========================================================================
@@ -655,9 +707,10 @@ export default function Scope2Form() {
 
   /**
    * 연도/월 변경 시 데이터 자동 로드
+   * Scope3와 동일한 로직으로 월이 null이어도 로드
    */
   useEffect(() => {
-    if (selectedYear && selectedMonth) {
+    if (selectedYear) {
       loadScope2Data()
     }
   }, [selectedYear, selectedMonth, refreshTrigger])
@@ -675,7 +728,7 @@ export default function Scope2Form() {
   // ========================================================================
 
   return (
-    <div className="flex flex-col w-full h-full p-4">
+    <div className="flex flex-col p-4 w-full h-full">
       {/* ========================================================================
           상단 네비게이션 (Top Navigation)
           - 브레드크럼을 통한 현재 위치 표시
@@ -684,7 +737,7 @@ export default function Scope2Form() {
         <Breadcrumb>
           <BreadcrumbList>
             <BreadcrumbItem>
-              <Home className="w-4 h-4 mr-1" />
+              <Home className="mr-1 w-4 h-4" />
               <BreadcrumbLink href="/dashboard">대시보드</BreadcrumbLink>
             </BreadcrumbItem>
             <BreadcrumbSeparator />
@@ -699,7 +752,7 @@ export default function Scope2Form() {
           헤더 섹션 (Header Section)
           - 뒤로가기 버튼과 페이지 제목/설명
           ======================================================================== */}
-      <div className="flex flex-row justify-between w-full mb-4">
+      <div className="flex flex-row justify-between mb-4 w-full">
         <div className="flex flex-row items-center p-4">
           <PageHeader
             icon={<Factory className="w-6 h-6 text-blue-600" />}
@@ -725,10 +778,10 @@ export default function Scope2Form() {
           animate={{opacity: 1}}
           transition={{duration: 0.4, delay: 0.1}}>
           {/* header card ================================================================================================================== */}
-          <div className="flex flex-row justify-between w-full gap-4 mb-4">
+          <div className="flex flex-row gap-4 justify-between mb-4 w-full">
             {/* 연도 총 배출량 카드 ============================================================================================================== */}
-            <Card className="justify-center w-full h-24 border-blue-200 shadow-sm bg-gradient-to-br from-blue-50 to-blue-100">
-              <CardContent className="flex items-center justify-between gap-6 p-4">
+            <Card className="justify-center w-full h-24 bg-gradient-to-br from-blue-50 to-blue-100 border-blue-200 shadow-sm">
+              <CardContent className="flex gap-6 justify-between items-center p-4">
                 <div className="flex flex-row items-center">
                   <div className="p-2 mr-3 bg-blue-100 rounded-full">
                     <TrendingUp className="w-5 h-5 text-blue-600" />
@@ -736,26 +789,18 @@ export default function Scope2Form() {
                   <div>
                     <p className="text-sm font-medium text-gray-500">Scope2 연 배출량</p>
                     <h3 className="text-2xl font-bold text-gray-900">
-                      {Object.values(categorySummary).length > 0
-                        ? Object.values(categorySummary)
-                            .reduce((sum, emission) => sum + emission, 0)
-                            .toLocaleString(undefined, {
-                              maximumFractionDigits: 2,
-                              minimumFractionDigits: 2
-                            })
-                        : grandTotal.toLocaleString(undefined, {
-                            maximumFractionDigits: 2,
-                            minimumFractionDigits: 2
-                          })}
-
+                      {yearlyTotalEmission.toLocaleString(undefined, {
+                        maximumFractionDigits: 2,
+                        minimumFractionDigits: 2
+                      })}
                       <span className="ml-1 text-sm font-normal text-gray-500">
                         kgCO₂eq
                       </span>
                     </h3>
                   </div>
                 </div>
-                <div className="flex flex-col w-full space-y-3">
-                  <label className="flex items-center gap-2 text-sm font-semibold text-customG-700 whitespace-nowrap">
+                <div className="flex flex-col space-y-3 w-full">
+                  <label className="flex gap-2 items-center text-sm font-semibold whitespace-nowrap text-customG-700">
                     <CalendarDays className="w-4 h-4" />
                     보고연도
                   </label>
@@ -765,42 +810,40 @@ export default function Scope2Form() {
                     onChange={e => setSelectedYear(parseInt(e.target.value))}
                     min="1900"
                     max="2200"
-                    className="w-full px-3 py-2 text-sm h-9 backdrop-blur-sm border-customG-200 focus:border-customG-400 focus:ring-customG-100 bg-white/80"
+                    className="px-3 py-2 w-full h-9 text-sm backdrop-blur-sm border-customG-200 focus:border-customG-400 focus:ring-customG-100 bg-white/80"
                   />
                 </div>
               </CardContent>
             </Card>
 
             {/* 월 총 배출량 카드 ============================================================================================================== */}
-            <Card className="justify-center w-full h-24 border-blue-200 shadow-sm bg-gradient-to-br from-blue-50 to-blue-100">
-              <CardContent className="flex items-center justify-between gap-6 p-4">
+            <Card className="justify-center w-full h-24 bg-gradient-to-br from-blue-50 to-blue-100 border-blue-200 shadow-sm">
+              <CardContent className="flex gap-6 justify-between items-center p-4">
                 <div className="flex flex-row items-center">
                   <div className="p-2 mr-3 bg-blue-100 rounded-full">
                     <TrendingUp className="w-5 h-5 text-blue-600" />
                   </div>
                   <div>
-                    <p className="text-sm font-medium text-gray-500">Scope2 월 배출량</p>
+                    <p className="text-sm font-medium text-gray-500">
+                      Scope2 {selectedMonth ? `${selectedMonth}월` : '월'} 배출량
+                    </p>
                     <h3 className="text-2xl font-bold text-gray-900">
-                      {Object.values(categorySummary).length > 0
-                        ? Object.values(categorySummary)
-                            .reduce((sum, emission) => sum + emission, 0)
-                            .toLocaleString(undefined, {
-                              maximumFractionDigits: 2,
-                              minimumFractionDigits: 2
-                            })
-                        : grandTotal.toLocaleString(undefined, {
+                      {selectedMonth
+                        ? monthlyTotalEmission.toLocaleString(undefined, {
                             maximumFractionDigits: 2,
                             minimumFractionDigits: 2
-                          })}
-
-                      <span className="ml-1 text-sm font-normal text-gray-500">
-                        kgCO₂eq
-                      </span>
+                          })
+                        : '월 선택 필요'}
+                      {selectedMonth && (
+                        <span className="ml-1 text-sm font-normal text-gray-500">
+                          kgCO₂eq
+                        </span>
+                      )}
                     </h3>
                   </div>
                 </div>
-                <div className="flex flex-col w-full space-y-3">
-                  <label className="flex items-center gap-2 text-sm font-semibold text-customG-700">
+                <div className="flex flex-col space-y-3 w-full">
+                  <label className="flex gap-2 items-center text-sm font-semibold text-customG-700">
                     <CalendarDays className="w-4 h-4" />
                     보고월
                   </label>
