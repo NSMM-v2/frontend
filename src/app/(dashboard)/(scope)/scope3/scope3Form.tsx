@@ -32,12 +32,16 @@ import {scope3CategoryList} from '@/components/scopeTotal/Scope123CategorySelect
 import {
   SelectorState,
   ScopeEmissionResponse,
-  ScopeCategorySummary
+  ScopeCategorySummary,
+  CategoryYearlyEmission,
+  CategoryMonthlyEmission
 } from '@/types/scopeTypes'
 import {
-  // fetchEmissionsByYearAndMonthForInput,
   fetchCategorySummaryByScope,
-  deleteScopeEmission
+  deleteScopeEmission,
+  fetchCategoryYearlyEmissions,
+  fetchCategoryMonthlyEmissions,
+  fetchEmissionsByScope
 } from '@/services/scopeService'
 import {DirectionButton} from '@/components/layout/direction'
 
@@ -150,9 +154,6 @@ export default function Scope3Form() {
   // 카테고리별 요약 데이터 (CategorySummaryCard용)
   const [categorySummary, setCategorySummary] = useState<ScopeCategorySummary>({})
 
-  // 로딩 상태 관리
-  const [isLoading, setIsLoading] = useState<boolean>(false)
-
   // 데이터 새로고침 트리거 (CRUD 작업 후 데이터 다시 로드용)
   const [refreshTrigger, setRefreshTrigger] = useState<number>(0)
 
@@ -178,6 +179,15 @@ export default function Scope3Form() {
     list14: 0,
     list15: 0
   })
+
+  // 카테고리별 상세 데이터 상태 (Category Detail Data State)
+  const [categoryYearlyData, setCategoryYearlyData] = useState<CategoryYearlyEmission[]>(
+    []
+  )
+  const [categoryMonthlyData, setCategoryMonthlyData] = useState<
+    CategoryMonthlyEmission[]
+  >([])
+  const [totalSumAllCategories, setTotalSumAllCategories] = useState<number>(0)
 
   // ========================================================================
   // 유틸리티 함수 (Utility Functions)
@@ -485,42 +495,152 @@ export default function Scope3Form() {
   /**
    * 연도/월별 Scope3 데이터 전체 조회
    * selectedYear, selectedMonth 변경 시 자동 호출
+   * 새로운 카테고리별 API 메서드 사용으로 상세한 집계 정보 제공
    */
   const loadScope3Data = async () => {
-    if (!selectedYear || !selectedMonth) return
+    if (!selectedYear) return
 
-    setIsLoading(true)
     try {
-      // 1. 전체 배출량 데이터 조회 (Scope 3만 필터링, 본인 데이터만)
-      // const emissionsData = await fetchEmissionsByYearAndMonthForInput(
-      //   selectedYear,
-      //   selectedMonth,
-      //   'SCOPE3'
-      // )
-      // setScope3Data(emissionsData)
+      // 1. 항상 연간 데이터 조회 (연 배출량 카드용)
+      const yearlyData = await fetchCategoryYearlyEmissions('SCOPE3', selectedYear)
+      setCategoryYearlyData(yearlyData)
 
-      // 2. 카테고리별 요약 데이터 조회 (본인 데이터만)
-      const summaryData = await fetchCategorySummaryByScope(
-        'SCOPE3',
-        selectedYear,
-        selectedMonth
-      )
-      setCategorySummary(summaryData)
+      // 2. 연간 총 배출량 설정
+      let yearlyTotalSum = 0
+      if (yearlyData.length > 0 && yearlyData[0].totalSumAllCategories) {
+        yearlyTotalSum = yearlyData[0].totalSumAllCategories
+      }
+      setTotalSumAllCategories(yearlyTotalSum)
 
-      // 5. 기존 데이터를 카테고리별 계산기로 변환
-      // convertBackendDataToCalculators(emissionsData)
+      // 3. 월이 선택된 경우 월간 데이터 조회
+      let monthlyFilteredData: CategoryMonthlyEmission[] = []
+      let monthlyTotalSum = 0
+
+      if (selectedMonth) {
+        // 월간 데이터 조회
+        const monthlyData = await fetchCategoryMonthlyEmissions('SCOPE3', selectedYear)
+        // 선택된 월의 데이터만 필터링
+        monthlyFilteredData = monthlyData.filter(data => data.month === selectedMonth)
+        setCategoryMonthlyData(monthlyFilteredData)
+
+        // 해당 월의 총 배출량 계산
+        monthlyTotalSum = monthlyFilteredData.reduce((sum, category) => {
+          return sum + (category.totalEmission || 0)
+        }, 0)
+      } else {
+        setCategoryMonthlyData([])
+      }
+
+      // 4. 상세 배출량 데이터 조회 (연간/월간 공통 - 계산기용)
+      const emissionsData = await fetchEmissionsByScope('SCOPE3')
+
+      // 선택된 기간에 맞게 필터링
+      const filteredEmissions = selectedMonth
+        ? emissionsData.filter(
+            emission =>
+              emission.reportingYear === selectedYear &&
+              emission.reportingMonth === selectedMonth
+          )
+        : emissionsData.filter(emission => emission.reportingYear === selectedYear)
+
+      setPeriodEmissions(filteredEmissions)
+      setScope3Data(filteredEmissions)
+      convertBackendDataToCalculators(filteredEmissions)
+
+      // 5. 기간별 총 배출량 설정 (월이 선택된 경우 월 총합, 아니면 연 총합)
+      setPeriodTotal(selectedMonth ? monthlyTotalSum : yearlyTotalSum)
+
+      // 6. 카테고리별 필터링된 총합 계산 (하단 카테고리 목록용)
+      const categoryTotals: Record<Scope3CategoryKey, number> = {
+        list1: 0,
+        list2: 0,
+        list3: 0,
+        list4: 0,
+        list5: 0,
+        list6: 0,
+        list7: 0,
+        list8: 0,
+        list9: 0,
+        list10: 0,
+        list11: 0,
+        list12: 0,
+        list13: 0,
+        list14: 0,
+        list15: 0
+      }
+
+      // 월이 선택된 경우 월별 데이터 기준, 아니면 연간 데이터 기준으로 카테고리 총합 계산
+      const dataForCategories = selectedMonth ? monthlyFilteredData : yearlyData
+      dataForCategories.forEach(category => {
+        const categoryKey = getCategoryKeyByNumber(category.categoryNumber || 0)
+        if (categoryKey) {
+          categoryTotals[categoryKey] = category.totalEmission || 0
+        }
+      })
+
+      setFilteredCategoryTotals(categoryTotals)
+
+      // 7. 기존 카테고리별 요약 데이터도 조회 (호환성 유지)
+      if (selectedMonth) {
+        const summaryData = await fetchCategorySummaryByScope(
+          'SCOPE3',
+          selectedYear,
+          selectedMonth
+        )
+        setCategorySummary(summaryData)
+      }
     } catch (error) {
-    } finally {
-      setIsLoading(false)
+      console.error('Scope3 데이터 로딩 중 오류:', error)
+      // 에러 발생 시 상태 초기화
+      setPeriodEmissions([])
+      setPeriodTotal(0)
+      setTotalSumAllCategories(0)
+      setCategoryYearlyData([])
+      setCategoryMonthlyData([])
+      setFilteredCategoryTotals({
+        list1: 0,
+        list2: 0,
+        list3: 0,
+        list4: 0,
+        list5: 0,
+        list6: 0,
+        list7: 0,
+        list8: 0,
+        list9: 0,
+        list10: 0,
+        list11: 0,
+        list12: 0,
+        list13: 0,
+        list14: 0,
+        list15: 0
+      })
     }
   }
 
   /**
    * 백엔드 데이터를 프론트엔드 계산기 형식으로 변환
    * 기존 저장된 데이터를 각 카테고리의 계산기 목록으로 변환하여 표시
+   * 완전 초기화를 통해 이전 데이터 잔존 방지
    */
   const convertBackendDataToCalculators = (data: ScopeEmissionResponse[]) => {
     const categorizedData: {[key in Scope3CategoryKey]?: CalculatorData[]} = {}
+    const newCalculatorModes: Record<Scope3CategoryKey, Record<number, boolean>> = {
+      list1: {},
+      list2: {},
+      list3: {},
+      list4: {},
+      list5: {},
+      list6: {},
+      list7: {},
+      list8: {},
+      list9: {},
+      list10: {},
+      list11: {},
+      list12: {},
+      list13: {},
+      list14: {},
+      list15: {}
+    }
 
     // 카테고리별로 데이터 그룹화
     data.forEach(emission => {
@@ -551,37 +671,99 @@ export default function Scope3Form() {
 
       // 수동 입력 모드 상태도 함께 복원 (화면 반전 로직 고려)
       if (emission.inputType !== undefined) {
-        setCalculatorModes(prev => ({
-          ...prev,
-          [categoryKey]: {
-            ...prev[categoryKey],
-            [calculatorId]: emission.inputType === 'LCA' // 수정: 화면에서 반전되므로 LCA일 때 true
-          }
-        }))
+        newCalculatorModes[categoryKey][calculatorId] = emission.inputType === 'LCA'
       }
 
       categorizedData[categoryKey].push(calculatorData)
     })
 
-    // 실제 state 업데이트 수행
-    setCategoryCalculators(prevState => {
-      const newState = {...prevState}
-      Object.entries(categorizedData).forEach(([categoryKey, calculators]) => {
-        newState[categoryKey as Scope3CategoryKey] = calculators || []
-      })
-      return newState
-    })
+    // 모든 카테고리를 완전히 새로운 상태로 초기화
+    const newCategoryCalculators: Record<Scope3CategoryKey, CalculatorData[]> = {
+      list1: categorizedData.list1 || [],
+      list2: categorizedData.list2 || [],
+      list3: categorizedData.list3 || [],
+      list4: categorizedData.list4 || [],
+      list5: categorizedData.list5 || [],
+      list6: categorizedData.list6 || [],
+      list7: categorizedData.list7 || [],
+      list8: categorizedData.list8 || [],
+      list9: categorizedData.list9 || [],
+      list10: categorizedData.list10 || [],
+      list11: categorizedData.list11 || [],
+      list12: categorizedData.list12 || [],
+      list13: categorizedData.list13 || [],
+      list14: categorizedData.list14 || [],
+      list15: categorizedData.list15 || []
+    }
 
-    setCategoryTotals(prevState => {
-      const newState = {...prevState}
-      Object.entries(categorizedData).forEach(([categoryKey, calculators]) => {
-        newState[categoryKey as Scope3CategoryKey] = (calculators || []).map(calc => ({
+    const newCategoryTotals: Record<Scope3CategoryKey, {id: number; emission: number}[]> =
+      {
+        list1: (categorizedData.list1 || []).map(calc => ({
+          id: calc.id,
+          emission: calc.savedData?.totalEmission || 0
+        })),
+        list2: (categorizedData.list2 || []).map(calc => ({
+          id: calc.id,
+          emission: calc.savedData?.totalEmission || 0
+        })),
+        list3: (categorizedData.list3 || []).map(calc => ({
+          id: calc.id,
+          emission: calc.savedData?.totalEmission || 0
+        })),
+        list4: (categorizedData.list4 || []).map(calc => ({
+          id: calc.id,
+          emission: calc.savedData?.totalEmission || 0
+        })),
+        list5: (categorizedData.list5 || []).map(calc => ({
+          id: calc.id,
+          emission: calc.savedData?.totalEmission || 0
+        })),
+        list6: (categorizedData.list6 || []).map(calc => ({
+          id: calc.id,
+          emission: calc.savedData?.totalEmission || 0
+        })),
+        list7: (categorizedData.list7 || []).map(calc => ({
+          id: calc.id,
+          emission: calc.savedData?.totalEmission || 0
+        })),
+        list8: (categorizedData.list8 || []).map(calc => ({
+          id: calc.id,
+          emission: calc.savedData?.totalEmission || 0
+        })),
+        list9: (categorizedData.list9 || []).map(calc => ({
+          id: calc.id,
+          emission: calc.savedData?.totalEmission || 0
+        })),
+        list10: (categorizedData.list10 || []).map(calc => ({
+          id: calc.id,
+          emission: calc.savedData?.totalEmission || 0
+        })),
+        list11: (categorizedData.list11 || []).map(calc => ({
+          id: calc.id,
+          emission: calc.savedData?.totalEmission || 0
+        })),
+        list12: (categorizedData.list12 || []).map(calc => ({
+          id: calc.id,
+          emission: calc.savedData?.totalEmission || 0
+        })),
+        list13: (categorizedData.list13 || []).map(calc => ({
+          id: calc.id,
+          emission: calc.savedData?.totalEmission || 0
+        })),
+        list14: (categorizedData.list14 || []).map(calc => ({
+          id: calc.id,
+          emission: calc.savedData?.totalEmission || 0
+        })),
+        list15: (categorizedData.list15 || []).map(calc => ({
           id: calc.id,
           emission: calc.savedData?.totalEmission || 0
         }))
-      })
-      return newState
-    })
+      }
+
+    // state를 완전히 새로운 상태로 설정
+    setCategoryCalculators(newCategoryCalculators)
+    setCategoryTotals(newCategoryTotals)
+    setCalculatorModes(newCalculatorModes)
   }
 
   /**
@@ -616,9 +798,10 @@ export default function Scope3Form() {
   /**
    * 연도/월 변경 시 데이터 자동 로드
    * 새로운 년도나 월을 선택하면 해당 기간의 기존 데이터를 불러와서 표시
+   * selectedMonth가 null이면 연간 데이터 조회
    */
   useEffect(() => {
-    if (selectedYear && selectedMonth) {
+    if (selectedYear) {
       loadScope3Data()
     }
   }, [selectedYear, selectedMonth, refreshTrigger]) // refreshTrigger로 CRUD 후 재조회
@@ -745,19 +928,20 @@ export default function Scope3Form() {
                     <TrendingUp className="w-5 h-5 text-blue-600" />
                   </div>
                   <div>
-                    <p className="text-sm font-medium text-gray-500">연 배출량</p>
+                    <p className="text-sm font-medium text-gray-500">
+                      {selectedYear}년 연 배출량
+                    </p>
                     <h3 className="text-2xl font-bold text-gray-900">
-                      {Object.values(categorySummary).length > 0
-                        ? Object.values(categorySummary)
-                            .reduce((sum, emission) => sum + emission, 0)
-                            .toLocaleString(undefined, {
+                      {categoryYearlyData.length > 0 &&
+                      categoryYearlyData[0].totalSumAllCategories
+                        ? categoryYearlyData[0].totalSumAllCategories.toLocaleString(
+                            undefined,
+                            {
                               maximumFractionDigits: 2,
                               minimumFractionDigits: 2
-                            })
-                        : grandTotal.toLocaleString(undefined, {
-                            maximumFractionDigits: 2,
-                            minimumFractionDigits: 2
-                          })}
+                            }
+                          )
+                        : '0.00'}
 
                       <span className="ml-1 text-sm font-normal text-gray-500">
                         kgCO₂eq
@@ -790,19 +974,27 @@ export default function Scope3Form() {
                     <TrendingUp className="w-5 h-5 text-blue-600" />
                   </div>
                   <div>
-                    <p className="text-sm font-medium text-gray-500">월 배출량</p>
+                    <p className="text-sm font-medium text-gray-500">
+                      {selectedMonth
+                        ? `${selectedYear}년 ${selectedMonth}월`
+                        : '월을 선택하세요'}{' '}
+                      배출량
+                    </p>
                     <h3 className="text-2xl font-bold text-gray-900">
-                      {Object.values(categorySummary).length > 0
-                        ? Object.values(categorySummary)
-                            .reduce((sum, emission) => sum + emission, 0)
+                      {selectedMonth && categoryMonthlyData.length > 0
+                        ? categoryMonthlyData
+                            .reduce(
+                              (sum: number, category: CategoryMonthlyEmission) =>
+                                sum + (category.totalEmission || 0),
+                              0
+                            )
                             .toLocaleString(undefined, {
                               maximumFractionDigits: 2,
                               minimumFractionDigits: 2
                             })
-                        : grandTotal.toLocaleString(undefined, {
-                            maximumFractionDigits: 2,
-                            minimumFractionDigits: 2
-                          })}
+                        : selectedMonth
+                        ? '0.00'
+                        : '월 선택 필요'}
 
                       <span className="ml-1 text-sm font-normal text-gray-500">
                         kgCO₂eq
@@ -829,7 +1021,15 @@ export default function Scope3Form() {
           <CategorySelector
             categoryList={scope3CategoryList}
             getTotalEmission={(categoryKey: string) => {
-              return getTotalEmission(categoryKey as Scope3CategoryKey)
+              // 1. API에서 받은 집계 데이터 우선 사용 (선택된 연도/월에 해당하는 실제 데이터)
+              const filteredTotal =
+                filteredCategoryTotals[categoryKey as Scope3CategoryKey] || 0
+
+              // 2. 로컬 계산 결과 (사용자가 입력 중인 데이터)
+              const localTotal = getTotalEmission(categoryKey as Scope3CategoryKey)
+
+              // 3. 더 큰 값 사용 (실제 저장된 데이터와 입력 중인 데이터 중 최신값)
+              return Math.max(filteredTotal, localTotal)
             }}
             onCategorySelect={handleCategorySelect}
             animationDelay={0.2}

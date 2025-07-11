@@ -11,7 +11,6 @@ import {
   ScopeEmissionResponse,
   ScopeEmissionUpdateRequest,
   ScopeCategoryResponse,
-  ScopeSummary,
   ScopeCategorySummary,
   ApiResponse,
   ScopeType,
@@ -457,17 +456,23 @@ export const fetchCategoryYearlyEmissions = async (
     const response = await api.get<ApiResponse<CategoryYearlyEmission[]>>(
       `/api/v1/scope/aggregation/category/${scopeType}/year/${year}`
     )
+    console.log(response)
 
     dismissLoading()
 
     if (response.data.success && response.data.data) {
       return response.data.data
     } else {
-      throw new Error(response.data.message || '카테고리별 연간 배출량 조회에 실패했습니다.')
+      throw new Error(
+        response.data.message || '카테고리별 연간 배출량 조회에 실패했습니다.'
+      )
     }
   } catch (error: any) {
     dismissLoading()
-    showError(error.response?.data?.message || '카테고리별 연간 배출량 조회 중 오류가 발생했습니다.')
+    showError(
+      error.response?.data?.message ||
+        '카테고리별 연간 배출량 조회 중 오류가 발생했습니다.'
+    )
     return []
   }
 }
@@ -495,11 +500,16 @@ export const fetchCategoryMonthlyEmissions = async (
     if (response.data.success && response.data.data) {
       return response.data.data
     } else {
-      throw new Error(response.data.message || '카테고리별 월간 배출량 조회에 실패했습니다.')
+      throw new Error(
+        response.data.message || '카테고리별 월간 배출량 조회에 실패했습니다.'
+      )
     }
   } catch (error: any) {
     dismissLoading()
-    showError(error.response?.data?.message || '카테고리별 월간 배출량 조회 중 오류가 발생했습니다.')
+    showError(
+      error.response?.data?.message ||
+        '카테고리별 월간 배출량 조회 중 오류가 발생했습니다.'
+    )
     return []
   }
 }
