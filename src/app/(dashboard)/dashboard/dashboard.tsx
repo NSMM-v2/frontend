@@ -15,7 +15,7 @@ export default function Page() {
     let isScrolling = false
 
     const handleWheel = (e: WheelEvent) => {
-      // ✅ 내부 스크롤 가능한 영역은 wheel 무시
+      // 내부 스크롤 가능한 영역은 wheel 무시
       const isInsideScrollable = (e.target as HTMLElement)?.closest('.allow-scroll')
       if (isInsideScrollable) return
 
@@ -51,7 +51,7 @@ export default function Page() {
   }
 
   return (
-    <div ref={containerRef} className="w-full h-full overflow-hidden">
+    <div ref={containerRef} className="overflow-hidden w-full h-full">
       {[...Array(sectionCount)].map((_, i) => (
         <section
           key={i}

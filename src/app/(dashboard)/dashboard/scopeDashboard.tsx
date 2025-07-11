@@ -552,11 +552,6 @@ export default function ScopeDashboard() {
           {/* 헤더 부분 ============================================================================================================================= */}
           <CardHeader className="p-0">
             <CardTitle className="text-lg font-bold">탄소 배출량 데이터</CardTitle>
-            <CardDescription>
-              {selectedPartner
-                ? `${selectedPartner.companyName} 상세 데이터`
-                : '협력사를 선택해주세요'}
-            </CardDescription>
           </CardHeader>
           {/* 콘텐트 부분 ============================================================================================================================= */}
           <CardContent className="overflow-y-auto flex-1 p-2 rounded-lg border scroll-auto custom-scrollbar">
