@@ -3,12 +3,7 @@
 import React, {useState, useEffect} from 'react'
 import {motion} from 'framer-motion'
 
-import {
-  Home, // 홈 아이콘
-  Factory, // 공장 아이콘
-  CalendarDays, // 달력 아이콘
-  TrendingUp // 상승 트렌드 아이콘
-} from 'lucide-react'
+import {Home, Factory, CalendarDays, TrendingUp} from 'lucide-react'
 
 import {
   Breadcrumb,
@@ -42,7 +37,7 @@ import {
   ScopeCategorySummary
 } from '@/types/scopeTypes'
 import {
-  fetchEmissionsByYearAndMonth,
+  fetchEmissionsByYearAndMonthForInput,
   fetchCategorySummaryByScope,
   deleteScopeEmission
 } from '@/services/scopeService'
@@ -56,6 +51,7 @@ interface CalculatorData {
   id: number // 식별자: emissionId(양수) 또는 임시ID(음수)
   state: SelectorState // 사용자 입력 상태
   savedData?: ScopeEmissionResponse // 백엔드에서 받은 전체 데이터 (저장된 경우에만)
+  factoryEnabled: boolean // 계산기별 공장 설비 활성화 상태
 }
 
 /**
@@ -355,7 +351,8 @@ export default function Scope1Form() {
           ...prev[activePotentialCategory],
           {
             id: newId,
-            state: {category: '', separate: '', rawMaterial: '', quantity: ''}
+            state: {category: '', separate: '', rawMaterial: '', quantity: ''},
+            factoryEnabled: false // 기본값: 공장 설비 비활성화
           }
         ]
       }))
@@ -367,7 +364,8 @@ export default function Scope1Form() {
           ...prev[activeKineticCategory],
           {
             id: newId,
-            state: {category: '', separate: '', rawMaterial: '', quantity: ''}
+            state: {category: '', separate: '', rawMaterial: '', quantity: ''},
+            factoryEnabled: false // 기본값: 공장 설비 비활성화
           }
         ]
       }))
@@ -379,7 +377,8 @@ export default function Scope1Form() {
           ...prev[activeProcessCategory],
           {
             id: newId,
-            state: {category: '', separate: '', rawMaterial: '', quantity: ''}
+            state: {category: '', separate: '', rawMaterial: '', quantity: ''},
+            factoryEnabled: false // 기본값: 공장 설비 비활성화
           }
         ]
       }))
@@ -391,7 +390,8 @@ export default function Scope1Form() {
           ...prev[activeLeakCategory],
           {
             id: newId,
-            state: {category: '', separate: '', rawMaterial: '', quantity: ''}
+            state: {category: '', separate: '', rawMaterial: '', quantity: ''},
+            factoryEnabled: false // 기본값: 공장 설비 비활성화
           }
         ]
       }))
@@ -460,7 +460,8 @@ export default function Scope1Form() {
             [activePotentialCategory]: [
               {
                 id: newTemporaryId,
-                state: {category: '', separate: '', rawMaterial: '', quantity: ''}
+                state: {category: '', separate: '', rawMaterial: '', quantity: ''},
+                factoryEnabled: false // 기본값: 공장 설비 비활성화
               }
             ]
           }))
@@ -474,7 +475,8 @@ export default function Scope1Form() {
             [activeKineticCategory]: [
               {
                 id: newTemporaryId,
-                state: {category: '', separate: '', rawMaterial: '', quantity: ''}
+                state: {category: '', separate: '', rawMaterial: '', quantity: ''},
+                factoryEnabled: false // 기본값: 공장 설비 비활성화
               }
             ]
           }))
@@ -488,7 +490,8 @@ export default function Scope1Form() {
             [activeProcessCategory]: [
               {
                 id: newTemporaryId,
-                state: {category: '', separate: '', rawMaterial: '', quantity: ''}
+                state: {category: '', separate: '', rawMaterial: '', quantity: ''},
+                factoryEnabled: false // 기본값: 공장 설비 비활성화
               }
             ]
           }))
@@ -502,7 +505,8 @@ export default function Scope1Form() {
             [activeLeakCategory]: [
               {
                 id: newTemporaryId,
-                state: {category: '', separate: '', rawMaterial: '', quantity: ''}
+                state: {category: '', separate: '', rawMaterial: '', quantity: ''},
+                factoryEnabled: false // 기본값: 공장 설비 비활성화
               }
             ]
           }))
@@ -614,6 +618,41 @@ export default function Scope1Form() {
   }
 
   /**
+   * 계산기별 공장 설비 상태 업데이트 핸들러
+   */
+  const updateFactoryEnabled = (id: number, enabled: boolean) => {
+    if (activePotentialCategory) {
+      setPotentialCategoryCalculators(prev => ({
+        ...prev,
+        [activePotentialCategory]: (prev[activePotentialCategory] || []).map(c =>
+          c.id === id ? {...c, factoryEnabled: enabled} : c
+        )
+      }))
+    } else if (activeKineticCategory) {
+      setKineticCategoryCalculators(prev => ({
+        ...prev,
+        [activeKineticCategory]: (prev[activeKineticCategory] || []).map(c =>
+          c.id === id ? {...c, factoryEnabled: enabled} : c
+        )
+      }))
+    } else if (activeProcessCategory) {
+      setProcessCategoryCalculators(prev => ({
+        ...prev,
+        [activeProcessCategory]: (prev[activeProcessCategory] || []).map(c =>
+          c.id === id ? {...c, factoryEnabled: enabled} : c
+        )
+      }))
+    } else if (activeLeakCategory) {
+      setLeakCategoryCalculators(prev => ({
+        ...prev,
+        [activeLeakCategory]: (prev[activeLeakCategory] || []).map(c =>
+          c.id === id ? {...c, factoryEnabled: enabled} : c
+        )
+      }))
+    }
+  }
+
+  /**
    * 카테고리 선택 핸들러
    */
   const handlePotentialCategorySelect = (category: Scope1PotentialCategoryKey) => {
@@ -633,7 +672,8 @@ export default function Scope1Form() {
         [category]: [
           {
             id: newId,
-            state: {category: '', separate: '', rawMaterial: '', quantity: ''}
+            state: {category: '', separate: '', rawMaterial: '', quantity: ''},
+            factoryEnabled: false // 기본값: 공장 설비 비활성화
           }
         ]
       }))
@@ -656,7 +696,8 @@ export default function Scope1Form() {
         [category]: [
           {
             id: newId,
-            state: {category: '', separate: '', rawMaterial: '', quantity: ''}
+            state: {category: '', separate: '', rawMaterial: '', quantity: ''},
+            factoryEnabled: false // 기본값: 공장 설비 비활성화
           }
         ]
       }))
@@ -679,7 +720,8 @@ export default function Scope1Form() {
         [category]: [
           {
             id: newId,
-            state: {category: '', separate: '', rawMaterial: '', quantity: ''}
+            state: {category: '', separate: '', rawMaterial: '', quantity: ''},
+            factoryEnabled: false // 기본값: 공장 설비 비활성화
           }
         ]
       }))
@@ -702,7 +744,8 @@ export default function Scope1Form() {
         [category]: [
           {
             id: newId,
-            state: {category: '', separate: '', rawMaterial: '', quantity: ''}
+            state: {category: '', separate: '', rawMaterial: '', quantity: ''},
+            factoryEnabled: false // 기본값: 공장 설비 비활성화
           }
         ]
       }))
@@ -742,8 +785,8 @@ export default function Scope1Form() {
 
     setIsLoading(true)
     try {
-      // 1. 전체 배출량 데이터 조회 (Scope 1만 필터링)
-      const emissionsData = await fetchEmissionsByYearAndMonth(
+      // 1. 전체 배출량 데이터 조회 (Scope 1만 필터링, 본인 데이터만)
+      const emissionsData = await fetchEmissionsByYearAndMonthForInput(
         selectedYear,
         selectedMonth,
         'SCOPE1'
@@ -758,7 +801,7 @@ export default function Scope1Form() {
       )
       setCategorySummary(summaryData)
 
-      // 3. 기존 데이터를 카테고리별 계산기로 변환
+      // 4. 기존 데이터를 카테고리별 계산기로 변환
       convertBackendDataToCalculators(emissionsData)
     } catch (error) {
       // console.error('Scope1 데이터 로드 오류:', error)
@@ -792,7 +835,8 @@ export default function Scope1Form() {
           productName: emission.productName || '',
           productCode: emission.companyProductCode || ''
         },
-        savedData: emission
+        savedData: emission,
+        factoryEnabled: emission.factoryEnabled || false // 백엔드에서 가져온 factoryEnabled 값 또는 기본값 false
       }
 
       // 카테고리 번호에 따라 분류 - 안전한 체크 추가
@@ -1227,6 +1271,7 @@ export default function Scope1Form() {
               ] || {}
             }
             onModeChange={handleModeChange}
+            onFactoryEnabledChange={updateFactoryEnabled}
             selectedYear={selectedYear}
             selectedMonth={selectedMonth}
             onDataChange={refreshData}

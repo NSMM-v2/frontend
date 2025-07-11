@@ -209,6 +209,42 @@ export const fetchEmissionsByYearAndMonth = async (
 }
 
 /**
+ * 연도/월별 배출량 데이터 조회 (데이터 입력용 - 본인 데이터만)
+ * 데이터 입력 폼에서 사용하며, 하위 조직 데이터를 제외하고 현재 사용자의 데이터만 조회
+ * 백엔드 엔드포인트: GET /api/v1/scope/emissions/input/year/{year}/month/{month}
+ * @param year 보고년도
+ * @param month 보고월
+ * @param scopeType Scope 타입 필터 (선택적)
+ * @returns Promise<ScopeEmissionResponse[]> 현재 사용자의 배출량 데이터 목록
+ */
+export const fetchEmissionsByYearAndMonthForInput = async (
+  year: number,
+  month: number,
+  scopeType?: ScopeType
+): Promise<ScopeEmissionResponse[]> => {
+  try {
+    showLoading('입력 데이터를 조회중입니다...')
+
+    const params = scopeType ? `?scopeType=${scopeType}` : ''
+    const response = await api.get<ApiResponse<ScopeEmissionResponse[]>>(
+      `/api/v1/scope/emissions/input/year/${year}/month/${month}${params}`
+    )
+
+    dismissLoading()
+
+    if (response.data.success && response.data.data) {
+      return response.data.data
+    } else {
+      throw new Error(response.data.message || '입력 데이터 조회에 실패했습니다.')
+    }
+  } catch (error: any) {
+    dismissLoading()
+    showError(error.response?.data?.message || '입력 데이터 조회 중 오류가 발생했습니다.')
+    return []
+  }
+}
+
+/**
  * 연도/월/카테고리별 배출량 데이터 조회
  * 백엔드 엔드포인트: GET /api/v1/scope/emissions/year/{year}/month/{month}/scope/{scopeType}/category/{categoryNumber}
  * @param year 보고년도
