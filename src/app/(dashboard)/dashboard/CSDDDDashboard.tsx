@@ -533,7 +533,7 @@ export default function CSDDDDashboard() {
                 {selectedPartner ? selectedPartner.companyName : '협력사 상세'}
               </CardTitle>
 
-              {selectedPartner?.results?.length && selectedPartner.results.length > 0 && (
+              {selectedPartner?.results && selectedPartner.results.length > 0 && (
                 <select
                   value={selectedResultIndex}
                   onChange={e => setSelectedResultIndex(Number(e.target.value))}
@@ -716,9 +716,8 @@ export default function CSDDDDashboard() {
             ) : (
               <div className="flex flex-col items-center justify-center h-full py-24 text-gray-400">
                 <Shield className="w-16 h-16 mb-4 text-gray-200" />
-                <div className="text-lg font-bold">협력사를 선택하세요</div>
-                <div className="mt-2 text-sm text-center">
-                  왼쪽 목록에서 협력사를 클릭하면 상세 정보를 볼 수 있습니다.
+                <div className="text-lg font-bold">
+                  협력사의 자가진단 결과가 없습니다.
                 </div>
               </div>
             )}
