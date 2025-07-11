@@ -60,6 +60,7 @@ interface Scope2CalculatorData {
   state: SelectorState
   savedData?: any // 백엔드에서 받은 전체 데이터
   showDeleteDialog?: boolean // 삭제 다이얼로그 표시 여부
+  factoryEnabled: boolean // 계산기별 공장 설비 활성화 상태
 }
 
 // 컴포넌트 Props 정의
@@ -77,6 +78,7 @@ interface Scope2DataInputProps {
   onBackToList: () => void
   calculatorModes: Record<number, boolean>
   onModeChange: (id: number, checked: boolean) => void
+  onFactoryEnabledChange: (id: number, enabled: boolean) => void // 공장 설비 상태 변경 핸들러
   selectedYear: number
   selectedMonth: number | null
   onDataChange: () => void
@@ -108,6 +110,7 @@ export function Scope2DataInput({
   onBackToList,
   calculatorModes,
   onModeChange,
+  onFactoryEnabledChange,
   selectedYear,
   selectedMonth,
   onDataChange
@@ -124,9 +127,9 @@ export function Scope2DataInput({
   const [activeSteamCategory, setActiveSteamCategory] =
     useState<Scope2SteamCategoryKey | null>(null)
 
-  const [factoryEnabled, setFactoryEnabled] = useState(false)
-  const handleFactoryToggle = (checked: boolean) => {
-    setFactoryEnabled(checked)
+  // 각 계산기별 공장 설비 상태 변경 핸들러
+  const handleFactoryToggle = (calculatorId: number, checked: boolean) => {
+    onFactoryEnabledChange(calculatorId, checked)
   }
 
   // 카테고리별 계산기 목록 관리
@@ -170,29 +173,16 @@ export function Scope2DataInput({
     ]
   })
 
-  // useEffect를 여기로 이동
-  useEffect(() => {
-    const allCalculators = [
-      ...electricCategoryCalculators.list11,
-      ...steamCategoryCalculators.list12
-    ]
-
-    const firstCalculatorWithData = allCalculators.find(calc => calc.savedData)
-    if (firstCalculatorWithData?.savedData?.factoryEnabled !== undefined) {
-      setFactoryEnabled(firstCalculatorWithData.savedData.factoryEnabled)
-    }
-  }, [electricCategoryCalculators, steamCategoryCalculators])
 
   // 백엔드 API 연동 함수
 
   // 계산기 데이터 저장/수정 처리
   const saveCalculatorData = async (
     calc: Scope2CalculatorData,
-    isManualInput: boolean,
-    factoryEnabled: boolean
+    isManualInput: boolean
   ) => {
     try {
-      const payload = createRequestPayload(calc, isManualInput, factoryEnabled)
+      const payload = createRequestPayload(calc, isManualInput)
 
       if (isTemporaryId(calc.id)) {
         // 새로운 데이터 생성
@@ -220,8 +210,7 @@ export function Scope2DataInput({
   // API 요청 데이터 생성
   const createRequestPayload = (
     calc: Scope2CalculatorData,
-    isManualInput: boolean,
-    factoryEnabled: boolean // 💡 새로 추가된 인자
+    isManualInput: boolean
   ): ScopeEmissionRequest => {
     const state = calc.state
 
@@ -249,7 +238,7 @@ export function Scope2DataInput({
       scopeType: 'SCOPE2',
       scope2CategoryNumber,
       majorCategory,
-      factoryEnabled,
+      factoryEnabled: calc.factoryEnabled,
       subcategory: state.separate || '',
       rawMaterial: state.rawMaterial || '',
       activityAmount,
@@ -287,7 +276,7 @@ export function Scope2DataInput({
       // 각 계산기별로 저장 처리
       const savePromises = calculatorsToSave.map(async calc => {
         const isManualInput = !(calculatorModes[calc.id] || false) // 기본값 false(Manual)
-        return await saveCalculatorData(calc, isManualInput, factoryEnabled)
+        return await saveCalculatorData(calc, isManualInput)
       })
 
       await Promise.all(savePromises)
@@ -543,26 +532,26 @@ export function Scope2DataInput({
                         </div>
                         <div className="flex items-center space-x-3">
                           <Switch
-                            checked={factoryEnabled}
-                            onCheckedChange={handleFactoryToggle}
+                            checked={calculator.factoryEnabled}
+                            onCheckedChange={(checked) => handleFactoryToggle(calculator.id, checked)}
                             className="data-[state=checked]:bg-blue-500"
                           />
 
                           {/* 라벨 */}
                           <span
                             className={`text-sm font-medium transition-colors ${
-                              factoryEnabled ? 'text-blue-600' : 'text-gray-500'
+                              calculator.factoryEnabled ? 'text-blue-600' : 'text-gray-500'
                             }`}>
                             공장 설비
                           </span>
                           {/* 상태 표시 */}
                           <span
                             className={`text-xs px-2 py-1 rounded-full font-medium transition-colors ${
-                              factoryEnabled
+                              calculator.factoryEnabled
                                 ? 'text-blue-700 bg-blue-100'
                                 : 'text-gray-500 bg-gray-100'
                             }`}>
-                            {factoryEnabled ? '활성' : '비활성'}
+                            {calculator.factoryEnabled ? '활성' : '비활성'}
                           </span>
                         </div>
                         {/* 오른쪽 컨트롤 영역 */}

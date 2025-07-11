@@ -48,6 +48,7 @@ interface CalculatorData {
   id: number
   state: SelectorState
   savedData?: ScopeEmissionResponse
+  factoryEnabled: boolean // 계산기별 공장 설비 활성화 상태
 }
 
 /**
@@ -299,7 +300,8 @@ export default function Scope2Form() {
               kgCO2eq: '',
               productName: '',
               productCode: ''
-            }
+            },
+            factoryEnabled: false
           }
         ]
       }))
@@ -320,7 +322,8 @@ export default function Scope2Form() {
               kgCO2eq: '',
               productName: '',
               productCode: ''
-            }
+            },
+            factoryEnabled: false
           }
         ]
       }))
@@ -365,7 +368,8 @@ export default function Scope2Form() {
                   kgCO2eq: '',
                   productName: '',
                   productCode: ''
-                }
+                },
+                factoryEnabled: false
               }
             ]
           }))
@@ -429,7 +433,8 @@ export default function Scope2Form() {
                   kgCO2eq: '',
                   productName: '',
                   productCode: ''
-                }
+                },
+                factoryEnabled: false
               }
             ]
           }))
@@ -484,6 +489,27 @@ export default function Scope2Form() {
   }
 
   /**
+   * 계산기별 공장 설비 상태 변경 핸들러
+   */
+  const handleFactoryEnabledChange = (id: number, enabled: boolean) => {
+    if (activeElectricCategory) {
+      setElectricCategoryCalculators(prev => ({
+        ...prev,
+        [activeElectricCategory]: (prev[activeElectricCategory] || []).map(c =>
+          c.id === id ? {...c, factoryEnabled: enabled} : c
+        )
+      }))
+    } else if (activeSteamCategory) {
+      setSteamCategoryCalculators(prev => ({
+        ...prev,
+        [activeSteamCategory]: (prev[activeSteamCategory] || []).map(c =>
+          c.id === id ? {...c, factoryEnabled: enabled} : c
+        )
+      }))
+    }
+  }
+
+  /**
    * 카테고리 선택 핸들러
    */
   const handleElectricCategorySelect = (category: Scope2ElectricCategoryKey) => {
@@ -509,7 +535,8 @@ export default function Scope2Form() {
               kgCO2eq: '',
               productName: '',
               productCode: ''
-            }
+            },
+            factoryEnabled: false
           }
         ]
       }))
@@ -540,7 +567,8 @@ export default function Scope2Form() {
               kgCO2eq: '',
               productName: '',
               productCode: ''
-            }
+            },
+            factoryEnabled: false
           }
         ]
       }))
@@ -659,7 +687,8 @@ export default function Scope2Form() {
           productName: emission.productName || '',
           productCode: emission.companyProductCode || ''
         },
-        savedData: emission
+        savedData: emission,
+        factoryEnabled: emission.factoryEnabled || false
       }
 
       // 카테고리 번호에 따라 분류
@@ -920,6 +949,7 @@ export default function Scope2Form() {
             calculatorModes[activeElectricCategory || activeSteamCategory!] || {}
           }
           onModeChange={handleModeChange}
+          onFactoryEnabledChange={handleFactoryEnabledChange}
           selectedYear={selectedYear}
           selectedMonth={selectedMonth}
           onDataChange={refreshData}
