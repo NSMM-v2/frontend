@@ -193,7 +193,9 @@ export default function ScopeDashboard() {
       setMonthlyData(data)
     } catch (error) {
       console.error('월별 배출량 데이터 로드 실패:', error)
-      setChartError(error instanceof Error ? error.message : '데이터 로드 중 오류가 발생했습니다')
+      setChartError(
+        error instanceof Error ? error.message : '데이터 로드 중 오류가 발생했습니다'
+      )
       setMonthlyData([])
     } finally {
       setChartLoading(false)
@@ -342,7 +344,7 @@ export default function ScopeDashboard() {
   // ========================================================================
 
   return (
-    <div className="h-[calc(100vh-80px)] w-full p-4">
+    <div className="h-[calc(100vh-80px)] w-full py-4">
       <div className="flex flex-col w-full h-full gap-4">
         {/* 윗쪽 셀 2개------------------------------------------------------------------------------ */}
         <div className="flex flex-row h-[50%] w-full gap-4">
@@ -365,12 +367,12 @@ export default function ScopeDashboard() {
                   value={searchQuery}
                   onChange={e => setSearchQuery(e.target.value)}
                   placeholder={activeTab === 'company' ? '협력사 검색' : '제품코드 검색'}
-                  className="h-8 p-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500"
+                  className="w-full h-8 p-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500"
                 />
               </div>
 
               <TabsContent value="company">
-                <div className="flex flex-col flex-1 gap-2 p-2 border rounded-lg max-h-[70%] scroll-auto custom-scrollbar">
+                <div className="flex flex-col flex-1 gap-2 p-2 border rounded-lg max-h-[55%] overflow-hidden scroll-auto custom-scrollbar">
                   {loading && (
                     <div className="flex items-center justify-center h-full">
                       <div className="text-sm text-gray-500">
@@ -477,7 +479,9 @@ export default function ScopeDashboard() {
                 <div>
                   <CardTitle className="text-lg font-bold">총 탄소 배출량</CardTitle>
                   <CardDescription>
-                    {selectedPartner ? selectedPartner.companyName : '협력사를 선택해주세요'}
+                    {selectedPartner
+                      ? selectedPartner.companyName
+                      : '협력사를 선택해주세요'}
                   </CardDescription>
                 </div>
                 {/* 년도 선택 드롭다운 */}
@@ -485,9 +489,8 @@ export default function ScopeDashboard() {
                   <label className="text-sm font-medium text-gray-700">년도:</label>
                   <select
                     value={selectedYear}
-                    onChange={(e) => handleYearSelect(Number(e.target.value))}
-                    className="px-3 py-1 text-sm border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-                  >
+                    onChange={e => handleYearSelect(Number(e.target.value))}
+                    className="px-3 py-1 text-sm border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
                     {generateYearOptions().map(year => (
                       <option key={year} value={year}>
                         {year}년
@@ -499,21 +502,18 @@ export default function ScopeDashboard() {
             </CardHeader>
             <CardContent className="flex-1 p-2 border rounded-lg">
               {selectedPartner ? (
-                chartLoading ? (
-                  <div className="flex items-center justify-center w-full h-full">
-                    <div className="text-center text-gray-500">
-                      <div className="mb-2 text-lg">⏳</div>
-                      <div>데이터를 불러오는 중...</div>
-                    </div>
-                  </div>
-                ) : chartError ? (
+                chartError ? (
                   <div className="flex items-center justify-center w-full h-full">
                     <div className="text-center text-red-500">
                       <div className="mb-2 text-lg">❌</div>
                       <div>데이터 로드 실패</div>
-                      <div className="text-sm mt-1">{chartError}</div>
+                      <div className="mt-1 text-sm">{chartError}</div>
                       <button
-                        onClick={() => selectedPartner && selectedPartner.partnerId !== undefined && loadPartnerMonthlyData(selectedPartner.partnerId, selectedYear)}
+                        onClick={() =>
+                          selectedPartner &&
+                          selectedPartner.partnerId !== undefined &&
+                          loadPartnerMonthlyData(selectedPartner.partnerId, selectedYear)
+                        }
                         className="px-3 py-1 mt-2 text-xs text-red-700 bg-red-100 rounded hover:bg-red-200">
                         다시 시도
                       </button>
@@ -548,7 +548,8 @@ export default function ScopeDashboard() {
         {/* ======================================================================
             배출량 데이터 테이블 섹션 (Emissions Data Table Section)
             ====================================================================== */}
-        <Card className="flex flex-col flex-1 p-4 bg-white rounded-lg">
+        <Card className="flex flex-col flex-1 w-full p-4 bg-white rounded-lg">
+          {/* 헤더 부분 ============================================================================================================================= */}
           <CardHeader className="p-0">
             <CardTitle className="text-lg font-bold">탄소 배출량 데이터</CardTitle>
             <CardDescription>
@@ -557,45 +558,46 @@ export default function ScopeDashboard() {
                 : '협력사를 선택해주세요'}
             </CardDescription>
           </CardHeader>
+          {/* 콘텐트 부분 ============================================================================================================================= */}
           <CardContent className="flex-1 p-2 overflow-y-auto border rounded-lg scroll-auto custom-scrollbar">
             {selectedPartner ? (
-              chartLoading ? (
-                <div className="flex items-center justify-center h-full">
-                  <div className="text-center text-gray-500">
-                    <div className="mb-2 text-lg">⏳</div>
-                    <div>데이터를 불러오는 중...</div>
-                  </div>
-                </div>
-              ) : chartError ? (
-                <div className="flex items-center justify-center h-full">
+              chartError ? (
+                <div className="flex items-center justify-center w-full h-full">
                   <div className="text-center text-red-500">
                     <div className="mb-2 text-lg">❌</div>
                     <div>데이터 로드 실패</div>
-                    <div className="text-sm mt-1">{chartError}</div>
+                    <div className="mt-1 text-sm">{chartError}</div>
                     <button
-                      onClick={() => selectedPartner && selectedPartner.partnerId !== undefined && loadPartnerMonthlyData(selectedPartner.partnerId, selectedYear)}
+                      onClick={() =>
+                        selectedPartner &&
+                        selectedPartner.partnerId !== undefined &&
+                        loadPartnerMonthlyData(selectedPartner.partnerId, selectedYear)
+                      }
                       className="px-3 py-1 mt-2 text-xs text-red-700 bg-red-100 rounded hover:bg-red-200">
                       다시 시도
                     </button>
                   </div>
                 </div>
-              ) : monthlyData.length > 0 ? (
-                <div className="flex-1 max-h-0">
-                  <table className="min-w-full text-sm border">
+              ) : // 데이터 테이블 =======================================================================================================================================
+              monthlyData.length > 0 ? (
+                <div className=" max-h-0">
+                  <table className="w-full text-sm border">
                     <thead className="bg-gray-100">
                       <tr>
                         <th className="px-4 py-2 text-center border">월</th>
                         <th className="px-4 py-2 text-center border">Scope 1 (tCO₂eq)</th>
                         <th className="px-4 py-2 text-center border">Scope 2 (tCO₂eq)</th>
                         <th className="px-4 py-2 text-center border">Scope 3 (tCO₂eq)</th>
-                        <th className="px-4 py-2 text-center border">총 배출량 (tCO₂eq)</th>
+                        <th className="px-4 py-2 text-center border">
+                          총 배출량 (tCO₂eq)
+                        </th>
                         <th className="px-4 py-2 text-center border">데이터 건수</th>
                       </tr>
                     </thead>
                     <tbody>
-                      {monthlyData.map((item) => (
+                      {monthlyData.map(item => (
                         <tr key={item.month} className="hover:bg-gray-50">
-                          <td className="px-4 py-2 text-center border font-medium">
+                          <td className="px-4 py-2 font-medium text-center border">
                             {selectedYear}년 {item.month}월
                           </td>
                           <td className="px-4 py-2 text-right border">
@@ -607,10 +609,10 @@ export default function ScopeDashboard() {
                           <td className="px-4 py-2 text-right border">
                             {item.scope3Total.toLocaleString()}
                           </td>
-                          <td className="px-4 py-2 text-right border font-medium">
+                          <td className="px-4 py-2 font-medium text-right border">
                             {item.totalEmission.toLocaleString()}
                           </td>
-                          <td className="px-4 py-2 text-center border text-gray-600">
+                          <td className="px-4 py-2 text-center text-gray-600 border">
                             {item.dataCount}건
                           </td>
                         </tr>
@@ -620,16 +622,24 @@ export default function ScopeDashboard() {
                       <tr className="font-bold">
                         <td className="px-4 py-2 text-center border">합계</td>
                         <td className="px-4 py-2 text-right border">
-                          {monthlyData.reduce((sum, item) => sum + item.scope1Total, 0).toLocaleString()}
+                          {monthlyData
+                            .reduce((sum, item) => sum + item.scope1Total, 0)
+                            .toLocaleString()}
                         </td>
                         <td className="px-4 py-2 text-right border">
-                          {monthlyData.reduce((sum, item) => sum + item.scope2Total, 0).toLocaleString()}
+                          {monthlyData
+                            .reduce((sum, item) => sum + item.scope2Total, 0)
+                            .toLocaleString()}
                         </td>
                         <td className="px-4 py-2 text-right border">
-                          {monthlyData.reduce((sum, item) => sum + item.scope3Total, 0).toLocaleString()}
+                          {monthlyData
+                            .reduce((sum, item) => sum + item.scope3Total, 0)
+                            .toLocaleString()}
                         </td>
                         <td className="px-4 py-2 text-right border">
-                          {monthlyData.reduce((sum, item) => sum + item.totalEmission, 0).toLocaleString()}
+                          {monthlyData
+                            .reduce((sum, item) => sum + item.totalEmission, 0)
+                            .toLocaleString()}
                         </td>
                         <td className="px-4 py-2 text-center border">
                           {monthlyData.reduce((sum, item) => sum + item.dataCount, 0)}건
