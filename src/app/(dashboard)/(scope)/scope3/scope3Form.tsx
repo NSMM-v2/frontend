@@ -37,7 +37,6 @@ import {
   CategoryMonthlyEmission
 } from '@/types/scopeTypes'
 import {
-  fetchCategorySummaryByScope,
   deleteScopeEmission,
   fetchCategoryYearlyEmissions,
   fetchCategoryMonthlyEmissions,
@@ -579,16 +578,6 @@ export default function Scope3Form() {
       })
 
       setFilteredCategoryTotals(categoryTotals)
-
-      // 7. 기존 카테고리별 요약 데이터도 조회 (호환성 유지)
-      if (selectedMonth) {
-        const summaryData = await fetchCategorySummaryByScope(
-          'SCOPE3',
-          selectedYear,
-          selectedMonth
-        )
-        setCategorySummary(summaryData)
-      }
     } catch (error) {
       console.error('Scope3 데이터 로딩 중 오류:', error)
       // 에러 발생 시 상태 초기화

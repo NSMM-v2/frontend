@@ -10,7 +10,6 @@ import {
   ScopeEmissionRequest,
   ScopeEmissionResponse,
   ScopeEmissionUpdateRequest,
-  ScopeCategoryResponse,
   ScopeCategorySummary,
   ApiResponse,
   ScopeType,
@@ -53,7 +52,6 @@ export const updateScopeEmission = async (
   data: ScopeEmissionUpdateRequest
 ): Promise<ScopeEmissionResponse> => {
   try {
-
     const response = await api.put<ApiResponse<ScopeEmissionResponse>>(
       `/api/v1/scope/emissions/${id}`,
       data
@@ -78,7 +76,6 @@ export const updateScopeEmission = async (
 // 통합 Scope 배출량 데이터 삭제 API (Delete APIs)
 export const deleteScopeEmission = async (id: number): Promise<boolean> => {
   try {
-
     const response = await api.delete<ApiResponse<string>>(
       `/api/v1/scope/emissions/${id}`
     )
@@ -99,28 +96,6 @@ export const deleteScopeEmission = async (id: number): Promise<boolean> => {
   }
 }
 // ============================================================================
-
-// 통합 Scope 배출량 데이터 단건 조회 API (Query APIs)
-export const fetchScopeEmissionById = async (
-  id: number
-): Promise<ScopeEmissionResponse | null> => {
-  try {
-    const response = await api.get<ApiResponse<ScopeEmissionResponse>>(
-      `/api/v1/scope/emissions/${id}`
-    )
-
-    if (response.data.success && response.data.data) {
-      return response.data.data
-    } else {
-      throw new Error(response.data.message || '배출량 데이터 조회에 실패했습니다.')
-    }
-  } catch (error: any) {
-    showError(
-      error.response?.data?.message || '배출량 데이터 조회 중 오류가 발생했습니다.'
-    )
-    return null
-  }
-}
 
 // 특정 Scope 타입의 배출량 데이터 조회 API (Query APIs)
 export const fetchEmissionsByScope = async (
@@ -159,8 +134,6 @@ export const fetchPartnerMonthlyEmissions = async (
   year: number
 ): Promise<MonthlyEmissionSummary[]> => {
   try {
-    // showLoading('월별 배출량 데이터를 조회중입니다...')
-
     const response = await api.get<ApiResponse<MonthlyEmissionSummary[]>>(
       `/api/v1/scope/aggregation/partner/${partnerId}/year/${year}/monthly-summary`
     )
@@ -178,39 +151,6 @@ export const fetchPartnerMonthlyEmissions = async (
       error.response?.data?.message || '월별 배출량 집계 조회 중 오류가 발생했습니다.'
     )
     return []
-  }
-}
-
-/**
- * Scope 카테고리별 총계 조회
- * 백엔드 엔드포인트: GET /api/v1/scope/emissions/summary/scope/{scopeType}/year/{year}/month/{month}
- * @param scopeType Scope 타입
- * @param year 보고년도
- * @param month 보고월
- * @returns Promise<ScopeCategorySummary> 카테고리별 총 배출량
- */
-export const fetchCategorySummaryByScope = async (
-  scopeType: ScopeType,
-  year: number,
-  month: number
-): Promise<ScopeCategorySummary> => {
-  try {
-    const response = await api.get<ApiResponse<ScopeCategorySummary>>(
-      `/api/v1/scope/emissions/summary/scope/${scopeType}/year/${year}/month/${month}`
-    )
-
-    if (response.data.success && response.data.data) {
-      return response.data.data
-    } else {
-      throw new Error(
-        response.data.message || '카테고리 요약 데이터 조회에 실패했습니다.'
-      )
-    }
-  } catch (error: any) {
-    showError(
-      error.response?.data?.message || '카테고리 요약 데이터 조회 중 오류가 발생했습니다.'
-    )
-    return {}
   }
 }
 
