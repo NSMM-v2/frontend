@@ -514,7 +514,45 @@ export default function CSDDDDashboard() {
                       )}
                     </div>
                   </div>
-                ))
+                </div>
+              ))
+            )}
+          </div>
+        </Card>
+
+        <Card className="flex-1 flex flex-col bg-white rounded-lg shadow-md min-h-[400px]">
+          <CardHeader className="flex flex-row items-center gap-4 p-6 border-b border-gray-100">
+            <div className="flex items-center flex-1">
+              <CardTitle className="flex items-center gap-3 text-2xl font-bold">
+                {currentResult && (
+                  <Badge
+                    className={`px-3 py-1 text-base font-bold rounded-full border ${
+                      gradeColors[currentResult.finalGrade || 'D']
+                    }`}>
+                    {currentResult.finalGrade || 'D'}
+                  </Badge>
+                )}
+                {selectedPartner ? selectedPartner.companyName : '협력사 상세'}
+              </CardTitle>
+
+              {selectedPartner?.results && selectedPartner.results.length > 0 && (
+                <select
+                  value={selectedResultIndex}
+                  onChange={e => setSelectedResultIndex(Number(e.target.value))}
+                  className="px-2 py-1 ml-auto text-sm text-gray-700 bg-white border rounded-md shadow-sm">
+                  {[...selectedPartner.results]
+                    .sort(
+                      (a, b) =>
+                        new Date(b.completedAt || 0).getTime() -
+                        new Date(a.completedAt || 0).getTime()
+                    )
+                    .map((result, index) => (
+                      <option key={result.id} value={index}>
+                        {selectedPartner.results.length - index}회차 (
+                        {new Date(result.completedAt || '').toLocaleDateString('ko-KR')})
+                      </option>
+                    ))}
+                </select>
               )}
             </div>
           </Card>
@@ -717,6 +755,66 @@ export default function CSDDDDashboard() {
                       </div>
                     </div>
                   </div>
+
+                </div>
+              </>
+            ) : (
+              <div className="flex flex-col items-center justify-center h-full py-24 text-gray-400">
+                <Shield className="w-16 h-16 mb-4 text-gray-200" />
+                <div className="text-lg font-bold">
+                  협력사의 자가진단 결과가 없습니다.
+                </div>
+              </div>
+            )}
+          </CardContent>
+        </Card>
+      </div>
+
+      {/* 카테고리 상세 다이얼로그 */}
+      <Dialog
+        open={!!selectedCategoryId}
+        onOpenChange={() => setSelectedCategoryId(null)}>
+        <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
+          <DialogHeader className="pb-4 border-b">
+            <DialogTitle className="text-xl font-bold">
+              {selectedCategoryId && getCategoryName(selectedCategoryId)} 상세 위반 항목
+            </DialogTitle>
+            <DialogDescription>
+              해당 카테고리의 위반 항목들을 확인하실 수 있습니다.
+            </DialogDescription>
+          </DialogHeader>
+
+          <div className="pt-6">
+            {getSelectedCategoryViolations().length === 0 ? (
+              <div className="py-16 text-center">
+                <CheckCircle className="w-16 h-16 mx-auto mb-4 text-green-500" />
+                <h3 className="mb-2 text-lg font-semibold text-green-600">
+                  모든 항목 준수
+                </h3>
+                <p className="text-sm text-gray-500">
+                  이 카테고리에서는 위반 항목이 없습니다.
+                </p>
+              </div>
+            ) : (
+              <div className="space-y-4">
+                <div className="p-4 border border-red-200 rounded-lg bg-red-50">
+                  <div className="flex items-center gap-2 mb-3">
+                    <AlertTriangle className="w-5 h-5 text-red-600" />
+                    <h4 className="font-medium text-red-800">
+                      총 {getSelectedCategoryViolations().length}건의 위반 항목
+                    </h4>
+                  </div>
+                  <div className="grid grid-cols-3 gap-2 sm:grid-cols-4 lg:grid-cols-6">
+                    {getSelectedCategoryViolations().map((violation, i) => (
+                      <button
+                        key={i}
+                        onClick={() => handleViolationClick(violation.questionId)}
+                        className="flex items-center justify-center p-2 text-xs font-medium text-red-800 transition-colors bg-white border border-red-300 rounded-md hover:bg-red-50">
+                        <span className="font-mono truncate">{violation.questionId}</span>
+                        <ExternalLink className="w-3 h-3 ml-1" />
+                      </button>
+                    ))}
+
                 </>
               ) : (
                 <div className="flex flex-col items-center justify-center h-full py-24 text-gray-400">
@@ -724,6 +822,7 @@ export default function CSDDDDashboard() {
                   <div className="text-lg font-bold">협력사를 선택하세요</div>
                   <div className="mt-2 text-sm text-center">
                     왼쪽 목록에서 협력사를 클릭하면 상세 정보를 볼 수 있습니다.
+
                   </div>
                 </div>
               )}
