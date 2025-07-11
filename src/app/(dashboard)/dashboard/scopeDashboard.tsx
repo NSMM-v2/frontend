@@ -344,16 +344,15 @@ export default function ScopeDashboard() {
   // ========================================================================
 
   return (
-    <div className="w-full h-screen py-4 pt-20">
-      <div className="flex flex-col w-full h-full gap-4">
-        {/* 윗쪽 셀 2개------------------------------------------------------------------------------ */}
+    <div className="py-4 pt-2 w-full h-screen">
+      <div className="flex flex-col gap-4 w-full h-full">
         <div className="flex flex-row h-[50%] w-full gap-4">
           {/* ======================================================================
               협력사 리스트 섹션 (Partner List Section)
               ====================================================================== */}
           <Card className="w-[30%] flex-1 bg-white rounded-lg p-4 flex flex-col">
             <Tabs defaultValue="company" className="w-full">
-              <div className="flex flex-row items-center justify-between gap-2">
+              <div className="flex flex-row gap-2 justify-between items-center">
                 <TabsList>
                   <TabsTrigger value="company" onClick={() => setActiveTab('company')}>
                     협력사
@@ -367,14 +366,14 @@ export default function ScopeDashboard() {
                   value={searchQuery}
                   onChange={e => setSearchQuery(e.target.value)}
                   placeholder={activeTab === 'company' ? '협력사 검색' : '제품코드 검색'}
-                  className="w-full h-8 p-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500"
+                  className="p-2 w-full h-8 rounded-md border border-gray-300 focus:ring-2 focus:ring-blue-500"
                 />
               </div>
               <CardContent className="flex w-full max-h-[280px] p-0 overflow-hidden overflow-y-auto border rounded-lg custom-scrollbar">
                 <TabsContent value="company">
-                  <div className="flex flex-col h-full gap-2 p-2">
+                  <div className="flex flex-col gap-2 p-2 h-full">
                     {loading && (
-                      <div className="flex items-center justify-center h-full">
+                      <div className="flex justify-center items-center h-full">
                         <div className="text-sm text-gray-500">
                           협력사 목록을 불러오는 중...
                         </div>
@@ -383,7 +382,7 @@ export default function ScopeDashboard() {
 
                     {/* 에러 상태 */}
                     {error && (
-                      <div className="flex items-center justify-center h-full">
+                      <div className="flex justify-center items-center h-full">
                         <div className="text-sm text-center text-red-500">
                           <div>오류가 발생했습니다</div>
                           <div className="mt-1 text-xs">{error}</div>
@@ -398,7 +397,7 @@ export default function ScopeDashboard() {
 
                     {/* 협력사 목록 */}
                     {!loading && !error && partners.length === 0 && (
-                      <div className="flex items-center justify-center h-full">
+                      <div className="flex justify-center items-center h-full">
                         <div className="text-sm text-center text-gray-500">
                           <div>등록된 협력사가 없습니다</div>
                           {userInfo?.userType === 'HEADQUARTERS' && (
@@ -426,7 +425,7 @@ export default function ScopeDashboard() {
                             </div>
 
                             {/* 계층적 ID와 레벨 */}
-                            <div className="flex items-center gap-2">
+                            <div className="flex gap-2 items-center">
                               <span className="font-mono text-xs text-gray-500">
                                 {partner.hierarchicalId}
                               </span>
@@ -451,7 +450,7 @@ export default function ScopeDashboard() {
                 </TabsContent>
                 {/* 제품 탭 -------------------------------------------------- */}
                 <TabsContent value="product">
-                  <div className="flex flex-col flex-1 gap-2 p-2 overflow-y-auto border rounded-lg scroll-auto custom-scrollbar">
+                  <div className="flex overflow-y-auto flex-col flex-1 gap-2 p-2 rounded-lg border scroll-auto custom-scrollbar">
                     {filteredProducts.map(product => (
                       <div
                         key={product.productCode}
@@ -476,7 +475,7 @@ export default function ScopeDashboard() {
               ====================================================================== */}
           <Card className="w-[70%] bg-white rounded-lg p-4 flex flex-col">
             <CardHeader className="p-0 pb-4">
-              <div className="flex items-center justify-between">
+              <div className="flex justify-between items-center">
                 <div>
                   <CardTitle className="text-lg font-bold">총 탄소 배출량</CardTitle>
                   <CardDescription>
@@ -486,12 +485,12 @@ export default function ScopeDashboard() {
                   </CardDescription>
                 </div>
                 {/* 년도 선택 드롭다운 */}
-                <div className="flex items-center gap-2">
+                <div className="flex gap-2 items-center">
                   <label className="text-sm font-medium text-gray-700">년도:</label>
                   <select
                     value={selectedYear}
                     onChange={e => handleYearSelect(Number(e.target.value))}
-                    className="px-3 py-1 text-sm border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
+                    className="px-3 py-1 text-sm rounded-md border border-gray-300 focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
                     {generateYearOptions().map(year => (
                       <option key={year} value={year}>
                         {year}년
@@ -501,10 +500,10 @@ export default function ScopeDashboard() {
                 </div>
               </div>
             </CardHeader>
-            <CardContent className="flex-1 p-2 border rounded-lg">
+            <CardContent className="flex-1 p-2 rounded-lg border">
               {selectedPartner ? (
                 chartError ? (
-                  <div className="flex items-center justify-center w-full h-full">
+                  <div className="flex justify-center items-center w-full h-full">
                     <div className="text-center text-red-500">
                       <div className="mb-2 text-lg">❌</div>
                       <div>데이터 로드 실패</div>
@@ -525,7 +524,7 @@ export default function ScopeDashboard() {
                     <Bar options={chartOptions} data={generateChartData()} />
                   </div>
                 ) : (
-                  <div className="flex items-center justify-center w-full h-full">
+                  <div className="flex justify-center items-center w-full h-full">
                     <div className="text-center text-gray-500">
                       <div className="mb-2 text-lg">📝</div>
                       <div>{selectedYear}년 배출량 데이터가 없습니다</div>
@@ -534,7 +533,7 @@ export default function ScopeDashboard() {
                   </div>
                 )
               ) : (
-                <div className="flex items-center justify-center w-full h-full">
+                <div className="flex justify-center items-center w-full h-full">
                   <div className="text-center text-gray-500">
                     <div className="mb-2 text-lg">📊</div>
                     <div>협력사를 선택하면</div>
@@ -549,7 +548,7 @@ export default function ScopeDashboard() {
         {/* ======================================================================
             배출량 데이터 테이블 섹션 (Emissions Data Table Section)
             ====================================================================== */}
-        <Card className="flex flex-col flex-1 w-full p-4 bg-white rounded-lg">
+        <Card className="flex flex-col flex-1 p-4 w-full bg-white rounded-lg">
           {/* 헤더 부분 ============================================================================================================================= */}
           <CardHeader className="p-0">
             <CardTitle className="text-lg font-bold">탄소 배출량 데이터</CardTitle>
@@ -560,10 +559,10 @@ export default function ScopeDashboard() {
             </CardDescription>
           </CardHeader>
           {/* 콘텐트 부분 ============================================================================================================================= */}
-          <CardContent className="flex-1 p-2 overflow-y-auto border rounded-lg scroll-auto custom-scrollbar">
+          <CardContent className="overflow-y-auto flex-1 p-2 rounded-lg border scroll-auto custom-scrollbar">
             {selectedPartner ? (
               chartError ? (
-                <div className="flex items-center justify-center w-full h-full">
+                <div className="flex justify-center items-center w-full h-full">
                   <div className="text-center text-red-500">
                     <div className="mb-2 text-lg">❌</div>
                     <div>데이터 로드 실패</div>
@@ -581,7 +580,7 @@ export default function ScopeDashboard() {
                 </div>
               ) : // 데이터 테이블 =======================================================================================================================================
               monthlyData.length > 0 ? (
-                <div className=" max-h-0">
+                <div className="max-h-0">
                   <table className="w-full text-sm border">
                     <thead className="bg-gray-100">
                       <tr>
@@ -650,7 +649,7 @@ export default function ScopeDashboard() {
                   </table>
                 </div>
               ) : (
-                <div className="flex items-center justify-center h-full">
+                <div className="flex justify-center items-center h-full">
                   <div className="text-center text-gray-500">
                     <div className="mb-2 text-lg">📝</div>
                     <div>{selectedYear}년 배출량 데이터가 없습니다</div>
@@ -659,7 +658,7 @@ export default function ScopeDashboard() {
                 </div>
               )
             ) : (
-              <div className="flex items-center justify-center h-full">
+              <div className="flex justify-center items-center h-full">
                 <div className="text-center text-gray-500">
                   <div className="mb-2 text-lg">📋</div>
                   <div>협력사를 선택하면</div>
