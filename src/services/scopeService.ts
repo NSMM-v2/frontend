@@ -19,45 +19,7 @@ import {
   CategoryMonthlyEmission
 } from '@/types/scopeTypes'
 
-// ============================================================================
-// 카테고리 조회 API (Category APIs)
-// ============================================================================
-
-/**
- * 특정 Scope 타입의 카테고리 목록 조회
- * 백엔드 엔드포인트: GET /api/v1/scope/categories/{scopeType}
- * @param scopeType Scope 타입 (SCOPE1, SCOPE2, SCOPE3)
- * @returns Promise<ScopeCategoryResponse[]> 카테고리 목록
- */
-export const fetchCategoriesByScope = async (
-  scopeType: ScopeType
-): Promise<ScopeCategoryResponse[]> => {
-  try {
-    const response = await api.get<ApiResponse<ScopeCategoryResponse[]>>(
-      `/api/v1/scope/categories/${scopeType}`
-    )
-
-    if (response.data.success && response.data.data) {
-      return response.data.data
-    } else {
-      throw new Error(response.data.message || '카테고리 조회에 실패했습니다.')
-    }
-  } catch (error: any) {
-    showError(error.response?.data?.message || '카테고리 조회 중 오류가 발생했습니다.')
-    return []
-  }
-}
-
-// ============================================================================
-// 생성 API (Creation APIs)
-// ============================================================================
-
-/**
- * 통합 Scope 배출량 데이터 생성
- * 백엔드 엔드포인트: POST /api/v1/scope/emissions
- * @param data 배출량 생성 요청 데이터
- * @returns Promise<ScopeEmissionResponse> 생성된 배출량 데이터
- */
+// 통합 Scope 배출량 데이터 생성 API (Creation APIs)
 export const createScopeEmission = async (
   data: ScopeEmissionRequest
 ): Promise<ScopeEmissionResponse> => {
@@ -83,17 +45,64 @@ export const createScopeEmission = async (
     throw error
   }
 }
-
-// ============================================================================
-// 조회 API (Query APIs)
 // ============================================================================
 
-/**
- * 배출량 데이터 단건 조회
- * 백엔드 엔드포인트: GET /api/v1/scope/emissions/{id}
- * @param id 조회할 배출량 데이터 ID
- * @returns Promise<ScopeEmissionResponse> 배출량 데이터
- */
+// 통합 Scope 배출량 데이터 수정 API (Update APIs)
+export const updateScopeEmission = async (
+  id: number,
+  data: ScopeEmissionUpdateRequest
+): Promise<ScopeEmissionResponse> => {
+  try {
+    showLoading('배출량 데이터를 수정중입니다...')
+
+    const response = await api.put<ApiResponse<ScopeEmissionResponse>>(
+      `/api/v1/scope/emissions/${id}`,
+      data
+    )
+
+    dismissLoading()
+
+    if (response.data.success && response.data.data) {
+      showSuccess('배출량 데이터가 수정되었습니다.')
+      return response.data.data
+    } else {
+      throw new Error(response.data.message || '배출량 데이터 수정에 실패했습니다.')
+    }
+  } catch (error: any) {
+    dismissLoading()
+    handleScopeEmissionError(error, '수정')
+    throw error
+  }
+}
+// ============================================================================
+
+// 통합 Scope 배출량 데이터 삭제 API (Delete APIs)
+export const deleteScopeEmission = async (id: number): Promise<boolean> => {
+  try {
+    showLoading('배출량 데이터를 삭제중입니다...')
+
+    const response = await api.delete<ApiResponse<string>>(
+      `/api/v1/scope/emissions/${id}`
+    )
+
+    dismissLoading()
+
+    if (response.data.success) {
+      showSuccess('배출량 데이터가 삭제되었습니다.')
+      return true
+    } else {
+      showError(response.data.message || '삭제에 실패했습니다.')
+      return false
+    }
+  } catch (error: any) {
+    dismissLoading()
+    showError(error.response?.data?.message || '삭제 중 오류가 발생했습니다.')
+    return false
+  }
+}
+// ============================================================================
+
+// 통합 Scope 배출량 데이터 단건 조회 API (Query APIs)
 export const fetchScopeEmissionById = async (
   id: number
 ): Promise<ScopeEmissionResponse | null> => {
@@ -115,12 +124,7 @@ export const fetchScopeEmissionById = async (
   }
 }
 
-/**
- * 특정 Scope 타입의 배출량 데이터 조회
- * 백엔드 엔드포인트: GET /api/v1/scope/emissions/scope/{scopeType}
- * @param scopeType Scope 타입
- * @returns Promise<ScopeEmissionResponse[]> 배출량 데이터 목록
- */
+// 특정 Scope 타입의 배출량 데이터 조회 API (Query APIs)
 export const fetchEmissionsByScope = async (
   scopeType: ScopeType
 ): Promise<ScopeEmissionResponse[]> => {
@@ -141,70 +145,6 @@ export const fetchEmissionsByScope = async (
     return []
   }
 }
-
-/**
- * 연도/월/카테고리별 배출량 데이터 조회
- * 백엔드 엔드포인트: GET /api/v1/scope/emissions/year/{year}/month/{month}/scope/{scopeType}/category/{categoryNumber}
- * @param year 보고년도
- * @param month 보고월
- * @param scopeType Scope 타입
- * @param categoryNumber 카테고리 번호
- * @returns Promise<ScopeEmissionResponse[]> 배출량 데이터 목록
- */
-export const fetchEmissionsByYearAndMonthAndCategory = async (
-  year: number,
-  month: number,
-  scopeType: ScopeType,
-  categoryNumber: number
-): Promise<ScopeEmissionResponse[]> => {
-  try {
-    const response = await api.get<ApiResponse<ScopeEmissionResponse[]>>(
-      `/api/v1/scope/emissions/year/${year}/month/${month}/scope/${scopeType}/category/${categoryNumber}`
-    )
-
-    if (response.data.success && response.data.data) {
-      return response.data.data
-    } else {
-      throw new Error(response.data.message || '카테고리별 배출량 조회에 실패했습니다.')
-    }
-  } catch (error: any) {
-    showError(
-      error.response?.data?.message || '카테고리별 배출량 조회 중 오류가 발생했습니다.'
-    )
-    return []
-  }
-}
-
-/**
- * 제품 코드별 배출량 데이터 조회
- * 백엔드 엔드포인트: GET /api/v1/scope/emissions/product/{productCode}
- * @param productCode 제품 코드
- * @param scopeType Scope 타입 필터 (선택적)
- * @returns Promise<ScopeEmissionResponse[]> 배출량 데이터 목록
- */
-export const fetchEmissionsByProductCode = async (
-  productCode: string,
-  scopeType?: ScopeType
-): Promise<ScopeEmissionResponse[]> => {
-  try {
-    const params = scopeType ? `?scopeType=${scopeType}` : ''
-    const response = await api.get<ApiResponse<ScopeEmissionResponse[]>>(
-      `/api/v1/scope/emissions/product/${productCode}${params}`
-    )
-
-    if (response.data.success && response.data.data) {
-      return response.data.data
-    } else {
-      throw new Error(response.data.message || '제품별 배출량 조회에 실패했습니다.')
-    }
-  } catch (error: any) {
-    showError(
-      error.response?.data?.message || '제품별 배출량 조회 중 오류가 발생했습니다.'
-    )
-    return []
-  }
-}
-
 // ============================================================================
 // 집계 및 요약 API (Summary & Aggregation APIs)
 // ============================================================================
@@ -273,78 +213,6 @@ export const fetchCategorySummaryByScope = async (
       error.response?.data?.message || '카테고리 요약 데이터 조회 중 오류가 발생했습니다.'
     )
     return {}
-  }
-}
-
-// ============================================================================
-// 업데이트 API (Update APIs)
-// ============================================================================
-
-/**
- * 통합 Scope 배출량 데이터 수정
- * 백엔드 엔드포인트: PUT /api/v1/scope/emissions/{id}
- * @param id 수정할 배출량 데이터 ID
- * @param data 배출량 수정 요청 데이터
- * @returns Promise<ScopeEmissionResponse> 수정된 배출량 데이터
- */
-export const updateScopeEmission = async (
-  id: number,
-  data: ScopeEmissionUpdateRequest
-): Promise<ScopeEmissionResponse> => {
-  try {
-    showLoading('배출량 데이터를 수정중입니다...')
-
-    const response = await api.put<ApiResponse<ScopeEmissionResponse>>(
-      `/api/v1/scope/emissions/${id}`,
-      data
-    )
-
-    dismissLoading()
-
-    if (response.data.success && response.data.data) {
-      showSuccess('배출량 데이터가 수정되었습니다.')
-      return response.data.data
-    } else {
-      throw new Error(response.data.message || '배출량 데이터 수정에 실패했습니다.')
-    }
-  } catch (error: any) {
-    dismissLoading()
-    handleScopeEmissionError(error, '수정')
-    throw error
-  }
-}
-
-// ============================================================================
-// 삭제 API (Delete APIs)
-// ============================================================================
-
-/**
- * 통합 Scope 배출량 데이터 삭제
- * 백엔드 엔드포인트: DELETE /api/v1/scope/emissions/{id}
- * @param id 삭제할 배출량 데이터 ID
- * @returns Promise<boolean> 삭제 성공 여부
- */
-export const deleteScopeEmission = async (id: number): Promise<boolean> => {
-  try {
-    showLoading('배출량 데이터를 삭제중입니다...')
-
-    const response = await api.delete<ApiResponse<string>>(
-      `/api/v1/scope/emissions/${id}`
-    )
-
-    dismissLoading()
-
-    if (response.data.success) {
-      showSuccess('배출량 데이터가 삭제되었습니다.')
-      return true
-    } else {
-      showError(response.data.message || '삭제에 실패했습니다.')
-      return false
-    }
-  } catch (error: any) {
-    dismissLoading()
-    showError(error.response?.data?.message || '삭제 중 오류가 발생했습니다.')
-    return false
   }
 }
 
