@@ -3,7 +3,7 @@
 'use client'
 
 // React 및 애니메이션 라이브러리 임포트
-import React, {useState} from 'react'
+import React, {useEffect, useState} from 'react'
 import {motion, AnimatePresence} from 'framer-motion'
 
 // UI 아이콘 임포트
@@ -60,6 +60,7 @@ interface Scope2CalculatorData {
   state: SelectorState
   savedData?: any // 백엔드에서 받은 전체 데이터
   showDeleteDialog?: boolean // 삭제 다이얼로그 표시 여부
+  factoryEnabled: boolean // 계산기별 공장 설비 활성화 상태
 }
 
 // 컴포넌트 Props 정의
@@ -77,6 +78,7 @@ interface Scope2DataInputProps {
   onBackToList: () => void
   calculatorModes: Record<number, boolean>
   onModeChange: (id: number, checked: boolean) => void
+  onFactoryEnabledChange: (id: number, enabled: boolean) => void // 공장 설비 상태 변경 핸들러
   selectedYear: number
   selectedMonth: number | null
   onDataChange: () => void
@@ -108,6 +110,7 @@ export function Scope2DataInput({
   onBackToList,
   calculatorModes,
   onModeChange,
+  onFactoryEnabledChange,
   selectedYear,
   selectedMonth,
   onDataChange
@@ -123,6 +126,11 @@ export function Scope2DataInput({
     useState<Scope2ElectricCategoryKey | null>(null)
   const [activeSteamCategory, setActiveSteamCategory] =
     useState<Scope2SteamCategoryKey | null>(null)
+
+  // 각 계산기별 공장 설비 상태 변경 핸들러
+  const handleFactoryToggle = (calculatorId: number, checked: boolean) => {
+    onFactoryEnabledChange(calculatorId, checked)
+  }
 
   // 카테고리별 계산기 목록 관리
   const [electricCategoryCalculators, setElectricCategoryCalculators] = useState<
@@ -164,6 +172,7 @@ export function Scope2DataInput({
       }
     ]
   })
+
 
   // 백엔드 API 연동 함수
 
@@ -210,19 +219,17 @@ export function Scope2DataInput({
     const scope2CategoryNumber = isElectric ? 1 : 2
     const majorCategory = isElectric ? '전력' : '스팀'
 
-    // 안전한 숫자 변환 및 정밀도 제한
     const emissionFactor =
-      Math.round(parseFloat(state.kgCO2eq || '0') * 1000000) / 1000000
-    const activityAmount = Math.round(parseFloat(state.quantity || '0') * 1000) / 1000
-    const totalEmission = Math.round(emissionFactor * activityAmount * 1000000) / 1000000
+      Math.round(parseFloat(state.kgCO2eq || '0') * 1_000_000) / 1_000_000
+    const activityAmount = Math.round(parseFloat(state.quantity || '0') * 1_000) / 1_000
+    const totalEmission =
+      Math.round(emissionFactor * activityAmount * 1_000_000) / 1_000_000
 
-    // 필수 필드 검증
     const missingFields = []
     if (!state.separate) missingFields.push('구분')
     if (!state.rawMaterial) missingFields.push('원료/에너지')
     if (!state.quantity) missingFields.push('사용량')
     if (!state.unit) missingFields.push('단위')
-
     if (missingFields.length > 0) {
       throw new Error(`다음 필드를 입력해주세요: ${missingFields.join(', ')}`)
     }
@@ -231,6 +238,7 @@ export function Scope2DataInput({
       scopeType: 'SCOPE2',
       scope2CategoryNumber,
       majorCategory,
+      factoryEnabled: calc.factoryEnabled,
       subcategory: state.separate || '',
       rawMaterial: state.rawMaterial || '',
       activityAmount,
@@ -522,7 +530,30 @@ export function Scope2DataInput({
                             <p className="text-sm text-gray-600">{description}</p>
                           </motion.div>
                         </div>
+                        <div className="flex items-center space-x-3">
+                          <Switch
+                            checked={calculator.factoryEnabled}
+                            onCheckedChange={(checked) => handleFactoryToggle(calculator.id, checked)}
+                            className="data-[state=checked]:bg-blue-500"
+                          />
 
+                          {/* 라벨 */}
+                          <span
+                            className={`text-sm font-medium transition-colors ${
+                              calculator.factoryEnabled ? 'text-blue-600' : 'text-gray-500'
+                            }`}>
+                            공장 설비
+                          </span>
+                          {/* 상태 표시 */}
+                          <span
+                            className={`text-xs px-2 py-1 rounded-full font-medium transition-colors ${
+                              calculator.factoryEnabled
+                                ? 'text-blue-700 bg-blue-100'
+                                : 'text-gray-500 bg-gray-100'
+                            }`}>
+                            {calculator.factoryEnabled ? '활성' : '비활성'}
+                          </span>
+                        </div>
                         {/* 오른쪽 컨트롤 영역 */}
                         <div className="flex items-center space-x-4">
                           {/* 수동 입력 모드 토글 */}

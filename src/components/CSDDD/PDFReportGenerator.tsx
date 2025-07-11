@@ -151,6 +151,32 @@ export async function generatePDFReport(props: PDFReportGeneratorProps): Promise
         if (clonedElement) {
           clonedElement.style.fontFamily =
             '"Noto Sans KR", "Apple SD Gothic Neo", "Malgun Gothic", sans-serif'
+          const tables = clonedDoc.querySelectorAll('table')
+          tables.forEach(table => {
+            const cells = table.querySelectorAll('td, th')
+            cells.forEach(cell => {
+              const htmlCell = cell as HTMLTableCellElement
+              htmlCell.style.verticalAlign = 'middle'
+              htmlCell.style.textAlign = htmlCell.style.textAlign || 'center'
+              htmlCell.style.lineHeight = '1.4'
+              htmlCell.style.padding = '12px 8px'
+
+              if (htmlCell.textContent && htmlCell.textContent.trim()) {
+                htmlCell.style.minHeight = '45px'
+              }
+            })
+          })
+
+          // 기본 정보 테이블 특별 처리
+          const basicInfoCells = clonedDoc.querySelectorAll('td')
+          basicInfoCells.forEach(cell => {
+            const htmlCell = cell as HTMLTableCellElement
+            if (htmlCell.textContent && htmlCell.textContent.includes('평가')) {
+              htmlCell.style.padding = '15px 12px'
+              htmlCell.style.verticalAlign = 'middle'
+            }
+          })
+
           const allElements = clonedDoc.querySelectorAll('*')
           allElements.forEach(element => {
             const computedStyle = window.getComputedStyle(element as Element)

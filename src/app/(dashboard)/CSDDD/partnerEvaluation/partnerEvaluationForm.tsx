@@ -35,7 +35,13 @@ import {
   ArrowLeft,
   BarChart3,
   ChevronDown,
-  ChevronUp
+  ChevronUp,
+  AlertTriangle,
+  Users,
+  AlertOctagon,
+  Scale,
+  InfoIcon,
+  Building2
 } from 'lucide-react'
 
 import {
@@ -52,6 +58,11 @@ export default function PartnerEvaluationForm() {
   const [detailLoading, setDetailLoading] = useState(false)
   const [authError, setAuthError] = useState<string | null>(null)
   const [userInfo, setUserInfo] = useState<any>(null)
+  const [selectedCompany, setSelectedCompany] = useState<string>('all')
+  const [companyList, setCompanyList] = useState<string[]>([])
+  // New state for sub-company list and selection
+  const [subCompanyList, setSubCompanyList] = useState<string[]>([])
+  const [selectedSubCompany, setSelectedSubCompany] = useState<string>('all')
 
   const [violationMeta, setViolationMeta] = useState<{
     category: string
@@ -131,13 +142,21 @@ export default function PartnerEvaluationForm() {
           return
         }
 
-        setResults(
-          (response.content || []).sort(
-            (a, b) =>
-              new Date(b.completedAt ?? new Date()).getTime() -
-              new Date(a.completedAt ?? new Date()).getTime()
-          )
+        const sortedResults = (response.content || []).sort(
+          (a, b) =>
+            new Date(b.completedAt ?? new Date()).getTime() -
+            new Date(a.completedAt ?? new Date()).getTime()
         )
+
+        setResults(sortedResults)
+
+        // 협력사 목록 추출 (중복 제거)
+        const companies = Array.from(new Set(sortedResults.map(r => r.companyName)))
+        if (userInfo.userType === 'HEADQUARTERS') {
+          setCompanyList(companies)
+        } else if (userInfo.userType === 'PARTNER') {
+          setSubCompanyList(companies)
+        }
 
         setAuthError(null)
       } else {
@@ -167,6 +186,27 @@ export default function PartnerEvaluationForm() {
   useEffect(() => {
     fetchResults()
   }, [])
+
+  const filteredResults =
+    selectedCompany === 'all'
+      ? results
+      : results
+          .filter(result => result.companyName === selectedCompany)
+          .sort(
+            (a, b) =>
+              new Date(b.completedAt ?? new Date()).getTime() -
+              new Date(a.completedAt ?? new Date()).getTime()
+          )
+
+  // Sub-company filter for PARTNER user
+  const subFilteredResults =
+    selectedSubCompany === 'all'
+      ? results
+      : results.filter(result => result.companyName === selectedSubCompany)
+
+  // Choose which list to display based on user type
+  const displayResults =
+    userInfo?.userType === 'HEADQUARTERS' ? filteredResults : subFilteredResults
 
   const getGradeStyle = (grade: string) => {
     switch (grade) {
@@ -211,7 +251,7 @@ export default function PartnerEvaluationForm() {
   return (
     <div className="flex flex-col w-full min-h-screen">
       <div className="p-4 pb-0">
-        <div className="flex flex-row items-center p-3 mb-6 text-sm text-gray-600 rounded-xl border shadow-sm backdrop-blur-sm bg-white/80 border-white/50">
+        <div className="flex flex-row items-center p-3 mb-4 text-sm text-gray-600 rounded-xl border shadow-sm backdrop-blur-sm bg-white/80 border-white/50">
           <Breadcrumb>
             <BreadcrumbList>
               <BreadcrumbItem>
@@ -244,7 +284,7 @@ export default function PartnerEvaluationForm() {
       </div>
 
       <div className="px-4 pb-0">
-        <div className="flex flex-row mb-6 w-full">
+        <div className="flex flex-row mb-4 w-full">
           <Link
             href="/CSDDD"
             className="flex flex-row items-center p-4 space-x-4 rounded-xl backdrop-blur-sm transition-all hover:bg-white/30 group">
@@ -266,7 +306,7 @@ export default function PartnerEvaluationForm() {
 
       <div className="flex-1 px-4 pb-8">
         <div className="lg:col-span-3">
-          <div className="rounded-xl border shadow-xl backdrop-blur-sm bg-white/95 border-white/50">
+          <div className="rounded-xl border shadow-sm backdrop-blur-sm bg-white/95 border-white/50">
             <div className="px-6 py-5 border-b border-gray-100">
               <div className="flex justify-between items-center">
                 <div className="flex items-center space-x-2">
@@ -277,14 +317,14 @@ export default function PartnerEvaluationForm() {
                   </h2>
                   <div className="relative group">
                     <AlertCircle className="w-4 h-4 text-orange-500 cursor-pointer" />
-                    <div className="hidden absolute top-full left-1/2 z-10 p-3 max-w-none text-sm text-orange-800 whitespace-nowrap bg-white rounded border border-orange-200 shadow-lg transform -translate-x-1/2 group-hover:block">
+                    <div className="hidden absolute top-full left-1/2 z-10 p-3 max-w-none text-sm text-orange-800 whitespace-nowrap bg-white rounded border border-orange-200 shadow-sm transform -translate-x-1/2 group-hover:block">
                       <p>• 위반 항목은 펼쳐서 상세 내용을 확인하세요</p>
                       <p>• 위반 항목을 클릭하면 법적 근거를 볼 수 있습니다</p>
                     </div>
                   </div>
                   <div className="relative group">
                     <AlertCircle className="w-4 h-4 text-blue-500 cursor-pointer" />
-                    <div className="hidden absolute top-full left-1/2 z-10 p-3 max-w-none text-sm text-blue-800 whitespace-nowrap bg-white rounded border border-blue-200 shadow-lg transform -translate-x-1/2 group-hover:block">
+                    <div className="hidden absolute top-full left-1/2 z-10 p-3 max-w-none text-sm text-blue-800 whitespace-nowrap bg-white rounded border border-blue-200 shadow-sm transform -translate-x-1/2 group-hover:block">
                       <p>
                         • 점수에 따라 등급이 부여됩니다: A (90↑), B (75↑), C (60↑), D (60
                         미만)
@@ -293,13 +333,56 @@ export default function PartnerEvaluationForm() {
                     </div>
                   </div>
                 </div>
+                {userInfo?.userType === 'HEADQUARTERS' && (
+                  <div className="flex gap-3 items-center p-4 bg-gradient-to-br from-blue-50 to-white rounded-xl border border-blue-100 shadow-sm transition-all duration-200 hover:shadow-sm">
+                    <div className="flex gap-2 items-center">
+                      <Building2 className="w-5 h-5 text-blue-500" />
+                      <label
+                        htmlFor="companyFilter"
+                        className="text-sm font-semibold text-gray-700">
+                        협력사 선택
+                      </label>
+                    </div>
+                    <div className="relative flex-1">
+                      <select
+                        id="companyFilter"
+                        className="px-4 py-2 pr-10 w-full text-sm bg-white rounded-lg border border-gray-200 transition-all duration-200 appearance-none cursor-pointer hover:border-blue-300 focus:outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-100"
+                        value={selectedCompany}
+                        onChange={e => setSelectedCompany(e.target.value)}>
+                        <option value="all">전체 협력사</option>
+                        {companyList.map((company, idx) => (
+                          <option key={idx} value={company}>
+                            {company}
+                          </option>
+                        ))}
+                      </select>
+                      <ChevronDown className="absolute right-3 top-1/2 w-4 h-4 text-gray-400 -translate-y-1/2 pointer-events-none" />
+                    </div>
+                  </div>
+                )}
+                {/* Sub-company dropdown for PARTNER */}
+                {userInfo?.userType === 'PARTNER' && subCompanyList.length > 0 && (
+                  <div className="flex items-center p-2 space-x-2 bg-white rounded-lg border border-gray-200 shadow-sm">
+                    <label
+                      htmlFor="subCompanyFilter"
+                      className="text-sm font-medium text-gray-700">
+                      등록한 협력사 선택:
+                    </label>
+                    <select
+                      id="subCompanyFilter"
+                      className="px-2 py-1 text-sm rounded border border-gray-300 focus:outline-none focus:ring-2 focus:ring-blue-200"
+                      value={selectedSubCompany}
+                      onChange={e => setSelectedSubCompany(e.target.value)}>
+                      <option value="all">전체</option>
+                      {subCompanyList.map((company, idx) => (
+                        <option key={idx} value={company}>
+                          {company}
+                        </option>
+                      ))}
+                    </select>
+                  </div>
+                )}
               </div>
-
-              {userInfo?.userType === 'HEADQUARTERS' && (
-                <p className="mt-2 text-sm text-gray-600">
-                  관할 협력사들의 CSDDD 자가진단 결과를 확인할 수 있습니다.
-                </p>
-              )}
             </div>
 
             <div className="p-5">
@@ -324,7 +407,7 @@ export default function PartnerEvaluationForm() {
                 </div>
               ) : (
                 <div className="space-y-4">
-                  {results.map((result, index) => {
+                  {displayResults.map((result, index) => {
                     const gradeStyle = getGradeStyle(result.finalGrade ?? 'D')
                     const selectedResult = selectedResults[result.id]
                     const violationCount =
@@ -339,7 +422,7 @@ export default function PartnerEvaluationForm() {
                     return (
                       <div
                         key={result.id}
-                        className="p-4 rounded-xl border border-gray-200 transition-all bg-white/50 hover:border-gray-300 hover:shadow-lg">
+                        className="p-4 rounded-xl border border-gray-200 transition-all bg-white/50 hover:border-gray-300 hover:shadow-sm">
                         <div className="">
                           <div className="flex justify-between items-center mb-4">
                             <div className="flex items-center space-x-3">
@@ -352,8 +435,16 @@ export default function PartnerEvaluationForm() {
                                 </h3>
                                 <span className="text-sm text-gray-500">
                                   {userInfo?.userType === 'HEADQUARTERS'
-                                    ? `${results.length - index}차 협력사 진단 결과`
-                                    : `${results.length - index}차 자가진단 결과`}
+                                    ? selectedCompany === 'all'
+                                      ? '' // 전체 선택 시 빈 문자열
+                                      : `${
+                                          filteredResults.length - index
+                                        }회 협력사 진단 결과`
+                                    : selectedCompany === 'all'
+                                    ? `${
+                                        results.findIndex(r => r.id === result.id) + 1
+                                      }차 자가진단 결과`
+                                    : `${index + 1}차 자가진단 결과`}
                                 </span>
                               </div>
                             </div>
@@ -369,6 +460,7 @@ export default function PartnerEvaluationForm() {
                                   minute: '2-digit'
                                 })}
                               </span>
+
                               <button
                                 onClick={async () => {
                                   if (!selectedResults[result.id]) {
@@ -582,16 +674,16 @@ export default function PartnerEvaluationForm() {
           setSelectedViolationId(null)
           setViolationMeta(null)
         }}>
-        <DialogContent className="max-w-3xl max-h-[85vh] overflow-y-auto">
-          <DialogHeader className="pb-4 border-b border-gray-200">
+        <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
+          <DialogHeader className="pb-4 border-b">
             <div className="flex justify-between items-start">
               <div>
-                <DialogTitle className="text-xl font-bold text-gray-900">
+                <DialogTitle className="flex gap-2 items-center text-xl font-bold">
+                  <AlertTriangle className="w-6 h-6 text-red-500" />
                   위반 항목 상세 정보
                 </DialogTitle>
-                <DialogDescription className="mt-2 text-sm text-gray-600">
-                  항목 ID:{' '}
-                  <span className="font-mono font-medium text-blue-600">
+                <DialogDescription className="flex gap-2 items-center mt-2">
+                  <span className="px-3 py-1 font-mono text-sm font-medium text-blue-800 bg-blue-50 rounded-full border border-blue-200">
                     {selectedViolationId}
                   </span>
                 </DialogDescription>
@@ -600,41 +692,52 @@ export default function PartnerEvaluationForm() {
           </DialogHeader>
           <div className="pt-6">
             {violationMeta ? (
-              <div className="space-y-6">
-                <div className="p-6 bg-white rounded-lg border border-gray-200">
-                  <h4 className="pb-2 mb-4 text-lg font-semibold text-gray-800 border-b border-gray-100">
+              <div className="space-y-4">
+                {/* 카테고리 분류 */}
+                <div className="p-6 bg-gradient-to-br from-blue-50 to-white rounded-xl border border-blue-200 shadow-sm">
+                  <h4 className="flex gap-2 items-center pb-3 mb-4 text-lg font-semibold text-blue-900 border-b border-blue-100">
+                    <Users className="w-5 h-5" />
                     카테고리 분류
                   </h4>
                   <p className="text-base leading-relaxed text-gray-900">
                     {violationMeta.category}
                   </p>
                 </div>
-                <div className="p-6 bg-white rounded-lg border border-gray-200">
-                  <h4 className="pb-2 mb-4 text-lg font-semibold text-gray-800 border-b border-gray-100">
+
+                {/* 벌칙 및 제재 내용 */}
+                <div className="p-6 bg-gradient-to-br from-red-50 to-white rounded-xl border border-red-200 shadow-sm">
+                  <h4 className="flex gap-2 items-center pb-3 mb-4 text-lg font-semibold text-red-900 border-b border-red-100">
+                    <AlertOctagon className="w-5 h-5" />
                     벌칙 및 제재 내용
                   </h4>
-
                   <p className="text-base leading-relaxed text-gray-900 whitespace-pre-wrap">
                     {violationMeta.penaltyInfo}
                   </p>
                 </div>
-                <div className="p-6 bg-white rounded-lg border border-gray-200">
-                  <h4 className="pb-2 mb-4 text-lg font-semibold text-gray-800 border-b border-gray-100">
+
+                {/* 관련 법적 근거 */}
+                <div className="p-6 bg-gradient-to-br from-purple-50 to-white rounded-xl border border-purple-200 shadow-sm">
+                  <h4 className="flex gap-2 items-center pb-3 mb-4 text-lg font-semibold text-purple-900 border-b border-purple-100">
+                    <Scale className="w-5 h-5" />
                     관련 법적 근거
                   </h4>
-
                   <p className="text-base leading-relaxed text-gray-900 whitespace-pre-wrap">
                     {violationMeta.legalBasis}
                   </p>
                 </div>
-                <div className="p-4 bg-gray-50 rounded-lg border border-gray-200">
-                  <div className="text-sm text-gray-700">
-                    <p className="mb-2 font-medium">참고사항</p>
-                    <p className="leading-relaxed">
-                      위 정보는 CSDDD(Corporate Sustainability Due Diligence Directive)
-                      지침에 따른 것으로, 실제 적용 시에는 관련 법무팀 또는 전문가와
-                      상담하시기 바랍니다.
-                    </p>
+
+                {/* 참고사항 */}
+                <div className="p-4 bg-gradient-to-br from-gray-50 to-white rounded-xl border border-gray-200">
+                  <div className="flex gap-3 items-start text-sm text-gray-700">
+                    <InfoIcon className="w-5 h-5 text-gray-400 mt-0.5" />
+                    <div>
+                      <p className="mb-2 font-medium">참고사항</p>
+                      <p className="leading-relaxed">
+                        위 정보는 CSDDD(Corporate Sustainability Due Diligence Directive)
+                        지침에 따른 것으로, 실제 적용 시에는 관련 법무팀 또는 전문가와
+                        상담하시기 바랍니다.
+                      </p>
+                    </div>
                   </div>
                 </div>
               </div>

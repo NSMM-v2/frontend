@@ -122,97 +122,100 @@ export function CategorySelector<KeyType extends string>({
   animationDelay = 0
 }: CategorySelectorProps<KeyType>) {
   const pathname = usePathname()
+
+  // scope3의 경우, 특정 카테고리만 초록색으로 하이라이팅
+  const greenScope3Keys = ['list1', 'list2', 'list4', 'list5'] // 초록색으로 표시할 Scope 3 항목
+
   return (
     <motion.div
-      // 컨테이너 초기 애니메이션 설정
-      initial={{opacity: 0, y: 20}} // 시작: 투명하고 아래쪽에 위치
-      animate={{opacity: 1, y: 0}} // 종료: 불투명하고 원래 위치
-      transition={{delay: animationDelay, duration: 0.6}} // 지연시간과 지속시간 설정
+      initial={{opacity: 0, y: 20}}
+      animate={{opacity: 1, y: 0}}
+      transition={{delay: animationDelay, duration: 0.6}}
       className="grid grid-cols-1 gap-6 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
-      {/* 카테고리 목록을 순회하며 각 카테고리 카드 렌더링 */}
       {Object.entries(categoryList).map(([key, value], index) => {
-        // 현재 카테고리의 배출량 계산 (getTotalEmission 함수가 제공된 경우)
         const emission = getTotalEmission ? getTotalEmission(key as KeyType) : 0
-
-        // 데이터 존재 여부 확인 (배출량이 0보다 큰 경우 데이터 있음으로 판단)
         const hasData = emission > 0
+
+        // 현재 카테고리가 초록색 표시 대상인지 확인
+        const isHighlightedGreen = pathname === '/scope3' && greenScope3Keys.includes(key)
 
         return (
           <motion.div
             key={key}
-            // 각 카드의 개별 애니메이션 설정
-            initial={{opacity: 0, scale: 0.9}} // 시작: 투명하고 작게
-            animate={{opacity: 1, scale: 1}} // 종료: 불투명하고 원래 크기
+            initial={{opacity: 0, scale: 0.9}}
+            animate={{opacity: 1, scale: 1}}
             transition={{
-              delay: animationDelay + index * 0.05, // 순차적 애니메이션 (50ms 간격)
-              duration: 0.4, // 애니메이션 지속시간
-              type: 'spring', // 스프링 애니메이션 타입
-              stiffness: 100 // 스프링 강성도
+              delay: animationDelay + index * 0.05,
+              duration: 0.4,
+              type: 'spring',
+              stiffness: 100
             }}>
-            {/* 카테고리 카드 */}
             <Card
               className={`cursor-pointer transition-all duration-300 hover:shadow-sm hover:scale-105 ${
                 hasData
-                  ? // 데이터가 있는 경우: 파란색 그라데이션 배경과 테두리
-                    'bg-gradient-to-br from-blue-50 to-blue-100 border-blue-200 shadow-sm w-full'
-                  : // 데이터가 없는 경우: 흰색 배경, 호버 시 파란색 효과
-                    'bg-white hover:border-blue-300 hover:bg-gradient-to-br hover:from-blue-25 hover:to-blue-50 w-full'
+                  ? isHighlightedGreen
+                    ? 'w-full bg-gradient-to-br from-green-50 to-green-100 border-green-200 shadow-sm'
+                    : 'w-full bg-gradient-to-br from-blue-50 to-blue-100 border-blue-200 shadow-sm'
+                  : 'w-full bg-white hover:border-blue-300 hover:bg-gradient-to-br hover:from-blue-25 hover:to-blue-50'
               }`}
               onClick={() => onCategorySelect(key as KeyType)}>
               <CardHeader className="p-4">
-                {/* 카테고리 정보 컨테이너 */}
                 <div className="flex justify-between items-start">
-                  {/* 카테고리 메인 정보 */}
                   <div className="flex-1">
-                    {/* 카테고리 번호 라벨 */}
                     {pathname === '/scope3' && (
                       <div className="mb-2 text-xs font-medium text-gray-500">
                         카테고리 {key.replace('list', '')}
                       </div>
                     )}
-
-                    {/* 카테고리 제목 */}
                     <CardTitle className="text-sm leading-tight text-gray-800 transition-colors hover:text-blue-700">
                       {String(value)}
                     </CardTitle>
                   </div>
                 </div>
 
-                {/* 배출량 표시 섹션 */}
+                {/* 배출량 표시 */}
                 <div className="flex justify-between items-center pt-3 mt-3 border-t border-gray-200">
-                  {/* 배출량 수치 */}
                   <div
                     className={`text-lg font-bold transition-colors ${
-                      hasData ? 'text-blue-600' : 'text-gray-400'
+                      hasData
+                        ? isHighlightedGreen
+                          ? 'text-green-600'
+                          : 'text-blue-600'
+                        : 'text-gray-400'
                     }`}>
                     {emission.toFixed(1)}
                   </div>
-
-                  {/* 배출량 단위 */}
                   <div className="text-xs text-gray-500">kgCO₂</div>
                 </div>
 
-                {/* 데이터 상태 표시 섹션 */}
+                {/* 상태 표시 */}
                 <div className="flex justify-between items-center pt-3 mt-3 border-t border-gray-200">
-                  {/* 데이터 상태 인디케이터 */}
                   <div
                     className={`flex items-center text-xs ${
-                      hasData ? 'text-blue-600' : 'text-gray-500'
+                      hasData
+                        ? isHighlightedGreen
+                          ? 'text-green-600'
+                          : 'text-blue-600'
+                        : 'text-gray-500'
                     }`}>
-                    {/* 상태 표시 점 */}
                     <div
                       className={`mr-2 w-2 h-2 rounded-full ${
-                        hasData ? 'bg-blue-500' : 'bg-gray-300'
+                        hasData
+                          ? isHighlightedGreen
+                            ? 'bg-green-500'
+                            : 'bg-blue-500'
+                          : 'bg-gray-300'
                       }`}
                     />
-                    {/* 상태 텍스트 */}
                     {hasData ? '데이터 입력됨' : '데이터 없음'}
                   </div>
-
-                  {/* 선택 화살표 */}
                   <div
                     className={`text-xs transition-colors ${
-                      hasData ? 'text-blue-500' : 'text-gray-400'
+                      hasData
+                        ? isHighlightedGreen
+                          ? 'text-green-500'
+                          : 'text-blue-500'
+                        : 'text-gray-400'
                     }`}>
                     →
                   </div>

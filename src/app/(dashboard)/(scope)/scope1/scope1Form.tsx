@@ -3,12 +3,7 @@
 import React, {useState, useEffect} from 'react'
 import {motion} from 'framer-motion'
 
-import {
-  Home, // 홈 아이콘
-  Factory, // 공장 아이콘
-  CalendarDays, // 달력 아이콘
-  TrendingUp // 상승 트렌드 아이콘
-} from 'lucide-react'
+import {Home, Factory, CalendarDays, TrendingUp} from 'lucide-react'
 
 import {
   Breadcrumb,
@@ -39,12 +34,14 @@ import {Card, CardContent} from '@/components/ui/card'
 import {
   SelectorState,
   ScopeEmissionResponse,
-  ScopeCategorySummary
+  CategoryYearlyEmission,
+  CategoryMonthlyEmission
 } from '@/types/scopeTypes'
 import {
-  fetchEmissionsByYearAndMonth,
-  fetchCategorySummaryByScope,
-  deleteScopeEmission
+  deleteScopeEmission,
+  fetchCategoryYearlyEmissions,
+  fetchCategoryMonthlyEmissions,
+  fetchEmissionsByScope
 } from '@/services/scopeService'
 import {DirectionButton} from '@/components/layout/direction'
 
@@ -56,6 +53,7 @@ interface CalculatorData {
   id: number // 식별자: emissionId(양수) 또는 임시ID(음수)
   state: SelectorState // 사용자 입력 상태
   savedData?: ScopeEmissionResponse // 백엔드에서 받은 전체 데이터 (저장된 경우에만)
+  factoryEnabled: boolean // 계산기별 공장 설비 활성화 상태
 }
 
 /**
@@ -160,14 +158,15 @@ export default function Scope1Form() {
   // 백엔드 연동 상태 관리 (Backend Integration State)
   // ========================================================================
 
-  // 전체 Scope1 배출량 데이터 (년/월 기준)
-  const [scope1Data, setScope1Data] = useState<ScopeEmissionResponse[]>([])
-
-  // 카테고리별 요약 데이터 (CategorySummaryCard용)
-  const [categorySummary, setCategorySummary] = useState<ScopeCategorySummary>({})
-
-  // 로딩 상태 관리
-  const [isLoading, setIsLoading] = useState<boolean>(false)
+  // 카테고리별 집계 데이터 (새로운 API 사용)
+  const [categoryYearlyData, setCategoryYearlyData] = useState<CategoryYearlyEmission[]>(
+    []
+  )
+  const [categoryMonthlyData, setCategoryMonthlyData] = useState<
+    CategoryMonthlyEmission[]
+  >([])
+  const [yearlyTotalEmission, setYearlyTotalEmission] = useState<number>(0) // 연 배출량 (고정)
+  const [monthlyTotalEmission, setMonthlyTotalEmission] = useState<number>(0) // 월 배출량 (월 선택시)
 
   // 데이터 새로고침 트리거 (CRUD 작업 후 데이터 다시 로드용)
   const [refreshTrigger, setRefreshTrigger] = useState<number>(0)
@@ -193,16 +192,80 @@ export default function Scope1Form() {
   }
 
   /**
-   * 특정 카테고리의 총 배출량 계산
+   * 특정 카테고리의 총 배출량 계산 (백엔드 집계 데이터 우선 사용)
    */
-  const getPotentialTotalEmission = (category: Scope1PotentialCategoryKey): number =>
-    (potentialCategoryTotals[category] || []).reduce((sum, t) => sum + t.emission, 0)
-  const getKineticTotalEmission = (category: Scope1KineticCategoryKey): number =>
-    (kineticCategoryTotals[category] || []).reduce((sum, t) => sum + t.emission, 0)
-  const getProcessTotalEmission = (category: Scope1ProcessCategoryKey): number =>
-    (processCategoryTotals[category] || []).reduce((sum, t) => sum + t.emission, 0)
-  const getLeakTotalEmission = (category: Scope1LeakCategoryKey): number =>
-    (leakCategoryTotals[category] || []).reduce((sum, t) => sum + t.emission, 0)
+  const getPotentialTotalEmission = (category: Scope1PotentialCategoryKey): number => {
+    // 카테고리 키에서 번호 추출 (list1 -> 1, list2 -> 2, list3 -> 3)
+    const categoryNumber = parseInt(category.replace('list', ''))
+
+    // 백엔드 집계 데이터에서 해당 카테고리 번호 데이터 조회
+    const targetData = selectedMonth
+      ? categoryMonthlyData.filter(
+          data => data.month === selectedMonth && data.categoryNumber === categoryNumber
+        )
+      : categoryYearlyData.filter(data => data.categoryNumber === categoryNumber)
+
+    if (targetData.length > 0) {
+      return targetData.reduce((sum, data) => sum + data.totalEmission, 0)
+    }
+
+    // 백엔드 데이터가 없으면 프론트엔드 계산값 사용 (fallback)
+    return (potentialCategoryTotals[category] || []).reduce(
+      (sum, t) => sum + t.emission,
+      0
+    )
+  }
+
+  const getKineticTotalEmission = (category: Scope1KineticCategoryKey): number => {
+    // 카테고리 키에서 번호 추출 (list4 -> 4, list5 -> 5, list6 -> 6)
+    const categoryNumber = parseInt(category.replace('list', ''))
+
+    const targetData = selectedMonth
+      ? categoryMonthlyData.filter(
+          data => data.month === selectedMonth && data.categoryNumber === categoryNumber
+        )
+      : categoryYearlyData.filter(data => data.categoryNumber === categoryNumber)
+
+    if (targetData.length > 0) {
+      return targetData.reduce((sum, data) => sum + data.totalEmission, 0)
+    }
+
+    return (kineticCategoryTotals[category] || []).reduce((sum, t) => sum + t.emission, 0)
+  }
+
+  const getProcessTotalEmission = (category: Scope1ProcessCategoryKey): number => {
+    // 카테고리 키에서 번호 추출 (list7 -> 7, list8 -> 8)
+    const categoryNumber = parseInt(category.replace('list', ''))
+
+    const targetData = selectedMonth
+      ? categoryMonthlyData.filter(
+          data => data.month === selectedMonth && data.categoryNumber === categoryNumber
+        )
+      : categoryYearlyData.filter(data => data.categoryNumber === categoryNumber)
+
+    if (targetData.length > 0) {
+      return targetData.reduce((sum, data) => sum + data.totalEmission, 0)
+    }
+
+    return (processCategoryTotals[category] || []).reduce((sum, t) => sum + t.emission, 0)
+  }
+
+  const getLeakTotalEmission = (category: Scope1LeakCategoryKey): number => {
+    // 카테고리 키에서 번호 추출 (list9 -> 9, list10 -> 10)
+    const categoryNumber = parseInt(category.replace('list', ''))
+
+    const targetData = selectedMonth
+      ? categoryMonthlyData.filter(
+          data => data.month === selectedMonth && data.categoryNumber === categoryNumber
+        )
+      : categoryYearlyData.filter(data => data.categoryNumber === categoryNumber)
+
+    if (targetData.length > 0) {
+      return targetData.reduce((sum, data) => sum + data.totalEmission, 0)
+    }
+
+    return (leakCategoryTotals[category] || []).reduce((sum, t) => sum + t.emission, 0)
+  }
 
   // ========================================================================
   // 유틸리티 함수 - ID 생성 (Utility Functions - ID Generation)
@@ -355,7 +418,8 @@ export default function Scope1Form() {
           ...prev[activePotentialCategory],
           {
             id: newId,
-            state: {category: '', separate: '', rawMaterial: '', quantity: ''}
+            state: {category: '', separate: '', rawMaterial: '', quantity: ''},
+            factoryEnabled: false // 기본값: 공장 설비 비활성화
           }
         ]
       }))
@@ -367,7 +431,8 @@ export default function Scope1Form() {
           ...prev[activeKineticCategory],
           {
             id: newId,
-            state: {category: '', separate: '', rawMaterial: '', quantity: ''}
+            state: {category: '', separate: '', rawMaterial: '', quantity: ''},
+            factoryEnabled: false // 기본값: 공장 설비 비활성화
           }
         ]
       }))
@@ -379,7 +444,8 @@ export default function Scope1Form() {
           ...prev[activeProcessCategory],
           {
             id: newId,
-            state: {category: '', separate: '', rawMaterial: '', quantity: ''}
+            state: {category: '', separate: '', rawMaterial: '', quantity: ''},
+            factoryEnabled: false // 기본값: 공장 설비 비활성화
           }
         ]
       }))
@@ -391,7 +457,8 @@ export default function Scope1Form() {
           ...prev[activeLeakCategory],
           {
             id: newId,
-            state: {category: '', separate: '', rawMaterial: '', quantity: ''}
+            state: {category: '', separate: '', rawMaterial: '', quantity: ''},
+            factoryEnabled: false // 기본값: 공장 설비 비활성화
           }
         ]
       }))
@@ -460,7 +527,8 @@ export default function Scope1Form() {
             [activePotentialCategory]: [
               {
                 id: newTemporaryId,
-                state: {category: '', separate: '', rawMaterial: '', quantity: ''}
+                state: {category: '', separate: '', rawMaterial: '', quantity: ''},
+                factoryEnabled: false // 기본값: 공장 설비 비활성화
               }
             ]
           }))
@@ -474,7 +542,8 @@ export default function Scope1Form() {
             [activeKineticCategory]: [
               {
                 id: newTemporaryId,
-                state: {category: '', separate: '', rawMaterial: '', quantity: ''}
+                state: {category: '', separate: '', rawMaterial: '', quantity: ''},
+                factoryEnabled: false // 기본값: 공장 설비 비활성화
               }
             ]
           }))
@@ -488,7 +557,8 @@ export default function Scope1Form() {
             [activeProcessCategory]: [
               {
                 id: newTemporaryId,
-                state: {category: '', separate: '', rawMaterial: '', quantity: ''}
+                state: {category: '', separate: '', rawMaterial: '', quantity: ''},
+                factoryEnabled: false // 기본값: 공장 설비 비활성화
               }
             ]
           }))
@@ -502,7 +572,8 @@ export default function Scope1Form() {
             [activeLeakCategory]: [
               {
                 id: newTemporaryId,
-                state: {category: '', separate: '', rawMaterial: '', quantity: ''}
+                state: {category: '', separate: '', rawMaterial: '', quantity: ''},
+                factoryEnabled: false // 기본값: 공장 설비 비활성화
               }
             ]
           }))
@@ -614,6 +685,41 @@ export default function Scope1Form() {
   }
 
   /**
+   * 계산기별 공장 설비 상태 업데이트 핸들러
+   */
+  const updateFactoryEnabled = (id: number, enabled: boolean) => {
+    if (activePotentialCategory) {
+      setPotentialCategoryCalculators(prev => ({
+        ...prev,
+        [activePotentialCategory]: (prev[activePotentialCategory] || []).map(c =>
+          c.id === id ? {...c, factoryEnabled: enabled} : c
+        )
+      }))
+    } else if (activeKineticCategory) {
+      setKineticCategoryCalculators(prev => ({
+        ...prev,
+        [activeKineticCategory]: (prev[activeKineticCategory] || []).map(c =>
+          c.id === id ? {...c, factoryEnabled: enabled} : c
+        )
+      }))
+    } else if (activeProcessCategory) {
+      setProcessCategoryCalculators(prev => ({
+        ...prev,
+        [activeProcessCategory]: (prev[activeProcessCategory] || []).map(c =>
+          c.id === id ? {...c, factoryEnabled: enabled} : c
+        )
+      }))
+    } else if (activeLeakCategory) {
+      setLeakCategoryCalculators(prev => ({
+        ...prev,
+        [activeLeakCategory]: (prev[activeLeakCategory] || []).map(c =>
+          c.id === id ? {...c, factoryEnabled: enabled} : c
+        )
+      }))
+    }
+  }
+
+  /**
    * 카테고리 선택 핸들러
    */
   const handlePotentialCategorySelect = (category: Scope1PotentialCategoryKey) => {
@@ -633,7 +739,8 @@ export default function Scope1Form() {
         [category]: [
           {
             id: newId,
-            state: {category: '', separate: '', rawMaterial: '', quantity: ''}
+            state: {category: '', separate: '', rawMaterial: '', quantity: ''},
+            factoryEnabled: false // 기본값: 공장 설비 비활성화
           }
         ]
       }))
@@ -656,7 +763,8 @@ export default function Scope1Form() {
         [category]: [
           {
             id: newId,
-            state: {category: '', separate: '', rawMaterial: '', quantity: ''}
+            state: {category: '', separate: '', rawMaterial: '', quantity: ''},
+            factoryEnabled: false // 기본값: 공장 설비 비활성화
           }
         ]
       }))
@@ -679,7 +787,8 @@ export default function Scope1Form() {
         [category]: [
           {
             id: newId,
-            state: {category: '', separate: '', rawMaterial: '', quantity: ''}
+            state: {category: '', separate: '', rawMaterial: '', quantity: ''},
+            factoryEnabled: false // 기본값: 공장 설비 비활성화
           }
         ]
       }))
@@ -702,7 +811,8 @@ export default function Scope1Form() {
         [category]: [
           {
             id: newId,
-            state: {category: '', separate: '', rawMaterial: '', quantity: ''}
+            state: {category: '', separate: '', rawMaterial: '', quantity: ''},
+            factoryEnabled: false // 기본값: 공장 설비 비활성화
           }
         ]
       }))
@@ -735,46 +845,81 @@ export default function Scope1Form() {
 
   /**
    * 연도/월별 Scope1 데이터 전체 조회
-   * selectedYear, selectedMonth 변경 시 자동 호출
+   * Scope2/Scope3와 동일한 로직으로 완전 재구현
    */
   const loadScope1Data = async () => {
-    if (!selectedYear || !selectedMonth) return
+    if (!selectedYear) return
 
-    setIsLoading(true)
     try {
-      // 1. 전체 배출량 데이터 조회 (Scope 1만 필터링)
-      const emissionsData = await fetchEmissionsByYearAndMonth(
-        selectedYear,
-        selectedMonth,
-        'SCOPE1'
-      )
-      setScope1Data(emissionsData)
+      // 1. 항상 연간 데이터 조회 (연간 배출량 카드용)
+      const yearlyData = await fetchCategoryYearlyEmissions('SCOPE1', selectedYear)
+      setCategoryYearlyData(yearlyData)
 
-      // 2. 카테고리별 요약 데이터 조회
-      const summaryData = await fetchCategorySummaryByScope(
-        'SCOPE1',
-        selectedYear,
-        selectedMonth
-      )
-      setCategorySummary(summaryData)
+      // 연간 데이터에서 총합 계산 및 설정 (연도 변경시에만 업데이트)
+      const yearlyTotal = yearlyData.reduce((sum, data) => sum + data.totalEmission, 0)
+      setYearlyTotalEmission(yearlyTotal)
 
-      // 3. 기존 데이터를 카테고리별 계산기로 변환
-      convertBackendDataToCalculators(emissionsData)
+      // 2. 월간 데이터 조회 및 처리
+      if (selectedMonth) {
+        const monthlyData = await fetchCategoryMonthlyEmissions('SCOPE1', selectedYear)
+        setCategoryMonthlyData(monthlyData)
+
+        // 선택된 월에 해당하는 데이터만 필터링하여 총합 계산
+        const monthlyFilteredData = monthlyData.filter(
+          data => data.month === selectedMonth
+        )
+        const monthlyTotal = monthlyFilteredData.reduce(
+          (sum, data) => sum + data.totalEmission,
+          0
+        )
+        setMonthlyTotalEmission(monthlyTotal)
+      } else {
+        // 월이 선택되지 않았으면 월간 데이터 및 월 배출량 초기화
+        setCategoryMonthlyData([])
+        setMonthlyTotalEmission(0)
+      }
+
+      // 3. 항상 전체 배출량 데이터 조회 (계산기용)
+      const emissionsData = await fetchEmissionsByScope('SCOPE1')
+
+      // 4. 선택된 기간에 맞는 데이터만 필터링
+      const filteredEmissions = selectedMonth
+        ? emissionsData.filter(
+            emission =>
+              emission.reportingYear === selectedYear &&
+              emission.reportingMonth === selectedMonth
+          )
+        : emissionsData.filter(emission => emission.reportingYear === selectedYear)
+
+      // 5. 백엔드 데이터를 계산기 형식으로 변환 (완전 초기화)
+      convertBackendDataToCalculators(filteredEmissions)
     } catch (error) {
-      // console.error('Scope1 데이터 로드 오류:', error)
-    } finally {
-      setIsLoading(false)
+      console.error('Scope1 데이터 로드 오류:', error)
     }
   }
 
   /**
    * 백엔드 데이터를 프론트엔드 계산기 형식으로 변환
+   * Scope2/Scope3와 동일한 완전 초기화 방식 적용
    */
   const convertBackendDataToCalculators = (data: ScopeEmissionResponse[]) => {
-    const potentialData: CalculatorData[] = []
-    const kineticData: CalculatorData[] = []
-    const processData: CalculatorData[] = []
-    const leakData: CalculatorData[] = []
+    // 완전 초기화를 위한 임시 데이터 구조
+    const newPotentialData: CalculatorData[] = []
+    const newKineticData: CalculatorData[] = []
+    const newProcessData: CalculatorData[] = []
+    const newLeakData: CalculatorData[] = []
+    const newCalculatorModes: Record<string, Record<number, boolean>> = {
+      list1: {},
+      list2: {},
+      list3: {},
+      list4: {},
+      list5: {},
+      list6: {},
+      list7: {},
+      list8: {},
+      list9: {},
+      list10: {}
+    }
 
     data.forEach(emission => {
       const calculatorId =
@@ -786,94 +931,88 @@ export default function Scope1Form() {
           category: emission.majorCategory,
           separate: emission.subcategory,
           rawMaterial: emission.rawMaterial,
-          unit: emission.unit,
+          unit: emission.unit || '',
           kgCO2eq: emission.emissionFactor.toString(),
           quantity: emission.activityAmount.toString(),
           productName: emission.productName || '',
           productCode: emission.companyProductCode || ''
         },
-        savedData: emission
+        savedData: emission,
+        factoryEnabled: emission.factoryEnabled || false
       }
 
-      // 카테고리 번호에 따라 분류 - 안전한 체크 추가
+      // 카테고리 번호에 따라 분류
       if (
         emission.scope1CategoryNumber &&
         emission.scope1CategoryNumber >= 1 &&
         emission.scope1CategoryNumber <= 3
       ) {
-        potentialData.push(calculatorData)
+        newPotentialData.push(calculatorData)
       } else if (
         emission.scope1CategoryNumber &&
         emission.scope1CategoryNumber >= 4 &&
         emission.scope1CategoryNumber <= 6
       ) {
-        kineticData.push(calculatorData)
+        newKineticData.push(calculatorData)
       } else if (
         emission.scope1CategoryNumber &&
         emission.scope1CategoryNumber >= 7 &&
         emission.scope1CategoryNumber <= 8
       ) {
-        processData.push(calculatorData)
+        newProcessData.push(calculatorData)
       } else if (
         emission.scope1CategoryNumber &&
         emission.scope1CategoryNumber >= 9 &&
         emission.scope1CategoryNumber <= 10
       ) {
-        leakData.push(calculatorData)
+        newLeakData.push(calculatorData)
       }
 
-      // 수동 입력 모드 상태 복원 (화면 반전 로직 고려)
+      // 수동 입력 모드 상태 설정 (화면 반전 로직 고려)
       if (emission.inputType !== undefined && emission.scope1CategoryNumber) {
-        const categoryKey =
-          `list${emission.scope1CategoryNumber}` as keyof typeof calculatorModes
-        setCalculatorModes(prev => ({
-          ...prev,
-          [categoryKey]: {
-            ...prev[categoryKey],
-            [calculatorId]: emission.inputType === 'LCA' // 수정: 화면에서 반전되므로 LCA일 때 true
-          }
-        }))
+        const categoryKey = `list${emission.scope1CategoryNumber}`
+        newCalculatorModes[categoryKey][calculatorId] = emission.inputType === 'LCA'
       }
     })
 
-    // 상태 업데이트 - 카테고리별로 분류하여 저장
+    // 완전 새로운 상태로 교체 (이전 데이터 잔존 방지)
     setPotentialCategoryCalculators({
-      list1: potentialData.filter(d => d.savedData?.scope1CategoryNumber === 1),
-      list2: potentialData.filter(d => d.savedData?.scope1CategoryNumber === 2),
-      list3: potentialData.filter(d => d.savedData?.scope1CategoryNumber === 3)
+      list1: newPotentialData.filter(d => d.savedData?.scope1CategoryNumber === 1),
+      list2: newPotentialData.filter(d => d.savedData?.scope1CategoryNumber === 2),
+      list3: newPotentialData.filter(d => d.savedData?.scope1CategoryNumber === 3)
     })
 
     setKineticCategoryCalculators({
-      list4: kineticData.filter(d => d.savedData?.scope1CategoryNumber === 4),
-      list5: kineticData.filter(d => d.savedData?.scope1CategoryNumber === 5),
-      list6: kineticData.filter(d => d.savedData?.scope1CategoryNumber === 6)
+      list4: newKineticData.filter(d => d.savedData?.scope1CategoryNumber === 4),
+      list5: newKineticData.filter(d => d.savedData?.scope1CategoryNumber === 5),
+      list6: newKineticData.filter(d => d.savedData?.scope1CategoryNumber === 6)
     })
 
     setProcessCategoryCalculators({
-      list7: processData.filter(d => d.savedData?.scope1CategoryNumber === 7),
-      list8: processData.filter(d => d.savedData?.scope1CategoryNumber === 8)
+      list7: newProcessData.filter(d => d.savedData?.scope1CategoryNumber === 7),
+      list8: newProcessData.filter(d => d.savedData?.scope1CategoryNumber === 8)
     })
 
     setLeakCategoryCalculators({
-      list9: leakData.filter(d => d.savedData?.scope1CategoryNumber === 9),
-      list10: leakData.filter(d => d.savedData?.scope1CategoryNumber === 10)
+      list9: newLeakData.filter(d => d.savedData?.scope1CategoryNumber === 9),
+      list10: newLeakData.filter(d => d.savedData?.scope1CategoryNumber === 10)
     })
 
-    // 배출량 총계 업데이트
+    // 배출량 총계 완전 교체
     setPotentialCategoryTotals({
-      list1: potentialData
+      list1: newPotentialData
         .filter(d => d.savedData?.scope1CategoryNumber === 1)
         .map(calc => ({
           id: calc.id,
           emission: calc.savedData?.totalEmission || 0
         })),
-      list2: potentialData
+      list2: newPotentialData
         .filter(d => d.savedData?.scope1CategoryNumber === 2)
         .map(calc => ({
           id: calc.id,
           emission: calc.savedData?.totalEmission || 0
         })),
-      list3: potentialData
+      list3: newPotentialData
         .filter(d => d.savedData?.scope1CategoryNumber === 3)
         .map(calc => ({
           id: calc.id,
@@ -882,19 +1021,19 @@ export default function Scope1Form() {
     })
 
     setKineticCategoryTotals({
-      list4: kineticData
+      list4: newKineticData
         .filter(d => d.savedData?.scope1CategoryNumber === 4)
         .map(calc => ({
           id: calc.id,
           emission: calc.savedData?.totalEmission || 0
         })),
-      list5: kineticData
+      list5: newKineticData
         .filter(d => d.savedData?.scope1CategoryNumber === 5)
         .map(calc => ({
           id: calc.id,
           emission: calc.savedData?.totalEmission || 0
         })),
-      list6: kineticData
+      list6: newKineticData
         .filter(d => d.savedData?.scope1CategoryNumber === 6)
         .map(calc => ({
           id: calc.id,
@@ -903,13 +1042,13 @@ export default function Scope1Form() {
     })
 
     setProcessCategoryTotals({
-      list7: processData
+      list7: newProcessData
         .filter(d => d.savedData?.scope1CategoryNumber === 7)
         .map(calc => ({
           id: calc.id,
           emission: calc.savedData?.totalEmission || 0
         })),
-      list8: processData
+      list8: newProcessData
         .filter(d => d.savedData?.scope1CategoryNumber === 8)
         .map(calc => ({
           id: calc.id,
@@ -918,19 +1057,25 @@ export default function Scope1Form() {
     })
 
     setLeakCategoryTotals({
-      list9: leakData
+      list9: newLeakData
         .filter(d => d.savedData?.scope1CategoryNumber === 9)
         .map(calc => ({
           id: calc.id,
           emission: calc.savedData?.totalEmission || 0
         })),
-      list10: leakData
+      list10: newLeakData
         .filter(d => d.savedData?.scope1CategoryNumber === 10)
         .map(calc => ({
           id: calc.id,
           emission: calc.savedData?.totalEmission || 0
         }))
     })
+
+    // 계산기 모드 완전 교체
+    setCalculatorModes(prev => ({
+      ...prev,
+      ...newCalculatorModes
+    }))
   }
 
   // ========================================================================
@@ -939,9 +1084,10 @@ export default function Scope1Form() {
 
   /**
    * 연도/월 변경 시 데이터 자동 로드
+   * Scope2/Scope3와 동일한 로직으로 월이 null이어도 로드
    */
   useEffect(() => {
-    if (selectedYear && selectedMonth) {
+    if (selectedYear) {
       loadScope1Data()
     }
   }, [selectedYear, selectedMonth, refreshTrigger])
@@ -954,24 +1100,7 @@ export default function Scope1Form() {
     setRefreshTrigger(prev => prev + 1)
   }
 
-  // 전체 총 배출량 계산
-  const grandTotal =
-    Object.keys(scope1PotentialCategoryList).reduce(
-      (sum, key) => sum + getPotentialTotalEmission(key as Scope1PotentialCategoryKey),
-      0
-    ) +
-    Object.keys(scope1KineticCategoryList).reduce(
-      (sum, key) => sum + getKineticTotalEmission(key as Scope1KineticCategoryKey),
-      0
-    ) +
-    Object.keys(scope1ProcessCategoryList).reduce(
-      (sum, key) => sum + getProcessTotalEmission(key as Scope1ProcessCategoryKey),
-      0
-    ) +
-    Object.keys(scope1LeakCategoryList).reduce(
-      (sum, key) => sum + getLeakTotalEmission(key as Scope1LeakCategoryKey),
-      0
-    )
+  // 전체 총 배출량은 yearlyTotalEmission/monthlyTotalEmission으로 관리
 
   // ========================================================================
   // 렌더링 (Rendering)
@@ -1002,7 +1131,7 @@ export default function Scope1Form() {
           헤더 섹션 (Header Section)
           - 뒤로가기 버튼과 페이지 제목/설명
           ======================================================================== */}
-      <div className="flex flex-row justify-between mb-4 w-full h-24">
+      <div className="flex flex-row justify-between mb-4 w-full">
         <div className="flex flex-row items-center p-4">
           <PageHeader
             icon={<Factory className="w-6 h-6 text-blue-600" />}
@@ -1030,41 +1159,31 @@ export default function Scope1Form() {
           initial={{opacity: 0}}
           animate={{opacity: 1}}
           transition={{duration: 0.4, delay: 0.1}}>
-          <Card className="overflow-hidden mb-4 shadow-sm">
-            <CardContent className="p-4">
-              <div className="grid grid-cols-1 gap-8 justify-center items-center h-24 md:grid-cols-3">
-                {/* 백엔드 데이터 기반 총 배출량 카드 */}
-                <motion.div
-                  initial={{opacity: 0, scale: 0.95}}
-                  animate={{opacity: 1, scale: 1}}
-                  transition={{delay: 0.1, duration: 0.5}}
-                  className="max-w-md">
-                  <Card className="justify-center h-24 bg-gradient-to-br from-blue-50 to-white border-blue-100">
-                    <CardContent className="flex items-center p-4">
-                      <div className="p-2 mr-3 bg-blue-100 rounded-full">
-                        <TrendingUp className="w-5 h-5 text-blue-600" />
-                      </div>
-                      <div>
-                        <p className="text-sm font-medium text-gray-500">
-                          총 Scope 1 배출량
-                        </p>
-                        <h3 className="text-2xl font-bold text-gray-900">
-                          {grandTotal.toLocaleString(undefined, {
-                            maximumFractionDigits: 2,
-                            minimumFractionDigits: 2
-                          })}
-                          <span className="ml-1 text-sm font-normal text-gray-500">
-                            kgCO₂eq
-                          </span>
-                        </h3>
-                      </div>
-                    </CardContent>
-                  </Card>
-                </motion.div>
+          {/* header card ================================================================================================================== */}
+          <div className="flex flex-row gap-4 justify-between mb-4 w-full">
+            {/* 연도 총 배출량 카드 ============================================================================================================== */}
+            <Card className="justify-center w-full h-24 bg-gradient-to-br from-blue-50 to-blue-100 border-blue-200 shadow-sm">
+              <CardContent className="flex gap-6 justify-between items-center p-4">
+                <div className="flex flex-row items-center">
+                  <div className="p-2 mr-3 bg-blue-100 rounded-full">
+                    <TrendingUp className="w-5 h-5 text-blue-600" />
+                  </div>
+                  <div>
+                    <p className="text-sm font-medium text-gray-500">Scope1 연 배출량</p>
+                    <h3 className="text-2xl font-bold text-gray-900">
+                      {yearlyTotalEmission.toLocaleString(undefined, {
+                        maximumFractionDigits: 2,
+                        minimumFractionDigits: 2
+                      })}
 
-                {/* 보고연도 입력 필드 */}
-                <div className="space-y-3">
-                  <label className="flex gap-2 items-center text-sm font-semibold text-customG-700">
+                      <span className="ml-1 text-sm font-normal text-gray-500">
+                        kgCO₂eq
+                      </span>
+                    </h3>
+                  </div>
+                </div>
+                <div className="flex flex-col space-y-3 w-full">
+                  <label className="flex gap-2 items-center text-sm font-semibold whitespace-nowrap text-customG-700">
                     <CalendarDays className="w-4 h-4" />
                     보고연도
                   </label>
@@ -1077,12 +1196,39 @@ export default function Scope1Form() {
                     className="px-3 py-2 w-full h-9 text-sm backdrop-blur-sm border-customG-200 focus:border-customG-400 focus:ring-customG-100 bg-white/80"
                   />
                 </div>
+              </CardContent>
+            </Card>
 
-                {/* 보고월 선택 드롭다운 (선택사항) */}
-                <div className="space-y-3">
+            {/* 월 총 배출량 카드 ============================================================================================================== */}
+            <Card className="justify-center w-full h-24 bg-gradient-to-br from-blue-50 to-blue-100 border-blue-200 shadow-sm">
+              <CardContent className="flex gap-6 justify-between items-center p-4">
+                <div className="flex flex-row items-center">
+                  <div className="p-2 mr-3 bg-blue-100 rounded-full">
+                    <TrendingUp className="w-5 h-5 text-blue-600" />
+                  </div>
+                  <div>
+                    <p className="text-sm font-medium text-gray-500">
+                      Scope1 {selectedMonth ? `${selectedMonth}월` : '월'} 배출량
+                    </p>
+                    <h3 className="text-2xl font-bold text-gray-900">
+                      {selectedMonth
+                        ? monthlyTotalEmission.toLocaleString(undefined, {
+                            maximumFractionDigits: 2,
+                            minimumFractionDigits: 2
+                          })
+                        : '월 선택 필요'}
+                      {selectedMonth && (
+                        <span className="ml-1 text-sm font-normal text-gray-500">
+                          kgCO₂eq
+                        </span>
+                      )}
+                    </h3>
+                  </div>
+                </div>
+                <div className="flex flex-col space-y-3 w-full">
                   <label className="flex gap-2 items-center text-sm font-semibold text-customG-700">
                     <CalendarDays className="w-4 h-4" />
-                    보고월 (선택사항)
+                    보고월
                   </label>
                   <MonthSelector
                     className="w-full"
@@ -1090,9 +1236,9 @@ export default function Scope1Form() {
                     onSelect={setSelectedMonth}
                   />
                 </div>
-              </div>
-            </CardContent>
-          </Card>
+              </CardContent>
+            </Card>
+          </div>
 
           {/* 카테고리 선택 영역 */}
           <div className="space-y-8">
@@ -1227,6 +1373,7 @@ export default function Scope1Form() {
               ] || {}
             }
             onModeChange={handleModeChange}
+            onFactoryEnabledChange={updateFactoryEnabled}
             selectedYear={selectedYear}
             selectedMonth={selectedMonth}
             onDataChange={refreshData}

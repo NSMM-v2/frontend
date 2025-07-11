@@ -97,9 +97,7 @@ export default function Layout({children}: {children: React.ReactNode}) {
     <div className="flex flex-col items-center w-full min-h-screen">
       <NavigationBar />
       <SideBar />
-      <div className="flex flex-1 w-full max-w-screen-sm pl-12 mt-20 md:max-w-screen-xl md:pl-0">
-        {children}
-      </div>
+      <div className="flex flex-1 w-full max-w-screen-lg mt-20">{children}</div>
     </div>
   )
 }
