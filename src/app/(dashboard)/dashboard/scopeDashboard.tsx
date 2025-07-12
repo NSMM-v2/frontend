@@ -369,7 +369,7 @@ export default function ScopeDashboard() {
                   className="w-full h-8 p-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500"
                 />
               </div>
-              <CardContent className="flex w-full max-h-[280px] p-0 overflow-hidden overflow-y-auto border rounded-lg custom-scrollbar">
+              <CardContent className="flex w-full max-h-[280px] p-0 overflow-hidden overflow-y-auto border rounded-lg custom-scrollbar allow-scroll">
                 <TabsContent value="company">
                   <div className="flex flex-col h-full gap-2 p-2">
                     {loading && (
