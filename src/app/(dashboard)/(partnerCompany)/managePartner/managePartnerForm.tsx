@@ -599,7 +599,7 @@ export default function ManagePartnerForm() {
   }
 
   return (
-    <div className="flex flex-col w-full p-4">
+    <div className="flex flex-col w-full pt-24">
       {/* ======================================================================
           상단 네비게이션 섹션 (Top Navigation Section)
           ====================================================================== */}
