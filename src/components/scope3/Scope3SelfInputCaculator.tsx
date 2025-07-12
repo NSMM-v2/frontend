@@ -32,8 +32,9 @@ export function SelfInputCalculator({
     const qty = parseFloat(state.quantity || '0')
     const factor = parseFloat(state.kgCO2eq || '0')
 
-    if (isNaN(qty) || isNaN(factor) || qty < 0 || factor < 0) {
-      return 0
+    if (isNaN(qty) || isNaN(factor) || qty < 0) {
+      alert('수량과 배출계수는 숫자여야 하며, 수량은 0 이상이어야 합니다.')
+      return 
     }
 
     const emission = qty * factor
@@ -50,11 +51,13 @@ export function SelfInputCalculator({
 
   useEffect(() => {
     const emission = calculateSafeEmission()
+    if (emission !== undefined){
 
     if (prevEmissionRef.current !== emission) {
       onChangeTotal(id, emission)
       prevEmissionRef.current = emission
     }
+  }
   }, [state.quantity, state.kgCO2eq, id, onChangeTotal])
 
   // ========================================================================
@@ -83,7 +86,7 @@ export function SelfInputCalculator({
       }
 
       // 숫자 형식 검증 (음수 차단, 소수점 허용)
-      if (!/^\d*\.?\d*$/.test(val)) {
+      if (!/^-?\d*\.?\d*$/.test(val)) {
         return
       }
 
@@ -346,7 +349,7 @@ export function SelfInputCalculator({
 
                 <div className="text-right">
                   <div className="text-3xl font-bold text-blue-600">
-                    {calculatedEmission.toLocaleString(undefined, {
+                    {calculatedEmission?.toLocaleString(undefined, {
                       maximumFractionDigits: 3,
                       minimumFractionDigits: 3
                     })}
@@ -364,7 +367,7 @@ export function SelfInputCalculator({
                     <span className="font-medium">계산 공식:</span>{' '}
                     {parseFloat(state.quantity).toLocaleString()} ×{' '}
                     {parseFloat(state.kgCO2eq).toLocaleString()} ={' '}
-                    {calculatedEmission.toLocaleString()} kgCO₂
+                    {calculatedEmission?.toLocaleString()} kgCO₂
                   </p>
                 </div>
               )}
