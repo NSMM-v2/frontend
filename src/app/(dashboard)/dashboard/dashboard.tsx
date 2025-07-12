@@ -16,8 +16,14 @@ export default function Page() {
 
     const handleWheel = (e: WheelEvent) => {
       // 내부 스크롤 가능한 영역은 wheel 무시
-      const isInsideScrollable = (e.target as HTMLElement)?.closest('.allow-scroll')
-      if (isInsideScrollable) return
+      const target = e.target as HTMLElement
+      const isInsideScrollable = target.closest('.allow-scroll')
+
+      if (isInsideScrollable) {
+        // 스크롤 가능한 영역 내부에서는 이벤트 전파 중단
+        e.stopPropagation()
+        return
+      }
 
       if (isScrolling) return
       const delta = e.deltaY
@@ -51,7 +57,7 @@ export default function Page() {
   }
 
   return (
-    <div ref={containerRef} className="overflow-hidden w-full h-full">
+    <div ref={containerRef} className="w-full h-full overflow-hidden">
       {[...Array(sectionCount)].map((_, i) => (
         <section
           key={i}

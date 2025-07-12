@@ -1107,7 +1107,7 @@ export default function Scope1Form() {
   // ========================================================================
 
   return (
-    <div className="flex flex-col p-4 w-full h-full">
+    <div className="flex flex-col w-full h-full pt-24 pb-4">
       {/* ========================================================================
           상단 네비게이션 (Top Navigation)
           - 브레드크럼을 통한 현재 위치 표시
@@ -1116,7 +1116,7 @@ export default function Scope1Form() {
         <Breadcrumb>
           <BreadcrumbList>
             <BreadcrumbItem>
-              <Home className="mr-1 w-4 h-4" />
+              <Home className="w-4 h-4 mr-1" />
               <BreadcrumbLink href="/dashboard">대시보드</BreadcrumbLink>
             </BreadcrumbItem>
             <BreadcrumbSeparator />
@@ -1131,7 +1131,7 @@ export default function Scope1Form() {
           헤더 섹션 (Header Section)
           - 뒤로가기 버튼과 페이지 제목/설명
           ======================================================================== */}
-      <div className="flex flex-row justify-between mb-4 w-full">
+      <div className="flex flex-row justify-between w-full mb-4">
         <div className="flex flex-row items-center p-4">
           <PageHeader
             icon={<Factory className="w-6 h-6 text-blue-600" />}
@@ -1160,10 +1160,10 @@ export default function Scope1Form() {
           animate={{opacity: 1}}
           transition={{duration: 0.4, delay: 0.1}}>
           {/* header card ================================================================================================================== */}
-          <div className="flex flex-row gap-4 justify-between mb-4 w-full">
+          <div className="flex flex-row justify-between w-full gap-4 mb-4">
             {/* 연도 총 배출량 카드 ============================================================================================================== */}
-            <Card className="justify-center w-full h-24 bg-gradient-to-br from-blue-50 to-blue-100 border-blue-200 shadow-sm">
-              <CardContent className="flex gap-6 justify-between items-center p-4">
+            <Card className="justify-center w-full h-24 border-blue-200 shadow-sm bg-gradient-to-br from-blue-50 to-blue-100">
+              <CardContent className="flex items-center justify-between gap-6 p-4">
                 <div className="flex flex-row items-center">
                   <div className="p-2 mr-3 bg-blue-100 rounded-full">
                     <TrendingUp className="w-5 h-5 text-blue-600" />
@@ -1182,8 +1182,8 @@ export default function Scope1Form() {
                     </h3>
                   </div>
                 </div>
-                <div className="flex flex-col space-y-3 w-full">
-                  <label className="flex gap-2 items-center text-sm font-semibold whitespace-nowrap text-customG-700">
+                <div className="flex flex-col w-full space-y-3">
+                  <label className="flex items-center gap-2 text-sm font-semibold whitespace-nowrap text-customG-700">
                     <CalendarDays className="w-4 h-4" />
                     보고연도
                   </label>
@@ -1193,15 +1193,15 @@ export default function Scope1Form() {
                     onChange={e => setSelectedYear(parseInt(e.target.value))}
                     min="1900"
                     max="2200"
-                    className="px-3 py-2 w-full h-9 text-sm backdrop-blur-sm border-customG-200 focus:border-customG-400 focus:ring-customG-100 bg-white/80"
+                    className="w-full px-3 py-2 text-sm h-9 backdrop-blur-sm border-customG-200 focus:border-customG-400 focus:ring-customG-100 bg-white/80"
                   />
                 </div>
               </CardContent>
             </Card>
 
             {/* 월 총 배출량 카드 ============================================================================================================== */}
-            <Card className="justify-center w-full h-24 bg-gradient-to-br from-blue-50 to-blue-100 border-blue-200 shadow-sm">
-              <CardContent className="flex gap-6 justify-between items-center p-4">
+            <Card className="justify-center w-full h-24 border-blue-200 shadow-sm bg-gradient-to-br from-blue-50 to-blue-100">
+              <CardContent className="flex items-center justify-between gap-6 p-4">
                 <div className="flex flex-row items-center">
                   <div className="p-2 mr-3 bg-blue-100 rounded-full">
                     <TrendingUp className="w-5 h-5 text-blue-600" />
@@ -1225,8 +1225,8 @@ export default function Scope1Form() {
                     </h3>
                   </div>
                 </div>
-                <div className="flex flex-col space-y-3 w-full">
-                  <label className="flex gap-2 items-center text-sm font-semibold text-customG-700">
+                <div className="flex flex-col w-full space-y-3">
+                  <label className="flex items-center gap-2 text-sm font-semibold text-customG-700">
                     <CalendarDays className="w-4 h-4" />
                     보고월
                   </label>

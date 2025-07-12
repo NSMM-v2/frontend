@@ -376,11 +376,11 @@ export default function CSDDDDashboard() {
   }
 
   return (
-    <div className="h-[calc(100vh-80px)] w-full py-22">
-      <div className="flex flex-col gap-4 w-full h-full">
+    <div className="w-full h-screen pt-24 pb-4">
+      <div className="flex flex-col w-full h-full gap-4">
         {userInfo && (
-          <div className="p-8 rounded-lg border shadow-sm bg-white/80 border-white/60">
-            <div className="flex justify-between items-center mb-3">
+          <div className="p-8 border rounded-lg shadow-sm bg-white/80 border-white/60">
+            <div className="flex items-center justify-between mb-3">
               <h2 className="text-lg font-semibold text-gray-800">
                 {userInfo?.companyName} 최신 자가진단 결과 요약
               </h2>
@@ -397,13 +397,13 @@ export default function CSDDDDashboard() {
                 </div>
               )}
             </div>
-            <div className="flex flex-row gap-4 justify-between">
+            <div className="flex flex-row justify-between gap-4">
               {(() => {
                 const myResult = myResults.length > 0 ? myResults[0] : null
 
                 if (!myResult) {
                   return (
-                    <div className="col-span-full p-4 text-center text-gray-500 bg-gray-50 rounded-lg border">
+                    <div className="p-4 text-center text-gray-500 border rounded-lg col-span-full bg-gray-50">
                       <div className="text-sm">아직 자가진단 결과가 없습니다.</div>
                       <div className="mt-1 text-xs">
                         자가진단을 완료하시면 결과가 표시됩니다.
@@ -415,32 +415,32 @@ export default function CSDDDDashboard() {
                 const gradeStyle = getGradeStyle(myResult.finalGrade || 'D')
                 return (
                   <>
-                    <div className="p-3 w-full bg-gradient-to-br from-blue-50 to-white rounded-lg border">
+                    <div className="w-full p-3 border rounded-lg bg-gradient-to-br from-blue-50 to-white">
                       <div className="mb-1 text-xs text-gray-500">등급</div>
                       <div className={`text-lg font-bold ${gradeStyle.text}`}>
                         {myResult.finalGrade || 'D'}
                       </div>
                     </div>
-                    <div className="p-3 w-full bg-gradient-to-br from-blue-50 to-white rounded-lg border">
+                    <div className="w-full p-3 border rounded-lg bg-gradient-to-br from-blue-50 to-white">
                       <div className="mb-1 text-xs text-gray-500">진단 점수</div>
                       <div className="text-lg font-bold text-gray-900">
                         {myResult.score || 0}/100
                       </div>
                     </div>
-                    <div className="p-3 w-full bg-gradient-to-br from-blue-50 to-white rounded-lg border">
+                    <div className="w-full p-3 border rounded-lg bg-gradient-to-br from-blue-50 to-white">
                       <div className="mb-1 text-xs text-gray-500">종합 점수</div>
                       <div className="text-lg font-bold text-gray-900">
                         {myResult.actualScore?.toFixed(1) || 0}/
                         {myResult.totalPossibleScore?.toFixed(1) || 0}
                       </div>
                     </div>
-                    <div className="p-3 w-full bg-gradient-to-br from-blue-50 to-white rounded-lg border">
+                    <div className="w-full p-3 border rounded-lg bg-gradient-to-br from-blue-50 to-white">
                       <div className="mb-1 text-xs text-gray-500">총 위반</div>
                       <div className="text-lg font-bold text-gray-900">
                         {myResult.noAnswerCount || 0}건
                       </div>
                     </div>
-                    <div className="p-3 w-full bg-gradient-to-br from-blue-50 to-white rounded-lg border">
+                    <div className="w-full p-3 border rounded-lg bg-gradient-to-br from-blue-50 to-white">
                       <div className="mb-1 text-xs text-gray-500">중대 위반</div>
                       <div className="text-lg font-bold text-gray-900">
                         {myResult.criticalViolationCount || 0}건
@@ -455,22 +455,22 @@ export default function CSDDDDashboard() {
 
         <div className="flex flex-row gap-4 py-4 pt-2 w-full h-[calc(100vh-300px)]">
           <Card className="w-[30%] h-full bg-white rounded-lg p-4 flex flex-col">
-            <div className="flex flex-row gap-2 justify-between items-center mb-2">
+            <div className="flex flex-row items-center justify-between gap-2 mb-2">
               <input
                 type="text"
                 value={searchQuery}
                 onChange={e => setSearchQuery(e.target.value)}
                 placeholder="협력사 검색"
-                className="p-2 w-full h-8 rounded-md border border-gray-300 focus:ring-2 focus:ring-blue-500"
+                className="w-full h-8 p-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500"
               />
             </div>
-            <div className="flex overflow-y-auto flex-col flex-1 gap-2 p-2 rounded-lg border custom-scrollbar">
+            <div className="flex flex-col flex-1 gap-2 p-2 overflow-y-auto border rounded-lg custom-scrollbar allow-scroll">
               {loading ? (
-                <div className="flex justify-center items-center h-full text-sm text-gray-500">
+                <div className="flex items-center justify-center h-full text-sm text-gray-500">
                   협력사 목록을 불러오는 중...
                 </div>
               ) : error ? (
-                <div className="flex justify-center items-center h-full text-sm text-center text-red-500">
+                <div className="flex items-center justify-center h-full text-sm text-center text-red-500">
                   <div>오류가 발생했습니다</div>
                   <div className="mt-1 text-xs">{error}</div>
                   <button
@@ -480,7 +480,7 @@ export default function CSDDDDashboard() {
                   </button>
                 </div>
               ) : filteredPartners.length === 0 ? (
-                <div className="flex justify-center items-center h-full text-sm text-gray-500">
+                <div className="flex items-center justify-center h-full text-sm text-gray-500">
                   {searchQuery ? '검색 결과가 없습니다' : '등록된 협력사가 없습니다'}
                 </div>
               ) : (
@@ -498,7 +498,7 @@ export default function CSDDDDashboard() {
                         {partner.companyName}
                       </div>
 
-                      <div className="flex gap-2 items-center">
+                      <div className="flex items-center gap-2">
                         <span className="font-mono text-xs text-gray-500">
                           {partner.hierarchicalId}
                         </span>
@@ -523,9 +523,9 @@ export default function CSDDDDashboard() {
           </Card>
 
           <Card className="w-[70%] h-full bg-white rounded-lg p-4 flex flex-col">
-            <CardHeader className="flex flex-row gap-4 items-center p-6 border-b border-gray-100">
-              <div className="flex flex-1 items-center">
-                <CardTitle className="flex gap-3 items-center text-2xl font-bold">
+            <CardHeader className="flex flex-row items-center gap-4 p-6 border-b border-gray-100">
+              <div className="flex items-center flex-1">
+                <CardTitle className="flex items-center gap-3 text-2xl font-bold">
                   {currentResult && (
                     <Badge
                       className={`px-3 py-1 text-base font-bold rounded-full border ${
@@ -541,7 +541,7 @@ export default function CSDDDDashboard() {
                   <select
                     value={selectedResultIndex}
                     onChange={e => setSelectedResultIndex(Number(e.target.value))}
-                    className="px-2 py-1 ml-auto text-sm text-gray-700 bg-white rounded-md border shadow-sm">
+                    className="px-2 py-1 ml-auto text-sm text-gray-700 bg-white border rounded-md shadow-sm">
                     {[...selectedPartner.results]
                       .sort(
                         (a, b) =>
@@ -559,11 +559,11 @@ export default function CSDDDDashboard() {
                 )}
               </div>
             </CardHeader>
-            <CardContent className="flex overflow-hidden overflow-y-auto flex-col gap-6 p-6">
+            <CardContent className="flex flex-col gap-6 p-6 overflow-hidden overflow-y-auto">
               {selectedPartner && currentResult ? (
                 <>
                   <div className="grid grid-cols-2 gap-4">
-                    <div className="flex flex-row gap-2 items-center p-3 bg-gradient-to-br from-blue-50 to-white rounded-lg border">
+                    <div className="flex flex-row items-center gap-2 p-3 border rounded-lg bg-gradient-to-br from-blue-50 to-white">
                       <BarChart3 className="w-5 h-5 text-blue-600" />
                       <div>
                         <div className="text-xs text-gray-500">진단 점수</div>
@@ -572,7 +572,7 @@ export default function CSDDDDashboard() {
                         </div>
                       </div>
                     </div>
-                    <div className="flex flex-row gap-2 items-center p-3 bg-gradient-to-br from-blue-50 to-white rounded-lg border">
+                    <div className="flex flex-row items-center gap-2 p-3 border rounded-lg bg-gradient-to-br from-blue-50 to-white">
                       <BarChart3 className="w-5 h-5 text-gray-700" />
                       <div>
                         <div className="text-xs text-gray-500">종합 점수</div>
@@ -581,7 +581,7 @@ export default function CSDDDDashboard() {
                         </div>
                       </div>
                     </div>
-                    <div className="flex flex-row gap-2 items-center p-3 bg-gradient-to-br from-blue-50 to-white rounded-lg border">
+                    <div className="flex flex-row items-center gap-2 p-3 border rounded-lg bg-gradient-to-br from-blue-50 to-white">
                       <AlertCircle className="w-5 h-5 text-yellow-600" />
                       <div>
                         <div className="text-xs text-gray-500">총 위반</div>
@@ -590,7 +590,7 @@ export default function CSDDDDashboard() {
                         </div>
                       </div>
                     </div>
-                    <div className="flex flex-row gap-2 items-center p-3 bg-gradient-to-br from-blue-50 to-white rounded-lg border">
+                    <div className="flex flex-row items-center gap-2 p-3 border rounded-lg bg-gradient-to-br from-blue-50 to-white">
                       <AlertTriangle className="w-5 h-5 text-red-600" />
                       <div>
                         <div className="text-xs text-gray-500">중대 위반</div>
@@ -601,8 +601,8 @@ export default function CSDDDDashboard() {
                     </div>
                   </div>
 
-                  <div className="rounded-lg border">
-                    <div className="flex justify-between items-center p-4 bg-gray-50 border-b">
+                  <div className="border rounded-lg">
+                    <div className="flex items-center justify-between p-4 border-b bg-gray-50">
                       <h3 className="font-medium text-gray-900">위반 항목 상세</h3>
                     </div>
 
@@ -627,8 +627,8 @@ export default function CSDDDDashboard() {
                                   : 'bg-green-50 border-green-300 hover:bg-green-100'
                               }
                             `}>
-                                <div className="flex justify-between items-center mb-2">
-                                  <div className="flex gap-2 items-center">
+                                <div className="flex items-center justify-between mb-2">
+                                  <div className="flex items-center gap-2">
                                     <IconComponent
                                       className={`w-5 h-5 ${
                                         hasViolations ? 'text-red-600' : 'text-green-600'
@@ -647,7 +647,7 @@ export default function CSDDDDashboard() {
                                     }`}
                                   />
                                 </div>
-                                <div className="flex absolute bottom-3 left-4 gap-2 items-center">
+                                <div className="absolute flex items-center gap-2 bottom-3 left-4">
                                   <span
                                     className={`text-xs ${
                                       hasViolations ? 'text-red-600' : 'text-green-600'
@@ -681,8 +681,8 @@ export default function CSDDDDashboard() {
                                   : 'bg-green-50 border-green-300 hover:bg-green-100'
                               }
                             `}>
-                                <div className="flex justify-between items-center mb-2">
-                                  <div className="flex gap-2 items-center">
+                                <div className="flex items-center justify-between mb-2">
+                                  <div className="flex items-center gap-2">
                                     <IconComponent
                                       className={`w-5 h-5 ${
                                         hasViolations ? 'text-red-600' : 'text-green-600'
@@ -701,7 +701,7 @@ export default function CSDDDDashboard() {
                                     }`}
                                   />
                                 </div>
-                                <div className="flex absolute bottom-3 left-4 gap-2 items-center">
+                                <div className="absolute flex items-center gap-2 bottom-3 left-4">
                                   <span
                                     className={`text-xs ${
                                       hasViolations ? 'text-red-600' : 'text-green-600'
@@ -719,8 +719,8 @@ export default function CSDDDDashboard() {
                   </div>
                 </>
               ) : (
-                <div className="flex flex-col justify-center items-center py-24 h-full text-gray-400">
-                  <Shield className="mb-4 w-16 h-16 text-gray-200" />
+                <div className="flex flex-col items-center justify-center h-full py-24 text-gray-400">
+                  <Shield className="w-16 h-16 mb-4 text-gray-200" />
                   <div className="text-lg font-bold">
                     협력사의 자가진단 결과가 없습니다.
                   </div>
@@ -746,7 +746,7 @@ export default function CSDDDDashboard() {
             <div className="pt-6">
               {getSelectedCategoryViolations().length === 0 ? (
                 <div className="py-16 text-center">
-                  <CheckCircle className="mx-auto mb-4 w-16 h-16 text-green-500" />
+                  <CheckCircle className="w-16 h-16 mx-auto mb-4 text-green-500" />
                   <h3 className="mb-2 text-lg font-semibold text-green-600">
                     모든 항목 준수
                   </h3>
@@ -756,8 +756,8 @@ export default function CSDDDDashboard() {
                 </div>
               ) : (
                 <div className="space-y-4">
-                  <div className="p-4 bg-red-50 rounded-lg border border-red-200">
-                    <div className="flex gap-2 items-center mb-3">
+                  <div className="p-4 border border-red-200 rounded-lg bg-red-50">
+                    <div className="flex items-center gap-2 mb-3">
                       <AlertTriangle className="w-5 h-5 text-red-600" />
                       <h4 className="font-medium text-red-800">
                         총 {getSelectedCategoryViolations().length}건의 위반 항목
@@ -768,11 +768,11 @@ export default function CSDDDDashboard() {
                         <button
                           key={i}
                           onClick={() => handleViolationClick(violation.questionId)}
-                          className="flex justify-center items-center p-2 text-xs font-medium text-red-800 bg-white rounded-md border border-red-300 transition-colors hover:bg-red-50">
+                          className="flex items-center justify-center p-2 text-xs font-medium text-red-800 transition-colors bg-white border border-red-300 rounded-md hover:bg-red-50">
                           <span className="font-mono truncate">
                             {violation.questionId}
                           </span>
-                          <ExternalLink className="ml-1 w-3 h-3" />
+                          <ExternalLink className="w-3 h-3 ml-1" />
                         </button>
                       ))}
                     </div>
@@ -792,12 +792,12 @@ export default function CSDDDDashboard() {
           }}>
           <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
             <DialogHeader className="pb-4 border-b">
-              <DialogTitle className="flex gap-2 items-center text-xl font-bold">
+              <DialogTitle className="flex items-center gap-2 text-xl font-bold">
                 <AlertTriangle className="w-6 h-6 text-red-500" />
                 위반 항목 상세 정보
               </DialogTitle>
-              <DialogDescription className="flex gap-2 items-center mt-2">
-                <span className="px-3 py-1 font-mono text-sm font-medium text-blue-800 bg-blue-50 rounded-full border border-blue-200">
+              <DialogDescription className="flex items-center gap-2 mt-2">
+                <span className="px-3 py-1 font-mono text-sm font-medium text-blue-800 border border-blue-200 rounded-full bg-blue-50">
                   {selectedViolationId}
                 </span>
               </DialogDescription>
@@ -807,8 +807,8 @@ export default function CSDDDDashboard() {
               {violationMeta ? (
                 <div className="space-y-4">
                   {/* 카테고리 분류 */}
-                  <div className="p-6 bg-gradient-to-br from-blue-50 to-white rounded-xl border border-blue-200 shadow-sm">
-                    <h4 className="flex gap-2 items-center pb-3 mb-4 text-lg font-semibold text-blue-900 border-b border-blue-100">
+                  <div className="p-6 border border-blue-200 shadow-sm bg-gradient-to-br from-blue-50 to-white rounded-xl">
+                    <h4 className="flex items-center gap-2 pb-3 mb-4 text-lg font-semibold text-blue-900 border-b border-blue-100">
                       <Users className="w-5 h-5" />
                       카테고리 분류
                     </h4>
@@ -818,8 +818,8 @@ export default function CSDDDDashboard() {
                   </div>
 
                   {/* 벌칙 및 제재 내용 */}
-                  <div className="p-6 bg-gradient-to-br from-red-50 to-white rounded-xl border border-red-200 shadow-sm">
-                    <h4 className="flex gap-2 items-center pb-3 mb-4 text-lg font-semibold text-red-900 border-b border-red-100">
+                  <div className="p-6 border border-red-200 shadow-sm bg-gradient-to-br from-red-50 to-white rounded-xl">
+                    <h4 className="flex items-center gap-2 pb-3 mb-4 text-lg font-semibold text-red-900 border-b border-red-100">
                       <AlertOctagon className="w-5 h-5" />
                       벌칙 및 제재 내용
                     </h4>
@@ -829,8 +829,8 @@ export default function CSDDDDashboard() {
                   </div>
 
                   {/* 관련 법적 근거 */}
-                  <div className="p-6 bg-gradient-to-br from-purple-50 to-white rounded-xl border border-purple-200 shadow-sm">
-                    <h4 className="flex gap-2 items-center pb-3 mb-4 text-lg font-semibold text-purple-900 border-b border-purple-100">
+                  <div className="p-6 border border-purple-200 shadow-sm bg-gradient-to-br from-purple-50 to-white rounded-xl">
+                    <h4 className="flex items-center gap-2 pb-3 mb-4 text-lg font-semibold text-purple-900 border-b border-purple-100">
                       <Scale className="w-5 h-5" />
                       관련 법적 근거
                     </h4>
@@ -840,8 +840,8 @@ export default function CSDDDDashboard() {
                   </div>
 
                   {/* 참고사항 */}
-                  <div className="p-4 bg-gradient-to-br from-gray-50 to-white rounded-xl border border-gray-200">
-                    <div className="flex gap-3 items-start text-sm text-gray-700">
+                  <div className="p-4 border border-gray-200 bg-gradient-to-br from-gray-50 to-white rounded-xl">
+                    <div className="flex items-start gap-3 text-sm text-gray-700">
                       <InfoIcon className="w-5 h-5 text-gray-400 mt-0.5" />
                       <div>
                         <p className="mb-2 font-medium">참고사항</p>
@@ -856,7 +856,7 @@ export default function CSDDDDashboard() {
                 </div>
               ) : (
                 <div className="py-16 text-center">
-                  <div className="mx-auto mb-6 w-12 h-12 rounded-full border-4 border-blue-500 animate-spin border-t-transparent"></div>
+                  <div className="w-12 h-12 mx-auto mb-6 border-4 border-blue-500 rounded-full animate-spin border-t-transparent"></div>
                   <div className="space-y-3">
                     <h3 className="text-lg font-semibold text-gray-900">
                       상세 정보를 불러오는 중입니다

@@ -249,13 +249,13 @@ export default function PartnerEvaluationForm() {
   }
 
   return (
-    <div className="flex flex-col w-full min-h-screen">
-      <div className="p-4 pb-0">
-        <div className="flex flex-row items-center p-3 mb-4 text-sm text-gray-600 rounded-xl border shadow-sm backdrop-blur-sm bg-white/80 border-white/50">
+    <div className="flex flex-col w-full min-h-screen pt-24">
+      <div className="pb-0">
+        <div className="flex flex-row items-center p-3 mb-4 text-sm text-gray-600 border shadow-sm rounded-xl backdrop-blur-sm bg-white/80 border-white/50">
           <Breadcrumb>
             <BreadcrumbList>
               <BreadcrumbItem>
-                <Home className="mr-1 w-4 h-4" />
+                <Home className="w-4 h-4 mr-1" />
                 <BreadcrumbLink
                   href="/dashboard"
                   className="transition-colors hover:text-blue-600">
@@ -284,10 +284,10 @@ export default function PartnerEvaluationForm() {
       </div>
 
       <div className="px-4 pb-0">
-        <div className="flex flex-row mb-4 w-full">
+        <div className="flex flex-row w-full mb-4">
           <Link
             href="/CSDDD"
-            className="flex flex-row items-center p-4 space-x-4 rounded-xl backdrop-blur-sm transition-all hover:bg-white/30 group">
+            className="flex flex-row items-center p-4 space-x-4 transition-all rounded-xl backdrop-blur-sm hover:bg-white/30 group">
             <ArrowLeft className="w-6 h-6 text-gray-500 transition-colors group-hover:text-blue-600" />
             <PageHeader
               icon={<Shield className="w-6 h-6 text-blue-600" />}
@@ -306,9 +306,9 @@ export default function PartnerEvaluationForm() {
 
       <div className="flex-1 px-4 pb-8">
         <div className="lg:col-span-3">
-          <div className="rounded-xl border shadow-sm backdrop-blur-sm bg-white/95 border-white/50">
+          <div className="border shadow-sm rounded-xl backdrop-blur-sm bg-white/95 border-white/50">
             <div className="px-6 py-5 border-b border-gray-100">
-              <div className="flex justify-between items-center">
+              <div className="flex items-center justify-between">
                 <div className="flex items-center space-x-2">
                   <h2 className="text-xl font-bold text-gray-900">
                     {userInfo?.userType === 'HEADQUARTERS'
@@ -317,14 +317,14 @@ export default function PartnerEvaluationForm() {
                   </h2>
                   <div className="relative group">
                     <AlertCircle className="w-4 h-4 text-orange-500 cursor-pointer" />
-                    <div className="hidden absolute top-full left-1/2 z-10 p-3 max-w-none text-sm text-orange-800 whitespace-nowrap bg-white rounded border border-orange-200 shadow-sm transform -translate-x-1/2 group-hover:block">
+                    <div className="absolute z-10 hidden p-3 text-sm text-orange-800 transform -translate-x-1/2 bg-white border border-orange-200 rounded shadow-sm top-full left-1/2 max-w-none whitespace-nowrap group-hover:block">
                       <p>• 위반 항목은 펼쳐서 상세 내용을 확인하세요</p>
                       <p>• 위반 항목을 클릭하면 법적 근거를 볼 수 있습니다</p>
                     </div>
                   </div>
                   <div className="relative group">
                     <AlertCircle className="w-4 h-4 text-blue-500 cursor-pointer" />
-                    <div className="hidden absolute top-full left-1/2 z-10 p-3 max-w-none text-sm text-blue-800 whitespace-nowrap bg-white rounded border border-blue-200 shadow-sm transform -translate-x-1/2 group-hover:block">
+                    <div className="absolute z-10 hidden p-3 text-sm text-blue-800 transform -translate-x-1/2 bg-white border border-blue-200 rounded shadow-sm top-full left-1/2 max-w-none whitespace-nowrap group-hover:block">
                       <p>
                         • 점수에 따라 등급이 부여됩니다: A (90↑), B (75↑), C (60↑), D (60
                         미만)
@@ -334,8 +334,8 @@ export default function PartnerEvaluationForm() {
                   </div>
                 </div>
                 {userInfo?.userType === 'HEADQUARTERS' && (
-                  <div className="flex gap-3 items-center p-4 bg-gradient-to-br from-blue-50 to-white rounded-xl border border-blue-100 shadow-sm transition-all duration-200 hover:shadow-sm">
-                    <div className="flex gap-2 items-center">
+                  <div className="flex items-center gap-3 p-4 transition-all duration-200 border border-blue-100 shadow-sm bg-gradient-to-br from-blue-50 to-white rounded-xl hover:shadow-sm">
+                    <div className="flex items-center gap-2">
                       <Building2 className="w-5 h-5 text-blue-500" />
                       <label
                         htmlFor="companyFilter"
@@ -346,7 +346,7 @@ export default function PartnerEvaluationForm() {
                     <div className="relative flex-1">
                       <select
                         id="companyFilter"
-                        className="px-4 py-2 pr-10 w-full text-sm bg-white rounded-lg border border-gray-200 transition-all duration-200 appearance-none cursor-pointer hover:border-blue-300 focus:outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-100"
+                        className="w-full px-4 py-2 pr-10 text-sm transition-all duration-200 bg-white border border-gray-200 rounded-lg appearance-none cursor-pointer hover:border-blue-300 focus:outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-100"
                         value={selectedCompany}
                         onChange={e => setSelectedCompany(e.target.value)}>
                         <option value="all">전체 협력사</option>
@@ -356,13 +356,13 @@ export default function PartnerEvaluationForm() {
                           </option>
                         ))}
                       </select>
-                      <ChevronDown className="absolute right-3 top-1/2 w-4 h-4 text-gray-400 -translate-y-1/2 pointer-events-none" />
+                      <ChevronDown className="absolute w-4 h-4 text-gray-400 -translate-y-1/2 pointer-events-none right-3 top-1/2" />
                     </div>
                   </div>
                 )}
                 {/* Sub-company dropdown for PARTNER */}
                 {userInfo?.userType === 'PARTNER' && subCompanyList.length > 0 && (
-                  <div className="flex items-center p-2 space-x-2 bg-white rounded-lg border border-gray-200 shadow-sm">
+                  <div className="flex items-center p-2 space-x-2 bg-white border border-gray-200 rounded-lg shadow-sm">
                     <label
                       htmlFor="subCompanyFilter"
                       className="text-sm font-medium text-gray-700">
@@ -370,7 +370,7 @@ export default function PartnerEvaluationForm() {
                     </label>
                     <select
                       id="subCompanyFilter"
-                      className="px-2 py-1 text-sm rounded border border-gray-300 focus:outline-none focus:ring-2 focus:ring-blue-200"
+                      className="px-2 py-1 text-sm border border-gray-300 rounded focus:outline-none focus:ring-2 focus:ring-blue-200"
                       value={selectedSubCompany}
                       onChange={e => setSelectedSubCompany(e.target.value)}>
                       <option value="all">전체</option>
@@ -388,12 +388,12 @@ export default function PartnerEvaluationForm() {
             <div className="p-5">
               {loading ? (
                 <div className="py-12 text-center">
-                  <div className="mx-auto mb-4 w-8 h-8 rounded-full border-4 border-blue-600 animate-spin border-t-transparent"></div>
+                  <div className="w-8 h-8 mx-auto mb-4 border-4 border-blue-600 rounded-full animate-spin border-t-transparent"></div>
                   <p className="text-gray-600">데이터를 불러오는 중...</p>
                 </div>
               ) : results.length === 0 ? (
                 <div className="py-12 text-center">
-                  <BarChart3 className="mx-auto mb-4 w-12 h-12 text-gray-400" />
+                  <BarChart3 className="w-12 h-12 mx-auto mb-4 text-gray-400" />
                   <p className="font-medium text-gray-600">
                     {userInfo?.userType === 'HEADQUARTERS'
                       ? '관할 협력사의 진단 결과가 없습니다.'
@@ -422,9 +422,9 @@ export default function PartnerEvaluationForm() {
                     return (
                       <div
                         key={result.id}
-                        className="p-4 rounded-xl border border-gray-200 transition-all bg-white/50 hover:border-gray-300 hover:shadow-sm">
+                        className="p-4 transition-all border border-gray-200 rounded-xl bg-white/50 hover:border-gray-300 hover:shadow-sm">
                         <div className="">
-                          <div className="flex justify-between items-center mb-4">
+                          <div className="flex items-center justify-between mb-4">
                             <div className="flex items-center space-x-3">
                               <div className="p-1.5 bg-blue-100 rounded-lg">
                                 <FileText className="w-6 h-6 text-blue-600" />
@@ -481,8 +481,8 @@ export default function PartnerEvaluationForm() {
                           </div>
 
                           <div className="grid grid-cols-5 gap-4 mb-4">
-                            <div className="p-3 bg-gradient-to-br from-blue-50 to-white rounded-lg border border-blue-300">
-                              <div className="flex justify-between items-center w-full">
+                            <div className="p-3 border border-blue-300 rounded-lg bg-gradient-to-br from-blue-50 to-white">
+                              <div className="flex items-center justify-between w-full">
                                 <div className="flex flex-col">
                                   <span className="text-sm text-gray-500">최종 등급</span>
                                   <div className="flex items-center space-x-1">
@@ -496,8 +496,8 @@ export default function PartnerEvaluationForm() {
                               </div>
                             </div>
 
-                            <div className="p-3 bg-gradient-to-br from-blue-50 to-white rounded-lg border border-blue-300">
-                              <div className="flex justify-between items-center w-full">
+                            <div className="p-3 border border-blue-300 rounded-lg bg-gradient-to-br from-blue-50 to-white">
+                              <div className="flex items-center justify-between w-full">
                                 <div className="flex flex-col">
                                   <span className="text-sm text-gray-500">
                                     총 위반 건수
@@ -513,8 +513,8 @@ export default function PartnerEvaluationForm() {
                               </div>
                             </div>
 
-                            <div className="p-3 bg-gradient-to-br from-blue-50 to-white rounded-lg border border-blue-300">
-                              <div className="flex justify-between items-center w-full">
+                            <div className="p-3 border border-blue-300 rounded-lg bg-gradient-to-br from-blue-50 to-white">
+                              <div className="flex items-center justify-between w-full">
                                 <div className="flex flex-col">
                                   <span className="text-sm text-gray-500">
                                     중대 위반 건수
@@ -530,8 +530,8 @@ export default function PartnerEvaluationForm() {
                               </div>
                             </div>
 
-                            <div className="p-3 bg-gradient-to-br from-blue-50 to-white rounded-lg border border-blue-300">
-                              <div className="flex justify-between items-center w-full">
+                            <div className="p-3 border border-blue-300 rounded-lg bg-gradient-to-br from-blue-50 to-white">
+                              <div className="flex items-center justify-between w-full">
                                 <div className="flex flex-col">
                                   <span className="text-sm text-gray-500">진단 점수</span>
                                   <div className="flex items-center space-x-1">
@@ -544,8 +544,8 @@ export default function PartnerEvaluationForm() {
                               </div>
                             </div>
 
-                            <div className="p-3 bg-gradient-to-br from-blue-50 to-white rounded-lg border border-blue-300">
-                              <div className="flex justify-between items-center w-full">
+                            <div className="p-3 border border-blue-300 rounded-lg bg-gradient-to-br from-blue-50 to-white">
+                              <div className="flex items-center justify-between w-full">
                                 <div className="flex flex-col">
                                   <span className="text-sm text-gray-500">종합 점수</span>
                                   <div className="flex items-center space-x-1">
@@ -567,7 +567,7 @@ export default function PartnerEvaluationForm() {
                                 toggleViolationExpansion(result.id)
                                 fetchDetailResult(result.id)
                               }}
-                              className="p-2 rounded-full transition-colors hover:bg-gray-100">
+                              className="p-2 transition-colors rounded-full hover:bg-gray-100">
                               {isExpanded ? (
                                 <ChevronUp className="w-5 h-5 text-gray-400" />
                               ) : (
@@ -579,7 +579,7 @@ export default function PartnerEvaluationForm() {
 
                         {isExpanded && selectedResult?.answers && (
                           <div className="pt-4 mt-4 border-t border-gray-200">
-                            <div className="flex justify-between items-center mb-4">
+                            <div className="flex items-center justify-between mb-4">
                               <div>
                                 <h3 className="text-lg font-semibold text-gray-900">
                                   위반 항목 상세 정보
@@ -601,7 +601,7 @@ export default function PartnerEvaluationForm() {
                             <div className="space-y-4">
                               {selectedResult.answers.filter(a => a.answer === false)
                                 .length === 0 ? (
-                                <div className="p-6 bg-gradient-to-br from-blue-50 to-white rounded-xl border border-blue-200 shadow-sm">
+                                <div className="p-6 border border-blue-200 shadow-sm bg-gradient-to-br from-blue-50 to-white rounded-xl">
                                   <div className="text-center">
                                     <h4 className="text-lg font-bold text-blue-800">
                                       완벽한 준수
@@ -619,9 +619,9 @@ export default function PartnerEvaluationForm() {
                                   ).map(([categoryId, violations]) => (
                                     <div
                                       key={categoryId}
-                                      className="overflow-hidden bg-gradient-to-br from-blue-50 to-white rounded-xl border border-blue-200 shadow-sm">
-                                      <div className="px-4 py-3 bg-gradient-to-r from-blue-100 to-blue-50 border-b border-blue-200">
-                                        <div className="flex justify-between items-center">
+                                      className="overflow-hidden border border-blue-200 shadow-sm bg-gradient-to-br from-blue-50 to-white rounded-xl">
+                                      <div className="px-4 py-3 border-b border-blue-200 bg-gradient-to-r from-blue-100 to-blue-50">
+                                        <div className="flex items-center justify-between">
                                           <div>
                                             <h4 className="text-base font-semibold text-blue-800">
                                               {getCategoryName(categoryId)}
@@ -638,7 +638,7 @@ export default function PartnerEvaluationForm() {
                                           {violations.map((violation, i) => (
                                             <button
                                               key={i}
-                                              className="flex justify-center items-center p-2 min-w-0 text-xs font-medium text-blue-800 bg-white rounded-md border border-blue-300 transition-all hover:bg-blue-100 hover:border-blue-400"
+                                              className="flex items-center justify-center min-w-0 p-2 text-xs font-medium text-blue-800 transition-all bg-white border border-blue-300 rounded-md hover:bg-blue-100 hover:border-blue-400"
                                               onClick={e => {
                                                 e.stopPropagation()
                                                 handleViolationClick(violation.questionId)
@@ -646,7 +646,7 @@ export default function PartnerEvaluationForm() {
                                               <span className="font-mono text-xs truncate">
                                                 {violation.questionId}
                                               </span>
-                                              <FileText className="flex-shrink-0 ml-1 w-3 h-3 text-blue-600" />
+                                              <FileText className="flex-shrink-0 w-3 h-3 ml-1 text-blue-600" />
                                             </button>
                                           ))}
                                         </div>
@@ -676,14 +676,14 @@ export default function PartnerEvaluationForm() {
         }}>
         <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
           <DialogHeader className="pb-4 border-b">
-            <div className="flex justify-between items-start">
+            <div className="flex items-start justify-between">
               <div>
-                <DialogTitle className="flex gap-2 items-center text-xl font-bold">
+                <DialogTitle className="flex items-center gap-2 text-xl font-bold">
                   <AlertTriangle className="w-6 h-6 text-red-500" />
                   위반 항목 상세 정보
                 </DialogTitle>
-                <DialogDescription className="flex gap-2 items-center mt-2">
-                  <span className="px-3 py-1 font-mono text-sm font-medium text-blue-800 bg-blue-50 rounded-full border border-blue-200">
+                <DialogDescription className="flex items-center gap-2 mt-2">
+                  <span className="px-3 py-1 font-mono text-sm font-medium text-blue-800 border border-blue-200 rounded-full bg-blue-50">
                     {selectedViolationId}
                   </span>
                 </DialogDescription>
@@ -694,8 +694,8 @@ export default function PartnerEvaluationForm() {
             {violationMeta ? (
               <div className="space-y-4">
                 {/* 카테고리 분류 */}
-                <div className="p-6 bg-gradient-to-br from-blue-50 to-white rounded-xl border border-blue-200 shadow-sm">
-                  <h4 className="flex gap-2 items-center pb-3 mb-4 text-lg font-semibold text-blue-900 border-b border-blue-100">
+                <div className="p-6 border border-blue-200 shadow-sm bg-gradient-to-br from-blue-50 to-white rounded-xl">
+                  <h4 className="flex items-center gap-2 pb-3 mb-4 text-lg font-semibold text-blue-900 border-b border-blue-100">
                     <Users className="w-5 h-5" />
                     카테고리 분류
                   </h4>
@@ -705,8 +705,8 @@ export default function PartnerEvaluationForm() {
                 </div>
 
                 {/* 벌칙 및 제재 내용 */}
-                <div className="p-6 bg-gradient-to-br from-red-50 to-white rounded-xl border border-red-200 shadow-sm">
-                  <h4 className="flex gap-2 items-center pb-3 mb-4 text-lg font-semibold text-red-900 border-b border-red-100">
+                <div className="p-6 border border-red-200 shadow-sm bg-gradient-to-br from-red-50 to-white rounded-xl">
+                  <h4 className="flex items-center gap-2 pb-3 mb-4 text-lg font-semibold text-red-900 border-b border-red-100">
                     <AlertOctagon className="w-5 h-5" />
                     벌칙 및 제재 내용
                   </h4>
@@ -716,8 +716,8 @@ export default function PartnerEvaluationForm() {
                 </div>
 
                 {/* 관련 법적 근거 */}
-                <div className="p-6 bg-gradient-to-br from-purple-50 to-white rounded-xl border border-purple-200 shadow-sm">
-                  <h4 className="flex gap-2 items-center pb-3 mb-4 text-lg font-semibold text-purple-900 border-b border-purple-100">
+                <div className="p-6 border border-purple-200 shadow-sm bg-gradient-to-br from-purple-50 to-white rounded-xl">
+                  <h4 className="flex items-center gap-2 pb-3 mb-4 text-lg font-semibold text-purple-900 border-b border-purple-100">
                     <Scale className="w-5 h-5" />
                     관련 법적 근거
                   </h4>
@@ -727,8 +727,8 @@ export default function PartnerEvaluationForm() {
                 </div>
 
                 {/* 참고사항 */}
-                <div className="p-4 bg-gradient-to-br from-gray-50 to-white rounded-xl border border-gray-200">
-                  <div className="flex gap-3 items-start text-sm text-gray-700">
+                <div className="p-4 border border-gray-200 bg-gradient-to-br from-gray-50 to-white rounded-xl">
+                  <div className="flex items-start gap-3 text-sm text-gray-700">
                     <InfoIcon className="w-5 h-5 text-gray-400 mt-0.5" />
                     <div>
                       <p className="mb-2 font-medium">참고사항</p>
@@ -743,7 +743,7 @@ export default function PartnerEvaluationForm() {
               </div>
             ) : (
               <div className="py-16 text-center">
-                <div className="mx-auto mb-6 w-12 h-12 rounded-full border-4 border-blue-500 animate-spin border-t-transparent"></div>
+                <div className="w-12 h-12 mx-auto mb-6 border-4 border-blue-500 rounded-full animate-spin border-t-transparent"></div>
                 <div className="space-y-3">
                   <h3 className="text-lg font-semibold text-gray-900">
                     상세 정보를 불러오는 중입니다
