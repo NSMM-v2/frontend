@@ -46,10 +46,10 @@ export function ExcelCascadingSelector({
     list4: ['수송'],
     list5: ['폐기물 처리'],
     list6: [], // 예: 폐기물 처리
-    list7: [],
-    list8: [], // 예: 직원 통근
-    list9: [],
-    list10: [], // 예: 다운스트림 및 유통
+    list7: ['원료 및 에너지 생산'], // 예: 사업장 운영
+    list8: ['원료 및 에너지 생산'], // 예: 직원 통근
+    list9: ['원료 및 에너지 생산','수송'],
+    list10: ['폐기물 처리'], // 예: 다운스트림 및 유통
     list11: [],
     list12: ['폐기물 처리'], // 예: 제품 사용
     list13: [], // 예: 제품 폐기
@@ -62,15 +62,15 @@ export function ExcelCascadingSelector({
     list1: {exclude: ['에너지']}, // 예시
     list2: {exclude: ['에너지']}, // list2는 필터링 안 함 → 전체 표시
     list3: {include: ['에너지', '육상수송', '항공수송', '해상수송']}, // list3는 에너지, 육상수송, 항공수송, 해상수송만 표시
-    list4: undefined,
+    list4: undefined, // list4는 필터링 안 함 → 전체 표시
     list5: undefined,
     list6: undefined, // list6는 필터링 안 함 → 전체 표시
-    list7: undefined, // list7는 필터링 안 함 → 전체 표시
-    list8: undefined,
-    list9: undefined, // list9는 필터링 안 함 → 전체 표시
+    list7: {include: ['에너지']}, // list7는 필터링 안 함 → 전체 표시
+    list8: {include: ['에너지']},
+    list9: {include: ['에너지', '육상수송', '항공수송', '해상수송']}, // list9는 필터링 안 함 → 전체 표시
     list10: undefined,
     list11: undefined, // list11는 필터링 안 함 → 전체 표시
-    list12: undefined,
+    list12: {include: ['매립','소각','재활용']}, // list12는 매립, 소각, 재활용만 표시
     list13: undefined,
     list14: undefined, // list14는 필터링 안 함 → 전체 표시
     list15: undefined // list15는 필터링 안 함 → 전체 표시
