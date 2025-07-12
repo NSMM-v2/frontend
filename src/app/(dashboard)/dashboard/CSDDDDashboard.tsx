@@ -464,7 +464,7 @@ export default function CSDDDDashboard() {
                 className="w-full h-8 p-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500"
               />
             </div>
-            <div className="flex flex-col flex-1 gap-2 p-2 overflow-y-auto border rounded-lg custom-scrollbar">
+            <div className="flex flex-col flex-1 gap-2 p-2 overflow-y-auto border rounded-lg custom-scrollbar allow-scroll">
               {loading ? (
                 <div className="flex items-center justify-center h-full text-sm text-gray-500">
                   협력사 목록을 불러오는 중...
