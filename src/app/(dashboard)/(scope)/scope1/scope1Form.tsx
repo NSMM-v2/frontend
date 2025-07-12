@@ -1107,7 +1107,7 @@ export default function Scope1Form() {
   // ========================================================================
 
   return (
-    <div className="flex flex-col w-full h-full pt-24">
+    <div className="flex flex-col w-full h-full pt-24 pb-4">
       {/* ========================================================================
           상단 네비게이션 (Top Navigation)
           - 브레드크럼을 통한 현재 위치 표시
