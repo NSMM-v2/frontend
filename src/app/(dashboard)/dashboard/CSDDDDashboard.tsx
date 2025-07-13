@@ -340,7 +340,11 @@ export default function CSDDDDashboard() {
   }, [partners, searchQuery])
 
   const getLevelStyle = (level: number) => {
-    switch (level) {
+    // 문자열로 들어올 수 있으므로 숫자로 변환
+    const numLevel = Number(level)
+    switch (numLevel) {
+      case 0:
+        return 'bg-yellow-50 border-yellow-200 text-yellow-800' // 본사
       case 1:
         return 'bg-blue-50 border-blue-200 text-blue-800'
       case 2:
@@ -353,7 +357,12 @@ export default function CSDDDDashboard() {
   }
 
   const getLevelText = (level: number) => {
-    return `${level}차 협력사`
+    // 문자열로 들어올 수 있으므로 숫자로 변환
+    const numLevel = Number(level)
+    if (numLevel === 0) {
+      return '본사'
+    }
+    return `${numLevel}차 협력사`
   }
 
   const handlePartnerSelect = (partner: PartnerInfo) => {
@@ -509,12 +518,6 @@ export default function CSDDDDashboard() {
                           {getLevelText(partner.level)}
                         </span>
                       </div>
-
-                      {partner.parentPartnerName && (
-                        <div className="text-xs text-gray-400">
-                          상위: {partner.parentPartnerName}
-                        </div>
-                      )}
                     </div>
                   </div>
                 ))

@@ -26,7 +26,7 @@ export default function DotIndicator({
   onDotClick
 }: DotIndicatorProps) {
   return (
-    <div className="flex fixed right-8 top-1/2 z-50 flex-col gap-2 -translate-y-1/2">
+    <div className="fixed z-50 flex flex-col gap-2 -translate-y-1/2 right-8 top-1/2">
       {Array.from({length: total}).map((_, i) => (
         <button
           key={i}

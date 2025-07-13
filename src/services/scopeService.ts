@@ -377,7 +377,6 @@ export const fetchScope3SpecialAggregation = async (
         })
       }
 
-      showSuccess(`${year}년 ${month}월 Scope 3 특수 집계 결과가 조회되었습니다.`)
       return result
     } else {
       throw new Error(response.data.message || 'Scope 3 특수 집계 조회에 실패했습니다.')
