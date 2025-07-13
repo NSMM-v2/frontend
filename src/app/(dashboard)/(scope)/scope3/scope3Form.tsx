@@ -962,6 +962,34 @@ export default function Scope3Form() {
 
     // 특수 집계 카테고리 (Cat.1, 2, 4, 5)인 경우 업스트림 공식 값 추가
     if (isSpecialAggregationCategory(categoryKey) && scope3SpecialData && selectedMonth) {
+      const isHeadquarters = scope3SpecialData.userType === 'HEADQUARTERS'
+      
+      // 본사인 경우: scope3SpecialData의 특수 집계 값 직접 사용
+      if (isHeadquarters) {
+        let specialAggregationValue = 0
+        
+        switch (categoryKey) {
+          case 'list1': // Cat.1: 구매한 상품 및 서비스
+            specialAggregationValue = scope3SpecialData.category1TotalEmission || 0
+            break
+          case 'list2': // Cat.2: 자본재
+            specialAggregationValue = scope3SpecialData.category2TotalEmission || 0
+            break
+          case 'list4': // Cat.4: 업스트림 운송 및 유통
+            specialAggregationValue = scope3SpecialData.category4TotalEmission || 0
+            break
+          case 'list5': // Cat.5: 폐기물 처리
+            specialAggregationValue = scope3SpecialData.category5TotalEmission || 0
+            break
+        }
+        
+        console.log(
+          `[getEmissionForCategory] ${categoryKey} 본사 계정 - 특수 집계 롤업 값 사용: ${specialAggregationValue}`
+        )
+        return specialAggregationValue
+      }
+      
+      // 하위 조직이거나 본사이지만 백엔드 데이터가 없는 경우: 기존 로직 사용
       let upstreamValue = 0
 
       switch (categoryKey) {
@@ -982,7 +1010,7 @@ export default function Scope3Form() {
       const totalValue = userInputTotal + upstreamValue
 
       console.log(
-        `[getEmissionForCategory] ${categoryKey} 합계 계산: ` +
+        `[getEmissionForCategory] ${categoryKey} 하위 조직 또는 신규 입력 합계 계산: ` +
           `본인 입력(${userInputTotal}) + 업스트림(${upstreamValue}) = ${totalValue}`
       )
 
@@ -1022,7 +1050,7 @@ export default function Scope3Form() {
   // ========================================================================
 
   return (
-    <div className="flex flex-col pt-24 pb-4 w-full h-full">
+    <div className="flex flex-col w-full h-full pt-24 pb-4">
       {/* ========================================================================
           상단 네비게이션 (Top Navigation)
           - 브레드크럼을 통한 현재 위치 표시
@@ -1031,7 +1059,7 @@ export default function Scope3Form() {
         <Breadcrumb>
           <BreadcrumbList>
             <BreadcrumbItem>
-              <Home className="mr-1 w-4 h-4" />
+              <Home className="w-4 h-4 mr-1" />
               <BreadcrumbLink href="/dashboard">대시보드</BreadcrumbLink>
             </BreadcrumbItem>
             <BreadcrumbSeparator />
@@ -1046,7 +1074,7 @@ export default function Scope3Form() {
           헤더 섹션 (Header Section)
           - 뒤로가기 버튼과 페이지 제목/설명
           ======================================================================== */}
-      <div className="flex flex-row justify-between mb-4 w-full">
+      <div className="flex flex-row justify-between w-full mb-4">
         <div className="flex flex-row items-center p-4">
           <PageHeader
             icon={<Factory className="w-6 h-6 text-blue-600" />}
@@ -1072,10 +1100,10 @@ export default function Scope3Form() {
           animate={{opacity: 1}}
           transition={{duration: 0.4, delay: 0.1}}>
           {/* header card ================================================================================================================== */}
-          <div className="flex flex-row gap-4 justify-between mb-4 w-full">
+          <div className="flex flex-row justify-between w-full gap-4 mb-4">
             {/* 연도 총 배출량 카드 ============================================================================================================== */}
-            <Card className="justify-center w-full h-24 bg-gradient-to-br from-blue-50 to-blue-100 border-blue-200 shadow-sm">
-              <CardContent className="flex gap-6 justify-between items-center p-4">
+            <Card className="justify-center w-full h-24 border-blue-200 shadow-sm bg-gradient-to-br from-blue-50 to-blue-100">
+              <CardContent className="flex items-center justify-between gap-6 p-4">
                 <div className="flex flex-row items-center">
                   <div className="p-2 mr-3 bg-blue-100 rounded-full">
                     <TrendingUp className="w-5 h-5 text-blue-600" />
@@ -1102,8 +1130,8 @@ export default function Scope3Form() {
                     </h3>
                   </div>
                 </div>
-                <div className="flex flex-col space-y-3 w-full">
-                  <label className="flex gap-2 items-center text-sm font-semibold whitespace-nowrap text-customG-700">
+                <div className="flex flex-col w-full space-y-3">
+                  <label className="flex items-center gap-2 text-sm font-semibold whitespace-nowrap text-customG-700">
                     <CalendarDays className="w-4 h-4" />
                     연도
                   </label>
@@ -1113,15 +1141,15 @@ export default function Scope3Form() {
                     onChange={e => setSelectedYear(parseInt(e.target.value))}
                     min="1900"
                     max="2200"
-                    className="px-3 py-2 w-full h-9 text-sm backdrop-blur-sm border-customG-200 focus:border-customG-400 focus:ring-customG-100 bg-white/80"
+                    className="w-full px-3 py-2 text-sm h-9 backdrop-blur-sm border-customG-200 focus:border-customG-400 focus:ring-customG-100 bg-white/80"
                   />
                 </div>
               </CardContent>
             </Card>
 
             {/* 월 총 배출량 카드 ============================================================================================================== */}
-            <Card className="justify-center w-full h-24 bg-gradient-to-br from-blue-50 to-blue-100 border-blue-200 shadow-sm">
-              <CardContent className="flex gap-6 justify-between items-center p-4">
+            <Card className="justify-center w-full h-24 border-blue-200 shadow-sm bg-gradient-to-br from-blue-50 to-blue-100">
+              <CardContent className="flex items-center justify-between gap-6 p-4">
                 <div className="flex flex-row items-center">
                   <div className="p-2 mr-3 bg-blue-100 rounded-full">
                     <TrendingUp className="w-5 h-5 text-blue-600" />
@@ -1155,8 +1183,8 @@ export default function Scope3Form() {
                     </h3>
                   </div>
                 </div>
-                <div className="flex flex-col space-y-3 w-full">
-                  <label className="flex gap-2 items-center text-sm font-semibold text-customG-700">
+                <div className="flex flex-col w-full space-y-3">
+                  <label className="flex items-center gap-2 text-sm font-semibold text-customG-700">
                     <CalendarDays className="w-4 h-4" />월
                   </label>
                   <MonthSelector
