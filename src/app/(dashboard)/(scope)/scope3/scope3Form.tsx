@@ -1105,7 +1105,7 @@ export default function Scope3Form() {
                 <div className="flex flex-col space-y-3 w-full">
                   <label className="flex gap-2 items-center text-sm font-semibold whitespace-nowrap text-customG-700">
                     <CalendarDays className="w-4 h-4" />
-                    보고연도
+                    연도
                   </label>
                   <Input
                     type="number"
@@ -1157,8 +1157,7 @@ export default function Scope3Form() {
                 </div>
                 <div className="flex flex-col space-y-3 w-full">
                   <label className="flex gap-2 items-center text-sm font-semibold text-customG-700">
-                    <CalendarDays className="w-4 h-4" />
-                    보고월
+                    <CalendarDays className="w-4 h-4" />월
                   </label>
                   <MonthSelector
                     className="w-full"
