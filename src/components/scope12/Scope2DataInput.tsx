@@ -173,7 +173,6 @@ export function Scope2DataInput({
     ]
   })
 
-
   // 백엔드 API 연동 함수
 
   // 계산기 데이터 저장/수정 처리
@@ -261,7 +260,7 @@ export function Scope2DataInput({
   // 입력 완료 처리 (모든 계산기 데이터 저장)
   const handleComplete = async () => {
     if (!selectedYear || !selectedMonth) {
-      showError('보고연도와 보고월을 먼저 선택해주세요.')
+      showError('연도와 월을 먼저 선택해주세요.')
       return
     }
 
@@ -533,14 +532,18 @@ export function Scope2DataInput({
                         <div className="flex items-center space-x-3">
                           <Switch
                             checked={calculator.factoryEnabled}
-                            onCheckedChange={(checked) => handleFactoryToggle(calculator.id, checked)}
+                            onCheckedChange={checked =>
+                              handleFactoryToggle(calculator.id, checked)
+                            }
                             className="data-[state=checked]:bg-blue-500"
                           />
 
                           {/* 라벨 */}
                           <span
                             className={`text-sm font-medium transition-colors ${
-                              calculator.factoryEnabled ? 'text-blue-600' : 'text-gray-500'
+                              calculator.factoryEnabled
+                                ? 'text-blue-600'
+                                : 'text-gray-500'
                             }`}>
                             공장 설비
                           </span>
