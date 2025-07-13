@@ -115,6 +115,11 @@ export default function CSDDDDashboard() {
       const userData = userResponse.data
       setUserInfo(userData)
 
+      console.log('[CSDDDDashboard] 현재 사용자 정보:', {
+        userType: userData.userType,
+        companyName: userData.companyName
+      })
+
       const myResultsResponse = await getSelfAssessmentResults({
         onlyPartners: false
       })
@@ -138,6 +143,15 @@ export default function CSDDDDashboard() {
         throw new Error('협력사 목록을 가져올 수 없습니다')
       }
 
+      console.log(
+        '[CSDDDDashboard] 접근 가능한 파트너 목록:',
+        partnersResponse.data.map(p => ({
+          companyName: p.companyName,
+          level: p.level,
+          partnerId: p.partnerId
+        }))
+      )
+
       let response: PaginatedSelfAssessmentResponse
 
       if (userData.userType === 'HEADQUARTERS') {
@@ -145,13 +159,25 @@ export default function CSDDDDashboard() {
           onlyPartners: true // 협력사 결과만 가져오기
         })
       } else if (userData.userType === 'PARTNER') {
+        // 협력사인 경우 모든 결과를 가져와서 자기 자신과 하위 협력사 모두 포함
         response = await getSelfAssessmentResults({
-          onlyPartners: true // 협력사 결과만 가져오기
+          onlyPartners: false // 모든 결과 가져오기 (자기 자신 포함)
         })
       } else {
         setPartners([])
         return
       }
+
+      console.log('[CSDDDDashboard] 자가진단 결과 조회:', {
+        userType: userData.userType,
+        totalResults: response.content?.length || 0,
+        results:
+          response.content?.map(r => ({
+            companyName: r.companyName,
+            completedAt: r.completedAt,
+            finalGrade: r.finalGrade
+          })) || []
+      })
 
       const resultsByCompany = (response.content || []).reduce(
         (
@@ -168,7 +194,7 @@ export default function CSDDDDashboard() {
         {}
       )
 
-      const partnerData: PartnerInfo[] = partnersResponse.data.map((partner: any) => {
+      let partnerData: PartnerInfo[] = partnersResponse.data.map((partner: any) => {
         const partnerResults = resultsByCompany[partner.companyName] || []
 
         return {
@@ -189,12 +215,50 @@ export default function CSDDDDashboard() {
         }
       })
 
+      // 협력사인 경우 자기 자신이 목록에 없다면 추가
+      if (userData.userType === 'PARTNER') {
+        const selfExists = partnerData.some(p => p.companyName === userData.companyName)
+        if (!selfExists) {
+          console.log('[CSDDDDashboard] 협력사 자신을 목록에 추가:', userData.companyName)
+
+          const selfResults = resultsByCompany[userData.companyName] || []
+          const selfPartner: PartnerInfo = {
+            partnerId: (userData as any).partnerId || 0,
+            uuid: `self-${userData.companyName}`,
+            companyName: userData.companyName,
+            hierarchicalId: `self-${userData.companyName}`,
+            level: 1, // 협력사는 기본적으로 level 1로 설정
+            status: 'ACTIVE',
+            parentPartnerId: undefined,
+            parentPartnerName: undefined,
+            createdAt: new Date().toISOString(),
+            results: selfResults.sort((a, b) => {
+              const dateA = new Date(a.completedAt || 0).getTime()
+              const dateB = new Date(b.completedAt || 0).getTime()
+              return dateB - dateA
+            })
+          }
+
+          partnerData.unshift(selfPartner) // 맨 앞에 추가
+        }
+      }
+
       const sortedPartners = partnerData.sort((a, b) => {
         if (a.level !== b.level) {
           return a.level - b.level
         }
         return a.hierarchicalId.localeCompare(b.hierarchicalId)
       })
+
+      console.log(
+        '[CSDDDDashboard] 최종 파트너 데이터 매핑 결과:',
+        sortedPartners.map(p => ({
+          companyName: p.companyName,
+          level: p.level,
+          resultsCount: p.results.length,
+          hasResults: p.results.length > 0
+        }))
+      )
 
       setPartners(sortedPartners)
 
@@ -339,7 +403,7 @@ export default function CSDDDDashboard() {
     const q = searchQuery.toLowerCase()
     // 본사(level: 0) 제외하고 협력사만 필터링
     const partnersOnly = partners.filter(partner => partner.level > 0)
-    
+
     if (!q) return partnersOnly
     return partnersOnly.filter(
       partner =>
@@ -402,9 +466,9 @@ export default function CSDDDDashboard() {
     <div className="w-full h-screen pt-24 pb-4">
       <div className="flex flex-col w-full h-full gap-4">
         {userInfo && (
-          <div 
+          <div
             onClick={handleResultSummaryClick}
-            className="p-8 border rounded-lg shadow-sm bg-white/80 border-white/60 cursor-pointer hover:bg-white/90 transition-colors">
+            className="p-8 transition-colors border rounded-lg shadow-sm cursor-pointer bg-white/80 border-white/60 hover:bg-white/90">
             <div className="flex items-center justify-between mb-3">
               <h2 className="text-lg font-semibold text-gray-800">
                 {userInfo?.companyName} 최신 자가진단 결과 요약
