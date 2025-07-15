@@ -12,9 +12,9 @@ import {
   MapPin,
   Phone,
   Globe,
-  Calendar,
   Code,
-  TrendingUp
+  TrendingUp,
+  Package
 } from 'lucide-react'
 import {
   Table,
@@ -39,10 +39,11 @@ import {
   DialogHeader,
   DialogTitle
 } from '@/components/ui/dialog'
-import {PartnerCompany} from '@/types/partnerCompanyType'
+import {PartnerCompany, MaterialCodeModalState, MaterialCodeCreateRequest, MaterialCodeUpdateRequest, MaterialCodeBatchCreateRequest} from '@/types/partnerCompanyType'
 import {cn} from '@/lib/utils'
 import {updateAccountCreatedStatus} from '@/services/partnerCompanyService'
 import {toast} from '@/hooks/use-toast'
+import {MaterialCodeModal} from './MaterialCodeModal'
 
 interface PartnerTableProps {
   partners: PartnerCompany[]
@@ -72,11 +73,90 @@ export function PartnerTable({
   const [selectedCompanyForInfo, setSelectedCompanyForInfo] =
     useState<PartnerCompany | null>(null)
 
+  // 자재코드 모달 상태 관리
+  const [materialCodeModalState, setMaterialCodeModalState] = useState<MaterialCodeModalState>({
+    isOpen: false,
+    mode: 'create'
+  })
+  const [isMaterialCodeSubmitting, setIsMaterialCodeSubmitting] = useState(false)
+  const [materialCodeError, setMaterialCodeError] = useState<string | null>(null)
+
   const handleSort = (key: SortKey) => {
     setSortConfig(current => ({
       key,
       direction: current.key === key && current.direction === 'asc' ? 'desc' : 'asc'
     }))
+  }
+
+  // 자재코드 모달 열기 함수
+  const openMaterialCodeModal = (partner: PartnerCompany) => {
+    setMaterialCodeModalState({
+      isOpen: true,
+      mode: 'create', // batch 모드 대신 create 모드로 설정
+      partnerId: partner.id || partner.partnerId?.toString(),
+      partnerName: partner.corpName || partner.companyName
+    })
+    setMaterialCodeError(null)
+  }
+
+  // 자재코드 모달 닫기 함수
+  const closeMaterialCodeModal = () => {
+    setMaterialCodeModalState({
+      isOpen: false,
+      mode: 'create'
+    })
+    setMaterialCodeError(null)
+  }
+
+  // 자재코드 저장 함수
+  const handleMaterialCodeSave = async (data: MaterialCodeCreateRequest | MaterialCodeUpdateRequest | MaterialCodeBatchCreateRequest) => {
+    setIsMaterialCodeSubmitting(true)
+    setMaterialCodeError(null)
+
+    try {
+      // TODO: 실제 API 호출 구현
+      console.log('자재코드 저장:', data)
+      console.log('협력사 정보:', materialCodeModalState.partnerId, materialCodeModalState.partnerName)
+      
+      // 저장 타입 확인
+      if ('materialCodes' in data) {
+        // 다중 자재코드 저장
+        console.log('다중 자재코드 저장:', data.materialCodes.length, '개')
+        toast({
+          title: '자재코드 관리',
+          description: `${data.materialCodes.length}개의 자재코드가 성공적으로 저장되었습니다.`
+        })
+      } else if ('materialCode' in data) {
+        // 단일 자재코드 생성
+        console.log('단일 자재코드 생성:', data.materialCode)
+        toast({
+          title: '자재코드 관리',
+          description: '자재코드가 성공적으로 저장되었습니다.'
+        })
+      } else {
+        // 자재코드 수정
+        console.log('자재코드 수정')
+        toast({
+          title: '자재코드 관리',
+          description: '자재코드가 성공적으로 수정되었습니다.'
+        })
+      }
+      
+      // 임시 딜레이 (실제 구현에서는 제거)
+      await new Promise(resolve => setTimeout(resolve, 1000))
+      
+      closeMaterialCodeModal()
+    } catch (error) {
+      console.error('자재코드 저장 실패:', error)
+      setMaterialCodeError('자재코드 저장 중 오류가 발생했습니다.')
+      toast({
+        variant: 'destructive',
+        title: '자재코드 저장 실패',
+        description: '자재코드 저장 중 오류가 발생했습니다.'
+      })
+    } finally {
+      setIsMaterialCodeSubmitting(false)
+    }
   }
 
   const renderSortIcon = (key: SortKey) => {
@@ -310,6 +390,12 @@ export function PartnerTable({
                         </DropdownMenuItem>
                       )}
                       <DropdownMenuItem
+                        onClick={() => openMaterialCodeModal(partner)}
+                        className="flex items-center gap-3 px-4 py-3 transition-colors rounded-lg cursor-pointer hover:bg-slate-50">
+                        <Package className="w-4 h-4 text-green-600" />
+                        <span className="font-medium text-green-700">자재코드 관리</span>
+                      </DropdownMenuItem>
+                      <DropdownMenuItem
                         onClick={() => onEditPartner(partner)}
                         className="flex items-center gap-3 px-4 py-3 transition-colors rounded-lg cursor-pointer hover:bg-slate-50">
                         <Edit3 className="w-4 h-4 text-slate-600" />
@@ -522,6 +608,16 @@ export function PartnerTable({
           </div>
         </DialogContent>
       </Dialog>
+
+      {/* 자재코드 관리 모달 */}
+      <MaterialCodeModal
+        modalState={materialCodeModalState}
+        onClose={closeMaterialCodeModal}
+        onSave={handleMaterialCodeSave}
+        isSubmitting={isMaterialCodeSubmitting}
+        error={materialCodeError}
+        existingCodes={[]} // TODO: 기존 자재코드 목록 연동
+      />
     </div>
   )
 }

@@ -691,3 +691,93 @@ export interface AvailablePeriod {
   itemCount: number // 재무제표 항목 수
   isAutoSelected: boolean // 자동 선택 여부
 }
+
+// ============================================================================
+// 자재코드 관리 타입 정의
+// ============================================================================
+
+/**
+ * 자재코드 정보
+ */
+export interface MaterialCode {
+  id?: string // 자재코드 고유 ID
+  materialCode: string // 자재코드 (예: A001, B001)
+  materialName: string // 자재명 (예: 부품, 철강)
+  category?: string // 카테고리
+  isActive: boolean // 활성 상태
+  createdAt?: string // 생성일시
+  updatedAt?: string // 수정일시
+}
+
+/**
+ * 자재코드 매핑 정보 (상위→하위 할당)
+ */
+export interface MaterialCodeMapping {
+  id?: string // 매핑 고유 ID
+  parentMaterialCode: string // 상위 자재코드 (할당받은 코드)
+  parentMaterialName: string // 상위 자재명
+  childMaterialCode: string // 하위 자재코드 (내가 만든 코드)
+  childMaterialName: string // 하위 자재명
+  partnerId: string // 협력사 ID
+  partnerName: string // 협력사명
+  assignedAt: string // 할당일시
+  isActive: boolean // 활성 상태
+}
+
+/**
+ * 자재코드 할당 요청
+ */
+export interface MaterialCodeAssignmentRequest {
+  partnerId: string // 협력사 ID
+  materialCodes: string[] // 할당할 자재코드 목록
+  assignmentNote?: string // 할당 메모
+}
+
+/**
+ * 자재코드 생성 요청
+ */
+export interface MaterialCodeCreateRequest {
+  materialCode: string // 자재코드
+  materialName: string // 자재명
+  category?: string // 카테고리
+}
+
+/**
+ * 여러 자재코드 생성 요청
+ */
+export interface MaterialCodeBatchCreateRequest {
+  materialCodes: MaterialCodeCreateRequest[] // 자재코드 목록
+  partnerId?: string // 협력사 ID (할당용)
+  assignmentNote?: string // 할당 메모
+}
+
+/**
+ * 자재코드 수정 요청
+ */
+export interface MaterialCodeUpdateRequest {
+  materialName?: string // 자재명
+  category?: string // 카테고리
+  isActive?: boolean // 활성 상태
+}
+
+/**
+ * 자재코드 모달 상태
+ */
+export interface MaterialCodeModalState {
+  isOpen: boolean // 모달 열림 상태
+  mode: 'create' | 'edit' | 'assign' // 모달 모드
+  materialCode?: MaterialCode // 편집할 자재코드
+  partnerId?: string // 협력사 ID (할당 모드용)
+  partnerName?: string // 협력사명 (할당 모드용)
+}
+
+/**
+ * 자재코드 항목 (모달 내 리스트용)
+ */
+export interface MaterialCodeItem {
+  id: string // 임시 고유 ID
+  materialCode: string // 자재코드
+  materialName: string // 자재명
+  category: string // 카테고리
+  errors: Partial<MaterialCodeItem> // 유효성 검증 에러
+}
