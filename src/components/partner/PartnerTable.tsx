@@ -1,7 +1,21 @@
 'use client'
 
 import React, {useMemo, useState} from 'react'
-import {MoreHorizontal, Edit3, Trash, Building2, UserPlus} from 'lucide-react'
+import {
+  MoreHorizontal,
+  Edit3,
+  Trash,
+  Building2,
+  UserPlus,
+  AlertCircle,
+  User,
+  MapPin,
+  Phone,
+  Globe,
+  Calendar,
+  Code,
+  TrendingUp
+} from 'lucide-react'
 import {
   Table,
   TableBody,
@@ -18,6 +32,13 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger
 } from '@/components/ui/dropdown-menu'
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogHeader,
+  DialogTitle
+} from '@/components/ui/dialog'
 import {PartnerCompany} from '@/types/partnerCompanyType'
 import {cn} from '@/lib/utils'
 import {updateAccountCreatedStatus} from '@/services/partnerCompanyService'
@@ -45,6 +66,11 @@ export function PartnerTable({
     key: null,
     direction: null
   })
+
+  // 회사정보 다이얼로그 상태 관리
+  const [isCompanyInfoDialogOpen, setIsCompanyInfoDialogOpen] = useState(false)
+  const [selectedCompanyForInfo, setSelectedCompanyForInfo] =
+    useState<PartnerCompany | null>(null)
 
   const handleSort = (key: SortKey) => {
     setSortConfig(current => ({
@@ -109,10 +135,10 @@ export function PartnerTable({
   }, [partners, sortConfig])
 
   return (
-    <div className="overflow-hidden bg-white rounded-2xl border-2 shadow-sm border-slate-200">
+    <div className="overflow-hidden bg-white border-2 shadow-sm rounded-2xl border-slate-200">
       <Table>
         <TableHeader>
-          <TableRow className="bg-gradient-to-r border-b-2 from-slate-50 to-slate-100 border-slate-200">
+          <TableRow className="border-b-2 bg-gradient-to-r from-slate-50 to-slate-100 border-slate-200">
             {[
               {label: '회사명', key: 'corpName'},
               {label: 'DART 코드', key: 'dartCode'},
@@ -137,7 +163,7 @@ export function PartnerTable({
                 </div>
               </TableHead>
             ))}
-            <TableHead className="px-6 h-14 text-base font-bold text-center text-slate-800">
+            <TableHead className="px-6 text-base font-bold text-center h-14 text-slate-800">
               관리
             </TableHead>
           </TableRow>
@@ -162,38 +188,38 @@ export function PartnerTable({
             return (
               <TableRow
                 key={partner.id || `partner-${index}`}
-                className="border-b transition-all duration-200 hover:bg-slate-50/80 border-slate-100 last:border-b-0">
-                <TableCell className="px-6 h-16 text-base font-semibold text-slate-800">
-                  <div className="flex gap-3 items-center">
-                    <div className="flex justify-center items-center w-8 h-8 bg-blue-100 rounded-full ring-1 transition-all duration-300 ring-blue-600/30">
+                className="transition-all duration-200 border-b hover:bg-slate-50/80 border-slate-100 last:border-b-0">
+                <TableCell className="h-16 px-6 text-base font-semibold text-slate-800">
+                  <div className="flex items-center gap-3">
+                    <div className="flex items-center justify-center w-8 h-8 transition-all duration-300 bg-blue-100 rounded-full ring-1 ring-blue-600/30">
                       <Building2 className="w-4 h-4 text-blue-600 shrink-0" />
                     </div>
                     {corpName}
                   </div>
                 </TableCell>
-                <TableCell className="px-6 h-16">
+                <TableCell className="h-16 px-6">
                   <code className="px-3 py-1 font-mono text-sm font-medium rounded-lg bg-slate-100 text-slate-700">
                     {dartCode}
                   </code>
                 </TableCell>
-                <TableCell className="px-6 h-16">
+                <TableCell className="h-16 px-6">
                   {isValid ? (
                     <Badge
                       variant="outline"
-                      className="px-3 py-1 font-semibold text-blue-700 bg-blue-50 rounded-lg border-2 border-blue-200">
-                      <div className="mr-2 w-2 h-2 bg-blue-500 rounded-full"></div>
+                      className="px-3 py-1 font-semibold text-blue-700 border-2 border-blue-200 rounded-lg bg-blue-50">
+                      <div className="w-2 h-2 mr-2 bg-blue-500 rounded-full"></div>
                       {String(stockCode).trim()}
                     </Badge>
                   ) : (
                     <Badge
                       variant="secondary"
-                      className="px-3 py-1 font-semibold rounded-lg border-2 text-slate-600 bg-slate-100 border-slate-200">
-                      <div className="mr-2 w-2 h-2 rounded-full bg-slate-400"></div>
+                      className="px-3 py-1 font-semibold border-2 rounded-lg text-slate-600 bg-slate-100 border-slate-200">
+                      <div className="w-2 h-2 mr-2 rounded-full bg-slate-400"></div>
                       비상장
                     </Badge>
                   )}
                 </TableCell>
-                <TableCell className="px-6 h-16 font-medium text-slate-600">
+                <TableCell className="h-16 px-6 font-medium text-slate-600">
                   {contractDate
                     ? new Date(contractDate).toLocaleDateString('ko-KR', {
                         year: 'numeric',
@@ -202,37 +228,47 @@ export function PartnerTable({
                       })
                     : '-'}
                 </TableCell>
-                <TableCell className="px-6 h-16">
-                  {hasAccount ? (
-                    <Badge
-                      variant="outline"
-                      className="px-3 py-1 font-semibold text-green-700 bg-green-50 rounded-lg border-2 border-green-200">
-                      <div className="mr-2 w-2 h-2 bg-green-500 rounded-full"></div>
-                      계정 생성됨
-                    </Badge>
-                  ) : (
-                    <Badge
-                      variant="secondary"
-                      className="px-3 py-1 font-semibold text-orange-700 bg-orange-50 rounded-lg border-2 border-orange-200">
-                      <div className="mr-2 w-2 h-2 bg-orange-500 rounded-full"></div>
-                      계정 없음
-                    </Badge>
-                  )}
+                <TableCell className="h-16 px-6">
+                  <div className="flex items-center gap-2">
+                    {hasAccount ? (
+                      <Badge
+                        variant="outline"
+                        className="px-3 py-1 font-semibold text-green-700 border-2 border-green-200 rounded-lg bg-green-50">
+                        <div className="w-2 h-2 mr-2 bg-green-500 rounded-full"></div>
+                        계정 생성됨
+                      </Badge>
+                    ) : (
+                      <Badge
+                        variant="secondary"
+                        className="px-3 py-1 font-semibold text-orange-700 border-2 border-orange-200 rounded-lg bg-orange-50">
+                        <div className="w-2 h-2 mr-2 bg-orange-500 rounded-full"></div>
+                        계정 없음
+                      </Badge>
+                    )}
+
+                    <AlertCircle
+                      className="w-4 h-4 text-blue-500 transition-colors cursor-pointer hover:text-blue-700"
+                      onClick={() => {
+                        setSelectedCompanyForInfo(partner)
+                        setIsCompanyInfoDialogOpen(true)
+                      }}
+                    />
+                  </div>
                 </TableCell>
-                <TableCell className="px-6 h-16 text-center">
+                <TableCell className="h-16 px-6 text-center">
                   <DropdownMenu>
                     <DropdownMenuTrigger asChild>
                       <Button
                         variant="ghost"
                         size="icon"
-                        className="w-10 h-10 rounded-lg transition-colors hover:bg-slate-100">
+                        className="w-10 h-10 transition-colors rounded-lg hover:bg-slate-100">
                         <MoreHorizontal className="w-5 h-5 text-slate-600" />
                         <span className="sr-only">메뉴 열기</span>
                       </Button>
                     </DropdownMenuTrigger>
                     <DropdownMenuContent
                       align="end"
-                      className="p-2 w-48 bg-white rounded-xl border-2 shadow-xl border-slate-200">
+                      className="w-48 p-2 bg-white border-2 shadow-xl rounded-xl border-slate-200">
                       {!hasAccount && (
                         <DropdownMenuItem
                           onClick={async () => {
@@ -270,20 +306,20 @@ export function PartnerTable({
                               })
                             }
                           }}
-                          className="flex gap-3 items-center px-4 py-3 rounded-lg transition-colors cursor-pointer hover:bg-gray-100">
+                          className="flex items-center gap-3 px-4 py-3 transition-colors rounded-lg cursor-pointer hover:bg-gray-100">
                           <UserPlus className="w-4 h-4 text-blue-600" />
                           <span className="font-medium text-blue-700">계정 생성</span>
                         </DropdownMenuItem>
                       )}
                       <DropdownMenuItem
                         onClick={() => onEditPartner(partner)}
-                        className="flex gap-3 items-center px-4 py-3 rounded-lg transition-colors cursor-pointer hover:bg-slate-50">
+                        className="flex items-center gap-3 px-4 py-3 transition-colors rounded-lg cursor-pointer hover:bg-slate-50">
                         <Edit3 className="w-4 h-4 text-slate-600" />
                         <span className="font-medium text-slate-700">정보 수정</span>
                       </DropdownMenuItem>
                       <DropdownMenuItem
                         onClick={() => onDeletePartner(partner)}
-                        className="flex gap-3 items-center px-4 py-3 text-red-600 rounded-lg transition-colors cursor-pointer hover:bg-red-50 focus:text-red-600 focus:bg-red-50">
+                        className="flex items-center gap-3 px-4 py-3 text-red-600 transition-colors rounded-lg cursor-pointer hover:bg-red-50 focus:text-red-600 focus:bg-red-50">
                         <Trash className="w-4 h-4" />
                         <span className="font-medium">협력사 삭제</span>
                       </DropdownMenuItem>
@@ -295,6 +331,199 @@ export function PartnerTable({
           })}
         </TableBody>
       </Table>
+
+      {/* 회사정보 다이얼로그 */}
+      <Dialog open={isCompanyInfoDialogOpen} onOpenChange={setIsCompanyInfoDialogOpen}>
+        <DialogContent className="max-w-2xl border-2 shadow-2xl bg-gradient-to-br from-white to-slate-50 rounded-2xl border-slate-200">
+          <DialogHeader className="pb-6 border-b-2 border-slate-100">
+            <div className="flex items-center gap-4">
+              <div className="flex items-center justify-center w-12 h-12 transition-all duration-300 bg-blue-100 rounded-full ring-2 ring-blue-600/30">
+                <Building2 className="w-6 h-6 text-blue-600" />
+              </div>
+              <div className="flex-1">
+                <DialogTitle className="text-2xl font-bold text-slate-800">
+                  {selectedCompanyForInfo?.corpName ||
+                    selectedCompanyForInfo?.companyName ||
+                    '회사'}
+                </DialogTitle>
+                <DialogDescription className="mt-1 text-base text-slate-600">
+                  회사의 상세 정보를 확인하실 수 있습니다.
+                </DialogDescription>
+              </div>
+            </div>
+          </DialogHeader>
+
+          <div className="mt-6 space-y-6">
+            {/* 기본 정보 섹션 */}
+            <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
+              {/* 회사명 */}
+              <div className="p-4 transition-all duration-200 border-2 rounded-xl bg-slate-50/50 border-slate-200 hover:bg-slate-50">
+                <div className="flex items-center gap-3">
+                  <div className="flex items-center justify-center w-8 h-8 bg-blue-100 rounded-lg">
+                    <Building2 className="w-4 h-4 text-blue-600" />
+                  </div>
+                  <div className="flex-1">
+                    <span className="block text-sm font-medium text-slate-500">
+                      회사명
+                    </span>
+                    <span className="text-base font-semibold text-slate-800">
+                      {selectedCompanyForInfo?.corpName ||
+                        selectedCompanyForInfo?.companyName ||
+                        '정보 없음'}
+                    </span>
+                  </div>
+                </div>
+              </div>
+
+              {/* 영문 회사명 */}
+              {selectedCompanyForInfo?.corpNameEng && (
+                <div className="p-4 transition-all duration-200 border-2 rounded-xl bg-slate-50/50 border-slate-200 hover:bg-slate-50">
+                  <div className="flex items-center gap-3">
+                    <div className="flex items-center justify-center w-8 h-8 rounded-lg bg-slate-100">
+                      <Globe className="w-4 h-4 text-slate-600" />
+                    </div>
+                    <div className="flex-1">
+                      <span className="block text-sm font-medium text-slate-500">
+                        영문 회사명
+                      </span>
+                      <span className="text-base font-semibold text-slate-800">
+                        {selectedCompanyForInfo.corpNameEng}
+                      </span>
+                    </div>
+                  </div>
+                </div>
+              )}
+
+              {/* 대표이사 */}
+              {selectedCompanyForInfo?.ceoName && (
+                <div className="p-4 transition-all duration-200 border-2 rounded-xl bg-slate-50/50 border-slate-200 hover:bg-slate-50">
+                  <div className="flex items-center gap-3">
+                    <div className="flex items-center justify-center w-8 h-8 bg-green-100 rounded-lg">
+                      <User className="w-4 h-4 text-green-600" />
+                    </div>
+                    <div className="flex-1">
+                      <span className="block text-sm font-medium text-slate-500">
+                        대표이사
+                      </span>
+                      <span className="text-base font-semibold text-slate-800">
+                        {selectedCompanyForInfo.ceoName}
+                      </span>
+                    </div>
+                  </div>
+                </div>
+              )}
+
+              {/* 전화번호 */}
+              {selectedCompanyForInfo?.phoneNumber && (
+                <div className="p-4 transition-all duration-200 border-2 rounded-xl bg-slate-50/50 border-slate-200 hover:bg-slate-50">
+                  <div className="flex items-center gap-3">
+                    <div className="flex items-center justify-center w-8 h-8 bg-orange-100 rounded-lg">
+                      <Phone className="w-4 h-4 text-orange-600" />
+                    </div>
+                    <div className="flex-1">
+                      <span className="block text-sm font-medium text-slate-500">
+                        전화번호
+                      </span>
+                      <span className="text-base font-semibold text-slate-800">
+                        {selectedCompanyForInfo.phoneNumber}
+                      </span>
+                    </div>
+                  </div>
+                </div>
+              )}
+            </div>
+
+            {/* 주소 (전체 너비) */}
+            {selectedCompanyForInfo?.address && (
+              <div className="p-4 transition-all duration-200 border-2 rounded-xl bg-slate-50/50 border-slate-200 hover:bg-slate-50">
+                <div className="flex items-start gap-3">
+                  <div className="flex items-center justify-center w-8 h-8 bg-red-100 rounded-lg">
+                    <MapPin className="w-4 h-4 text-red-600" />
+                  </div>
+                  <div className="flex-1">
+                    <span className="block text-sm font-medium text-slate-500">주소</span>
+                    <span className="text-base font-semibold text-slate-800">
+                      {selectedCompanyForInfo.address}
+                    </span>
+                  </div>
+                </div>
+              </div>
+            )}
+
+            {/* 홈페이지 */}
+            {selectedCompanyForInfo?.homepageUrl && (
+              <div className="p-4 transition-all duration-200 border-2 rounded-xl bg-slate-50/50 border-slate-200 hover:bg-slate-50">
+                <div className="flex items-center gap-3">
+                  <div className="flex items-center justify-center w-8 h-8 bg-blue-100 rounded-lg">
+                    <Globe className="w-4 h-4 text-blue-600" />
+                  </div>
+                  <div className="flex-1">
+                    <span className="block text-sm font-medium text-slate-500">
+                      홈페이지
+                    </span>
+                    <a
+                      href={
+                        selectedCompanyForInfo.homepageUrl.startsWith('http')
+                          ? selectedCompanyForInfo.homepageUrl
+                          : `https://${selectedCompanyForInfo.homepageUrl}`
+                      }
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="text-base font-semibold text-blue-600 transition-colors hover:text-blue-800 hover:underline">
+                      {selectedCompanyForInfo.homepageUrl}
+                    </a>
+                  </div>
+                </div>
+              </div>
+            )}
+
+            {/* DART 정보 섹션 */}
+            <div className="pt-6 mt-6 border-t-2 border-slate-200">
+              <h3 className="mb-4 text-lg font-bold text-slate-800">DART 정보</h3>
+              <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
+                {/* DART 코드 */}
+                <div className="p-4 transition-all duration-200 border-2 rounded-xl bg-gradient-to-r from-slate-50 to-slate-100 border-slate-200 hover:from-slate-100 hover:to-slate-50">
+                  <div className="flex items-center gap-3">
+                    <div className="flex items-center justify-center w-8 h-8 rounded-lg bg-slate-200">
+                      <Code className="w-4 h-4 text-slate-700" />
+                    </div>
+                    <div className="flex-1">
+                      <span className="block text-sm font-medium text-slate-500">
+                        DART 코드
+                      </span>
+                      <Badge className="px-3 py-1 mt-1 font-mono text-sm font-semibold text-slate-700 bg-slate-100 border-slate-300">
+                        {selectedCompanyForInfo?.corpCode || '정보 없음'}
+                      </Badge>
+                    </div>
+                  </div>
+                </div>
+
+                {/* 종목 코드 */}
+                {(selectedCompanyForInfo?.stockCode ||
+                  selectedCompanyForInfo?.stock_code) && (
+                  <div className="p-4 transition-all duration-200 border-2 border-blue-200 rounded-xl bg-gradient-to-r from-blue-50 to-blue-100 hover:from-blue-100 hover:to-blue-50">
+                    <div className="flex items-center gap-3">
+                      <div className="flex items-center justify-center w-8 h-8 bg-blue-200 rounded-lg">
+                        <TrendingUp className="w-4 h-4 text-blue-700" />
+                      </div>
+                      <div className="flex-1">
+                        <span className="block text-sm font-medium text-blue-600">
+                          종목 코드
+                        </span>
+                        <Badge className="px-3 py-1 mt-1 font-mono text-sm font-semibold text-blue-700 bg-blue-100 border-blue-300">
+                          <div className="w-2 h-2 mr-2 bg-blue-500 rounded-full"></div>
+                          {selectedCompanyForInfo.stockCode ||
+                            selectedCompanyForInfo.stock_code}
+                        </Badge>
+                      </div>
+                    </div>
+                  </div>
+                )}
+              </div>
+            </div>
+          </div>
+        </DialogContent>
+      </Dialog>
     </div>
   )
 }
