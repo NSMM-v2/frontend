@@ -194,9 +194,17 @@ export function PartnerTable({
                     <div className="flex items-center justify-center w-8 h-8 transition-all duration-300 bg-blue-100 rounded-full ring-1 ring-blue-600/30">
                       <Building2 className="w-4 h-4 text-blue-600 shrink-0" />
                     </div>
-                    {corpName}
+                    <span className="flex-1">{corpName}</span>
+                    <AlertCircle
+                      className="w-4 h-4 text-blue-500 transition-colors cursor-pointer hover:text-blue-700"
+                      onClick={() => {
+                        setSelectedCompanyForInfo(partner)
+                        setIsCompanyInfoDialogOpen(true)
+                      }}
+                    />
                   </div>
                 </TableCell>
+
                 <TableCell className="h-16 px-6">
                   <code className="px-3 py-1 font-mono text-sm font-medium rounded-lg bg-slate-100 text-slate-700">
                     {dartCode}
@@ -229,31 +237,21 @@ export function PartnerTable({
                     : '-'}
                 </TableCell>
                 <TableCell className="h-16 px-6">
-                  <div className="flex items-center gap-2">
-                    {hasAccount ? (
-                      <Badge
-                        variant="outline"
-                        className="px-3 py-1 font-semibold text-green-700 border-2 border-green-200 rounded-lg bg-green-50">
-                        <div className="w-2 h-2 mr-2 bg-green-500 rounded-full"></div>
-                        계정 생성됨
-                      </Badge>
-                    ) : (
-                      <Badge
-                        variant="secondary"
-                        className="px-3 py-1 font-semibold text-orange-700 border-2 border-orange-200 rounded-lg bg-orange-50">
-                        <div className="w-2 h-2 mr-2 bg-orange-500 rounded-full"></div>
-                        계정 없음
-                      </Badge>
-                    )}
-
-                    <AlertCircle
-                      className="w-4 h-4 text-blue-500 transition-colors cursor-pointer hover:text-blue-700"
-                      onClick={() => {
-                        setSelectedCompanyForInfo(partner)
-                        setIsCompanyInfoDialogOpen(true)
-                      }}
-                    />
-                  </div>
+                  {hasAccount ? (
+                    <Badge
+                      variant="outline"
+                      className="px-3 py-1 font-semibold text-green-700 border-2 border-green-200 rounded-lg bg-green-50">
+                      <div className="w-2 h-2 mr-2 bg-green-500 rounded-full"></div>
+                      계정 생성됨
+                    </Badge>
+                  ) : (
+                    <Badge
+                      variant="secondary"
+                      className="px-3 py-1 font-semibold text-orange-700 border-2 border-orange-200 rounded-lg bg-orange-50">
+                      <div className="w-2 h-2 mr-2 bg-orange-500 rounded-full"></div>
+                      계정 없음
+                    </Badge>
+                  )}
                 </TableCell>
                 <TableCell className="h-16 px-6 text-center">
                   <DropdownMenu>
