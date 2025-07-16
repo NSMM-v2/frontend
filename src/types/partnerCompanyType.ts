@@ -781,3 +781,97 @@ export interface MaterialCodeItem {
   category: string // 카테고리
   errors: Partial<MaterialCodeItem> // 유효성 검증 에러
 }
+
+// ============================================================================
+// 자재코드 API 응답 및 서비스 타입
+// ============================================================================
+
+/**
+ * 자재코드 API 응답
+ */
+export interface MaterialCodeApiResponse {
+  id: string // 자재코드 고유 ID
+  materialCode: string // 자재코드 (예: A001, B001)
+  materialName: string // 자재명 (예: 부품, 철강)
+  category?: string // 카테고리
+  partnerId?: string // 소속 협력사 ID
+  partnerName?: string // 소속 협력사명
+  isActive: boolean // 활성 상태
+  createdAt: string // 생성일시
+  updatedAt: string // 수정일시
+}
+
+/**
+ * 자재코드 목록 조회 응답
+ */
+export interface MaterialCodeListResponse {
+  data: MaterialCodeApiResponse[] // 자재코드 목록
+  total: number // 전체 개수
+  page?: number // 현재 페이지
+  pageSize?: number // 페이지당 항목 수
+}
+
+/**
+ * 자재코드 옵션 (드롭다운용)
+ */
+export interface MaterialCodeOption {
+  value: string // 자재코드
+  label: string // 표시명 (자재코드 - 자재명)
+  materialCode: string // 자재코드
+  materialName: string // 자재명
+  category?: string // 카테고리
+}
+
+// ============================================================================
+// 계층적 자재코드 매핑 타입 정의
+// ============================================================================
+
+/**
+ * 상위 협력사에서 할당받은 자재코드 정보
+ */
+export interface AssignedMaterialCode {
+  id: string // 할당 고유 ID
+  parentMaterialCode: string // 상위 자재코드 (할당받은 코드)
+  parentMaterialName: string // 상위 자재명
+  parentCategory?: string // 상위 카테고리
+  assignedBy: string // 할당한 협력사 ID
+  assignedByName: string // 할당한 협력사명
+  assignedAt: string // 할당일시
+  isActive: boolean // 활성 상태
+}
+
+/**
+ * 자재코드 매핑 정보 (상위코드 → 내코드)
+ */
+export interface MaterialCodeMapping {
+  id?: string // 매핑 고유 ID
+  parentMaterialCode: string // 상위 자재코드 (할당받은 코드)
+  parentMaterialName: string // 상위 자재명
+  childMaterialCode: string // 내 자재코드 (매핑되는 코드)
+  childMaterialName: string // 내 자재명
+  partnerId: string // 소속 협력사 ID
+  partnerName: string // 소속 협력사명
+  createdAt?: string // 매핑 생성일시
+  updatedAt?: string // 매핑 수정일시
+  isActive: boolean // 활성 상태
+}
+
+/**
+ * 계층적 자재코드 선택 상태
+ */
+export interface HierarchicalMaterialCodeState {
+  assignedMaterialCode?: string // 선택된 상위 할당 자재코드
+  mappedMaterialCode?: string // 매핑된 내 자재코드
+  materialName?: string // 자재명
+  hasExistingMapping: boolean // 기존 매핑 존재 여부
+  isCreatingNewMapping: boolean // 새 매핑 생성 중 여부
+}
+
+/**
+ * 자재코드 매핑 조회 응답
+ */
+export interface MaterialCodeMappingResponse {
+  assignedCodes: AssignedMaterialCode[] // 할당받은 상위 자재코드 목록
+  existingMappings: MaterialCodeMapping[] // 기존 매핑 관계
+  availableChildCodes: MaterialCodeApiResponse[] // 사용 가능한 내 자재코드 목록
+}
