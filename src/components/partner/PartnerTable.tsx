@@ -39,11 +39,21 @@ import {
   DialogHeader,
   DialogTitle
 } from '@/components/ui/dialog'
-import {PartnerCompany, MaterialCodeModalState, MaterialCodeCreateRequest, MaterialCodeUpdateRequest, MaterialCodeBatchCreateRequest} from '@/types/partnerCompanyType'
+import {
+  PartnerCompany,
+  MaterialCodeModalState,
+  MaterialCodeCreateRequest,
+  MaterialCodeUpdateRequest,
+  MaterialCodeBatchCreateRequest
+} from '@/types/partnerCompanyType'
 import {cn} from '@/lib/utils'
 import {updateAccountCreatedStatus} from '@/services/partnerCompanyService'
 import {toast} from '@/hooks/use-toast'
 import {MaterialCodeModal} from './MaterialCodeModal'
+import {
+  materialAssignmentService,
+  MaterialAssignmentResponse
+} from '@/services/materialAssignmentService'
 
 interface PartnerTableProps {
   partners: PartnerCompany[]
@@ -74,12 +84,19 @@ export function PartnerTable({
     useState<PartnerCompany | null>(null)
 
   // 자재코드 모달 상태 관리
-  const [materialCodeModalState, setMaterialCodeModalState] = useState<MaterialCodeModalState>({
-    isOpen: false,
-    mode: 'create'
-  })
+  const [materialCodeModalState, setMaterialCodeModalState] =
+    useState<MaterialCodeModalState>({
+      isOpen: false,
+      mode: 'create'
+    })
   const [isMaterialCodeSubmitting, setIsMaterialCodeSubmitting] = useState(false)
   const [materialCodeError, setMaterialCodeError] = useState<string | null>(null)
+
+  // 자재코드 할당 상태 관리
+  const [assignmentData, setAssignmentData] = useState<
+    Record<number, MaterialAssignmentResponse[]>
+  >({})
+  const [isLoadingAssignments, setIsLoadingAssignments] = useState(false)
 
   const handleSort = (key: SortKey) => {
     setSortConfig(current => ({
@@ -88,12 +105,58 @@ export function PartnerTable({
     }))
   }
 
+  // 자재코드 할당 정보 로드 함수
+  const loadAssignments = async (partnerId: number) => {
+    try {
+      setIsLoadingAssignments(true)
+      const assignments = await materialAssignmentService.getAssignmentsByPartner(
+        partnerId
+      )
+      setAssignmentData(prev => ({
+        ...prev,
+        [partnerId]: assignments
+      }))
+    } catch (error) {
+      console.error(`협력사 ${partnerId} 자재코드 할당 조회 오류:`, error)
+      // 조회 오류는 조용히 처리 (할당이 없을 수도 있음)
+      setAssignmentData(prev => ({
+        ...prev,
+        [partnerId]: []
+      }))
+    } finally {
+      setIsLoadingAssignments(false)
+    }
+  }
+
+  // 모든 협력사의 할당 정보 로드
+  const loadAllAssignments = async () => {
+    const partnerIds = partners
+      .map(partner => Number(partner.id || partner.partnerId))
+      .filter(id => !isNaN(id))
+
+    await Promise.all(partnerIds.map(partnerId => loadAssignments(partnerId)))
+  }
+
+  // 협력사 목록이 변경될 때 할당 정보 로드
+  React.useEffect(() => {
+    if (partners.length > 0) {
+      loadAllAssignments()
+    }
+  }, [partners])
+
   // 자재코드 모달 열기 함수
   const openMaterialCodeModal = (partner: PartnerCompany) => {
+    const partnerId = partner.id || partner.partnerId?.toString() || ''
+    console.log('Debug - openMaterialCodeModal partner:', {
+      id: partner.id,
+      partnerId: partner.partnerId,
+      finalPartnerId: partnerId
+    }) // 디버깅 로그
+    
     setMaterialCodeModalState({
       isOpen: true,
       mode: 'create', // batch 모드 대신 create 모드로 설정
-      partnerId: partner.id || partner.partnerId?.toString(),
+      partnerId: partnerId,
       partnerName: partner.corpName || partner.companyName
     })
     setMaterialCodeError(null)
@@ -109,50 +172,92 @@ export function PartnerTable({
   }
 
   // 자재코드 저장 함수
-  const handleMaterialCodeSave = async (data: MaterialCodeCreateRequest | MaterialCodeUpdateRequest | MaterialCodeBatchCreateRequest) => {
+  const handleMaterialCodeSave = async (
+    data:
+      | MaterialCodeCreateRequest
+      | MaterialCodeUpdateRequest
+      | MaterialCodeBatchCreateRequest
+  ) => {
     setIsMaterialCodeSubmitting(true)
     setMaterialCodeError(null)
 
     try {
-      // TODO: 실제 API 호출 구현
-      console.log('자재코드 저장:', data)
-      console.log('협력사 정보:', materialCodeModalState.partnerId, materialCodeModalState.partnerName)
+      const partnerIdStr = materialCodeModalState.partnerId
+      console.log('Debug - partnerIdStr:', partnerIdStr) // 디버깅 로그
       
-      // 저장 타입 확인
-      if ('materialCodes' in data) {
-        // 다중 자재코드 저장
-        console.log('다중 자재코드 저장:', data.materialCodes.length, '개')
-        toast({
-          title: '자재코드 관리',
-          description: `${data.materialCodes.length}개의 자재코드가 성공적으로 저장되었습니다.`
-        })
-      } else if ('materialCode' in data) {
-        // 단일 자재코드 생성
-        console.log('단일 자재코드 생성:', data.materialCode)
-        toast({
-          title: '자재코드 관리',
-          description: '자재코드가 성공적으로 저장되었습니다.'
-        })
-      } else {
-        // 자재코드 수정
-        console.log('자재코드 수정')
-        toast({
-          title: '자재코드 관리',
-          description: '자재코드가 성공적으로 수정되었습니다.'
-        })
+      if (!partnerIdStr) {
+        throw new Error('협력사 정보가 없습니다')
       }
       
-      // 임시 딜레이 (실제 구현에서는 제거)
-      await new Promise(resolve => setTimeout(resolve, 1000))
+      const partnerId = Number(partnerIdStr)
+      console.log('Debug - partnerId after conversion:', partnerId) // 디버깅 로그
       
+      if (isNaN(partnerId)) {
+        throw new Error('유효하지 않은 협력사 ID입니다')
+      }
+
+      // 저장 타입에 따른 API 호출
+      if ('materialCodes' in data) {
+        // 다중 자재코드 저장 (일괄 할당)
+        const batchRequest = {
+          toPartnerId: partnerId,
+          materialCodes: data.materialCodes.map(code => ({
+            materialCode: code.materialCode,
+            materialName: code.materialName,
+            category: code.category,
+            description: code.description
+          })),
+          assignedBy: 'Current User', // TODO: 실제 사용자 정보
+          assignmentReason: '자재코드 일괄 할당'
+        }
+
+        const results = await materialAssignmentService.createBatchAssignments(
+          batchRequest
+        )
+
+        toast({
+          title: '자재코드 관리',
+          description: `${results.length}개의 자재코드가 성공적으로 할당되었습니다.`
+        })
+      } else if ('materialCode' in data && materialCodeModalState.mode === 'create') {
+        // 단일 자재코드 생성
+        const request = {
+          materialCode: data.materialCode,
+          materialName: data.materialName,
+          category: data.category,
+          description: data.description,
+          toPartnerId: partnerId,
+          assignedBy: 'Current User', // TODO: 실제 사용자 정보
+          assignmentReason: '자재코드 할당'
+        }
+
+        await materialAssignmentService.createAssignment(request)
+
+        toast({
+          title: '자재코드 관리',
+          description: '자재코드가 성공적으로 할당되었습니다.'
+        })
+      } else {
+        // 자재코드 수정 (TODO: 수정 기능 구현 필요)
+        toast({
+          title: '자재코드 관리',
+          description: '자재코드 수정 기능은 아직 구현되지 않았습니다.'
+        })
+      }
+
+      // 할당 정보 새로고침
+      await loadAssignments(partnerId)
+
       closeMaterialCodeModal()
     } catch (error) {
       console.error('자재코드 저장 실패:', error)
-      setMaterialCodeError('자재코드 저장 중 오류가 발생했습니다.')
+      const errorMessage =
+        error instanceof Error ? error.message : '자재코드 저장 중 오류가 발생했습니다.'
+      setMaterialCodeError(errorMessage)
       toast({
         variant: 'destructive',
         title: '자재코드 저장 실패',
-        description: '자재코드 저장 중 오류가 발생했습니다.'
+        description: errorMessage
       })
     } finally {
       setIsMaterialCodeSubmitting(false)
@@ -224,14 +329,18 @@ export function PartnerTable({
               {label: 'DART 코드', key: 'dartCode'},
               {label: '상장 정보', key: 'stockCode'},
               {label: '계약 시작일', key: 'contractStartDate'},
-              {label: '계정 상태', key: 'accountStatus'}
+              {label: '계정 상태', key: 'accountStatus'},
+              {label: '자재코드', key: 'materialCodes'}
             ].map(({label, key}) => (
               <TableHead
                 key={key}
-                onClick={() => key !== 'accountStatus' && handleSort(key as SortKey)}
+                onClick={() =>
+                  !['accountStatus', 'materialCodes'].includes(key) &&
+                  handleSort(key as SortKey)
+                }
                 className={cn(
                   'px-6 text-base font-bold h-14 transition-colors',
-                  key !== 'accountStatus'
+                  !['accountStatus', 'materialCodes'].includes(key)
                     ? 'cursor-pointer select-none hover:bg-slate-100'
                     : '',
                   sortConfig.key === key
@@ -239,7 +348,9 @@ export function PartnerTable({
                     : 'text-slate-800'
                 )}>
                 <div className="inline-flex items-center">
-                  {label} {key !== 'accountStatus' && renderSortIcon(key as SortKey)}
+                  {label}{' '}
+                  {!['accountStatus', 'materialCodes'].includes(key) &&
+                    renderSortIcon(key as SortKey)}
                 </div>
               </TableHead>
             ))}
@@ -332,6 +443,46 @@ export function PartnerTable({
                       계정 없음
                     </Badge>
                   )}
+                </TableCell>
+                <TableCell className="h-16 px-6">
+                  {(() => {
+                    const partnerId = Number(partner.id || partner.partnerId)
+                    const assignments = assignmentData[partnerId] || []
+                    const assignmentCount = assignments.length
+
+                    if (isLoadingAssignments) {
+                      return (
+                        <Badge
+                          variant="secondary"
+                          className="px-3 py-1 font-semibold text-slate-600 bg-slate-100 border-slate-200">
+                          <div className="w-3 h-3 mr-2 border-2 rounded-full border-slate-400 animate-spin border-t-transparent"></div>
+                          로딩 중...
+                        </Badge>
+                      )
+                    }
+
+                    if (assignmentCount > 0) {
+                      return (
+                        <Badge
+                          variant="outline"
+                          className="px-3 py-1 font-semibold text-green-700 transition-colors border-2 border-green-200 rounded-lg cursor-pointer bg-green-50 hover:bg-green-100"
+                          onClick={() => openMaterialCodeModal(partner)}>
+                          <Package className="w-3 h-3 mr-1" />
+                          자재 {assignmentCount}개
+                        </Badge>
+                      )
+                    } else {
+                      return (
+                        <Badge
+                          variant="secondary"
+                          className="px-3 py-1 font-semibold transition-colors cursor-pointer text-slate-600 bg-slate-100 border-slate-200 hover:bg-slate-200"
+                          onClick={() => openMaterialCodeModal(partner)}>
+                          <Package className="w-3 h-3 mr-1" />
+                          할당 없음
+                        </Badge>
+                      )
+                    }
+                  })()}
                 </TableCell>
                 <TableCell className="h-16 px-6 text-center">
                   <DropdownMenu>
@@ -616,7 +767,11 @@ export function PartnerTable({
         onSave={handleMaterialCodeSave}
         isSubmitting={isMaterialCodeSubmitting}
         error={materialCodeError}
-        existingCodes={[]} // TODO: 기존 자재코드 목록 연동
+        existingCodes={(() => {
+          const partnerId = Number(materialCodeModalState.partnerId)
+          const assignments = assignmentData[partnerId] || []
+          return assignments.map(assignment => assignment.materialCode)
+        })()}
       />
     </div>
   )

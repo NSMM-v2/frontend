@@ -703,6 +703,7 @@ export interface MaterialCode {
   id?: string // 자재코드 고유 ID
   materialCode: string // 자재코드 (예: A001, B001)
   materialName: string // 자재명 (예: 부품, 철강)
+  description?: string // 자재코드 설명
   category?: string // 카테고리
   isActive: boolean // 활성 상태
   createdAt?: string // 생성일시
@@ -739,6 +740,7 @@ export interface MaterialCodeAssignmentRequest {
 export interface MaterialCodeCreateRequest {
   materialCode: string // 자재코드
   materialName: string // 자재명
+  description?: string // 자재코드 설명
   category?: string // 카테고리
 }
 
@@ -756,6 +758,7 @@ export interface MaterialCodeBatchCreateRequest {
  */
 export interface MaterialCodeUpdateRequest {
   materialName?: string // 자재명
+  description?: string // 자재코드 설명
   category?: string // 카테고리
   isActive?: boolean // 활성 상태
 }
@@ -778,6 +781,7 @@ export interface MaterialCodeItem {
   id: string // 임시 고유 ID
   materialCode: string // 자재코드
   materialName: string // 자재명
+  description: string // 자재코드 설명
   category: string // 카테고리
   errors: Partial<MaterialCodeItem> // 유효성 검증 에러
 }
@@ -793,6 +797,7 @@ export interface MaterialCodeApiResponse {
   id: string // 자재코드 고유 ID
   materialCode: string // 자재코드 (예: A001, B001)
   materialName: string // 자재명 (예: 부품, 철강)
+  description?: string // 자재코드 설명
   category?: string // 카테고리
   partnerId?: string // 소속 협력사 ID
   partnerName?: string // 소속 협력사명

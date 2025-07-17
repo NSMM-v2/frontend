@@ -43,6 +43,7 @@ import {
   MaterialCodeBatchCreateRequest,
   MaterialCodeItem
 } from '@/types/partnerCompanyType'
+import {toast} from '@/hooks/use-toast'
 
 // ============================================================================
 // 타입 정의
@@ -116,6 +117,7 @@ export function MaterialCodeModal({
           id: '1',
           materialCode: materialCode.materialCode || '',
           materialName: materialCode.materialName || '',
+          description: materialCode.description || '',
           category: materialCode.category || '',
           errors: {}
         }
@@ -128,6 +130,7 @@ export function MaterialCodeModal({
         id: generateId(),
         materialCode: '',
         materialName: '',
+        description: '',
         category: '',
         errors: {}
       }
@@ -140,6 +143,7 @@ export function MaterialCodeModal({
       id: generateId(),
       materialCode: '',
       materialName: '',
+      description: '',
       category: '',
       errors: {}
     }
@@ -224,7 +228,36 @@ export function MaterialCodeModal({
 
   // 저장 처리 함수
   const handleSave = async () => {
-    if (!validateAllItems()) return
+    // 필수 필드 검증
+    const missingFields: string[] = []
+
+    materialCodeList.forEach((item, index) => {
+      const itemNumber = index + 1
+      if (!item.materialCode.trim()) {
+        missingFields.push(`${itemNumber}번째 항목의 자재코드`)
+      }
+      if (!item.materialName.trim()) {
+        missingFields.push(`${itemNumber}번째 항목의 자재명`)
+      }
+    })
+
+    if (missingFields.length > 0) {
+      toast({
+        title: '입력 정보가 부족합니다',
+        description: `다음 필드를 입력해주세요: ${missingFields.join(', ')}`,
+        variant: 'destructive'
+      })
+      return
+    }
+
+    if (!validateAllItems()) {
+      toast({
+        title: '입력 정보를 확인해주세요',
+        description: '자재코드 형식이나 중복된 항목이 있는지 확인해주세요.',
+        variant: 'destructive'
+      })
+      return
+    }
 
     try {
       if (modalState.mode === 'edit') {
@@ -232,6 +265,7 @@ export function MaterialCodeModal({
         const item = materialCodeList[0]
         const requestData: MaterialCodeUpdateRequest = {
           materialName: item.materialName.trim(),
+          description: item.description.trim() || undefined,
           category: item.category || undefined
         }
         await onSave(requestData)
@@ -243,6 +277,7 @@ export function MaterialCodeModal({
           const requestData: MaterialCodeCreateRequest = {
             materialCode: item.materialCode.trim().toUpperCase(),
             materialName: item.materialName.trim(),
+            description: item.description.trim() || undefined,
             category: item.category || undefined
           }
           await onSave(requestData)
@@ -252,6 +287,7 @@ export function MaterialCodeModal({
             materialCodes: materialCodeList.map(item => ({
               materialCode: item.materialCode.trim().toUpperCase(),
               materialName: item.materialName.trim(),
+              description: item.description.trim() || undefined,
               category: item.category || undefined
             })),
             partnerId: modalState.partnerId,
@@ -297,8 +333,7 @@ export function MaterialCodeModal({
   const isFormValid = materialCodeList.every(
     item =>
       item.materialCode.trim() &&
-      item.materialName.trim() &&
-      Object.keys(item.errors).length === 0
+      item.materialName.trim()
   )
 
   return (
@@ -380,7 +415,7 @@ export function MaterialCodeModal({
                   </div>
 
                   {/* 입력 필드들 */}
-                  <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
+                  <div className="grid grid-cols-1 gap-4 md:grid-cols-3">
                     {/* 자재코드 */}
                     <div className="space-y-2">
                       <Label className="text-sm font-semibold text-slate-700">
@@ -433,35 +468,69 @@ export function MaterialCodeModal({
                         <p className="text-xs text-red-600">{item.errors.materialName}</p>
                       )}
                     </div>
+
+                    {/* 카테고리 */}
+                    <div className="space-y-2">
+                      <Label className="text-sm font-semibold text-slate-700">
+                        카테고리
+                      </Label>
+                      <Select
+                        value={item.category}
+                        onValueChange={value =>
+                          updateMaterialCodeItem(item.id, 'category', value)
+                        }>
+                        <SelectTrigger className="h-10 bg-white border-2 rounded-lg border-slate-200 focus:border-blue-500">
+                          <SelectValue placeholder="카테고리 선택" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          {MATERIAL_CATEGORIES.map(category => (
+                            <SelectItem key={category.value} value={category.value}>
+                              {category.label}
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                    </div>
                   </div>
 
-                  {/* 카테고리 */}
-                  <div className="mt-4 space-y-2">
+                  {/* 자재코드 설명 */}
+                  <div className="mt-6 space-y-2">
                     <Label className="text-sm font-semibold text-slate-700">
-                      카테고리
+                      자재코드 설명
                     </Label>
-                    <Select
-                      value={item.category}
-                      onValueChange={value =>
-                        updateMaterialCodeItem(item.id, 'category', value)
-                      }>
-                      <SelectTrigger className="h-10 bg-white border-2 rounded-lg border-slate-200 focus:border-blue-500">
-                        <SelectValue placeholder="카테고리 선택" />
-                      </SelectTrigger>
-                      <SelectContent>
-                        {MATERIAL_CATEGORIES.map(category => (
-                          <SelectItem key={category.value} value={category.value}>
-                            {category.label}
-                          </SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
+                    <div className="relative">
+                      <Input
+                        value={item.description}
+                        onChange={e =>
+                          updateMaterialCodeItem(item.id, 'description', e.target.value)
+                        }
+                        placeholder="이 자재코드에 대한 상세한 설명을 입력해주세요... (예: 용도, 규격, 특징 등)"
+                        className="h-12 transition-all duration-300 border-2 border-blue-200 bg-gradient-to-r from-blue-50 to-indigo-50 rounded-xl focus:border-blue-500 focus:from-blue-100 focus:to-indigo-100 placeholder:text-slate-400"
+                        disabled={isSubmitting}
+                        maxLength={500}
+                      />
+                    </div>
+                    <div className="flex justify-between text-xs text-slate-500">
+                      <span className="flex items-center gap-1">
+                        <span className="w-1 h-1 bg-blue-400 rounded-full"></span>
+                        선택사항
+                      </span>
+                      <span
+                        className={cn(
+                          'font-medium transition-colors',
+                          item.description.length > 400
+                            ? 'text-orange-500'
+                            : 'text-slate-500'
+                        )}>
+                        {item.description.length}/500자
+                      </span>
+                    </div>
                   </div>
 
                   {/* 개별 미리보기 */}
                   {item.materialCode.trim() && item.materialName.trim() && (
                     <div className="p-3 mt-4 border border-blue-200 rounded-lg bg-blue-50">
-                      <div className="flex flex-wrap items-center gap-3">
+                      <div className="flex flex-wrap items-center gap-3 mb-2">
                         <Badge className="px-2 py-1 font-mono text-xs font-semibold text-blue-700 bg-blue-100 border-blue-300">
                           {item.materialCode}
                         </Badge>
@@ -477,6 +546,11 @@ export function MaterialCodeModal({
                           </Badge>
                         )}
                       </div>
+                      {item.description.trim() && (
+                        <div className="text-xs text-blue-700 bg-blue-50">
+                          {item.description}
+                        </div>
+                      )}
                     </div>
                   )}
                 </div>
@@ -496,23 +570,31 @@ export function MaterialCodeModal({
                   (item, index) =>
                     item.materialCode.trim() &&
                     item.materialName.trim() && (
-                      <div key={item.id} className="flex items-center gap-3 text-sm">
-                        <span className="w-4 text-xs font-medium text-green-600">
-                          {index + 1}.
-                        </span>
-                        <Badge className="px-2 py-1 font-mono text-xs font-semibold text-green-700 bg-green-100 border-green-300">
-                          {item.materialCode}
-                        </Badge>
-                        <span className="font-medium text-green-800">
-                          {item.materialName}
-                        </span>
-                        {item.category && (
-                          <Badge variant="outline" className="text-xs text-green-600">
-                            {
-                              MATERIAL_CATEGORIES.find(cat => cat.value === item.category)
-                                ?.label
-                            }
+                      <div key={item.id} className="space-y-1">
+                        <div className="flex items-center gap-3 text-sm">
+                          <span className="w-4 text-xs font-medium text-green-600">
+                            {index + 1}.
+                          </span>
+                          <Badge className="px-2 py-1 font-mono text-xs font-semibold text-green-700 bg-green-100 border-green-300">
+                            {item.materialCode}
                           </Badge>
+                          <span className="font-medium text-green-800">
+                            {item.materialName}
+                          </span>
+                          {item.category && (
+                            <Badge variant="outline" className="text-xs text-green-600">
+                              {
+                                MATERIAL_CATEGORIES.find(
+                                  cat => cat.value === item.category
+                                )?.label
+                              }
+                            </Badge>
+                          )}
+                        </div>
+                        {item.description.trim() && (
+                          <div className="text-xs text-green-700 ml-7">
+                            {item.description}
+                          </div>
                         )}
                       </div>
                     )
