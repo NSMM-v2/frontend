@@ -160,7 +160,7 @@ export function CategorySelector<KeyType extends string>({
               }`}
               onClick={() => onCategorySelect(key as KeyType)}>
               <CardHeader className="p-4">
-                <div className="flex justify-between items-start">
+                <div className="flex items-start justify-between">
                   <div className="flex-1">
                     {pathname === '/scope3' && (
                       <div className="mb-2 text-xs font-medium text-gray-500">
@@ -174,7 +174,7 @@ export function CategorySelector<KeyType extends string>({
                 </div>
 
                 {/* 배출량 표시 */}
-                <div className="flex justify-between items-center pt-3 mt-3 border-t border-gray-200">
+                <div className="flex items-center justify-between pt-3 mt-3 border-t border-gray-200">
                   <div
                     className={`text-lg font-bold transition-colors ${
                       hasData
@@ -189,7 +189,7 @@ export function CategorySelector<KeyType extends string>({
                 </div>
 
                 {/* 상태 표시 */}
-                <div className="flex justify-between items-center pt-3 mt-3 border-t border-gray-200">
+                <div className="flex items-center justify-between pt-3 mt-3 border-t border-gray-200">
                   <div
                     className={`flex items-center text-xs ${
                       hasData

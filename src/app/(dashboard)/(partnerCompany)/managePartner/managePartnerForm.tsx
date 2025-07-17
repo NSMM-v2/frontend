@@ -5,7 +5,6 @@
 // ============================================================================
 
 import React, {useState, useEffect, useCallback} from 'react'
-import Link from 'next/link'
 import {motion} from 'framer-motion'
 
 // ============================================================================
@@ -13,10 +12,8 @@ import {motion} from 'framer-motion'
 // ============================================================================
 
 import {
-  Building2, // 빌딩 아이콘 - 협력\사 표시
   Home, // 홈 아이콘 - 브레드크럼 네비게이션
-  Users, // 사용자 그룹 아이콘 - 협력사 관리
-  ArrowLeft // 왼쪽 화살표 - 뒤로가기 버튼
+  Users // 사용자 그룹 아이콘 - 협력사 관리
 } from 'lucide-react'
 
 // ============================================================================
@@ -37,7 +34,6 @@ import {
   PartnerPagination,
   EmptyPartnerState,
   SearchEmptyState,
-  PartnerLoadingState,
   PageLoadingState
 } from '@/components/partner/PartnerComponents'
 import {PartnerTable} from '@/components/partner/PartnerTable'
@@ -272,7 +268,7 @@ export default function ManagePartnerForm() {
   // ========================================================================
 
   /**
-   * 새로운 협력\사를 등록하는 함수
+   * 새로운 협력사를 등록하는 함수
    */
   const handleCreatePartner = async () => {
     setIsSubmitting(true)
@@ -290,7 +286,7 @@ export default function ManagePartnerForm() {
         return
       }
 
-      // 협력\사 등록 API 호출 - 새로운 형식
+      // 협력사 등록 API 호출 - 새로운 형식
       await createPartner({
         corpCode: selectedDartCompany.corpCode || selectedDartCompany.corp_code!,
         contractStartDate: contractStartDate
@@ -309,7 +305,7 @@ export default function ManagePartnerForm() {
   }
 
   /**
-   * 협력\사 정보를 수정하는 함수
+   * 협력사 정보를 수정하는 함수
    */
   const handleUpdatePartner = async () => {
     if (!selectedPartner) return
@@ -348,7 +344,7 @@ export default function ManagePartnerForm() {
   }
 
   /**
-   * 협력\사를 삭제하는 함수
+   * 협력사를 삭제하는 함수
    */
   const handleDeletePartner = async () => {
     if (!selectedPartner) return
@@ -380,7 +376,7 @@ export default function ManagePartnerForm() {
   // ========================================================================
 
   /**
-   * 협력\사 수정 다이얼로그를 여는 함수
+   * 협력사 수정 다이얼로그를 여는 함수
    */
   const openEditDialog = (partner: PartnerCompany) => {
     setSelectedPartner(partner)
@@ -469,7 +465,7 @@ export default function ManagePartnerForm() {
   }
 
   /**
-   * 기존 협력\사를 위한 auth 계정 생성 함수
+   * 기존 협력사를 위한 auth 계정 생성 함수
    * authService의 createPartner 함수를 활용 (DART API 기반)
    */
   const handleCreateAccount = async (partner: PartnerCompany) => {
@@ -538,7 +534,7 @@ export default function ManagePartnerForm() {
           }\n초기 비밀번호: ${response.data.initialPassword}`
         )
 
-        // 협력\사 목록 새로고침
+        // 협력사 목록 새로고침
         await loadPartners(currentPage, debouncedMainSearchQuery || undefined)
 
         console.log('계정 생성 성공:', response.data)
@@ -703,7 +699,7 @@ export default function ManagePartnerForm() {
         duplicateCheckResult={duplicateCheckResult}
       />
 
-      {/* 협력\사 수정 다이얼로그 */}
+      {/* 협력사 수정 다이얼로그 */}
       <EditPartnerModal
         isOpen={isEditDialogOpen}
         onClose={() => setIsEditDialogOpen(false)}
@@ -713,7 +709,7 @@ export default function ManagePartnerForm() {
         onFormDataChange={data => setFormData(prev => ({...prev, ...data}))}
       />
 
-      {/* 협력\사 삭제 확인 다이얼로그 */}
+      {/* 협력사 삭제 확인 다이얼로그 */}
       <PartnerDeleteDialog
         isOpen={isDeleteDialogOpen}
         onOpenChange={open => setIsDeleteDialogOpen(open)}
