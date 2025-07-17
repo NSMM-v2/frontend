@@ -46,7 +46,7 @@ import {
   MaterialAssignmentResponse,
   DeleteConfirmationDialogState
 } from '@/types/partnerCompanyType'
-import {toast} from '@/hooks/use-toast'
+import toast from '@/util/toast'
 import {materialAssignmentService} from '@/services/materialAssignmentService'
 
 // ============================================================================
@@ -221,12 +221,9 @@ export function MaterialCodeModal({
         !lastItem.materialName.trim() ||
         !lastItem.category)
     ) {
-      toast({
-        title: '정보 입력 필요',
-        description:
-          '새 자재코드를 추가하기 전에 현재 항목의 필수 필드(자재코드, 자재명, 카테고리)를 모두 입력해주세요.',
-        variant: 'destructive'
-      })
+      toast.error(
+        '새 자재코드를 추가하기 전에 현재 항목의 필수 필드(자재코드, 자재명, 카테고리)를 모두 입력해주세요.'
+      )
       return
     }
 
@@ -288,20 +285,16 @@ export function MaterialCodeModal({
                 // 성공하면 목록에서 제거
                 setMaterialCodeList(prev => prev.filter(i => i.id !== item.id))
                 setDeleteConfirmation({isOpen: false, canDelete: false})
-                toast({
-                  title: '자재코드 삭제 완료',
-                  description: `${item.materialCode} 자재코드가 성공적으로 삭제되었습니다.`
-                })
+                toast.success(
+                  `${item.materialCode} 자재코드가 성공적으로 삭제되었습니다.`
+                )
               } catch (error) {
                 console.error('자재코드 삭제 오류:', error)
-                toast({
-                  variant: 'destructive',
-                  title: '자재코드 삭제 실패',
-                  description:
-                    error instanceof Error
-                      ? error.message
-                      : '자재코드 삭제 중 오류가 발생했습니다.'
-                })
+                toast.error(
+                  error instanceof Error
+                    ? error.message
+                    : '자재코드 삭제 중 오류가 발생했습니다.'
+                )
               }
             }
           },
@@ -311,14 +304,11 @@ export function MaterialCodeModal({
         })
       } catch (error) {
         console.error('삭제 가능 여부 확인 오류:', error)
-        toast({
-          variant: 'destructive',
-          title: '삭제 가능 여부 확인 실패',
-          description:
-            error instanceof Error
-              ? error.message
-              : '삭제 가능 여부 확인 중 오류가 발생했습니다.'
-        })
+        toast.error(
+          error instanceof Error
+            ? error.message
+            : '삭제 가능 여부 확인 중 오류가 발생했습니다.'
+        )
       }
     },
     [onDelete, existingAssignments]
@@ -414,20 +404,12 @@ export function MaterialCodeModal({
     })
 
     if (missingFields.length > 0) {
-      toast({
-        title: '입력 정보가 부족합니다',
-        description: `다음 필드를 입력해주세요: ${missingFields.join(', ')}`,
-        variant: 'destructive'
-      })
+      toast.error(`다음 필드를 입력해주세요: ${missingFields.join(', ')}`)
       return
     }
 
     if (!validateAllItems()) {
-      toast({
-        title: '입력 정보를 확인해주세요',
-        description: '자재코드 형식이나 중복된 항목이 있는지 확인해주세요.',
-        variant: 'destructive'
-      })
+      toast.error('자재코드 형식이나 중복된 항목이 있는지 확인해주세요.')
       return
     }
 
@@ -446,10 +428,7 @@ export function MaterialCodeModal({
         const newItems = materialCodeList.filter(item => !item.assignmentId)
 
         if (newItems.length === 0) {
-          toast({
-            title: '저장할 내용이 없습니다',
-            description: '새로 추가된 자재코드가 없습니다.'
-          })
+          toast.info('새로 추가된 자재코드가 없습니다.')
           return
         }
 
@@ -964,11 +943,11 @@ export function MaterialCodeModal({
                           a => a.id === deleteConfirmation.assignmentId
                         )
                         const isMapped = existingAssignment?.isMapped || false
-                        
+
                         if (isMapped) {
-                          return "이 자재코드는 Scope 계산기에서 사용 중이어서 삭제할 수 없습니다."
+                          return '이 자재코드는 Scope 계산기에서 사용 중이어서 삭제할 수 없습니다.'
                         } else {
-                          return "서버에서 삭제를 거부했습니다. 관리자에게 문의하세요."
+                          return '서버에서 삭제를 거부했습니다. 관리자에게 문의하세요.'
                         }
                       })()}
                     </div>

@@ -223,7 +223,8 @@ export const materialAssignmentService = {
           // 주의: 실제 삭제 여부는 MaterialCodeModal에서 isMapped 필드로 판단
           return {
             canDelete: true,
-            reason: '삭제 가능 여부 확인 엔드포인트가 구현되지 않음 (isMapped 필드로 판단)'
+            reason:
+              '삭제 가능 여부 확인 엔드포인트가 구현되지 않음 (isMapped 필드로 판단)'
           }
         }
 
