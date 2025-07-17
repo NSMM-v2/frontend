@@ -21,7 +21,8 @@ import {
   DialogFooter,
   DialogHeader,
   DialogTitle,
-  DialogClose
+  DialogClose,
+  DialogDescription
 } from '@/components/ui/dialog'
 
 import {Button} from '@/components/ui/button'
@@ -41,9 +42,12 @@ import {
   MaterialCodeCreateRequest,
   MaterialCodeUpdateRequest,
   MaterialCodeBatchCreateRequest,
-  MaterialCodeItem
+  MaterialCodeItem,
+  MaterialAssignmentResponse,
+  DeleteConfirmationDialogState
 } from '@/types/partnerCompanyType'
 import {toast} from '@/hooks/use-toast'
+import {materialAssignmentService} from '@/services/materialAssignmentService'
 
 // ============================================================================
 // 타입 정의
@@ -67,6 +71,10 @@ interface MaterialCodeModalProps {
   error?: string | null
   /** 기존 자재코드 목록 (중복 체크용) */
   existingCodes?: string[]
+  /** 기존 자재코드 할당 목록 (편집/삭제용) */
+  existingAssignments?: MaterialAssignmentResponse[]
+  /** 삭제 함수 */
+  onDelete?: (assignmentId: number) => Promise<void>
 }
 
 // ============================================================================
@@ -102,10 +110,19 @@ export function MaterialCodeModal({
   onSave,
   isSubmitting,
   error,
-  existingCodes = []
+  existingCodes = [],
+  existingAssignments = [],
+  onDelete
 }: MaterialCodeModalProps) {
   // 고유 ID 생성 함수 (useState보다 먼저 선언)
   const generateId = () => Math.random().toString(36).substring(2, 15)
+
+  // 삭제 확인 다이얼로그 상태
+  const [deleteConfirmation, setDeleteConfirmation] =
+    useState<DeleteConfirmationDialogState>({
+      isOpen: false,
+      canDelete: false
+    })
 
   // 다중 자재코드 목록 상태
   const [materialCodeList, setMaterialCodeList] = useState<MaterialCodeItem[]>(() => {
@@ -124,6 +141,19 @@ export function MaterialCodeModal({
       ]
     }
 
+    // 할당 모드인 경우 기존 할당 목록으로 초기화
+    if (modalState.mode === 'assign' && existingAssignments.length > 0) {
+      return existingAssignments.map((assignment, index) => ({
+        id: `existing-${index}`,
+        materialCode: assignment.materialCode,
+        materialName: assignment.materialName,
+        description: assignment.materialDescription || assignment.materialSpec || '',
+        category: assignment.materialCategory || '',
+        errors: {},
+        assignmentId: assignment.id // 할당 ID 추가
+      }))
+    }
+
     // 기본적으로 빈 항목 하나로 시작
     return [
       {
@@ -137,8 +167,69 @@ export function MaterialCodeModal({
     ]
   })
 
+  // 모달이 열릴 때마다 데이터 동기화
+  React.useEffect(() => {
+    if (modalState.isOpen) {
+      if (modalState.mode === 'edit' && modalState.materialCode) {
+        // 편집 모드인 경우 기존 데이터로 초기화
+        const {materialCode} = modalState
+        setMaterialCodeList([
+          {
+            id: '1',
+            materialCode: materialCode.materialCode || '',
+            materialName: materialCode.materialName || '',
+            description: materialCode.description || '',
+            category: materialCode.category || '',
+            errors: {}
+          }
+        ])
+      } else if (modalState.mode === 'assign' && existingAssignments.length > 0) {
+        // 할당 모드인 경우 기존 할당 목록으로 초기화
+        setMaterialCodeList(
+          existingAssignments.map((assignment, index) => ({
+            id: `existing-${index}`,
+            materialCode: assignment.materialCode,
+            materialName: assignment.materialName,
+            description: assignment.materialDescription || assignment.materialSpec || '',
+            category: assignment.materialCategory || '',
+            errors: {},
+            assignmentId: assignment.id // 할당 ID 추가
+          }))
+        )
+      } else {
+        // 기본 모드인 경우 빈 항목으로 초기화
+        setMaterialCodeList([
+          {
+            id: generateId(),
+            materialCode: '',
+            materialName: '',
+            description: '',
+            category: '',
+            errors: {}
+          }
+        ])
+      }
+    }
+  }, [modalState.isOpen, modalState.mode, modalState.materialCode, existingAssignments])
+
   // 자재코드 항목 추가 함수
   const addMaterialCodeItem = useCallback(() => {
+    const lastItem = materialCodeList[materialCodeList.length - 1]
+    if (
+      lastItem &&
+      (!lastItem.materialCode.trim() ||
+        !lastItem.materialName.trim() ||
+        !lastItem.category)
+    ) {
+      toast({
+        title: '정보 입력 필요',
+        description:
+          '새 자재코드를 추가하기 전에 현재 항목의 필수 필드(자재코드, 자재명, 카테고리)를 모두 입력해주세요.',
+        variant: 'destructive'
+      })
+      return
+    }
+
     const newItem: MaterialCodeItem = {
       id: generateId(),
       materialCode: '',
@@ -148,12 +239,90 @@ export function MaterialCodeModal({
       errors: {}
     }
     setMaterialCodeList(prev => [...prev, newItem])
-  }, [])
+  }, [materialCodeList])
 
   // 자재코드 항목 삭제 함수
   const removeMaterialCodeItem = useCallback((id: string) => {
     setMaterialCodeList(prev => prev.filter(item => item.id !== id))
   }, [])
+
+  // 할당된 자재코드 삭제 함수
+  const handleDeleteAssignment = useCallback(
+    async (item: MaterialCodeItem) => {
+      if (!item.assignmentId) return
+
+      try {
+        // 기존 할당 데이터에서 isMapped 정보 확인
+        const existingAssignment = existingAssignments?.find(
+          a => a.id === item.assignmentId
+        )
+        const isMapped = existingAssignment?.isMapped || false
+
+        // 삭제 가능 여부를 서버에서 확인 (fallback 포함)
+        const deleteCheck = await materialAssignmentService.canDeleteAssignment(
+          item.assignmentId
+        )
+
+        // 디버깅용 로그
+        console.log('삭제 확인 정보:', {
+          assignmentId: item.assignmentId,
+          isMapped: isMapped,
+          deleteCheckCanDelete: deleteCheck.canDelete,
+          existingAssignment: existingAssignment
+        })
+
+        // isMapped가 true이면 삭제 불가능 (다른 코드와 매핑되어 있음)
+        const canDelete = !isMapped && deleteCheck.canDelete
+
+        setDeleteConfirmation({
+          isOpen: true,
+          materialCode: item.materialCode,
+          materialName: item.materialName,
+          assignmentId: item.assignmentId,
+          canDelete: canDelete,
+          mappedCodes: deleteCheck.mappedCodes || [],
+          onConfirm: async () => {
+            if (onDelete && item.assignmentId) {
+              try {
+                await onDelete(item.assignmentId)
+                // 성공하면 목록에서 제거
+                setMaterialCodeList(prev => prev.filter(i => i.id !== item.id))
+                setDeleteConfirmation({isOpen: false, canDelete: false})
+                toast({
+                  title: '자재코드 삭제 완료',
+                  description: `${item.materialCode} 자재코드가 성공적으로 삭제되었습니다.`
+                })
+              } catch (error) {
+                console.error('자재코드 삭제 오류:', error)
+                toast({
+                  variant: 'destructive',
+                  title: '자재코드 삭제 실패',
+                  description:
+                    error instanceof Error
+                      ? error.message
+                      : '자재코드 삭제 중 오류가 발생했습니다.'
+                })
+              }
+            }
+          },
+          onCancel: () => {
+            setDeleteConfirmation({isOpen: false, canDelete: false})
+          }
+        })
+      } catch (error) {
+        console.error('삭제 가능 여부 확인 오류:', error)
+        toast({
+          variant: 'destructive',
+          title: '삭제 가능 여부 확인 실패',
+          description:
+            error instanceof Error
+              ? error.message
+              : '삭제 가능 여부 확인 중 오류가 발생했습니다.'
+        })
+      }
+    },
+    [onDelete, existingAssignments]
+  )
 
   // 자재코드 항목 업데이트 함수
   const updateMaterialCodeItem = useCallback(
@@ -239,6 +408,9 @@ export function MaterialCodeModal({
       if (!item.materialName.trim()) {
         missingFields.push(`${itemNumber}번째 항목의 자재명`)
       }
+      if (!item.category) {
+        missingFields.push(`${itemNumber}번째 항목의 카테고리`)
+      }
     })
 
     if (missingFields.length > 0) {
@@ -269,6 +441,42 @@ export function MaterialCodeModal({
           category: item.category || undefined
         }
         await onSave(requestData)
+      } else if (modalState.mode === 'assign') {
+        // 할당 모드: 새 자재코드만 처리
+        const newItems = materialCodeList.filter(item => !item.assignmentId)
+
+        if (newItems.length === 0) {
+          toast({
+            title: '저장할 내용이 없습니다',
+            description: '새로 추가된 자재코드가 없습니다.'
+          })
+          return
+        }
+
+        if (newItems.length === 1) {
+          // 단일 자재코드
+          const item = newItems[0]
+          const requestData: MaterialCodeCreateRequest = {
+            materialCode: item.materialCode.trim().toUpperCase(),
+            materialName: item.materialName.trim(),
+            description: item.description.trim() || undefined,
+            category: item.category || undefined
+          }
+          await onSave(requestData)
+        } else {
+          // 다중 자재코드
+          const requestData: MaterialCodeBatchCreateRequest = {
+            materialCodes: newItems.map(item => ({
+              materialCode: item.materialCode.trim().toUpperCase(),
+              materialName: item.materialName.trim(),
+              description: item.description.trim() || undefined,
+              category: item.category || undefined
+            })),
+            toPartnerId: modalState.partnerId,
+            assignmentNote: `${newItems.length}개 자재코드 일괄 생성`
+          }
+          await onSave(requestData)
+        }
       } else {
         // 생성 모드: 단일 또는 다중 처리
         if (materialCodeList.length === 1) {
@@ -290,7 +498,7 @@ export function MaterialCodeModal({
               description: item.description.trim() || undefined,
               category: item.category || undefined
             })),
-            partnerId: modalState.partnerId,
+            toPartnerId: modalState.partnerId,
             assignmentNote: `${materialCodeList.length}개 자재코드 일괄 생성`
           }
           await onSave(requestData)
@@ -311,7 +519,7 @@ export function MaterialCodeModal({
       case 'edit':
         return '자재코드 수정'
       case 'assign':
-        return '자재코드 할당'
+        return existingAssignments.length > 0 ? '자재코드 관리' : '자재코드 할당'
       default:
         return '자재코드 관리'
     }
@@ -330,11 +538,23 @@ export function MaterialCodeModal({
     }
   }
 
-  const isFormValid = materialCodeList.every(
-    item =>
-      item.materialCode.trim() &&
-      item.materialName.trim()
-  )
+  const isFormValid = (() => {
+    // 할당 모드인 경우, 새 자재코드만 검증
+    if (modalState.mode === 'assign') {
+      const newItems = materialCodeList.filter(item => !item.assignmentId)
+      return (
+        newItems.length === 0 ||
+        newItems.every(
+          item => item.materialCode.trim() && item.materialName.trim() && item.category
+        )
+      )
+    }
+
+    // 일반 모드인 경우 모든 항목 검증
+    return materialCodeList.every(
+      item => item.materialCode.trim() && item.materialName.trim() && item.category
+    )
+  })()
 
   return (
     <Dialog open={modalState.isOpen} onOpenChange={open => !open && onClose()}>
@@ -378,7 +598,7 @@ export function MaterialCodeModal({
                   disabled={isSubmitting}
                   className="px-3 py-1 text-sm bg-blue-500 hover:bg-blue-600">
                   <Plus className="w-4 h-4 mr-1" />
-                  추가
+                  {modalState.mode === 'assign' ? '새 자재코드 추가' : '추가'}
                 </Button>
               )}
             </div>
@@ -398,20 +618,53 @@ export function MaterialCodeModal({
                         </span>
                       </div>
                       <span className="text-sm font-medium text-slate-600">
-                        자재코드 #{index + 1}
+                        {item.assignmentId ? '할당된 자재코드' : `자재코드 #${index + 1}`}
                       </span>
+                      {item.assignmentId && (
+                        <Badge
+                          variant="outline"
+                          className="text-xs text-blue-600 border-blue-200 bg-blue-50">
+                          기존 할당
+                        </Badge>
+                      )}
                     </div>
-                    {materialCodeList.length > 1 && modalState.mode !== 'edit' && (
-                      <Button
-                        type="button"
-                        variant="ghost"
-                        size="sm"
-                        onClick={() => removeMaterialCodeItem(item.id)}
-                        disabled={isSubmitting}
-                        className="text-red-500 hover:text-red-700 hover:bg-red-50">
-                        <Trash2 className="w-4 h-4" />
-                      </Button>
-                    )}
+                    {/* 삭제 버튼 조건부 렌더링 */}
+                    {(() => {
+                      // 편집 모드에서는 삭제 버튼 표시 안함
+                      if (modalState.mode === 'edit') return null
+
+                      // 할당 모드에서 기존 할당 항목인 경우 삭제 버튼 표시
+                      if (modalState.mode === 'assign' && item.assignmentId) {
+                        return (
+                          <Button
+                            type="button"
+                            variant="ghost"
+                            size="sm"
+                            onClick={() => handleDeleteAssignment(item)}
+                            disabled={isSubmitting}
+                            className="text-red-500 hover:text-red-700 hover:bg-red-50">
+                            <Trash2 className="w-4 h-4" />
+                          </Button>
+                        )
+                      }
+
+                      // 일반 생성 모드에서는 여러 항목일 때만 삭제 버튼 표시
+                      if (materialCodeList.length > 1 && !item.assignmentId) {
+                        return (
+                          <Button
+                            type="button"
+                            variant="ghost"
+                            size="sm"
+                            onClick={() => removeMaterialCodeItem(item.id)}
+                            disabled={isSubmitting}
+                            className="text-red-500 hover:text-red-700 hover:bg-red-50">
+                            <Trash2 className="w-4 h-4" />
+                          </Button>
+                        )
+                      }
+
+                      return null
+                    })()}
                   </div>
 
                   {/* 입력 필드들 */}
@@ -437,7 +690,11 @@ export function MaterialCodeModal({
                             ? 'border-red-300 focus:border-red-500'
                             : 'border-slate-200 focus:border-blue-500'
                         )}
-                        disabled={modalState.mode === 'edit' || isSubmitting}
+                        disabled={
+                          modalState.mode === 'edit' ||
+                          (modalState.mode === 'assign' && !!item.assignmentId) ||
+                          isSubmitting
+                        }
                         maxLength={10}
                       />
                       {item.errors.materialCode && (
@@ -462,7 +719,11 @@ export function MaterialCodeModal({
                             ? 'border-red-300 focus:border-red-500'
                             : 'border-slate-200 focus:border-blue-500'
                         )}
-                        disabled={isSubmitting}
+                        disabled={
+                          modalState.mode === 'assign' && !!item.assignmentId
+                            ? true
+                            : isSubmitting
+                        }
                       />
                       {item.errors.materialName && (
                         <p className="text-xs text-red-600">{item.errors.materialName}</p>
@@ -506,7 +767,11 @@ export function MaterialCodeModal({
                         }
                         placeholder="이 자재코드에 대한 상세한 설명을 입력해주세요... (예: 용도, 규격, 특징 등)"
                         className="h-12 transition-all duration-300 border-2 border-blue-200 bg-gradient-to-r from-blue-50 to-indigo-50 rounded-xl focus:border-blue-500 focus:from-blue-100 focus:to-indigo-100 placeholder:text-slate-400"
-                        disabled={isSubmitting}
+                        disabled={
+                          modalState.mode === 'assign' && !!item.assignmentId
+                            ? true
+                            : isSubmitting
+                        }
                         maxLength={500}
                       />
                     </div>
@@ -629,16 +894,143 @@ export function MaterialCodeModal({
             ) : (
               <>
                 <Check className="w-4 h-4 mr-2" />
-                {modalState.mode === 'create'
-                  ? `자재코드 ${
+                {(() => {
+                  if (modalState.mode === 'create') {
+                    return `자재코드 ${
                       materialCodeList.length > 1 ? `${materialCodeList.length}개 ` : ''
                     }추가`
-                  : '변경사항 저장'}
+                  } else if (modalState.mode === 'assign') {
+                    const newItems = materialCodeList.filter(item => !item.assignmentId)
+                    return newItems.length > 0
+                      ? `새 자재코드 ${newItems.length}개 추가`
+                      : '변경사항 저장'
+                  } else {
+                    return '변경사항 저장'
+                  }
+                })()}
               </>
             )}
           </Button>
         </DialogFooter>
       </DialogContent>
+
+      {/* 삭제 확인 다이얼로그 */}
+      <Dialog
+        open={deleteConfirmation.isOpen}
+        onOpenChange={() => deleteConfirmation.onCancel?.()}>
+        <DialogContent className="bg-white border-0 shadow-2xl rounded-2xl sm:max-w-lg">
+          <DialogHeader className="pb-4 border-b border-slate-100">
+            <DialogTitle className="flex items-center gap-3 text-xl font-bold text-slate-800">
+              <div className="p-2 rounded-lg bg-gradient-to-br from-red-500 to-red-600">
+                <AlertTriangle className="w-5 h-5 text-white" />
+              </div>
+              자재코드 삭제 확인
+            </DialogTitle>
+            <DialogDescription className="text-slate-600">
+              자재코드를 삭제하시겠습니까? 이 작업은 되돌릴 수 없습니다.
+            </DialogDescription>
+          </DialogHeader>
+
+          <div className="py-4 space-y-4">
+            {/* 삭제할 자재코드 정보 */}
+            <div className="p-4 border-2 border-red-200 bg-red-50 rounded-xl">
+              <div className="flex items-center gap-3">
+                <div className="p-2 bg-red-100 rounded-lg">
+                  <Package className="w-4 h-4 text-red-600" />
+                </div>
+                <div>
+                  <div className="font-semibold text-red-800">
+                    {deleteConfirmation.materialCode}
+                  </div>
+                  <div className="text-sm text-red-600">
+                    {deleteConfirmation.materialName}
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            {/* 삭제 불가능한 경우 경고 메시지 */}
+            {!deleteConfirmation.canDelete && (
+              <div className="p-4 border-2 border-orange-200 bg-orange-50 rounded-xl">
+                <div className="flex items-start gap-3">
+                  <AlertTriangle className="w-5 h-5 text-orange-600 mt-0.5 flex-shrink-0" />
+                  <div className="flex-1">
+                    <div className="mb-1 font-semibold text-orange-800">
+                      삭제할 수 없는 자재코드
+                    </div>
+                    <div className="text-sm text-orange-700">
+                      {(() => {
+                        const existingAssignment = existingAssignments?.find(
+                          a => a.id === deleteConfirmation.assignmentId
+                        )
+                        const isMapped = existingAssignment?.isMapped || false
+                        
+                        if (isMapped) {
+                          return "이 자재코드는 Scope 계산기에서 사용 중이어서 삭제할 수 없습니다."
+                        } else {
+                          return "서버에서 삭제를 거부했습니다. 관리자에게 문의하세요."
+                        }
+                      })()}
+                    </div>
+                    {deleteConfirmation.mappedCodes &&
+                      deleteConfirmation.mappedCodes.length > 0 && (
+                        <div className="mt-2">
+                          <div className="mb-1 text-xs text-orange-600">매핑된 코드:</div>
+                          <div className="flex flex-wrap gap-1">
+                            {deleteConfirmation.mappedCodes.map((code, index) => (
+                              <Badge
+                                key={index}
+                                variant="outline"
+                                className="text-xs text-orange-700 bg-orange-100 border-orange-300">
+                                {code}
+                              </Badge>
+                            ))}
+                          </div>
+                        </div>
+                      )}
+                  </div>
+                </div>
+              </div>
+            )}
+
+            {/* 삭제 가능한 경우 확인 메시지 */}
+            {deleteConfirmation.canDelete && (
+              <div className="p-4 border-2 border-yellow-200 bg-yellow-50 rounded-xl">
+                <div className="flex items-start gap-3">
+                  <AlertTriangle className="w-5 h-5 text-yellow-600 mt-0.5 flex-shrink-0" />
+                  <div className="flex-1">
+                    <div className="mb-1 font-semibold text-yellow-800">삭제 확인</div>
+                    <div className="text-sm text-yellow-700">
+                      이 자재코드를 삭제하면 관련된 모든 정보가 함께 삭제됩니다. 삭제
+                      후에는 복구할 수 없습니다.
+                    </div>
+                  </div>
+                </div>
+              </div>
+            )}
+          </div>
+
+          <DialogFooter className="gap-3 pt-4 border-t border-slate-100">
+            <Button
+              type="button"
+              variant="outline"
+              onClick={deleteConfirmation.onCancel}
+              className="px-6 transition-all duration-200 border-2 rounded-lg h-11 border-slate-200 hover:border-slate-300">
+              <X className="w-4 h-4 mr-2" />
+              취소
+            </Button>
+            {deleteConfirmation.canDelete && (
+              <Button
+                type="button"
+                onClick={deleteConfirmation.onConfirm}
+                className="px-6 font-semibold text-white transition-all duration-200 transform rounded-lg shadow-lg h-11 bg-gradient-to-r from-red-500 to-red-600 hover:from-red-600 hover:to-red-700 hover:shadow-xl hover:scale-105">
+                <Trash2 className="w-4 h-4 mr-2" />
+                삭제
+              </Button>
+            )}
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </Dialog>
   )
 }

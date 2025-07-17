@@ -1,78 +1,10 @@
 import api from '@/lib/axios'
-
-// ============================================================================
-// 타입 정의
-// ============================================================================
-
-export interface ApiResponse<T> {
-  success: boolean
-  message: string
-  data: T
-  errorCode?: string
-  timestamp: string
-}
-
-/**
- * 자재코드 할당 요청 인터페이스
- */
-export interface MaterialAssignmentRequest {
-  materialCode: string
-  materialName: string
-  materialCategory?: string
-  materialSpec?: string
-  materialDescription?: string
-  toPartnerId: number
-  assignedBy?: string
-  assignmentReason?: string
-}
-
-/**
- * 자재코드 일괄 할당 요청 인터페이스
- */
-export interface MaterialAssignmentBatchRequest {
-  toPartnerId: number
-  materialCodes: MaterialCodeInfo[]
-  assignedBy?: string
-  assignmentReason?: string
-}
-
-/**
- * 자재코드 정보 인터페이스
- */
-export interface MaterialCodeInfo {
-  materialCode: string
-  materialName: string
-  materialCategory?: string
-  materialSpec?: string
-  materialDescription?: string
-}
-
-/**
- * 자재코드 할당 응답 인터페이스
- */
-export interface MaterialAssignmentResponse {
-  id: number
-  headquartersId: number
-  fromPartnerId?: number
-  toPartnerId: number
-  fromLevel?: number
-  toLevel: number
-  materialCode: string
-  materialName: string
-  materialCategory?: string
-  materialSpec?: string
-  materialDescription?: string
-  assignedBy?: string
-  assignmentReason?: string
-  isActive: boolean
-  isMapped: boolean
-  mappingCount: number
-  activeMappingCount: number
-  createdAt: string
-  updatedAt: string
-  fromPartnerName?: string
-  toPartnerName?: string
-}
+import {
+  ApiResponse,
+  MaterialAssignmentBatchRequest,
+  MaterialAssignmentRequest,
+  MaterialAssignmentResponse
+} from '@/types/partnerCompanyType'
 
 // ============================================================================
 // 자재코드 할당 서비스
@@ -88,11 +20,11 @@ export const materialAssignmentService = {
    * 협력사별 할당된 자재코드 목록 조회
    */
   async getAssignmentsByPartner(
-    partnerId: number
+    partnerUuid: string
   ): Promise<MaterialAssignmentResponse[]> {
     try {
       const response = await api.get<ApiResponse<MaterialAssignmentResponse[]>>(
-        `/api/v1/material-assignments/partner/${partnerId}`
+        `/api/v1/scope/material-assignments/partner/${partnerUuid}`
       )
 
       if (response.data.success && response.data.data) {
@@ -136,7 +68,7 @@ export const materialAssignmentService = {
   ): Promise<MaterialAssignmentResponse> {
     try {
       const response = await api.post<ApiResponse<MaterialAssignmentResponse>>(
-        '/api/v1/material-assignments',
+        '/api/v1/scope/material-assignments',
         request
       )
 
@@ -250,6 +182,67 @@ export const materialAssignmentService = {
 
       throw error
     }
+  },
+
+  /**
+   * 자재코드 할당 삭제 가능 여부 확인
+   * 백엔드에서 can-delete 엔드포인트가 구현되지 않은 경우 fallback 로직 사용
+   */
+  async canDeleteAssignment(assignmentId: number): Promise<{
+    canDelete: boolean
+    reason?: string
+    mappedCodes?: string[]
+  }> {
+    try {
+      // 백엔드 엔드포인트 호출 시도
+      const response = await api.get<
+        ApiResponse<{
+          canDelete: boolean
+          reason?: string
+          mappedCodes?: string[]
+        }>
+      >(`/api/v1/scope/material-assignments/${assignmentId}/can-delete`)
+
+      if (response.data.success && response.data.data) {
+        return response.data.data
+      }
+
+      return {
+        canDelete: false,
+        reason: response.data.message || '삭제 가능 여부 확인에 실패했습니다'
+      }
+    } catch (error) {
+      console.error('자재코드 할당 삭제 가능 여부 확인 오류:', error)
+
+      // 404 오류인 경우 엔드포인트가 구현되지 않은 것으로 판단하고 fallback 로직 사용
+      if (error instanceof Error && 'response' in error) {
+        const axiosError = error as any
+        if (axiosError.response?.status === 404) {
+          console.warn('can-delete 엔드포인트가 구현되지 않음. fallback 로직 사용')
+          // 기본적으로 삭제 가능으로 처리 (실제 검증은 삭제 시 서버에서 수행)
+          // 주의: 실제 삭제 여부는 MaterialCodeModal에서 isMapped 필드로 판단
+          return {
+            canDelete: true,
+            reason: '삭제 가능 여부 확인 엔드포인트가 구현되지 않음 (isMapped 필드로 판단)'
+          }
+        }
+
+        if (axiosError.response?.data?.message) {
+          return {
+            canDelete: false,
+            reason: axiosError.response.data.message
+          }
+        }
+      }
+
+      return {
+        canDelete: false,
+        reason:
+          error instanceof Error
+            ? error.message
+            : '삭제 가능 여부 확인 중 오류가 발생했습니다'
+      }
+    }
   }
 }
 
@@ -307,12 +300,20 @@ export const validateAssignmentRequest = (
     errors.push('자재명은 200자 이하여야 합니다')
   }
 
-  if (!request.toPartnerId || request.toPartnerId <= 0) {
+  if (!request.toPartnerId || request.toPartnerId.trim() === '') {
     errors.push('할당받을 협력사를 선택해주세요')
   }
 
   if (request.materialDescription && request.materialDescription.length > 1000) {
     errors.push('자재 설명은 1000자 이하여야 합니다')
+  }
+
+  if (request.materialCategory && request.materialCategory.length > 100) {
+    errors.push('카테고리는 100자 이하여야 합니다')
+  }
+
+  if (request.materialSpec && request.materialSpec.length > 500) {
+    errors.push('자재 스펙은 500자 이하여야 합니다')
   }
 
   return errors

@@ -94,7 +94,7 @@ export function PartnerTable({
 
   // 자재코드 할당 상태 관리
   const [assignmentData, setAssignmentData] = useState<
-    Record<number, MaterialAssignmentResponse[]>
+    Record<string, MaterialAssignmentResponse[]>
   >({})
   const [isLoadingAssignments, setIsLoadingAssignments] = useState(false)
 
@@ -106,22 +106,22 @@ export function PartnerTable({
   }
 
   // 자재코드 할당 정보 로드 함수
-  const loadAssignments = async (partnerId: number) => {
+  const loadAssignments = async (partnerUuid: string) => {
+    if (!partnerUuid) return
     try {
       setIsLoadingAssignments(true)
       const assignments = await materialAssignmentService.getAssignmentsByPartner(
-        partnerId
+        partnerUuid
       )
       setAssignmentData(prev => ({
         ...prev,
-        [partnerId]: assignments
+        [partnerUuid]: assignments
       }))
     } catch (error) {
-      console.error(`협력사 ${partnerId} 자재코드 할당 조회 오류:`, error)
-      // 조회 오류는 조용히 처리 (할당이 없을 수도 있음)
+      console.error(`협력사 ${partnerUuid} 자재코드 할당 조회 오류:`, error)
       setAssignmentData(prev => ({
         ...prev,
-        [partnerId]: []
+        [partnerUuid]: []
       }))
     } finally {
       setIsLoadingAssignments(false)
@@ -130,11 +130,11 @@ export function PartnerTable({
 
   // 모든 협력사의 할당 정보 로드
   const loadAllAssignments = async () => {
-    const partnerIds = partners
-      .map(partner => Number(partner.id || partner.partnerId))
-      .filter(id => !isNaN(id))
+    const partnerUuids = partners
+      .map(partner => partner.id || partner.partnerId?.toString())
+      .filter((id): id is string => !!id)
 
-    await Promise.all(partnerIds.map(partnerId => loadAssignments(partnerId)))
+    await Promise.all(partnerUuids.map(uuid => loadAssignments(uuid)))
   }
 
   // 협력사 목록이 변경될 때 할당 정보 로드
@@ -147,15 +147,21 @@ export function PartnerTable({
   // 자재코드 모달 열기 함수
   const openMaterialCodeModal = (partner: PartnerCompany) => {
     const partnerId = partner.id || partner.partnerId?.toString() || ''
+    const assignments = assignmentData[partnerId] || []
+    
     console.log('Debug - openMaterialCodeModal partner:', {
       id: partner.id,
       partnerId: partner.partnerId,
-      finalPartnerId: partnerId
+      finalPartnerId: partnerId,
+      assignmentCount: assignments.length
     }) // 디버깅 로그
+    
+    // 기존 할당이 있으면 관리 모드, 없으면 생성 모드
+    const mode = assignments.length > 0 ? 'assign' : 'create'
     
     setMaterialCodeModalState({
       isOpen: true,
-      mode: 'create', // batch 모드 대신 create 모드로 설정
+      mode: mode,
       partnerId: partnerId,
       partnerName: partner.corpName || partner.companyName
     })
@@ -171,6 +177,28 @@ export function PartnerTable({
     setMaterialCodeError(null)
   }
 
+  // 자재코드 삭제 함수
+  const handleMaterialCodeDelete = async (assignmentId: number) => {
+    try {
+      await materialAssignmentService.deleteAssignment(assignmentId)
+      
+      // 할당 정보 새로고침
+      const partnerId = materialCodeModalState.partnerId
+      if (partnerId) {
+        await loadAssignments(partnerId)
+      }
+      
+      toast({
+        title: '자재코드 삭제 완료',
+        description: '자재코드가 성공적으로 삭제되었습니다.'
+      })
+    } catch (error) {
+      console.error('자재코드 삭제 실패:', error)
+      const errorMessage = error instanceof Error ? error.message : '자재코드 삭제 중 오류가 발생했습니다.'
+      throw new Error(errorMessage)
+    }
+  }
+
   // 자재코드 저장 함수
   const handleMaterialCodeSave = async (
     data:
@@ -182,18 +210,11 @@ export function PartnerTable({
     setMaterialCodeError(null)
 
     try {
-      const partnerIdStr = materialCodeModalState.partnerId
-      console.log('Debug - partnerIdStr:', partnerIdStr) // 디버깅 로그
+      const partnerId = materialCodeModalState.partnerId
+      console.log('Debug - partnerId (no conversion):', partnerId)
       
-      if (!partnerIdStr) {
+      if (!partnerId) {
         throw new Error('협력사 정보가 없습니다')
-      }
-      
-      const partnerId = Number(partnerIdStr)
-      console.log('Debug - partnerId after conversion:', partnerId) // 디버깅 로그
-      
-      if (isNaN(partnerId)) {
-        throw new Error('유효하지 않은 협력사 ID입니다')
       }
 
       // 저장 타입에 따른 API 호출
@@ -204,8 +225,9 @@ export function PartnerTable({
           materialCodes: data.materialCodes.map(code => ({
             materialCode: code.materialCode,
             materialName: code.materialName,
-            category: code.category,
-            description: code.description
+            materialCategory: code.category,
+            materialSpec: code.description, // description을 materialSpec으로 매핑
+            materialDescription: code.description
           })),
           assignedBy: 'Current User', // TODO: 실제 사용자 정보
           assignmentReason: '자재코드 일괄 할당'
@@ -224,8 +246,9 @@ export function PartnerTable({
         const request = {
           materialCode: data.materialCode,
           materialName: data.materialName,
-          category: data.category,
-          description: data.description,
+          materialCategory: data.category,
+          materialSpec: data.description, // description을 materialSpec으로 매핑
+          materialDescription: data.description,
           toPartnerId: partnerId,
           assignedBy: 'Current User', // TODO: 실제 사용자 정보
           assignmentReason: '자재코드 할당'
@@ -446,7 +469,7 @@ export function PartnerTable({
                 </TableCell>
                 <TableCell className="h-16 px-6">
                   {(() => {
-                    const partnerId = Number(partner.id || partner.partnerId)
+                    const partnerId = partner.id || partner.partnerId?.toString() || ''
                     const assignments = assignmentData[partnerId] || []
                     const assignmentCount = assignments.length
 
@@ -468,7 +491,7 @@ export function PartnerTable({
                           className="px-3 py-1 font-semibold text-green-700 transition-colors border-2 border-green-200 rounded-lg cursor-pointer bg-green-50 hover:bg-green-100"
                           onClick={() => openMaterialCodeModal(partner)}>
                           <Package className="w-3 h-3 mr-1" />
-                          자재 {assignmentCount}개
+                          {assignmentCount === 1 ? '자재코드 할당됨' : `자재코드 ${assignmentCount}개`}
                         </Badge>
                       )
                     } else {
@@ -768,10 +791,15 @@ export function PartnerTable({
         isSubmitting={isMaterialCodeSubmitting}
         error={materialCodeError}
         existingCodes={(() => {
-          const partnerId = Number(materialCodeModalState.partnerId)
+          const partnerId = materialCodeModalState.partnerId || ''
           const assignments = assignmentData[partnerId] || []
           return assignments.map(assignment => assignment.materialCode)
         })()}
+        existingAssignments={(() => {
+          const partnerId = materialCodeModalState.partnerId || ''
+          return assignmentData[partnerId] || []
+        })()}
+        onDelete={handleMaterialCodeDelete}
       />
     </div>
   )
