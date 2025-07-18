@@ -27,17 +27,18 @@ import {
 
 import {PageHeader} from '@/components/layout/PageHeader'
 
+// COMPLIANCE_AREAS - CSDDD 5개 준수 영역 정의 (아이콘, 제목, 설명, 항목수, 색상)
 const COMPLIANCE_AREAS = [
   {
-    icon: Users,
+    icon: Users, // 인권 아이콘
     title: '인권 및 노동',
     description: '아동노동, 강제노동, 차별 금지 등',
-    items: 9,
+    items: 9, // 평가 항목 수
     iconColor: 'text-red-600',
     bgColor: 'bg-red-100'
   },
   {
-    icon: AlertTriangle,
+    icon: AlertTriangle, // 안전 경고 아이콘
     title: '산업안전·보건',
     description: '작업장 안전, 화학물질, 건강검진 등',
     items: 6,
@@ -45,7 +46,7 @@ const COMPLIANCE_AREAS = [
     bgColor: 'bg-yellow-100'
   },
   {
-    icon: Leaf,
+    icon: Leaf, // 환경 아이콘
     title: '환경경영',
     description: '온실가스, 물·폐기물, 생태계 등',
     items: 8,
@@ -53,7 +54,7 @@ const COMPLIANCE_AREAS = [
     bgColor: 'bg-green-100'
   },
   {
-    icon: FileText,
+    icon: FileText, // 문서 아이콘
     title: '공급망 및 조달',
     description: 'ESG 조항 계약, 강제노동 점검 등',
     items: 9,
@@ -61,7 +62,7 @@ const COMPLIANCE_AREAS = [
     bgColor: 'bg-blue-100'
   },
   {
-    icon: Shield,
+    icon: Shield, // 보안 아이콘
     title: '윤리경영 및 정보보호',
     description: '반부패, 정보보안, 개인정보보호 등',
     items: 8,
@@ -70,7 +71,9 @@ const COMPLIANCE_AREAS = [
   }
 ]
 
+// DiagnosisProcedure - 진단 절차 3단계를 시각적으로 표시하는 컴포넌트
 function DiagnosisProcedure() {
+  // steps - 진단 절차 3단계 정의 (순서, 제목, 설명)
   const steps = [
     {
       number: 1,
@@ -91,6 +94,7 @@ function DiagnosisProcedure() {
 
   return (
     <div className="space-y-4">
+      {/* 진단 절차 단계별 카드 렌더링 */}
       {steps.map((step, index) => (
         <div key={index} className="flex items-start p-4 space-x-4 bg-gray-50 rounded-xl">
           <div className="w-3 h-3 mt-1.5 bg-blue-500 rounded-full" />
@@ -104,6 +108,7 @@ function DiagnosisProcedure() {
   )
 }
 
+// ComplianceAreaCard - 개별 준수 영역 카드 컴포넌트 (클릭 시 상세 모달 열기)
 function ComplianceAreaCard({
   area,
   index,
@@ -113,12 +118,13 @@ function ComplianceAreaCard({
   index: number
   onClick: (index: number) => void
 }) {
-  const Icon = area.icon
+  const Icon = area.icon // 동적 아이콘 컴포넌트
 
   return (
     <div
       onClick={() => onClick(index)}
       className="p-4 mt-10 transition-all duration-500 bg-white border border-gray-100 shadow-sm cursor-pointer rounded-2xl hover:shadow-sm hover:transform hover:scale-105">
+      {/* 카드 헤더 - 아이콘과 제목 */}
       <div className="flex items-center gap-3 mb-2">
         <div
           className={`w-8 h-8 rounded-2xl flex items-center justify-center ${area.bgColor}`}>
@@ -126,7 +132,9 @@ function ComplianceAreaCard({
         </div>
         <h4 className="text-base font-bold text-gray-900">{area.title}</h4>
       </div>
+      {/* 영역 설명 */}
       <p className="text-sm gray-600">{area.description}</p>
+      {/* 평가 항목 수 배지 */}
       <div className="flex justify-end mt-2">
         <span className="inline-block w-fit px-2 py-0.5 text-xs text-gray-500 bg-gray-100 rounded-full text-center">
           {area.items}개 항목
@@ -136,6 +144,7 @@ function ComplianceAreaCard({
   )
 }
 
+// ComplianceAreasGrid - 5개 준수 영역 카드들을 그리드 레이아웃으로 배치하는 컴포넌트
 function ComplianceAreasGrid({
   handleCardClick
 }: {
@@ -143,6 +152,7 @@ function ComplianceAreasGrid({
 }) {
   return (
     <div id="compliance-areas-grid" className="mb-10">
+      {/* 아래로 스크롤 유도하는 애니메이션 화살표 */}
       <motion.div
         whileHover={{scale: 1.1}}
         whileTap={{scale: 0.95}}
@@ -155,6 +165,7 @@ function ComplianceAreasGrid({
         }}>
         <ChevronDown className="w-8 h-20 text-gray-500 animate-bounce" />
       </motion.div>
+      {/* 반응형 그리드 레이아웃 (1열 -> 3열 -> 5열) */}
       <div className="grid grid-cols-1 gap-6 md:grid-cols-3 xl:grid-cols-5">
         {COMPLIANCE_AREAS.map((area, index) => (
           <ComplianceAreaCard
@@ -170,14 +181,19 @@ function ComplianceAreasGrid({
 }
 
 export function CSDDDLayout() {
+  // 열린 모달의 인덱스 상태 (준수 영역 모달 열기/닫기)
   const [openDialogIndex, setOpenDialogIndex] = useState<number | null>(null)
+  // handleCardClick - 준수 영역 카드 클릭 시 모달 열기
   const handleCardClick = (index: number) => setOpenDialogIndex(index)
+  // closeDialog - 모달 닫기 함수
   const closeDialog = () => setOpenDialogIndex(null)
 
+  // groupedPreviews - 각 준수 영역별 상세 평가 항목 데이터 (항목명, 설명, 관련기준)
   const groupedPreviews: Record<
     string,
     {항목: string; 설명: string; 관련기준: string}[]
   > = {
+    // 인권 및 노동 영역 - 9개 평가 항목
     '인권 및 노동': [
       {
         항목: '아동노동 금지',
@@ -225,6 +241,7 @@ export function CSDDDLayout() {
         관련기준: 'UNGP, 국내 인권경영 가이드라인'
       }
     ],
+    // 산업안전·보건 영역 - 6개 평가 항목
     '산업안전·보건': [
       {
         항목: '작업장 안전관리',
@@ -257,6 +274,7 @@ export function CSDDDLayout() {
         관련기준: '산업안전보건법, CSDDD'
       }
     ],
+    // 환경경영 영역 - 8개 평가 항목
     환경경영: [
       {
         항목: '온실가스 배출 관리',
@@ -299,6 +317,7 @@ export function CSDDDLayout() {
         관련기준: 'EU CSDDD'
       }
     ],
+    // 공급망 및 조달 영역 - 9개 평가 항목
     '공급망 및 조달': [
       {
         항목: 'ESG 조항 포함 계약',
@@ -346,6 +365,7 @@ export function CSDDDLayout() {
         관련기준: 'EU CSDDD'
       }
     ],
+    // 윤리경영 및 정보보호 영역 - 8개 평가 항목
     '윤리경영 및 정보보호': [
       {
         항목: '반부패 정책 수립',
@@ -392,6 +412,7 @@ export function CSDDDLayout() {
 
   return (
     <div className="flex flex-col w-full h-full p-4 pt-24">
+      {/* 네비게이션 breadcrumb */}
       <div className="flex flex-row items-center p-2 px-2 mb-4 text-sm text-gray-500 bg-white rounded-lg shadow-sm">
         <Breadcrumb>
           <BreadcrumbList>
@@ -407,6 +428,7 @@ export function CSDDDLayout() {
         </Breadcrumb>
       </div>
 
+      {/* 페이지 헤더 영역 */}
       <div className="flex flex-row w-full h-24 mb-4">
         <div className="flex flex-row items-center p-4 space-x-4 transition rounded-md">
           <PageHeader
@@ -419,12 +441,15 @@ export function CSDDDLayout() {
         </div>
       </div>
 
+      {/* 메인 컨텐츠 영역 - 애니메이션 효과와 함께 대시보드 */}
       <motion.div
         initial={{opacity: 0, scale: 0.95}}
         animate={{opacity: 1, scale: 1}}
         transition={{delay: 0.6, duration: 0.5}}
         className="space-y-6">
+        {/* 시스템 소개 카드 */}
         <div className="bg-white border border-gray-200 shadow-sm rounded-xl">
+          {/* 시스템 소개 헤더 */}
           <div className="px-8 py-6 bg-gradient-to-r from-blue-50 to-blue-100 rounded-t-xl">
             <div className="flex items-center justify-between">
               <div>
@@ -438,8 +463,10 @@ export function CSDDDLayout() {
             </div>
           </div>
 
+          {/* 시스템 소개 본문 */}
           <div className="p-8">
             <div className="grid grid-cols-1 gap-8 lg:grid-cols-2">
+              {/* 평가 특징 섹션 */}
               <div>
                 <h3 className="flex items-center gap-3 mb-6 text-2xl font-bold text-gray-900">
                   <Check className="w-6 h-6 text-green-600" />
@@ -447,6 +474,7 @@ export function CSDDDLayout() {
                 </h3>
 
                 <div className="space-y-4">
+                  {/* 평가 특징 리스트 렌더링 */}
                   {[
                     {
                       title: '실시간 위험도 분석',
@@ -475,6 +503,7 @@ export function CSDDDLayout() {
                 </div>
               </div>
 
+              {/* 진단 절차 섹션 */}
               <div>
                 <h3 className="flex items-center gap-3 mb-6 text-2xl font-bold text-gray-900">
                   <Play className="w-6 h-6 text-blue-600" />
@@ -485,19 +514,23 @@ export function CSDDDLayout() {
               </div>
             </div>
 
+            {/* 액션 버튼 영역 */}
             <div className="flex flex-col gap-4 pt-8 mt-8 border-t border-gray-200 sm:flex-row">
+              {/* 자가진단 시작 버튼 */}
               <Link
                 href="/CSDDD/self-assessment"
                 className="flex items-center justify-center px-8 py-4 text-lg font-semibold text-white transition-all duration-300 transform bg-green-500 shadow-sm rounded-xl hover:bg-green-700 hover:scale-105 hover:shadow-sm">
                 자가진단 시작하기
               </Link>
 
+              {/* 결과 보기 버튼 */}
               <Link
                 href="/CSDDD/evaluation"
                 className="flex items-center justify-center px-8 py-4 text-lg font-semibold text-white transition-all duration-300 transform bg-blue-500 shadow-sm rounded-xl hover:bg-blue-700 hover:scale-105 hover:shadow-sm">
                 결과 보기
               </Link>
 
+              {/* 협력사 진단 확인 버튼 */}
               <Link
                 href="/CSDDD/partnerEvaluation"
                 className="flex items-center justify-center px-8 py-4 text-lg font-semibold text-white transition-all duration-300 transform bg-indigo-500 shadow-sm rounded-xl hover:bg-indigo-700 hover:scale-105 hover:shadow-sm">
@@ -507,8 +540,10 @@ export function CSDDDLayout() {
           </div>
         </div>
 
+        {/* 준수 영역 카드 그리드 */}
         <ComplianceAreasGrid handleCardClick={handleCardClick} />
 
+        {/* 중요 안내사항 카드 */}
         <div className="p-8 border border-blue-100 bg-blue-50 rounded-2xl">
           <div className="flex items-start space-x-6">
             <div className="flex items-center justify-center w-16 h-16 bg-blue-500 rounded-2xl">
@@ -518,6 +553,7 @@ export function CSDDDLayout() {
             <div className="flex-1">
               <h4 className="mb-6 text-2xl font-bold text-blue-900">중요 안내사항</h4>
 
+              {/* 안내사항 리스트 그리드 */}
               <div className="grid grid-cols-1 gap-2 text-sm text-blue-800 md:grid-cols-2">
                 {[
                   'CSDDD는 2024년부터 단계적으로 적용되며, 2027년부터 본격 시행됩니다.',
@@ -536,9 +572,11 @@ export function CSDDDLayout() {
           </div>
         </div>
 
+        {/* 준수 영역 상세 모달 - 카드 클릭 시 해당 영역의 평가 항목 표시 */}
         {openDialogIndex !== null && (
           <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/30">
             <div className="w-full max-w-6xl max-h-[90vh] overflow-hidden rounded-2xl bg-white shadow-sm border border-gray-200">
+              {/* 모달 헤더 */}
               <div className="flex items-start justify-between gap-4 px-8 py-6 border-b border-gray-200 bg-gradient-to-br from-gray-50 to-white">
                 <div className="space-y-1">
                   <h3 className="text-xl font-bold text-gray-900">
@@ -556,6 +594,7 @@ export function CSDDDLayout() {
                 </button>
               </div>
 
+              {/* 모달 본문 - 평가 항목 테이블 */}
               <div className="overflow-auto max-h-[75vh] px-8 py-6">
                 <table className="w-full text-left border-collapse">
                   <thead>
@@ -572,6 +611,7 @@ export function CSDDDLayout() {
                     </tr>
                   </thead>
                   <tbody className="text-sm">
+                    {/* 선택된 준수 영역의 평가 항목 렌더링 */}
                     {groupedPreviews[COMPLIANCE_AREAS[openDialogIndex].title].map(
                       (item, idx) => (
                         <tr
@@ -600,6 +640,7 @@ export function CSDDDLayout() {
   )
 }
 
+// CSDDD - 메인 에포트 함수
 export default function CSDDD() {
   return <CSDDDLayout />
 }

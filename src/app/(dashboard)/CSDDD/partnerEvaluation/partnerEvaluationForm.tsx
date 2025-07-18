@@ -50,31 +50,44 @@ import {
 } from '@/components/CSDDD/PDFReportGenerator'
 
 export default function PartnerEvaluationForm() {
+  // 진단 결과 목록
   const [results, setResults] = useState<SelfAssessmentResponse[]>([])
+  // 선택된 상세 결과 (resultId를 키로 하는 객체)
   const [selectedResults, setSelectedResults] = useState<{
     [key: number]: SelfAssessmentResponse
   }>({})
+  // 로딩 상태
   const [loading, setLoading] = useState(false)
+  // 상세 결과 로딩 상태
   const [detailLoading, setDetailLoading] = useState(false)
+  // 인증 에러 상태
   const [authError, setAuthError] = useState<string | null>(null)
+  // 사용자 정보
   const [userInfo, setUserInfo] = useState<any>(null)
+  // 선택된 협력사 (본사용 필터)
   const [selectedCompany, setSelectedCompany] = useState<string>('all')
+  // 협력사 목록 (본사용)
   const [companyList, setCompanyList] = useState<string[]>([])
-  // New state for sub-company list and selection
+  // 하위 협력사 목록 (협력사용)
   const [subCompanyList, setSubCompanyList] = useState<string[]>([])
+  // 선택된 하위 협력사 (협력사용 필터)
   const [selectedSubCompany, setSelectedSubCompany] = useState<string>('all')
 
+  // 위반 항목 메타데이터 (카테고리, 벌칙 정보, 법적 근거)
   const [violationMeta, setViolationMeta] = useState<{
     category: string
     penaltyInfo: string
     legalBasis: string
   } | null>(null)
+  // 선택된 위반 항목 ID
   const [selectedViolationId, setSelectedViolationId] = useState<string | null>(null)
 
+  // 확장된 위반 항목 상태 (resultId를 키로 하는 객체)
   const [expandedViolations, setExpandedViolations] = useState<{[key: number]: boolean}>(
     {}
   )
 
+  // toggleViolationExpansion - 위반 항목 확장/축소 토글
   const toggleViolationExpansion = (resultId: number) => {
     setExpandedViolations(prev => ({
       ...prev,
@@ -82,6 +95,7 @@ export default function PartnerEvaluationForm() {
     }))
   }
 
+  // handleViolationClick - 위반 항목 클릭 처리 및 메타데이터 조회
   const handleViolationClick = async (questionId: string) => {
     setSelectedViolationId(questionId)
     try {
@@ -92,11 +106,14 @@ export default function PartnerEvaluationForm() {
     }
   }
 
+  // groupViolationsByCategory - 카테고리별 위반 항목 그룹화
   const groupViolationsByCategory = (answers: any[]) => {
+    // answer가 false인 항목만 위반 항목으로 간주
     const violations = answers.filter(a => a.answer === false) // boolean 비교로 수정
     const grouped: {[key: string]: any[]} = {}
 
     violations.forEach(violation => {
+      // questionId의 첫 번째 자리수를 카테고리로 사용 (ex: "1.1" -> "1")
       const category = violation.questionId.split('.')[0]
       if (!grouped[category]) {
         grouped[category] = []
@@ -107,6 +124,7 @@ export default function PartnerEvaluationForm() {
     return grouped
   }
 
+  // getCategoryName - 카테고리 ID를 한국어 이름으로 변환
   const getCategoryName = (categoryId: string) => {
     const categoryNames: {[key: string]: string} = {
       '1': '인권 및 노동',
@@ -118,6 +136,7 @@ export default function PartnerEvaluationForm() {
     return categoryNames[categoryId] || `카테고리 ${categoryId}`
   }
 
+  // fetchResults - 사용자 타입에 따른 진단 결과 목록 조회
   const fetchResults = async () => {
     setLoading(true)
     try {
@@ -129,11 +148,14 @@ export default function PartnerEvaluationForm() {
 
         let response: PaginatedSelfAssessmentResponse
 
+        // 사용자 타입에 따른 다른 조회 로직
         if (userInfo.userType === 'HEADQUARTERS') {
+          // 본사: 관할 협력사들의 진단 결과 조회
           response = await getSelfAssessmentResults({
             onlyPartners: true
           })
         } else if (userInfo.userType === 'PARTNER') {
+          // 협력사: 자사 및 하위 협력사들의 진단 결과 조회
           response = await getSelfAssessmentResults({
             onlyPartners: true
           })
@@ -142,6 +164,7 @@ export default function PartnerEvaluationForm() {
           return
         }
 
+        // 완료 시간 순으로 정렬 (최신순)
         const sortedResults = (response.content || []).sort(
           (a, b) =>
             new Date(b.completedAt ?? new Date()).getTime() -
@@ -153,8 +176,10 @@ export default function PartnerEvaluationForm() {
         // 협력사 목록 추출 (중복 제거)
         const companies = Array.from(new Set(sortedResults.map(r => r.companyName)))
         if (userInfo.userType === 'HEADQUARTERS') {
+          // 본사: 관할 협력사 목록 설정
           setCompanyList(companies)
         } else if (userInfo.userType === 'PARTNER') {
+          // 협력사: 하위 협력사 목록 설정
           setSubCompanyList(companies)
         }
 
@@ -170,6 +195,7 @@ export default function PartnerEvaluationForm() {
     }
   }
 
+  // fetchDetailResult - 특정 결과의 상세 정보 조회
   const fetchDetailResult = async (resultId: number) => {
     setDetailLoading(true)
     try {
@@ -183,10 +209,12 @@ export default function PartnerEvaluationForm() {
     }
   }
 
+  // 컴포넌트 마운트 시 진단 결과 목록 초기 로드
   useEffect(() => {
     fetchResults()
   }, [])
 
+  // 본사용 협력사 필터링
   const filteredResults =
     selectedCompany === 'all'
       ? results
@@ -198,16 +226,17 @@ export default function PartnerEvaluationForm() {
               new Date(a.completedAt ?? new Date()).getTime()
           )
 
-  // Sub-company filter for PARTNER user
+  // 협력사용 하위 협력사 필터링
   const subFilteredResults =
     selectedSubCompany === 'all'
       ? results
       : results.filter(result => result.companyName === selectedSubCompany)
 
-  // Choose which list to display based on user type
+  // 사용자 타입에 따라 표시할 결과 목록 선택
   const displayResults =
     userInfo?.userType === 'HEADQUARTERS' ? filteredResults : subFilteredResults
 
+  // getGradeStyle - 등급별 스타일 클래스 반환
   const getGradeStyle = (grade: string) => {
     switch (grade) {
       case 'A':
@@ -250,6 +279,7 @@ export default function PartnerEvaluationForm() {
 
   return (
     <div className="flex flex-col w-full min-h-screen pt-24">
+      {/* 네비게이션 breadcrumb - 사용자 타입에 따른 제목 변경 */}
       <div className="pb-0">
         <div className="flex flex-row items-center p-3 mb-4 text-sm text-gray-600 border shadow-sm rounded-xl backdrop-blur-sm bg-white/80 border-white/50">
           <Breadcrumb>
@@ -283,6 +313,7 @@ export default function PartnerEvaluationForm() {
         </div>
       </div>
 
+      {/* 페이지 헤더 영역 - 사용자 타입에 따른 설명 변경 */}
       <div className="px-4 pb-0">
         <div className="flex flex-row w-full mb-4">
           <Link
@@ -304,9 +335,11 @@ export default function PartnerEvaluationForm() {
         </div>
       </div>
 
+      {/* 메인 컨텐츠 영역 */}
       <div className="flex-1 px-4 pb-8">
         <div className="lg:col-span-3">
           <div className="border shadow-sm rounded-xl backdrop-blur-sm bg-white/95 border-white/50">
+            {/* 진단 결과 목록 헤더 - 사용자 타입에 따른 제목 변경 */}
             <div className="px-6 py-5 border-b border-gray-100">
               <div className="flex items-center justify-between">
                 <div className="flex items-center space-x-2">
@@ -315,6 +348,7 @@ export default function PartnerEvaluationForm() {
                       ? '협력사 진단 결과 목록'
                       : '진단 결과 목록'}
                   </h2>
+                  {/* 도움말 툴팁 - 위반 항목 사용법 */}
                   <div className="relative group">
                     <AlertCircle className="w-4 h-4 text-orange-500 cursor-pointer" />
                     <div className="absolute z-10 hidden p-3 text-sm text-orange-800 transform -translate-x-1/2 bg-white border border-orange-200 rounded shadow-sm top-full left-1/2 max-w-none whitespace-nowrap group-hover:block">
@@ -322,6 +356,7 @@ export default function PartnerEvaluationForm() {
                       <p>• 위반 항목을 클릭하면 법적 근거를 볼 수 있습니다</p>
                     </div>
                   </div>
+                  {/* 도움말 툴팁 - 등급 기준 */}
                   <div className="relative group">
                     <AlertCircle className="w-4 h-4 text-blue-500 cursor-pointer" />
                     <div className="absolute z-10 hidden p-3 text-sm text-blue-800 transform -translate-x-1/2 bg-white border border-blue-200 rounded shadow-sm top-full left-1/2 max-w-none whitespace-nowrap group-hover:block">
@@ -333,6 +368,7 @@ export default function PartnerEvaluationForm() {
                     </div>
                   </div>
                 </div>
+                {/* 본사용 협력사 선택 필터 */}
                 {userInfo?.userType === 'HEADQUARTERS' && (
                   <div className="flex items-center gap-3 p-4 transition-all duration-200 border border-blue-100 shadow-sm bg-gradient-to-br from-blue-50 to-white rounded-xl hover:shadow-sm">
                     <div className="flex items-center gap-2">
@@ -360,7 +396,7 @@ export default function PartnerEvaluationForm() {
                     </div>
                   </div>
                 )}
-                {/* Sub-company dropdown for PARTNER */}
+                {/* 협력사용 하위 협력사 선택 필터 */}
                 {userInfo?.userType === 'PARTNER' && subCompanyList.length > 0 && (
                   <div className="flex items-center p-2 space-x-2 bg-white border border-gray-200 rounded-lg shadow-sm">
                     <label
@@ -385,13 +421,16 @@ export default function PartnerEvaluationForm() {
               </div>
             </div>
 
+            {/* 결과 목록 본문 */}
             <div className="p-5">
               {loading ? (
+                /* 로딩 상태 */
                 <div className="py-12 text-center">
                   <div className="w-8 h-8 mx-auto mb-4 border-4 border-blue-600 rounded-full animate-spin border-t-transparent"></div>
                   <p className="text-gray-600">데이터를 불러오는 중...</p>
                 </div>
               ) : results.length === 0 ? (
+                /* 결과 없음 상태 - 사용자 타입에 따른 메시지 변경 */
                 <div className="py-12 text-center">
                   <BarChart3 className="w-12 h-12 mx-auto mb-4 text-gray-400" />
                   <p className="font-medium text-gray-600">
@@ -406,10 +445,12 @@ export default function PartnerEvaluationForm() {
                   </p>
                 </div>
               ) : (
+                /* 결과 목록 표시 - 사용자 타입에 따라 다른 필터링 결과 사용 */
                 <div className="space-y-4">
                   {displayResults.map((result, index) => {
                     const gradeStyle = getGradeStyle(result.finalGrade ?? 'D')
                     const selectedResult = selectedResults[result.id]
+                    // 중대 위반 건수 계산 - 상세 결과가 있으면 실제 값을, 없으면 요약 값을 사용
                     const violationCount =
                       selectedResult && selectedResult.answers
                         ? selectedResult.answers.filter(
@@ -424,6 +465,7 @@ export default function PartnerEvaluationForm() {
                         key={result.id}
                         className="p-4 transition-all border border-gray-200 rounded-xl bg-white/50 hover:border-gray-300 hover:shadow-sm">
                         <div className="">
+                          {/* 결과 카드 헤더 - 사용자 타입에 따른 회차 표시 로직 */}
                           <div className="flex items-center justify-between mb-4">
                             <div className="flex items-center space-x-3">
                               <div className="p-1.5 bg-blue-100 rounded-lg">
@@ -434,6 +476,7 @@ export default function PartnerEvaluationForm() {
                                   {result.companyName}
                                 </h3>
                                 <span className="text-sm text-gray-500">
+                                  {/* 사용자 타입과 필터 상태에 따른 회차 표시 */}
                                   {userInfo?.userType === 'HEADQUARTERS'
                                     ? selectedCompany === 'all'
                                       ? '' // 전체 선택 시 빈 문자열
@@ -461,13 +504,16 @@ export default function PartnerEvaluationForm() {
                                 })}
                               </span>
 
+                              {/* PDF 다운로드 버튼 */}
                               <button
                                 onClick={async () => {
+                                  // 상세 결과가 아직 로드되지 않았으면 먼저 가져오기
                                   if (!selectedResults[result.id]) {
                                     await fetchDetailResult(result.id)
                                   }
                                   const detail = selectedResults[result.id]
                                   if (detail) {
+                                    // 상세 결과를 PDF 형식으로 변환하고 다운로드
                                     const props = await transformToPDFProps(detail)
                                     generatePDFReport(props)
                                   } else {
@@ -480,6 +526,7 @@ export default function PartnerEvaluationForm() {
                             </div>
                           </div>
 
+                          {/* 점수 및 등급 표시 그리드 */}
                           <div className="grid grid-cols-5 gap-4 mb-4">
                             <div className="p-3 border border-blue-300 rounded-lg bg-gradient-to-br from-blue-50 to-white">
                               <div className="flex items-center justify-between w-full">
@@ -561,10 +608,13 @@ export default function PartnerEvaluationForm() {
                             </div>
                           </div>
 
+                          {/* 위반 항목 확장/축소 버튼 */}
                           <div className="flex justify-center">
                             <button
                               onClick={() => {
+                                // 위반 항목 표시 상태 토글
                                 toggleViolationExpansion(result.id)
+                                // 상세 결과가 아직 로드되지 않았으면 가져오기
                                 fetchDetailResult(result.id)
                               }}
                               className="p-2 transition-colors rounded-full hover:bg-gray-100">
@@ -577,6 +627,7 @@ export default function PartnerEvaluationForm() {
                           </div>
                         </div>
 
+                        {/* 위반 항목 상세 정보 영역 */}
                         {isExpanded && selectedResult?.answers && (
                           <div className="pt-4 mt-4 border-t border-gray-200">
                             <div className="flex items-center justify-between mb-4">
@@ -668,6 +719,7 @@ export default function PartnerEvaluationForm() {
         </div>
       </div>
 
+      {/* 위반 항목 상세 정보 모달 */}
       <Dialog
         open={!!selectedViolationId}
         onOpenChange={() => {
@@ -690,6 +742,7 @@ export default function PartnerEvaluationForm() {
               </div>
             </div>
           </DialogHeader>
+          {/* 모달 본문 */}
           <div className="pt-6">
             {violationMeta ? (
               <div className="space-y-4">
@@ -742,6 +795,7 @@ export default function PartnerEvaluationForm() {
                 </div>
               </div>
             ) : (
+              /* 메타데이터 로딩 상태 */
               <div className="py-16 text-center">
                 <div className="w-12 h-12 mx-auto mb-6 border-4 border-blue-500 rounded-full animate-spin border-t-transparent"></div>
                 <div className="space-y-3">
