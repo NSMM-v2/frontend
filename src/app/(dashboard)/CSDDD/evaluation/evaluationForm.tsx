@@ -49,26 +49,36 @@ import {
 } from '@/components/CSDDD/PDFReportGenerator'
 
 export default function EvaluationForm() {
+  // 진단 결과 목록
   const [results, setResults] = useState<SelfAssessmentResponse[]>([])
+  // 선택된 상세 결과 (resultId를 키로 하는 객체)
   const [selectedResults, setSelectedResults] = useState<{
     [key: number]: SelfAssessmentResponse
   }>({})
+  // 로딩 상태
   const [loading, setLoading] = useState(false)
+  // 상세 결과 로딩 상태
   const [detailLoading, setDetailLoading] = useState(false)
+  // 인증 에러 상태
   const [authError, setAuthError] = useState<string | null>(null)
+  // 사용자 정보
   const [userInfo, setUserInfo] = useState<any>(null)
 
+  // 위반 항목 메타데이터 (카테고리, 벌칙 정보, 법적 근거)
   const [violationMeta, setViolationMeta] = useState<{
     category: string
     penaltyInfo: string
     legalBasis: string
   } | null>(null)
+  // 선택된 위반 항목 ID
   const [selectedViolationId, setSelectedViolationId] = useState<string | null>(null)
 
+  // 확장된 위반 항목 상태 (resultId를 키로 하는 객체)
   const [expandedViolations, setExpandedViolations] = useState<{[key: number]: boolean}>(
     {}
   )
 
+  // toggleViolationExpansion - 위반 항목 확장/축소 토글
   const toggleViolationExpansion = (resultId: number) => {
     setExpandedViolations(prev => ({
       ...prev,
@@ -76,6 +86,7 @@ export default function EvaluationForm() {
     }))
   }
 
+  // handleViolationClick - 위반 항목 클릭 처리 및 메타데이터 조회
   const handleViolationClick = async (questionId: string) => {
     setSelectedViolationId(questionId)
     try {
@@ -86,6 +97,7 @@ export default function EvaluationForm() {
     }
   }
 
+  // groupViolationsByCategory - 카테고리별 위반 항목 그룹화
   const groupViolationsByCategory = (answers: any[]) => {
     const violations = answers.filter(a => a.answer === false) // boolean 비교로 수정
     const grouped: {[key: string]: any[]} = {}
@@ -101,6 +113,7 @@ export default function EvaluationForm() {
     return grouped
   }
 
+  // getCategoryName - 카테고리 ID를 한국어 이름으로 변환
   const getCategoryName = (categoryId: string) => {
     const categoryNames: {[key: string]: string} = {
       '1': '인권 및 노동',
@@ -112,6 +125,7 @@ export default function EvaluationForm() {
     return categoryNames[categoryId] || `카테고리 ${categoryId}`
   }
 
+  // fetchResults - 진단 결과 목록 조회
   const fetchResults = async () => {
     setLoading(true)
     try {
@@ -126,6 +140,7 @@ export default function EvaluationForm() {
           onlyPartners: false
         })
 
+        // 완료 시간 순으로 정렬 (최신순)
         setResults(
           (response.content || []).sort(
             (a, b) =>
@@ -146,6 +161,7 @@ export default function EvaluationForm() {
     }
   }
 
+  // fetchDetailResult - 특정 결과의 상세 정보 조회
   const fetchDetailResult = async (resultId: number) => {
     setDetailLoading(true)
     try {
@@ -159,10 +175,12 @@ export default function EvaluationForm() {
     }
   }
 
+  // 컴포넌트 마운트 시 진단 결과 목록 초기 로드
   useEffect(() => {
     fetchResults()
   }, [])
 
+  // getGradeStyle - 등급별 스타일 클래스 반환
   const getGradeStyle = (grade: string) => {
     switch (grade) {
       case 'A':
@@ -205,6 +223,7 @@ export default function EvaluationForm() {
 
   return (
     <div className="flex flex-col w-full min-h-screen pt-24">
+      {/* 네비게이션 breadcrumb */}
       <div className="pb-0">
         <div className="flex flex-row items-center p-3 mb-4 text-sm text-gray-600 border shadow-sm rounded-xl backdrop-blur-sm bg-white/80 border-white/50">
           <Breadcrumb>
@@ -234,6 +253,7 @@ export default function EvaluationForm() {
         </div>
       </div>
 
+      {/* 페이지 헤더 영역 */}
       <div className="px-4 pb-0">
         <div className="flex flex-row w-full mb-4">
           <Link
@@ -251,13 +271,16 @@ export default function EvaluationForm() {
         </div>
       </div>
 
+      {/* 메인 컨텐츠 영역 */}
       <div className="flex-1 px-4 pb-8">
         <div className="lg:col-span-3">
           <div className="border shadow-xl rounded-xl backdrop-blur-sm bg-white/95 border-white/50">
+            {/* 진단 결과 목록 헤더 */}
             <div className="px-6 py-5 border-b border-gray-100">
               <div className="flex items-center justify-between">
                 <div className="flex items-center space-x-2">
                   <h2 className="text-xl font-bold text-gray-900">진단 결과 목록</h2>
+                  {/* 도움말 툴팁 - 위반 항목 사용법 */}
                   <div className="relative group">
                     <AlertCircle className="w-4 h-4 text-orange-500 cursor-pointer" />
                     <div className="absolute z-10 hidden p-3 text-sm text-orange-800 transform -translate-x-1/2 bg-white border border-orange-200 rounded shadow-lg top-full left-1/2 max-w-none whitespace-nowrap group-hover:block">
@@ -265,6 +288,7 @@ export default function EvaluationForm() {
                       <p>• 위반 항목을 클릭하면 법적 근거를 볼 수 있습니다</p>
                     </div>
                   </div>
+                  {/* 도움말 툴팁 - 등급 기준 */}
                   <div className="relative group">
                     <AlertCircle className="w-4 h-4 text-blue-500 cursor-pointer" />
                     <div className="absolute z-10 hidden p-3 text-sm text-blue-800 transform -translate-x-1/2 bg-white border border-blue-200 rounded shadow-lg top-full left-1/2 max-w-none whitespace-nowrap group-hover:block">
@@ -279,13 +303,16 @@ export default function EvaluationForm() {
               </div>
             </div>
 
+            {/* 결과 목록 본문 */}
             <div className="p-5">
               {loading ? (
+                /* 로딩 상태 */
                 <div className="py-12 text-center">
                   <div className="w-8 h-8 mx-auto mb-4 border-4 border-blue-600 rounded-full animate-spin border-t-transparent"></div>
                   <p className="text-gray-600">데이터를 불러오는 중...</p>
                 </div>
               ) : results.length === 0 ? (
+                /* 결과 없음 상태 */
                 <div className="py-12 text-center">
                   <BarChart3 className="w-12 h-12 mx-auto mb-4 text-gray-400" />
                   <p className="font-medium text-gray-600">진단 결과가 없습니다.</p>
@@ -294,10 +321,13 @@ export default function EvaluationForm() {
                   </p>
                 </div>
               ) : (
+                /* 결과 목록 표시 */
                 <div className="space-y-4">
                   {results.map((result, index) => {
                     const gradeStyle = getGradeStyle(result.finalGrade ?? 'D')
                     const selectedResult = selectedResults[result.id]
+                    // 중대 위반 건수 계산
+                    // 중대 위반 건수 계산 - 상세 결과가 있으면 실제 값을, 없으면 요약 값을 사용
                     const violationCount =
                       selectedResult && selectedResult.answers
                         ? selectedResult.answers.filter(
@@ -312,6 +342,7 @@ export default function EvaluationForm() {
                         key={result.id}
                         className="p-4 transition-all border border-gray-200 rounded-xl bg-white/50 hover:border-gray-300 hover:shadow-lg">
                         <div className="">
+                          {/* 결과 카드 헤더 */}
                           <div className="flex items-center justify-between mb-4">
                             <div className="flex items-center space-x-3">
                               <div className="p-1.5 bg-blue-100 rounded-lg">
@@ -338,13 +369,16 @@ export default function EvaluationForm() {
                                   minute: '2-digit'
                                 })}
                               </span>
+                              {/* PDF 다운로드 버튼 */}
                               <button
                                 onClick={async () => {
+                                  // 상세 결과가 아직 로드되지 않았으면 먼저 가져오기
                                   if (!selectedResults[result.id]) {
                                     await fetchDetailResult(result.id)
                                   }
                                   const detail = selectedResults[result.id]
                                   if (detail) {
+                                    // 상세 결과를 PDF 형식으로 변환하고 다운로드
                                     const props = await transformToPDFProps(detail)
                                     generatePDFReport(props)
                                   } else {
@@ -357,6 +391,7 @@ export default function EvaluationForm() {
                             </div>
                           </div>
 
+                          {/* 점수 및 등급 표시 그리드 */}
                           <div className="grid grid-cols-5 gap-4 mb-4">
                             <div className="p-3 border border-blue-300 rounded-lg bg-gradient-to-br from-blue-50 to-white">
                               <div className="flex items-center justify-between w-full">
@@ -438,10 +473,13 @@ export default function EvaluationForm() {
                             </div>
                           </div>
 
+                          {/* 위반 항목 확장/축소 버튼 */}
                           <div className="flex justify-center">
                             <button
                               onClick={() => {
+                                // 위반 항목 표시 상태 토글
                                 toggleViolationExpansion(result.id)
+                                // 상세 결과가 아직 로드되지 않았으면 가져오기
                                 fetchDetailResult(result.id)
                               }}
                               className="p-2 transition-colors rounded-full hover:bg-gray-100">
@@ -454,6 +492,7 @@ export default function EvaluationForm() {
                           </div>
                         </div>
 
+                        {/* 위반 항목 상세 정보 영역 */}
                         {isExpanded && selectedResult?.answers && (
                           <div className="pt-4 mt-4 border-t border-gray-200">
                             <div className="flex items-center justify-between mb-4">
@@ -490,6 +529,7 @@ export default function EvaluationForm() {
                                   </div>
                                 </div>
                               ) : (
+                                /* 위반 항목이 있는 경우 카테고리별로 그룹화하여 표시 */
                                 <div className="space-y-3">
                                   {Object.entries(
                                     groupViolationsByCategory(selectedResult.answers)
@@ -511,13 +551,16 @@ export default function EvaluationForm() {
                                       </div>
 
                                       <div className="p-4">
+                                        {/* 위반 항목들을 그리드 레이아웃으로 표시 */}
                                         <div className="grid grid-cols-3 gap-2 sm:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6">
                                           {violations.map((violation, i) => (
                                             <button
                                               key={i}
                                               className="flex items-center justify-center min-w-0 p-2 text-xs font-medium text-blue-800 transition-all bg-white border border-blue-300 rounded-md hover:bg-blue-100 hover:border-blue-400"
                                               onClick={e => {
+                                                // 이벤트 버블링 방지
                                                 e.stopPropagation()
+                                                // 위반 항목 상세 정보 모달 열기
                                                 handleViolationClick(violation.questionId)
                                               }}>
                                               <span className="font-mono text-xs truncate">
@@ -545,6 +588,7 @@ export default function EvaluationForm() {
         </div>
       </div>
 
+      {/* 위반 항목 상세 정보 모달 */}
       <Dialog
         open={!!selectedViolationId}
         onOpenChange={() => {
@@ -568,6 +612,7 @@ export default function EvaluationForm() {
             </div>
           </DialogHeader>
 
+          {/* 모달 본문 */}
           <div className="pt-6">
             {violationMeta ? (
               <div className="space-y-4">
@@ -620,6 +665,7 @@ export default function EvaluationForm() {
                 </div>
               </div>
             ) : (
+              /* 메타데이터 로딩 상태 */
               <div className="py-16 text-center">
                 <div className="w-12 h-12 mx-auto mb-6 border-4 border-blue-500 rounded-full animate-spin border-t-transparent"></div>
                 <div className="space-y-3">
