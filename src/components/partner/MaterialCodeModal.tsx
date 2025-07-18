@@ -114,17 +114,17 @@ export function MaterialCodeModal({
   existingAssignments = [],
   onDelete
 }: MaterialCodeModalProps) {
-  // 고유 ID 생성 함수 (useState보다 먼저 선언)
+  // generateId 메서드 - 고유 ID 생성 함수 (useState보다 먼저 선언)
   const generateId = () => Math.random().toString(36).substring(2, 15)
 
-  // 삭제 확인 다이얼로그 상태
+  // 삭제 확인 다이얼로그 상태 관리
   const [deleteConfirmation, setDeleteConfirmation] =
     useState<DeleteConfirmationDialogState>({
       isOpen: false,
       canDelete: false
     })
 
-  // 다중 자재코드 목록 상태
+  // 다중 자재코드 목록 상태 관리 - 모델 모드에 따라 초기화
   const [materialCodeList, setMaterialCodeList] = useState<MaterialCodeItem[]>(() => {
     // 편집 모드인 경우 기존 데이터로 초기화
     if (modalState.mode === 'edit' && modalState.materialCode) {
@@ -167,7 +167,7 @@ export function MaterialCodeModal({
     ]
   })
 
-  // 모달이 열릴 때마다 데이터 동기화
+  // useEffect 메서드 - 모달이 열릴 때마다 데이터 동기화
   React.useEffect(() => {
     if (modalState.isOpen) {
       if (modalState.mode === 'edit' && modalState.materialCode) {
@@ -212,7 +212,7 @@ export function MaterialCodeModal({
     }
   }, [modalState.isOpen, modalState.mode, modalState.materialCode, existingAssignments])
 
-  // 자재코드 항목 추가 함수
+  // addMaterialCodeItem 메서드 - 자재코드 항목 추가 함수
   const addMaterialCodeItem = useCallback(() => {
     const lastItem = materialCodeList[materialCodeList.length - 1]
     if (
@@ -238,12 +238,12 @@ export function MaterialCodeModal({
     setMaterialCodeList(prev => [...prev, newItem])
   }, [materialCodeList])
 
-  // 자재코드 항목 삭제 함수
+  // removeMaterialCodeItem 메서드 - 자재코드 항목 삭제 함수
   const removeMaterialCodeItem = useCallback((id: string) => {
     setMaterialCodeList(prev => prev.filter(item => item.id !== id))
   }, [])
 
-  // 할당된 자재코드 삭제 함수
+  // handleDeleteAssignment 메서드 - 할당된 자재코드 삭제 함수
   const handleDeleteAssignment = useCallback(
     async (item: MaterialCodeItem) => {
       if (!item.assignmentId) return
@@ -260,7 +260,7 @@ export function MaterialCodeModal({
           item.assignmentId
         )
 
-        // 디버깅용 로그
+        // 삭제 가능 여부 확인을 위한 디버깅용 로그
         console.log('삭제 확인 정보:', {
           assignmentId: item.assignmentId,
           isMapped: isMapped,
@@ -314,7 +314,7 @@ export function MaterialCodeModal({
     [onDelete, existingAssignments]
   )
 
-  // 자재코드 항목 업데이트 함수
+  // updateMaterialCodeItem 메서드 - 자재코드 항목 업데이트 함수
   const updateMaterialCodeItem = useCallback(
     (id: string, field: keyof Omit<MaterialCodeItem, 'id' | 'errors'>, value: string) => {
       setMaterialCodeList(prev =>
@@ -332,13 +332,13 @@ export function MaterialCodeModal({
     []
   )
 
-  // 개별 자재코드 항목 유효성 검증 함수
+  // validateMaterialCodeItem 메서드 - 개별 자재코드 항목 유효성 검증 함수
   const validateMaterialCodeItem = (
     item: MaterialCodeItem
   ): Partial<MaterialCodeItem> => {
     const errors: Partial<MaterialCodeItem> = {}
 
-    // 자재코드 검증
+    // 자재코드 유효성 검증 - 필수값, 형식, 중복 체크
     if (!item.materialCode.trim()) {
       errors.materialCode = '자재코드를 입력해주세요.'
     } else if (!/^[A-Z0-9]{3,10}$/.test(item.materialCode)) {
@@ -347,7 +347,7 @@ export function MaterialCodeModal({
       errors.materialCode = '이미 존재하는 자재코드입니다.'
     }
 
-    // 자재명 검증
+    // 자재명 유효성 검증 - 필수값, 최소 길이 체크
     if (!item.materialName.trim()) {
       errors.materialName = '자재명을 입력해주세요.'
     } else if (item.materialName.length < 2) {
@@ -357,7 +357,7 @@ export function MaterialCodeModal({
     return errors
   }
 
-  // 전체 폼 유효성 검증 함수
+  // validateAllItems 메서드 - 전체 폼 유효성 검증 함수
   const validateAllItems = (): boolean => {
     let hasErrors = false
     const allCodes = materialCodeList.map(item => item.materialCode.trim().toUpperCase())
@@ -366,7 +366,7 @@ export function MaterialCodeModal({
       prev.map(item => {
         const errors = validateMaterialCodeItem(item)
 
-        // 목록 내 중복 검사
+        // 목록 내 중복 검사 - 같은 자재코드가 여러 개 입력되었는지 확인
         const duplicateCount = allCodes.filter(
           code => code === item.materialCode.trim().toUpperCase()
         ).length
@@ -385,9 +385,9 @@ export function MaterialCodeModal({
     return !hasErrors
   }
 
-  // 저장 처리 함수
+  // handleSave 메서드 - 저장 처리 함수
   const handleSave = async () => {
-    // 필수 필드 검증
+    // 필수 필드 검증 - 자재코드, 자재명, 카테고리 누락 확인
     const missingFields: string[] = []
 
     materialCodeList.forEach((item, index) => {
@@ -413,6 +413,7 @@ export function MaterialCodeModal({
       return
     }
 
+    // 모달 모드에 따른 저장 처리 분기
     try {
       if (modalState.mode === 'edit') {
         // 편집 모드: 단일 항목만 처리
@@ -424,7 +425,7 @@ export function MaterialCodeModal({
         }
         await onSave(requestData)
       } else if (modalState.mode === 'assign') {
-        // 할당 모드: 새 자재코드만 처리
+        // 할당 모드: 새 자재코드만 처리 (기존 할당은 제외)
         const newItems = materialCodeList.filter(item => !item.assignmentId)
 
         if (newItems.length === 0) {
@@ -433,7 +434,7 @@ export function MaterialCodeModal({
         }
 
         if (newItems.length === 1) {
-          // 단일 자재코드
+          // 단일 자재코드 생성
           const item = newItems[0]
           const requestData: MaterialCodeCreateRequest = {
             materialCode: item.materialCode.trim().toUpperCase(),
@@ -443,7 +444,7 @@ export function MaterialCodeModal({
           }
           await onSave(requestData)
         } else {
-          // 다중 자재코드
+          // 다중 자재코드 일괄 생성
           const requestData: MaterialCodeBatchCreateRequest = {
             materialCodes: newItems.map(item => ({
               materialCode: item.materialCode.trim().toUpperCase(),
@@ -459,7 +460,7 @@ export function MaterialCodeModal({
       } else {
         // 생성 모드: 단일 또는 다중 처리
         if (materialCodeList.length === 1) {
-          // 단일 자재코드
+          // 단일 자재코드 생성
           const item = materialCodeList[0]
           const requestData: MaterialCodeCreateRequest = {
             materialCode: item.materialCode.trim().toUpperCase(),
@@ -469,7 +470,7 @@ export function MaterialCodeModal({
           }
           await onSave(requestData)
         } else {
-          // 다중 자재코드
+          // 다중 자재코드 일괄 생성
           const requestData: MaterialCodeBatchCreateRequest = {
             materialCodes: materialCodeList.map(item => ({
               materialCode: item.materialCode.trim().toUpperCase(),
@@ -490,7 +491,7 @@ export function MaterialCodeModal({
     }
   }
 
-  // 모달 제목 및 아이콘 결정
+  // getModalTitle 메서드 - 모달 제목 결정
   const getModalTitle = () => {
     switch (modalState.mode) {
       case 'create':
@@ -504,6 +505,7 @@ export function MaterialCodeModal({
     }
   }
 
+  // getModalIcon 메서드 - 모달 아이콘 결정
   const getModalIcon = () => {
     switch (modalState.mode) {
       case 'create':
@@ -517,6 +519,7 @@ export function MaterialCodeModal({
     }
   }
 
+  // 폼 유효성 검증 - 모달 모드에 따라 검증 대상 결정
   const isFormValid = (() => {
     // 할당 모드인 경우, 새 자재코드만 검증
     if (modalState.mode === 'assign') {
@@ -607,7 +610,7 @@ export function MaterialCodeModal({
                         </Badge>
                       )}
                     </div>
-                    {/* 삭제 버튼 조건부 렌더링 */}
+                    {/* 삭제 버튼 조건부 렌더링 - 모달 모드에 따라 삭제 버튼 표시 여부 결정 */}
                     {(() => {
                       // 편집 모드에서는 삭제 버튼 표시 안함
                       if (modalState.mode === 'edit') return null
@@ -873,6 +876,7 @@ export function MaterialCodeModal({
             ) : (
               <>
                 <Check className="w-4 h-4 mr-2" />
+                {/* 모달 모드에 따른 버튼 텍스트 결정 */}
                 {(() => {
                   if (modalState.mode === 'create') {
                     return `자재코드 ${
@@ -928,7 +932,7 @@ export function MaterialCodeModal({
               </div>
             </div>
 
-            {/* 삭제 불가능한 경우 경고 메시지 */}
+            {/* 삭제 불가능한 경우 경고 메시지 - 매핑 여부에 따른 삭제 제한 안내 */}
             {!deleteConfirmation.canDelete && (
               <div className="p-4 border-2 border-orange-200 bg-orange-50 rounded-xl">
                 <div className="flex items-start gap-3">
