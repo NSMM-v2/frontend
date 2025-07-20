@@ -44,16 +44,14 @@ import {
   MaterialCodeModalState,
   MaterialCodeCreateRequest,
   MaterialCodeUpdateRequest,
-  MaterialCodeBatchCreateRequest
+  MaterialCodeBatchCreateRequest,
+  MaterialAssignmentResponse
 } from '@/types/partnerCompanyType'
 import {cn} from '@/lib/utils'
 import {updateAccountCreatedStatus} from '@/services/partnerCompanyService'
 import {toast} from '@/hooks/use-toast'
 import {MaterialCodeModal} from './MaterialCodeModal'
-import {
-  materialAssignmentService,
-  MaterialAssignmentResponse
-} from '@/services/materialAssignmentService'
+import {materialAssignmentService} from '@/services/materialAssignmentService'
 
 interface PartnerTableProps {
   partners: PartnerCompany[]
@@ -148,17 +146,17 @@ export function PartnerTable({
   const openMaterialCodeModal = (partner: PartnerCompany) => {
     const partnerId = partner.id || partner.partnerId?.toString() || ''
     const assignments = assignmentData[partnerId] || []
-    
+
     console.log('Debug - openMaterialCodeModal partner:', {
       id: partner.id,
       partnerId: partner.partnerId,
       finalPartnerId: partnerId,
       assignmentCount: assignments.length
     }) // 디버깅 로그
-    
+
     // 기존 할당이 있으면 관리 모드, 없으면 생성 모드
     const mode = assignments.length > 0 ? 'assign' : 'create'
-    
+
     setMaterialCodeModalState({
       isOpen: true,
       mode: mode,
@@ -181,20 +179,21 @@ export function PartnerTable({
   const handleMaterialCodeDelete = async (assignmentId: number) => {
     try {
       await materialAssignmentService.deleteAssignment(assignmentId)
-      
+
       // 할당 정보 새로고침
       const partnerId = materialCodeModalState.partnerId
       if (partnerId) {
         await loadAssignments(partnerId)
       }
-      
+
       toast({
         title: '자재코드 삭제 완료',
         description: '자재코드가 성공적으로 삭제되었습니다.'
       })
     } catch (error) {
       console.error('자재코드 삭제 실패:', error)
-      const errorMessage = error instanceof Error ? error.message : '자재코드 삭제 중 오류가 발생했습니다.'
+      const errorMessage =
+        error instanceof Error ? error.message : '자재코드 삭제 중 오류가 발생했습니다.'
       throw new Error(errorMessage)
     }
   }
@@ -212,7 +211,7 @@ export function PartnerTable({
     try {
       const partnerId = materialCodeModalState.partnerId
       console.log('Debug - partnerId (no conversion):', partnerId)
-      
+
       if (!partnerId) {
         throw new Error('협력사 정보가 없습니다')
       }
@@ -491,7 +490,9 @@ export function PartnerTable({
                           className="px-3 py-1 font-semibold text-green-700 transition-colors border-2 border-green-200 rounded-lg cursor-pointer bg-green-50 hover:bg-green-100"
                           onClick={() => openMaterialCodeModal(partner)}>
                           <Package className="w-3 h-3 mr-1" />
-                          {assignmentCount === 1 ? '자재코드 할당됨' : `자재코드 ${assignmentCount}개`}
+                          {assignmentCount === 1
+                            ? '자재코드 할당됨'
+                            : `자재코드 ${assignmentCount}개`}
                         </Badge>
                       )
                     } else {
