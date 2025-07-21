@@ -45,7 +45,8 @@ import {
   MaterialCodeCreateRequest,
   MaterialCodeUpdateRequest,
   MaterialCodeBatchCreateRequest,
-  MaterialAssignmentResponse
+  MaterialAssignmentResponse,
+  MaterialAssignmentRequest
 } from '@/types/partnerCompanyType'
 import {cn} from '@/lib/utils'
 import {updateAccountCreatedStatus} from '@/services/partnerCompanyService'
@@ -219,11 +220,24 @@ export function PartnerTable({
       // 저장 타입에 따른 API 호출
       if ('materialCodes' in data) {
         // 다중 자재코드 저장 (일괄 할당)
+        // 일괄 할당 전 필수 필드 검증 (TypeScript 타입 안전성 확보)
+        const invalidCodes = data.materialCodes.filter(
+          code => !code.materialCode || !code.materialName
+        )
+        if (invalidCodes.length > 0) {
+          toast({
+            title: '자재코드 관리',
+            description: `${invalidCodes.length}개의 자재코드에 필수 정보가 누락되었습니다. 자재코드와 자재명을 모두 입력해주세요.`,
+            variant: 'destructive'
+          })
+          return // 모달을 닫지 않고 사용자가 수정할 수 있도록 함
+        }
+
         const batchRequest = {
           toPartnerId: partnerId,
           materialCodes: data.materialCodes.map(code => ({
-            materialCode: code.materialCode,
-            materialName: code.materialName,
+            materialCode: code.materialCode!,
+            materialName: code.materialName!,
             materialCategory: code.category,
             materialSpec: code.description, // description을 materialSpec으로 매핑
             materialDescription: code.description
@@ -242,11 +256,20 @@ export function PartnerTable({
         })
       } else if ('materialCode' in data && materialCodeModalState.mode === 'create') {
         // 단일 자재코드 생성
-        const request = {
+        // 필수 필드 검증 (TypeScript 타입 안전성 확보)
+        if (!data.materialCode || !data.materialName) {
+          toast({
+            title: '자재코드 관리',
+            description: '자재코드와 자재명은 필수 입력 항목입니다.',
+            variant: 'destructive'
+          })
+          return // 모달을 닫지 않고 사용자가 수정할 수 있도록 함
+        }
+
+        const request: MaterialAssignmentRequest = {
           materialCode: data.materialCode,
           materialName: data.materialName,
           materialCategory: data.category,
-          materialSpec: data.description, // description을 materialSpec으로 매핑
           materialDescription: data.description,
           toPartnerId: partnerId,
           assignedBy: 'Current User', // TODO: 실제 사용자 정보
