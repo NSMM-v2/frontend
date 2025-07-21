@@ -748,6 +748,7 @@ export interface MaterialCodeBatchCreateRequest {
  * 자재코드 수정 요청
  */
 export interface MaterialCodeUpdateRequest {
+  materialCode?: string // 자재코드 (수정 시)
   materialName?: string // 자재명
   description?: string // 자재코드 설명
   category?: string // 카테고리
@@ -776,6 +777,7 @@ export interface MaterialCodeItem {
   category: string // 카테고리
   errors: Partial<MaterialCodeItem> // 유효성 검증 에러
   assignmentId?: number // 할당 ID (편집 모드용)
+  isMapped?: boolean // 매핑 여부 (삭제 제한용)
 }
 
 // ============================================================================
