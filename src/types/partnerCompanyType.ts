@@ -914,8 +914,8 @@ export interface MaterialAssignmentResponse {
   // 기본 정보
   id: number // 할당 고유 ID
   headquartersId: number // 본사 ID
-  fromPartnerId: string // 할당하는 협력사 ID
-  toPartnerId: string // 할당받는 협력사 ID
+  fromPartnerId: string // 할당하는 협력사 ID (비즈니스 ID)
+  toPartnerId: string // 할당받는 협력사 ID (비즈니스 ID)
   fromLevel?: number // 할당하는 협력사 레벨
   toLevel?: number // 할당받는 협력사 레벨
 
