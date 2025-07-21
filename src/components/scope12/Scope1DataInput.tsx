@@ -8,7 +8,6 @@ import {motion, AnimatePresence} from 'framer-motion'
 
 // UI 아이콘 임포트
 import {
-  Plus, // 플러스 아이콘 (추가)
   Trash2, // 삭제 아이콘
   Save, // 저장 아이콘
   Sparkles, // LCA 모드용 아이콘 추가
@@ -50,9 +49,7 @@ import {ExcelCascadingSelector} from '@/components/scope12/Scope12ExcelCascading
 import {
   SelectorState,
   ScopeEmissionResponse,
-  ScopeEmissionRequest,
-  ScopeEmissionUpdateRequest,
-  InputType
+  ScopeEmissionRequest
 } from '@/types/scopeTypes'
 import {
   createScopeEmission,

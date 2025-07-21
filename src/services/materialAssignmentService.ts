@@ -185,6 +185,35 @@ export const materialAssignmentService = {
   },
 
   /**
+   * 내 자재 데이터 조회 (본사: 더미 데이터, 협력사: 할당받은 자재 데이터)
+   */
+  async getMyMaterialData(): Promise<MaterialAssignmentResponse[]> {
+    try {
+      const response = await api.get<ApiResponse<MaterialAssignmentResponse[]>>(
+        '/api/v1/scope/material-assignments/my-materials'
+      )
+
+      if (response.data.success && response.data.data) {
+        return response.data.data
+      }
+
+      throw new Error(response.data.message || '내 자재 데이터 조회에 실패했습니다')
+    } catch (error) {
+      console.error('내 자재 데이터 조회 오류:', error)
+
+      // 백엔드 에러 메시지 추출
+      if (error instanceof Error && 'response' in error) {
+        const axiosError = error as any
+        if (axiosError.response?.data?.message) {
+          throw new Error(axiosError.response.data.message)
+        }
+      }
+
+      throw error
+    }
+  },
+
+  /**
    * 자재코드 할당 삭제 가능 여부 확인
    * 백엔드에서 can-delete 엔드포인트가 구현되지 않은 경우 fallback 로직 사용
    */
