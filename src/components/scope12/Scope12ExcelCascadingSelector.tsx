@@ -75,9 +75,7 @@ export function ExcelCascadingSelector({
             separate: row['구분'].trim(),
             RawMaterial: row['원료/에너지'].trim(),
             unit: row['단위']?.trim() || '',
-            kgCO2eq:
-              parseFloat(row['탄소발자국 (CO2e)']) ||
-              0,
+            kgCO2eq: parseFloat(row['탄소발자국 (CO2e)']) || 0,
             materialState: row['종류'],
             scopeCategory: row['ESG Scope 분류 (추정)']
           }))
@@ -143,7 +141,7 @@ export function ExcelCascadingSelector({
     list5: undefined,
     list6: undefined, // list6는 필터링 안 함 → 전체 표시
     list7: undefined, // list7는 필터링 안 함 → 전체 표시
-    list8: {include:['매립','소각']},
+    list8: {include: ['매립', '소각']},
     list9: undefined, // list9는 필터링 안 함 → 전체 표시
     list10: undefined, // list15는 필터링 안 함 → 전체 표시
     list11: undefined,
@@ -163,7 +161,7 @@ export function ExcelCascadingSelector({
     list11: {include: ['전기']},
     list12: {include: ['스팀']}
   }
-    const stateFilterMap: Record<typeof activeCategory, StateFilterRule> = {
+  const stateFilterMap: Record<typeof activeCategory, StateFilterRule> = {
     list1: {include: ['액체']}, // 예시
     list2: {include: ['기체']}, // list2는 필터링 안 함 → 전체 표시
     list3: {include: ['고체']}, // list3는 에너지, 육상수송, 항공수송, 해상수송만 표시
@@ -179,76 +177,82 @@ export function ExcelCascadingSelector({
   }
   // ... rest of the code remains the same ...
   // const categoryList = unique(data.map(d => d.category))
-const filteredSeparateList = useMemo(() => {
-  const validSeparates = unique(
-    data
-      .filter(item => {
-        // 1️⃣ scopeCategory 조건
-        const scopeRule = scopeCategoryFilterMap[activeCategory]
-        const scopeOK = scopeRule
-          ? ('include' in scopeRule
-              ? scopeRule.include.some(inc => (item.scopeCategory || '').trim().includes(inc))
-              : scopeRule.exclude.every(exc => !(item.scopeCategory || '').trim().includes(exc))
-            )
-          : true
+  const filteredSeparateList = useMemo(() => {
+    const validSeparates = unique(
+      data
+        .filter(item => {
+          // 1️⃣ scopeCategory 조건
+          const scopeRule = scopeCategoryFilterMap[activeCategory]
+          const scopeOK = scopeRule
+            ? 'include' in scopeRule
+              ? scopeRule.include.some(inc =>
+                  (item.scopeCategory || '').trim().includes(inc)
+                )
+              : scopeRule.exclude.every(
+                  exc => !(item.scopeCategory || '').trim().includes(exc)
+                )
+            : true
 
-        // 2️⃣ materialState 조건
-        const stateRule = stateFilterMap[activeCategory]
-        const stateOK = stateRule
-          ? ('include' in stateRule
+          // 2️⃣ materialState 조건
+          const stateRule = stateFilterMap[activeCategory]
+          const stateOK = stateRule
+            ? 'include' in stateRule
               ? stateRule.include.includes((item.materialState || '').trim())
               : !stateRule.exclude.includes((item.materialState || '').trim())
-            )
-          : true
+            : true
 
-        // 3️⃣ separateFilterMap 조건
-        const separateRule = separateFilterMap[activeCategory]
-        const separateOK = separateRule
-          ? ('include' in separateRule
-              ? separateRule.include.some(inc => (item.separate || '').trim().includes(inc))
-              : separateRule.exclude.every(exc => !(item.separate || '').trim().includes(exc))
-            )
-          : true
+          // 3️⃣ separateFilterMap 조건
+          const separateRule = separateFilterMap[activeCategory]
+          const separateOK = separateRule
+            ? 'include' in separateRule
+              ? separateRule.include.some(inc =>
+                  (item.separate || '').trim().includes(inc)
+                )
+              : separateRule.exclude.every(
+                  exc => !(item.separate || '').trim().includes(exc)
+                )
+            : true
 
-        return scopeOK && stateOK && separateOK
-      })
-      .map(item => item.separate)
-  )
+          return scopeOK && stateOK && separateOK
+        })
+        .map(item => item.separate)
+    )
 
-  return validSeparates
-}, [data, activeCategory])
-  
+    return validSeparates
+  }, [data, activeCategory])
 
-const rawMaterialList = useMemo(() => {
-  // 1️⃣ 먼저 선택된 separate로 필터링
-  let filtered = data.filter(d => d.separate === state.separate)
+  const rawMaterialList = useMemo(() => {
+    // 1️⃣ 먼저 선택된 separate로 필터링
+    let filtered = data.filter(d => d.separate === state.separate)
 
-  // 2️⃣ scopeCategoryFilterMap 규칙 적용 (separate처럼)
-  const separateRule = scopeCategoryFilterMap[activeCategory]
-  if (separateRule) {
-    if ('include' in separateRule) {
-      filtered = filtered.filter(d =>
-        separateRule.include.some(inc => (d.scopeCategory || '').includes(inc))
-      )
-    } else if ('exclude' in separateRule) {
-      filtered = filtered.filter(d =>
-        separateRule.exclude.every(exc => !(d.scopeCategory || '').includes(exc))
-      )
+    // 2️⃣ scopeCategoryFilterMap 규칙 적용 (separate처럼)
+    const separateRule = scopeCategoryFilterMap[activeCategory]
+    if (separateRule) {
+      if ('include' in separateRule) {
+        filtered = filtered.filter(d =>
+          separateRule.include.some(inc => (d.scopeCategory || '').includes(inc))
+        )
+      } else if ('exclude' in separateRule) {
+        filtered = filtered.filter(d =>
+          separateRule.exclude.every(exc => !(d.scopeCategory || '').includes(exc))
+        )
+      }
     }
-  }
 
-  // 3️⃣ 상태 필터 (기존)
-  const stateRule = stateFilterMap[activeCategory]
-  if (stateRule) {
-    if ('include' in stateRule) {
-      filtered = filtered.filter(d => stateRule.include.includes(d.materialState || ''))
-    } else if ('exclude' in stateRule) {
-      filtered = filtered.filter(d => !stateRule.exclude.includes(d.materialState || ''))
+    // 3️⃣ 상태 필터 (기존)
+    const stateRule = stateFilterMap[activeCategory]
+    if (stateRule) {
+      if ('include' in stateRule) {
+        filtered = filtered.filter(d => stateRule.include.includes(d.materialState || ''))
+      } else if ('exclude' in stateRule) {
+        filtered = filtered.filter(
+          d => !stateRule.exclude.includes(d.materialState || '')
+        )
+      }
     }
-  }
 
-  return unique(filtered.map(d => d.RawMaterial))
-}, [data, state.separate, activeCategory])
+    return unique(filtered.map(d => d.RawMaterial))
+  }, [data, state.separate, activeCategory])
 
   // 선택된 아이템 및 배출량 계산
 
