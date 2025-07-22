@@ -942,7 +942,7 @@ export function ExcelCascadingSelector({
                           </span>
                         )}
                         {hierarchicalState.isCreatingNewMapping && (
-                          <span className="px-2 py-1 text-xs font-medium text-orange-700 bg-orange-100 rounded-full">
+                          <span className="px-2 py-1 text-xs font-medium text-blue-700 bg-blue-100 rounded-full">
                             신규
                           </span>
                         )}
