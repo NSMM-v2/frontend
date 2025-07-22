@@ -134,9 +134,12 @@ export function MaterialCodeModal({
           id: '1',
           materialCode: materialCode.materialCode || '',
           materialName: materialCode.materialName || '',
+          materialDescription: materialCode.description || '', // 레거시 호환성
+          materialCategory: materialCode.category || '', // 레거시 호환성
+          errors: {},
+          // 레거시 호환성 필드 유지
           description: materialCode.description || '',
-          category: materialCode.category || '',
-          errors: {}
+          category: materialCode.category || ''
         }
       ]
     }
@@ -147,11 +150,14 @@ export function MaterialCodeModal({
         id: `existing-${index}`,
         materialCode: assignment.materialCode,
         materialName: assignment.materialName,
-        description: assignment.materialDescription || assignment.materialSpec || '',
-        category: assignment.materialCategory || '',
+        materialDescription: assignment.materialDescription || '', // 백엔드 필드명 사용
+        materialCategory: assignment.materialCategory || '', // 백엔드 필드명 사용
         errors: {},
         assignmentId: assignment.id, // 할당 ID 추가
-        isMapped: assignment.isMapped || false // 매핑 여부 추가
+        isMapped: assignment.isMapped || false, // 매핑 여부 추가
+        // 레거시 호환성 필드 유지
+        description: assignment.materialDescription || '',
+        category: assignment.materialCategory || ''
       }))
     }
 
@@ -161,9 +167,12 @@ export function MaterialCodeModal({
         id: generateId(),
         materialCode: '',
         materialName: '',
+        materialDescription: '',
+        materialCategory: '',
+        errors: {},
+        // 레거시 호환성 필드 유지
         description: '',
-        category: '',
-        errors: {}
+        category: ''
       }
     ]
   })
@@ -179,9 +188,12 @@ export function MaterialCodeModal({
             id: '1',
             materialCode: materialCode.materialCode || '',
             materialName: materialCode.materialName || '',
+            materialDescription: materialCode.description || '', // 레거시 호환성
+            materialCategory: materialCode.category || '', // 레거시 호환성
+            errors: {},
+            // 레거시 호환성 필드 유지
             description: materialCode.description || '',
-            category: materialCode.category || '',
-            errors: {}
+            category: materialCode.category || ''
           }
         ])
       } else if (modalState.mode === 'assign' && existingAssignments.length > 0) {
@@ -191,11 +203,14 @@ export function MaterialCodeModal({
             id: `existing-${index}`,
             materialCode: assignment.materialCode,
             materialName: assignment.materialName,
-            description: assignment.materialDescription || assignment.materialSpec || '',
-            category: assignment.materialCategory || '',
+            materialDescription: assignment.materialDescription || '', // 백엔드 필드명 사용
+            materialCategory: assignment.materialCategory || '', // 백엔드 필드명 사용
             errors: {},
             assignmentId: assignment.id, // 할당 ID 추가
-            isMapped: assignment.isMapped || false // 매핑 여부 추가
+            isMapped: assignment.isMapped || false, // 매핑 여부 추가
+            // 레거시 호환성 필드 유지
+            description: assignment.materialDescription || '',
+            category: assignment.materialCategory || ''
           }))
         )
       } else {
@@ -205,9 +220,12 @@ export function MaterialCodeModal({
             id: generateId(),
             materialCode: '',
             materialName: '',
+            materialDescription: '',
+            materialCategory: '',
+            errors: {},
+            // 레거시 호환성 필드 유지
             description: '',
-            category: '',
-            errors: {}
+            category: ''
           }
         ])
       }
@@ -221,7 +239,7 @@ export function MaterialCodeModal({
       lastItem &&
       (!lastItem.materialCode.trim() ||
         !lastItem.materialName.trim() ||
-        !lastItem.category)
+        !lastItem.materialCategory)
     ) {
       toast.error(
         '새 자재코드를 추가하기 전에 현재 항목의 필수 필드(자재코드, 자재명, 카테고리)를 모두 입력해주세요.'
@@ -233,8 +251,8 @@ export function MaterialCodeModal({
       id: generateId(),
       materialCode: '',
       materialName: '',
-      description: '',
-      category: '',
+      materialDescription: '',
+      materialCategory: '',
       errors: {}
     }
     setMaterialCodeList(prev => [...prev, newItem])
@@ -325,6 +343,11 @@ export function MaterialCodeModal({
             ? {
                 ...item,
                 [field]: value,
+                // 레거시 호환성을 위한 동기화
+                ...(field === 'materialDescription' && {description: value}),
+                ...(field === 'materialCategory' && {category: value}),
+                ...(field === 'description' && {materialDescription: value}),
+                ...(field === 'category' && {materialCategory: value}),
                 errors: {...item.errors, [field]: undefined} // 에러 제거
               }
             : item
@@ -349,7 +372,7 @@ export function MaterialCodeModal({
       // 중복 자재코드 체크: 기존 할당된 자재코드는 수정 모드에서 제외
       const isDuplicateExistingCode = existingCodes.includes(item.materialCode)
       const isEditingExistingCode = item.assignmentId && modalState.mode === 'assign'
-      
+
       if (isDuplicateExistingCode && !isEditingExistingCode) {
         errors.materialCode = '이미 존재하는 자재코드입니다.'
       }
@@ -395,6 +418,9 @@ export function MaterialCodeModal({
 
   // handleSave 메서드 - 저장 처리 함수
   const handleSave = async () => {
+    console.log('=== MaterialCodeModal handleSave 시작 ===')
+    console.log('modalState:', modalState)
+    console.log('materialCodeList:', materialCodeList)
     // 필수 필드 검증 - 자재코드, 자재명, 카테고리 누락 확인
     const missingFields: string[] = []
 
@@ -406,7 +432,7 @@ export function MaterialCodeModal({
       if (!item.materialName.trim()) {
         missingFields.push(`${itemNumber}번째 항목의 자재명`)
       }
-      if (!item.category) {
+      if (!item.materialCategory) {
         missingFields.push(`${itemNumber}번째 항목의 카테고리`)
       }
     })
@@ -423,13 +449,14 @@ export function MaterialCodeModal({
 
     // 모달 모드에 따른 저장 처리 분기
     try {
+      console.log('저장 처리 시작 - 모드:', modalState.mode)
       if (modalState.mode === 'edit') {
         // 편집 모드: 단일 항목만 처리
         const item = materialCodeList[0]
         const requestData: MaterialCodeUpdateRequest = {
           materialName: item.materialName.trim(),
-          description: item.description.trim() || undefined,
-          category: item.category || undefined
+          materialDescription: item.materialDescription?.trim() || undefined,
+          materialCategory: item.materialCategory || undefined
         }
         await onSave(requestData)
       } else if (modalState.mode === 'assign') {
@@ -440,7 +467,7 @@ export function MaterialCodeModal({
         // 기존 자재코드 수정 처리
         for (const item of existingItems) {
           if (!item.assignmentId) continue
-          
+
           // 매핑된 자재코드는 수정 불가
           if (item.isMapped) {
             toast.error(`매핑된 자재코드 ${item.materialCode}는 수정할 수 없습니다.`)
@@ -451,23 +478,26 @@ export function MaterialCodeModal({
             const updateRequest: MaterialCodeUpdateRequest = {
               materialCode: item.materialCode.trim().toUpperCase(),
               materialName: item.materialName.trim(),
-              description: item.description.trim() || undefined,
-              category: item.category || undefined
+              materialDescription: item.materialDescription?.trim() || undefined,
+              materialCategory: item.materialCategory || undefined
             }
-            
+
             // updateAssignment API 호출 (PartnerTable에서 별도 처리 필요)
             await materialAssignmentService.updateAssignment(item.assignmentId, {
-              toPartnerId: modalState.partnerId || '',
-              materialCode: updateRequest.materialCode || item.materialCode,
-              materialName: updateRequest.materialName || item.materialName,
-              materialCategory: updateRequest.category,
-              materialDescription: updateRequest.description
+              materialInfo: {
+                materialCode: updateRequest.materialCode || item.materialCode,
+                materialName: updateRequest.materialName || item.materialName,
+                materialCategory: updateRequest.materialCategory,
+                materialDescription: updateRequest.materialDescription
+              },
+              toPartnerId: modalState.partnerId || ''
             })
-            
+
             console.log(`기존 자재코드 수정 완료: ${item.materialCode}`)
           } catch (error) {
             console.error(`기존 자재코드 수정 실패 (${item.materialCode}):`, error)
-            const errorMessage = error instanceof Error ? error.message : '수정 중 오류가 발생했습니다.'
+            const errorMessage =
+              error instanceof Error ? error.message : '수정 중 오류가 발생했습니다.'
             toast.error(`${item.materialCode} 수정 실패: ${errorMessage}`)
           }
         }
@@ -475,14 +505,16 @@ export function MaterialCodeModal({
         // 새 자재코드 생성 처리
         if (newItems.length > 0) {
           if (newItems.length === 1) {
-            // 단일 자재코드 생성
+            // 단일 자재코드 생성 - MaterialCodeCreateRequest 구조 사용
             const item = newItems[0]
             const requestData: MaterialCodeCreateRequest = {
               materialCode: item.materialCode.trim().toUpperCase(),
               materialName: item.materialName.trim(),
-              description: item.description.trim() || undefined,
-              category: item.category || undefined
+              materialCategory: item.materialCategory || undefined,
+              materialDescription: item.materialDescription?.trim() || undefined
             }
+            console.log('할당 모드 - 단일 자재코드 생성 요청:', requestData)
+            console.log('toPartnerId 값:', modalState.partnerId)
             await onSave(requestData)
           } else {
             // 다중 자재코드 일괄 생성
@@ -490,8 +522,8 @@ export function MaterialCodeModal({
               materialCodes: newItems.map(item => ({
                 materialCode: item.materialCode.trim().toUpperCase(),
                 materialName: item.materialName.trim(),
-                description: item.description.trim() || undefined,
-                category: item.category || undefined
+                materialDescription: item.materialDescription?.trim() || undefined,
+                materialCategory: item.materialCategory || undefined
               })),
               toPartnerId: modalState.partnerId,
               assignmentNote: `${newItems.length}개 자재코드 일괄 생성`
@@ -507,14 +539,28 @@ export function MaterialCodeModal({
       } else {
         // 생성 모드: 단일 또는 다중 처리
         if (materialCodeList.length === 1) {
-          // 단일 자재코드 생성
+          // 단일 자재코드 생성 - MaterialCodeCreateRequest 구조 사용
           const item = materialCodeList[0]
           const requestData: MaterialCodeCreateRequest = {
             materialCode: item.materialCode.trim().toUpperCase(),
             materialName: item.materialName.trim(),
-            description: item.description.trim() || undefined,
-            category: item.category || undefined
+            materialCategory: item.materialCategory || undefined,
+            materialDescription: item.materialDescription?.trim() || undefined
           }
+          console.log('=== 단일 자재코드 생성 디버깅 ===')
+          console.log(
+            '일반 모드 - 단일 자재코드 생성 요청:',
+            JSON.stringify(requestData, null, 2)
+          )
+          console.log('toPartnerId 값:', modalState.partnerId)
+          console.log('toPartnerId 타입:', typeof modalState.partnerId)
+          console.log('toPartnerId 길이:', modalState.partnerId?.length)
+          console.log('materialInfo 검증:', {
+            materialCode: requestData.materialCode,
+            materialName: requestData.materialName,
+            materialCodeEmpty: !requestData.materialCode,
+            materialNameEmpty: !requestData.materialName
+          })
           await onSave(requestData)
         } else {
           // 다중 자재코드 일괄 생성
@@ -522,8 +568,8 @@ export function MaterialCodeModal({
             materialCodes: materialCodeList.map(item => ({
               materialCode: item.materialCode.trim().toUpperCase(),
               materialName: item.materialName.trim(),
-              description: item.description.trim() || undefined,
-              category: item.category || undefined
+              materialDescription: item.materialDescription?.trim() || undefined,
+              materialCategory: item.materialCategory || undefined
             })),
             toPartnerId: modalState.partnerId,
             assignmentNote: `${materialCodeList.length}개 자재코드 일괄 생성`
@@ -532,9 +578,21 @@ export function MaterialCodeModal({
         }
       }
 
+      console.log('저장 성공 - 모달 닫는 중...')
       onClose()
     } catch (error) {
-      console.error('자재코드 저장 실패:', error)
+      console.error('=== 자재코드 저장 실패 ===')
+      console.error('에러 상세 정보:', error)
+      console.error(
+        '에러 메시지:',
+        error instanceof Error ? error.message : '알 수 없는 에러'
+      )
+
+      if (error instanceof Error && 'response' in error) {
+        const axiosError = error as any
+        console.error('백엔드 에러 응답:', axiosError.response?.data)
+        console.error('상태 코드:', axiosError.response?.status)
+      }
     }
   }
 
@@ -574,14 +632,16 @@ export function MaterialCodeModal({
       return (
         newItems.length === 0 ||
         newItems.every(
-          item => item.materialCode.trim() && item.materialName.trim() && item.category
+          item =>
+            item.materialCode.trim() && item.materialName.trim() && item.materialCategory
         )
       )
     }
 
     // 일반 모드인 경우 모든 항목 검증
     return materialCodeList.every(
-      item => item.materialCode.trim() && item.materialName.trim() && item.category
+      item =>
+        item.materialCode.trim() && item.materialName.trim() && item.materialCategory
     )
   })()
 
@@ -740,7 +800,9 @@ export function MaterialCodeModal({
                         )}
                         disabled={
                           modalState.mode === 'edit' ||
-                          (modalState.mode === 'assign' && !!item.assignmentId && item.isMapped) ||
+                          (modalState.mode === 'assign' &&
+                            !!item.assignmentId &&
+                            item.isMapped) ||
                           isSubmitting
                         }
                         maxLength={10}
@@ -780,9 +842,9 @@ export function MaterialCodeModal({
                         카테고리
                       </Label>
                       <Select
-                        value={item.category}
+                        value={item.materialCategory || ''}
                         onValueChange={value =>
-                          updateMaterialCodeItem(item.id, 'category', value)
+                          updateMaterialCodeItem(item.id, 'materialCategory', value)
                         }
                         disabled={isSubmitting}>
                         <SelectTrigger className="h-10 bg-white border-2 rounded-lg border-slate-200 focus:border-blue-500">
@@ -806,9 +868,13 @@ export function MaterialCodeModal({
                     </Label>
                     <div className="relative">
                       <Input
-                        value={item.description}
+                        value={item.materialDescription || ''}
                         onChange={e =>
-                          updateMaterialCodeItem(item.id, 'description', e.target.value)
+                          updateMaterialCodeItem(
+                            item.id,
+                            'materialDescription',
+                            e.target.value
+                          )
                         }
                         placeholder="이 자재코드에 대한 상세한 설명을 입력해주세요... (예: 용도, 규격, 특징 등)"
                         className="h-12 transition-all duration-300 border-2 border-blue-200 bg-gradient-to-r from-blue-50 to-indigo-50 rounded-xl focus:border-blue-500 focus:from-blue-100 focus:to-indigo-100 placeholder:text-slate-400"
@@ -824,11 +890,11 @@ export function MaterialCodeModal({
                       <span
                         className={cn(
                           'font-medium transition-colors',
-                          item.description.length > 400
+                          (item.materialDescription?.length || 0) > 400
                             ? 'text-orange-500'
                             : 'text-slate-500'
                         )}>
-                        {item.description.length}/500자
+                        {item.materialDescription?.length || 0}/500자
                       </span>
                     </div>
                   </div>
@@ -843,18 +909,19 @@ export function MaterialCodeModal({
                         <span className="text-sm font-medium text-blue-800">
                           {item.materialName}
                         </span>
-                        {item.category && (
+                        {item.materialCategory && (
                           <Badge variant="outline" className="text-xs text-blue-600">
                             {
-                              MATERIAL_CATEGORIES.find(cat => cat.value === item.category)
-                                ?.label
+                              MATERIAL_CATEGORIES.find(
+                                cat => cat.value === item.materialCategory
+                              )?.label
                             }
                           </Badge>
                         )}
                       </div>
-                      {item.description.trim() && (
+                      {item.materialDescription?.trim() && (
                         <div className="text-xs text-blue-700 bg-blue-50">
-                          {item.description}
+                          {item.materialDescription}
                         </div>
                       )}
                     </div>
@@ -887,19 +954,19 @@ export function MaterialCodeModal({
                           <span className="font-medium text-green-800">
                             {item.materialName}
                           </span>
-                          {item.category && (
+                          {item.materialCategory && (
                             <Badge variant="outline" className="text-xs text-green-600">
                               {
                                 MATERIAL_CATEGORIES.find(
-                                  cat => cat.value === item.category
+                                  cat => cat.value === item.materialCategory
                                 )?.label
                               }
                             </Badge>
                           )}
                         </div>
-                        {item.description.trim() && (
+                        {item.materialDescription?.trim() && (
                           <div className="text-xs text-green-700 ml-7">
-                            {item.description}
+                            {item.materialDescription}
                           </div>
                         )}
                       </div>

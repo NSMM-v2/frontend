@@ -702,22 +702,8 @@ export interface MaterialCode {
 }
 
 /**
- * 자재코드 매핑 정보 (상위→하위 할당)
- */
-export interface MaterialCodeMapping {
-  id?: string // 매핑 고유 ID
-  parentMaterialCode: string // 상위 자재코드 (할당받은 코드)
-  parentMaterialName: string // 상위 자재명
-  childMaterialCode: string // 하위 자재코드 (내가 만든 코드)
-  childMaterialName: string // 하위 자재명
-  partnerId: string // 협력사 ID
-  partnerName: string // 협력사명
-  assignedAt: string // 할당일시
-  isActive: boolean // 활성 상태
-}
-
-/**
- * 자재코드 할당 요청
+ * 레거시 자재코드 할당 요청 (기존 호환성 유지)
+ * @deprecated MaterialAssignmentRequest를 사용하세요
  */
 export interface MaterialCodeAssignmentRequest {
   partnerId: string // 협력사 ID
@@ -726,17 +712,22 @@ export interface MaterialCodeAssignmentRequest {
 }
 
 /**
- * 자재코드 생성 요청
+ * 자재코드 생성 요청 (MaterialInfo 기반)
  */
 export interface MaterialCodeCreateRequest {
   materialCode: string // 자재코드
   materialName: string // 자재명
-  description?: string // 자재코드 설명
-  category?: string // 카테고리
+  materialCategory?: string // 카테고리 (백엔드 호환)
+  materialSpec?: string // 자재 스펙 (백엔드 호환)
+  materialDescription?: string // 자재코드 설명 (백엔드 호환)
+
+  // 레거시 호환성 필드
+  description?: string // 자재코드 설명 (기존 호환성)
+  category?: string // 카테고리 (기존 호환성)
 }
 
 /**
- * 여러 자재코드 생성 요청
+ * 여러 자재코드 생성 요청 (MaterialInfo 기반)
  */
 export interface MaterialCodeBatchCreateRequest {
   materialCodes: MaterialCodeCreateRequest[] // 자재코드 목록
@@ -745,14 +736,19 @@ export interface MaterialCodeBatchCreateRequest {
 }
 
 /**
- * 자재코드 수정 요청
+ * 자재코드 수정 요청 (MaterialInfo 기반)
  */
 export interface MaterialCodeUpdateRequest {
   materialCode?: string // 자재코드 (수정 시)
   materialName?: string // 자재명
-  description?: string // 자재코드 설명
-  category?: string // 카테고리
+  materialCategory?: string // 자재 카테고리 (백엔드 호호)
+  materialSpec?: string // 자재 스펙 (백엔드 호환)
+  materialDescription?: string // 자재 설명 (백엔드 호환)
   isActive?: boolean // 활성 상태
+
+  // 레거시 호환성 필드
+  description?: string // 자재코드 설명 (기존 호호)
+  category?: string // 카테고리 (기존 호환)
 }
 
 /**
@@ -768,16 +764,22 @@ export interface MaterialCodeModalState {
 
 /**
  * 자재코드 항목 (모달 내 리스트용)
+ * MaterialInfo 사양에 맞춘 확장 타입
  */
 export interface MaterialCodeItem {
   id: string // 임시 고유 ID
   materialCode: string // 자재코드
   materialName: string // 자재명
-  description: string // 자재코드 설명
-  category: string // 카테고리
+  materialCategory: string // 자재 카테고리 (백엔드 호호)
+  materialSpec?: string // 자재 스펙 (백엔드 호환)
+  materialDescription: string // 자재 설명 (백엔드 호환)
   errors: Partial<MaterialCodeItem> // 유효성 검증 에러
   assignmentId?: number // 할당 ID (편집 모드용)
   isMapped?: boolean // 매핑 여부 (삭제 제한용)
+
+  // 레거시 호환성 필드
+  description?: string // 자재코드 설명 (기존 호킘)
+  category?: string // 카테고리 (기존 호환)
 }
 
 // ============================================================================
@@ -841,6 +843,7 @@ export interface AssignedMaterialCode {
 
 /**
  * 자재코드 매핑 정보 (상위코드 → 내코드)
+ * 계층적 자재코드 매핑에서 사용
  */
 export interface MaterialCodeMapping {
   id?: string // 매핑 고유 ID
@@ -876,71 +879,75 @@ export interface MaterialCodeMappingResponse {
 }
 
 // ============================================================================
+// 자재 정보 공통 타입 (MaterialInfo DTO 매핑)
+// ============================================================================
+
+/**
+ * 자재 정보 공통 타입 (MaterialInfo DTO와 일치)
+ */
+export interface MaterialInfo {
+  materialCode: string // 자재코드 (예: MAT-001)
+  materialName: string // 자재명 (예: 강철판)
+  materialCategory?: string // 자재 카테고리 (예: 금속)
+  materialDescription?: string // 자재 설명 (예: 고강도 스틸 플레이트)
+}
+
+// ============================================================================
 // 자재코드 할당 관리 타입 정의 (MaterialAssignmentController 연동)
 // ============================================================================
 
 /**
- * 자재코드 할당 요청
+ * 자재코드 할당 요청 (MaterialAssignmentRequest DTO와 일치)
  */
 export interface MaterialAssignmentRequest {
-  materialCode: string // 자재코드
-  materialName: string // 자재명
-  materialCategory?: string // 카테고리 (백엔드 materialCategory와 매핑)
-  materialSpec?: string // 자재 스펙 (백엔드 materialSpec와 매핑)
-  materialDescription?: string // 자재코드 설명
-  toPartnerId: string // 할당받을 협력사 ID
-  assignedBy?: string // 할당자 정보
-  assignmentReason?: string // 할당 사유
+  materialInfo: MaterialInfo // 자재 정보
+  toPartnerId: string // 할당받는 협력사 ID (비즈니스 ID)
+  assignedBy?: string // 할당자 정보 (최대 100자)
+  assignmentReason?: string // 할당 사유 (최대 500자)
 }
 
 /**
- * 자재코드 일괄 할당 요청
+ * 자재코드 일괄 할당 요청 (MaterialAssignmentBatchRequest DTO와 일치)
  */
 export interface MaterialAssignmentBatchRequest {
-  toPartnerId: string // 할당받을 협력사 ID
-  materialCodes: {
-    materialCode: string // 자재코드
-    materialName: string // 자재명
-    materialCategory?: string // 카테고리 (백엔드 materialCategory와 매핑)
-    materialSpec?: string // 자재 스펙 (백엔드 materialSpec와 매핑)
-    materialDescription?: string // 자재코드 설명
-  }[]
-  assignedBy?: string // 할당자 정보
-  assignmentReason?: string // 할당 사유
+  toPartnerId: string // 할당받는 협력사 ID (비즈니스 ID)
+  materialCodes: MaterialInfo[] // 할당할 자재 정보 목록
+  assignedBy?: string // 할당자 정보 (최대 100자)
+  assignmentReason?: string // 할당 사유 (최대 500자)
 }
 
 /**
- * 자재코드 할당 응답 (백엔드 DTO와 일치)
+ * 자재코드 할당 응답 (MaterialAssignmentResponse DTO와 일치)
  */
 export interface MaterialAssignmentResponse {
   // 기본 정보
-  id: number // 할당 고유 ID
+  id: number // 할당 ID
   headquartersId: number // 본사 ID
-  fromPartnerId: string // 할당하는 협력사 ID (비즈니스 ID)
-  toPartnerId: string // 할당받는 협력사 ID (비즈니스 ID)
-  fromLevel?: number // 할당하는 협력사 레벨
-  toLevel?: number // 할당받는 협력사 레벨
+  fromPartnerId?: string // 할당하는 협력사 ID (본사인 경우 null)
+  toPartnerId: string // 할당받는 협력사 ID
+  fromLevel?: number // 할당하는 엔체 레벨 (0: 본사, 1: 1차사...)
+  toLevel: number // 할당받는 엔체 레벨
 
   // 자재코드 정보
   materialCode: string // 자재코드
   materialName: string // 자재명
-  materialCategory?: string // 카테고리
-  materialSpec?: string // 자재 스펙
-  materialDescription?: string // 자재코드 설명
+  materialCategory?: string // 자재 카테고리
+  materialDescription?: string // 자재 상세 설명
 
-  // 할당 메타 정보
+  // 메타 정보
   isActive: boolean // 활성 상태
-  isMapped?: boolean // 매핑 여부
+  isMapped?: boolean // 매핑 생성 여부
+  createdAt: string // 생성일시 (LocalDateTime)
+  updatedAt?: string // 수정일시 (LocalDateTime)
 
-  // 연결 정보
-  mappingCount?: number // 매핑 개수
-  activeMappingCount?: number // 활성 매핑 개수
+  // 비즈니스 메서드 결과
+  mappingCount?: number // 매핑 개수 (getMappingCount 결과)
+  activeMappingCount?: number // 활성 매핑 개수 (getActiveMappingCount 결과)
+  assignmentInfo?: string // 할당 관계 정보 (getAssignmentInfo 결과)
+  isModifiable?: boolean // 수정 가능 여부 (isModifiable 결과)
+  isDeletable?: boolean // 삭제 가능 여부 (isDeletable 결과)
 
-  // 시간 정보
-  createdAt: string // 생성일시
-  updatedAt?: string // 수정일시
-
-  // 할당 관계 정보 (조인 데이터)
+  // 할당 관계 정보 (조인 데이터 - 추가 필드)
   fromPartnerName?: string // 할당하는 협력사명
   toPartnerName?: string // 할당받는 협력사명
 }

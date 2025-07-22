@@ -67,25 +67,50 @@ export const materialAssignmentService = {
     request: MaterialAssignmentRequest
   ): Promise<MaterialAssignmentResponse> {
     try {
+      console.log('=== materialAssignmentService.createAssignment 시작 ===')
+      console.log('요청 데이터:', JSON.stringify(request, null, 2))
+      console.log('API URL:', '/api/v1/scope/material-assignments')
+
+      console.log('요청 전송 중...')
       const response = await api.post<ApiResponse<MaterialAssignmentResponse>>(
         '/api/v1/scope/material-assignments',
         request
       )
+      console.log('백엔드 응답:', response.data)
 
       if (response.data.success && response.data.data) {
+        console.log('생성 성공:', response.data.data)
         return response.data.data
       }
 
+      console.error('생성 실패 - 응답 데이터:', response.data)
       throw new Error(response.data.message || '자재코드 할당에 실패했습니다')
     } catch (error) {
-      console.error('자재코드 할당 생성 오류:', error)
+      console.error('=== 자재코드 할당 생성 오류 ===')
+      console.error('전체 에러 정보:', error)
 
-      // 백엔드 에러 메시지 추출
+      // 백엔드 에러 메시지 추출 및 개선
       if (error instanceof Error && 'response' in error) {
         const axiosError = error as any
+        console.error('백엔드 에러 응답:', axiosError.response?.data)
+        console.error('상태 코드:', axiosError.response?.status)
+        console.error('요청 헤더:', axiosError.config?.headers)
+
         if (axiosError.response?.data?.message) {
-          throw new Error(axiosError.response.data.message)
+          const message = axiosError.response.data.message
+          // materialInfo 관련 에러를 더 명확하게 처리
+          if (
+            message.includes('materialInfo') ||
+            message.includes('자재 정보는 필수입니다')
+          ) {
+            throw new Error(
+              '자재 정보가 올바르지 않습니다. 자재코드와 자재명을 확인해주세요.'
+            )
+          }
+          throw new Error(message)
         }
+      } else {
+        console.error('Axios 에러가 아닌 에러:', error)
       }
 
       throw error
@@ -112,11 +137,21 @@ export const materialAssignmentService = {
     } catch (error) {
       console.error('자재코드 일괄 할당 오류:', error)
 
-      // 백엔드 에러 메시지 추출
+      // 백엔드 에러 메시지 추출 및 개선
       if (error instanceof Error && 'response' in error) {
         const axiosError = error as any
         if (axiosError.response?.data?.message) {
-          throw new Error(axiosError.response.data.message)
+          const message = axiosError.response.data.message
+          // materialInfo 관련 에러를 더 명확하게 처리
+          if (
+            message.includes('materialInfo') ||
+            message.includes('자재 정보는 필수입니다')
+          ) {
+            throw new Error(
+              '자재 정보가 올바르지 않습니다. 자재코드와 자재명을 확인해주세요.'
+            )
+          }
+          throw new Error(message)
         }
       }
 
@@ -145,11 +180,21 @@ export const materialAssignmentService = {
     } catch (error) {
       console.error('자재코드 할당 수정 오류:', error)
 
-      // 백엔드 에러 메시지 추출
+      // 백엔드 에러 메시지 추출 및 개선
       if (error instanceof Error && 'response' in error) {
         const axiosError = error as any
         if (axiosError.response?.data?.message) {
-          throw new Error(axiosError.response.data.message)
+          const message = axiosError.response.data.message
+          // materialInfo 관련 에러를 더 명확하게 처리
+          if (
+            message.includes('materialInfo') ||
+            message.includes('자재 정보는 필수입니다')
+          ) {
+            throw new Error(
+              '자재 정보가 올바르지 않습니다. 자재코드와 자재명을 확인해주세요.'
+            )
+          }
+          throw new Error(message)
         }
       }
 
@@ -172,11 +217,21 @@ export const materialAssignmentService = {
     } catch (error) {
       console.error('자재코드 할당 삭제 오류:', error)
 
-      // 백엔드 에러 메시지 추출
+      // 백엔드 에러 메시지 추출 및 개선
       if (error instanceof Error && 'response' in error) {
         const axiosError = error as any
         if (axiosError.response?.data?.message) {
-          throw new Error(axiosError.response.data.message)
+          const message = axiosError.response.data.message
+          // materialInfo 관련 에러를 더 명확하게 처리
+          if (
+            message.includes('materialInfo') ||
+            message.includes('자재 정보는 필수입니다')
+          ) {
+            throw new Error(
+              '자재 정보가 올바르지 않습니다. 자재코드와 자재명을 확인해주세요.'
+            )
+          }
+          throw new Error(message)
         }
       }
 
@@ -201,11 +256,21 @@ export const materialAssignmentService = {
     } catch (error) {
       console.error('내 자재 데이터 조회 오류:', error)
 
-      // 백엔드 에러 메시지 추출
+      // 백엔드 에러 메시지 추출 및 개선
       if (error instanceof Error && 'response' in error) {
         const axiosError = error as any
         if (axiosError.response?.data?.message) {
-          throw new Error(axiosError.response.data.message)
+          const message = axiosError.response.data.message
+          // materialInfo 관련 에러를 더 명확하게 처리
+          if (
+            message.includes('materialInfo') ||
+            message.includes('자재 정보는 필수입니다')
+          ) {
+            throw new Error(
+              '자재 정보가 올바르지 않습니다. 자재코드와 자재명을 확인해주세요.'
+            )
+          }
+          throw new Error(message)
         }
       }
 
@@ -311,39 +376,50 @@ export const validateMaterialCode = (code: string): boolean => {
 }
 
 /**
- * 자재코드 할당 요청 데이터 검증
+ * 자재코드 할당 요청 데이터 검증 (MaterialInfo 구조 기반)
  */
 export const validateAssignmentRequest = (
   request: MaterialAssignmentRequest
 ): string[] => {
   const errors: string[] = []
 
-  if (!request.materialCode?.trim()) {
+  // materialInfo 객체 존재 확인
+  if (!request.materialInfo) {
+    errors.push('자재 정보는 필수입니다')
+    return errors // materialInfo가 없으면 추가 검증 불가
+  }
+
+  const {materialInfo} = request
+
+  // 자재코드 검증
+  if (!materialInfo.materialCode?.trim()) {
     errors.push('자재코드는 필수입니다')
-  } else if (!validateMaterialCode(request.materialCode)) {
+  } else if (!validateMaterialCode(materialInfo.materialCode)) {
     errors.push('자재코드는 영문과 숫자 조합으로 3-50자여야 합니다')
   }
 
-  if (!request.materialName?.trim()) {
+  // 자재명 검증
+  if (!materialInfo.materialName?.trim()) {
     errors.push('자재명은 필수입니다')
-  } else if (request.materialName.length > 200) {
+  } else if (materialInfo.materialName.length > 200) {
     errors.push('자재명은 200자 이하여야 합니다')
   }
 
+  // 할당 대상 협력사 검증
   if (!request.toPartnerId || request.toPartnerId.trim() === '') {
     errors.push('할당받을 협력사를 선택해주세요')
   }
 
-  if (request.materialDescription && request.materialDescription.length > 1000) {
+  // 선택적 필드 검증
+  if (
+    materialInfo.materialDescription &&
+    materialInfo.materialDescription.length > 1000
+  ) {
     errors.push('자재 설명은 1000자 이하여야 합니다')
   }
 
-  if (request.materialCategory && request.materialCategory.length > 100) {
+  if (materialInfo.materialCategory && materialInfo.materialCategory.length > 100) {
     errors.push('카테고리는 100자 이하여야 합니다')
-  }
-
-  if (request.materialSpec && request.materialSpec.length > 500) {
-    errors.push('자재 스펙은 500자 이하여야 합니다')
   }
 
   return errors
