@@ -366,9 +366,9 @@ export default function ScopeDashboard() {
                   <TabsTrigger value="company" onClick={() => setActiveTab('company')}>
                     협력사
                   </TabsTrigger>
-                  {/* <TabsTrigger value="product" onClick={() => setActiveTab('product')}>
+                  <TabsTrigger value="product" onClick={() => setActiveTab('product')}>
                     제품
-                  </TabsTrigger> */}
+                  </TabsTrigger>
                 </TabsList>
                 <input
                   type="text"
