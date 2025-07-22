@@ -141,7 +141,6 @@
 .custom-scrollbar {
   scrollbar-width: thin; /* Firefox: 얇은 스크롤바 */
   -ms-overflow-style: auto; /* IE/Edge */
-  overflow: auto; /* 스크롤이 필요할 때 표시되도록 */
 }
 
 /* WebKit 기반 브라우저 */

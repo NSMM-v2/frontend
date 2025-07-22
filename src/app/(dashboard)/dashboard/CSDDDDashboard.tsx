@@ -1,6 +1,7 @@
 'use client'
 
 import {useState, useMemo, useEffect} from 'react'
+import {useRouter} from 'next/navigation'
 import authService, {UserInfo} from '@/services/authService'
 import {
   getSelfAssessmentResults,
@@ -79,6 +80,7 @@ const categoryIcons = {
 }
 
 export default function CSDDDDashboard() {
+  const router = useRouter()
   const [partners, setPartners] = useState<PartnerInfo[]>([])
   const [userInfo, setUserInfo] = useState<UserInfo | null>(null)
   const [loading, setLoading] = useState(true)
@@ -113,6 +115,11 @@ export default function CSDDDDashboard() {
       const userData = userResponse.data
       setUserInfo(userData)
 
+      console.log('[CSDDDDashboard] 현재 사용자 정보:', {
+        userType: userData.userType,
+        companyName: userData.companyName
+      })
+
       const myResultsResponse = await getSelfAssessmentResults({
         onlyPartners: false
       })
@@ -136,6 +143,15 @@ export default function CSDDDDashboard() {
         throw new Error('협력사 목록을 가져올 수 없습니다')
       }
 
+      console.log(
+        '[CSDDDDashboard] 접근 가능한 파트너 목록:',
+        partnersResponse.data.map(p => ({
+          companyName: p.companyName,
+          level: p.level,
+          partnerId: p.partnerId
+        }))
+      )
+
       let response: PaginatedSelfAssessmentResponse
 
       if (userData.userType === 'HEADQUARTERS') {
@@ -143,13 +159,25 @@ export default function CSDDDDashboard() {
           onlyPartners: true // 협력사 결과만 가져오기
         })
       } else if (userData.userType === 'PARTNER') {
+        // 협력사인 경우 모든 결과를 가져와서 자기 자신과 하위 협력사 모두 포함
         response = await getSelfAssessmentResults({
-          onlyPartners: true // 협력사 결과만 가져오기
+          onlyPartners: false // 모든 결과 가져오기 (자기 자신 포함)
         })
       } else {
         setPartners([])
         return
       }
+
+      console.log('[CSDDDDashboard] 자가진단 결과 조회:', {
+        userType: userData.userType,
+        totalResults: response.content?.length || 0,
+        results:
+          response.content?.map(r => ({
+            companyName: r.companyName,
+            completedAt: r.completedAt,
+            finalGrade: r.finalGrade
+          })) || []
+      })
 
       const resultsByCompany = (response.content || []).reduce(
         (
@@ -166,7 +194,7 @@ export default function CSDDDDashboard() {
         {}
       )
 
-      const partnerData: PartnerInfo[] = partnersResponse.data.map((partner: any) => {
+      let partnerData: PartnerInfo[] = partnersResponse.data.map((partner: any) => {
         const partnerResults = resultsByCompany[partner.companyName] || []
 
         return {
@@ -187,6 +215,34 @@ export default function CSDDDDashboard() {
         }
       })
 
+      // 협력사인 경우 자기 자신이 목록에 없다면 추가
+      if (userData.userType === 'PARTNER') {
+        const selfExists = partnerData.some(p => p.companyName === userData.companyName)
+        if (!selfExists) {
+          console.log('[CSDDDDashboard] 협력사 자신을 목록에 추가:', userData.companyName)
+
+          const selfResults = resultsByCompany[userData.companyName] || []
+          const selfPartner: PartnerInfo = {
+            partnerId: (userData as any).partnerId || 0,
+            uuid: `self-${userData.companyName}`,
+            companyName: userData.companyName,
+            hierarchicalId: `self-${userData.companyName}`,
+            level: 1, // 협력사는 기본적으로 level 1로 설정
+            status: 'ACTIVE',
+            parentPartnerId: undefined,
+            parentPartnerName: undefined,
+            createdAt: new Date().toISOString(),
+            results: selfResults.sort((a, b) => {
+              const dateA = new Date(a.completedAt || 0).getTime()
+              const dateB = new Date(b.completedAt || 0).getTime()
+              return dateB - dateA
+            })
+          }
+
+          partnerData.unshift(selfPartner) // 맨 앞에 추가
+        }
+      }
+
       const sortedPartners = partnerData.sort((a, b) => {
         if (a.level !== b.level) {
           return a.level - b.level
@@ -194,10 +250,25 @@ export default function CSDDDDashboard() {
         return a.hierarchicalId.localeCompare(b.hierarchicalId)
       })
 
+      console.log(
+        '[CSDDDDashboard] 최종 파트너 데이터 매핑 결과:',
+        sortedPartners.map(p => ({
+          companyName: p.companyName,
+          level: p.level,
+          resultsCount: p.results.length,
+          hasResults: p.results.length > 0
+        }))
+      )
+
       setPartners(sortedPartners)
 
-      if (sortedPartners.length > 0) {
-        setSelectedPartner(sortedPartners[0])
+      // 본사 제외한 협력사 중 첫 번째 자동 선택
+      const partnersOnly = sortedPartners.filter(partner => partner.level > 0)
+      if (partnersOnly.length > 0) {
+        setSelectedPartner(partnersOnly[0])
+        setSelectedResultIndex(0)
+      } else {
+        setSelectedPartner(null)
         setSelectedResultIndex(0)
       }
     } catch (err) {
@@ -330,8 +401,11 @@ export default function CSDDDDashboard() {
 
   const filteredPartners = useMemo(() => {
     const q = searchQuery.toLowerCase()
-    if (!q) return partners
-    return partners.filter(
+    // 본사(level: 0) 제외하고 협력사만 필터링
+    const partnersOnly = partners.filter(partner => partner.level > 0)
+
+    if (!q) return partnersOnly
+    return partnersOnly.filter(
       partner =>
         partner.companyName.toLowerCase().includes(q) ||
         partner.hierarchicalId.toLowerCase().includes(q) ||
@@ -340,7 +414,11 @@ export default function CSDDDDashboard() {
   }, [partners, searchQuery])
 
   const getLevelStyle = (level: number) => {
-    switch (level) {
+    // 문자열로 들어올 수 있으므로 숫자로 변환
+    const numLevel = Number(level)
+    switch (numLevel) {
+      case 0:
+        return 'bg-yellow-50 border-yellow-200 text-yellow-800' // 본사
       case 1:
         return 'bg-blue-50 border-blue-200 text-blue-800'
       case 2:
@@ -353,7 +431,12 @@ export default function CSDDDDashboard() {
   }
 
   const getLevelText = (level: number) => {
-    return `${level}차 협력사`
+    // 문자열로 들어올 수 있으므로 숫자로 변환
+    const numLevel = Number(level)
+    if (numLevel === 0) {
+      return '본사'
+    }
+    return `${numLevel}차 협력사`
   }
 
   const handlePartnerSelect = (partner: PartnerInfo) => {
@@ -363,6 +446,10 @@ export default function CSDDDDashboard() {
 
   const handleCategoryClick = (categoryId: string) => {
     setSelectedCategoryId(categoryId)
+  }
+
+  const handleResultSummaryClick = () => {
+    router.push('/CSDDD/evaluation')
   }
 
   const getSelectedCategoryViolations = () => {
@@ -379,7 +466,9 @@ export default function CSDDDDashboard() {
     <div className="w-full h-screen pt-24 pb-4">
       <div className="flex flex-col w-full h-full gap-4">
         {userInfo && (
-          <div className="p-8 border rounded-lg shadow-sm bg-white/80 border-white/60">
+          <div
+            onClick={handleResultSummaryClick}
+            className="p-8 transition-colors border rounded-lg shadow-sm cursor-pointer bg-white/80 border-white/60 hover:bg-white/90">
             <div className="flex items-center justify-between mb-3">
               <h2 className="text-lg font-semibold text-gray-800">
                 {userInfo?.companyName} 최신 자가진단 결과 요약
@@ -509,12 +598,6 @@ export default function CSDDDDashboard() {
                           {getLevelText(partner.level)}
                         </span>
                       </div>
-
-                      {partner.parentPartnerName && (
-                        <div className="text-xs text-gray-400">
-                          상위: {partner.parentPartnerName}
-                        </div>
-                      )}
                     </div>
                   </div>
                 ))
@@ -559,7 +642,7 @@ export default function CSDDDDashboard() {
                 )}
               </div>
             </CardHeader>
-            <CardContent className="flex flex-col gap-6 p-6 overflow-hidden overflow-y-auto">
+            <CardContent className="flex flex-col gap-6 p-6">
               {selectedPartner && currentResult ? (
                 <>
                   <div className="grid grid-cols-2 gap-4">
@@ -602,13 +685,13 @@ export default function CSDDDDashboard() {
                   </div>
 
                   <div className="border rounded-lg">
-                    <div className="flex items-center justify-between p-4 border-b bg-gray-50">
-                      <h3 className="font-medium text-gray-900">위반 항목 상세</h3>
+                    <div className="flex items-center justify-between p-3 border-b bg-gradient-to-br from-blue-50 to-white">
+                      <h3 className="font-medium text-gray-600">위반 항목 상세</h3>
                     </div>
 
                     <div className="p-1.5">
                       {/* 카테고리 그리드 */}
-                      <div className="grid grid-cols-3 gap-2 mb-2">
+                      <div className="grid grid-cols-3 gap-2 mb-1">
                         {getCategoryInfo()
                           .slice(0, 3)
                           .map(category => {

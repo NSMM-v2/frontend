@@ -3,10 +3,36 @@ import React, {useEffect, useRef, useState} from 'react'
 import {motion} from 'framer-motion'
 import {Card, CardContent} from '@/components/ui/card'
 import {Input} from '../ui/input'
-import {Layers, Tag, Zap, Ruler, Calculator, Hash, TrendingUp, Cog} from 'lucide-react'
+import {
+  Layers,
+  Tag,
+  Zap,
+  Ruler,
+  Calculator,
+  Hash,
+  TrendingUp,
+  Cog,
+  Building2,
+  AlertCircle,
+  Package
+} from 'lucide-react'
 import type {SelectorState} from '@/types/scopeTypes'
 import {showWarning} from '@/util/toast'
 import {Switch} from '../ui/switch'
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue
+} from '@/components/ui/select'
+import {Popover, PopoverContent, PopoverTrigger} from '@/components/ui/popover'
+import type {
+  MaterialCodeMapping,
+  HierarchicalMaterialCodeState,
+  MaterialAssignmentResponse
+} from '@/types/partnerCompanyType'
+import {materialAssignmentService} from '@/services/materialAssignmentService'
 
 interface SelfInputCalculatorProps {
   id: number
@@ -137,30 +163,6 @@ export function SelfInputScope12Calculator({
   // 입력 필드 설정 데이터 (Input Field Configuration)
   // ========================================================================
 
-  /**
-   * 기본 정보 입력 필드 (구분, 원료)
-   */
-  const productInfoFields = [
-    {
-      step: '1',
-      label: '제품명',
-      key: 'productName' as keyof SelectorState,
-      type: 'text',
-      placeholder: '예: 타이어, 엔진',
-      icon: Cog,
-      description: '제품 명을 입력하세요'
-    },
-    {
-      step: '2',
-      label: '제품 코드',
-      key: 'productCode' as keyof SelectorState,
-      type: 'text',
-      placeholder: '예: P12345',
-      icon: Cog,
-      description: '제품 코드를 입력하세요'
-    }
-  ]
-
   const basicInfoFields = [
     {
       step: '1',
@@ -225,6 +227,47 @@ export function SelfInputScope12Calculator({
     !!(state.productName || state.productCode)
   )
 
+  // 계층적 자재코드 관리 상태
+  const [assignedMaterialCodes, setAssignedMaterialCodes] = useState<
+    MaterialAssignmentResponse[]
+  >([])
+  const [existingMappings, setExistingMappings] = useState<MaterialCodeMapping[]>([])
+  const [hierarchicalState, setHierarchicalState] =
+    useState<HierarchicalMaterialCodeState>({
+      hasExistingMapping: false,
+      isCreatingNewMapping: false
+    })
+  const [isLoadingMaterialCodes, setIsLoadingMaterialCodes] = useState(true)
+  const [materialCodesError, setMaterialCodesError] = useState<string | null>(null)
+
+  // 자재코드 정보 Popover 상태
+  const [selectedMaterialForInfo, setSelectedMaterialForInfo] =
+    useState<MaterialAssignmentResponse | null>(null)
+  const [isMaterialInfoPopoverOpen, setIsMaterialInfoPopoverOpen] = useState(false)
+
+  // 실제 자재코드 데이터 API 호출
+  useEffect(() => {
+    const fetchMaterialData = async () => {
+      try {
+        setIsLoadingMaterialCodes(true)
+        setMaterialCodesError(null)
+
+        const data = await materialAssignmentService.getMyMaterialData()
+        setAssignedMaterialCodes(data)
+      } catch (error) {
+        console.error('자재 데이터 로딩 실패:', error)
+        setMaterialCodesError(
+          error instanceof Error ? error.message : '자재 데이터를 불러올 수 없습니다'
+        )
+        setAssignedMaterialCodes([])
+      } finally {
+        setIsLoadingMaterialCodes(false)
+      }
+    }
+
+    fetchMaterialData()
+  }, [])
+
   // 제품 정보 상태 동기화
   useEffect(() => {
     setProductEnabled(!!(state.productName || state.productCode))
@@ -242,6 +285,86 @@ export function SelfInputScope12Calculator({
         productCode: ''
       })
     }
+  }
+
+  // 상위 협력사 자재코드 선택 핸들러
+  const handleAssignedMaterialCodeSelect = (materialCode: string) => {
+    // 선택된 자재코드 찾기
+    const selectedMaterial = assignedMaterialCodes.find(
+      material => material.materialCode === materialCode
+    )
+
+    if (!selectedMaterial) return
+
+    // 기존 매핑이 있는지 확인
+    const existingMapping = existingMappings.find(
+      mapping => mapping.parentMaterialCode === materialCode
+    )
+
+    if (existingMapping) {
+      // 기존 매핑이 있는 경우
+      setHierarchicalState({
+        assignedMaterialCode: materialCode,
+        mappedMaterialCode: existingMapping.childMaterialCode,
+        materialName: existingMapping.childMaterialName,
+        hasExistingMapping: true,
+        isCreatingNewMapping: false
+      })
+
+      // 상태 업데이트
+      onChangeState({
+        ...state,
+        productCode: existingMapping.childMaterialCode,
+        productName: existingMapping.childMaterialName
+      })
+    } else {
+      // 새로운 매핑이 필요한 경우
+      setHierarchicalState({
+        assignedMaterialCode: materialCode,
+        mappedMaterialCode: '',
+        materialName: selectedMaterial.materialName,
+        hasExistingMapping: false,
+        isCreatingNewMapping: true
+      })
+
+      // 기존 상태 초기화 (자재명은 선택된 자재의 이름으로 설정)
+      onChangeState({
+        ...state,
+        productCode: '',
+        productName: selectedMaterial.materialName
+      })
+    }
+
+    // Popover에 표시할 선택된 자재 정보 설정
+    setSelectedMaterialForInfo(selectedMaterial)
+  }
+
+  // 연결된 자재코드 입력 핸들러
+  const handleMappedMaterialCodeChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const mappedCode = e.target.value
+    setHierarchicalState(prev => ({
+      ...prev,
+      mappedMaterialCode: mappedCode
+    }))
+
+    onChangeState({
+      ...state,
+      productCode: mappedCode
+    })
+  }
+
+  // 자재명 입력 핸들러
+  const handleMaterialNameChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const materialName = e.target.value
+    setHierarchicalState(prev => ({
+      ...prev,
+      materialName
+    }))
+
+    onChangeState({
+      ...state,
+      productName: materialName
+    })
   }
 
   return (
@@ -294,27 +417,352 @@ export function SelfInputScope12Calculator({
               </span>
             </div>
 
-            {/* 필드 렌더링 */}
+            {/* 계층적 자재코드 필드 렌더링 */}
             {productEnabled && (
-              <div className="grid grid-cols-1 gap-6 md:grid-cols-2">
-                {productInfoFields.map(field => (
-                  <div key={field.key}>
-                    <div className="flex items-center mb-3 space-x-2">
-                      <field.icon className="w-4 h-4 text-blue-500" />
+              <div className="space-y-4">
+                {/* 한 줄로 배치된 자재코드 필드들 */}
+                <div className="grid grid-cols-1 gap-4 md:grid-cols-3">
+                  {/* 1. 상위 협력사 지정 자재코드 드롭다운 */}
+                  <div>
+                    <div className="flex items-center mb-2 space-x-2">
+                      <div className="flex items-center justify-center w-6 h-6 bg-blue-500 rounded-full">
+                        <span className="text-xs font-bold text-white">1</span>
+                      </div>
+                      <Building2 className="w-4 h-4 text-blue-500" />
                       <label className="text-sm font-semibold text-gray-700">
-                        {field.label}
+                        할당된 자재코드
                       </label>
+                      <Popover
+                        open={isMaterialInfoPopoverOpen}
+                        onOpenChange={setIsMaterialInfoPopoverOpen}>
+                        <PopoverTrigger asChild>
+                          <AlertCircle className="w-4 h-4 text-blue-500 transition-colors cursor-pointer hover:text-blue-700" />
+                        </PopoverTrigger>
+                        <PopoverContent className="w-80">
+                          {selectedMaterialForInfo ? (
+                            <div className="space-y-4">
+                              <div className="flex items-center gap-2 pb-3 border-b border-gray-200">
+                                <Package className="w-5 h-5 text-blue-500" />
+                                <h4 className="text-lg font-semibold text-gray-900">
+                                  자재코드 정보
+                                </h4>
+                              </div>
+
+                              <div className="space-y-4">
+                                {/* 자재코드 */}
+                                <div className="space-y-2">
+                                  <div className="flex items-center space-x-2">
+                                    <span className="flex items-center justify-center w-6 h-6 bg-blue-500 rounded-full">
+                                      <span className="text-xs font-bold text-white">
+                                        1
+                                      </span>
+                                    </span>
+                                    <Package className="w-4 h-4 text-blue-500" />
+                                    <label className="text-sm text-gray-700">
+                                      자재코드
+                                    </label>
+                                  </div>
+                                  <div className="px-4 py-3 font-mono text-sm text-gray-900 transition-all duration-200 border-2 border-gray-200 rounded-xl bg-gray-50">
+                                    {selectedMaterialForInfo.materialCode}
+                                  </div>
+                                </div>
+
+                                {/* 자재명 */}
+                                <div className="space-y-2">
+                                  <div className="flex items-center space-x-2">
+                                    <span className="flex items-center justify-center w-6 h-6 bg-blue-500 rounded-full">
+                                      <span className="text-xs font-bold text-white">
+                                        2
+                                      </span>
+                                    </span>
+                                    <Tag className="w-4 h-4 text-blue-500" />
+                                    <label className="text-sm text-gray-700">
+                                      자재명
+                                    </label>
+                                  </div>
+                                  <div className="px-4 py-3 font-mono text-sm text-gray-900 transition-all duration-200 border-2 border-gray-200 rounded-xl bg-gray-50">
+                                    {selectedMaterialForInfo.materialName}
+                                  </div>
+                                </div>
+
+                                {/* 카테고리 & 상태 */}
+                                <div className="space-y-2">
+                                  <div className="flex items-center space-x-2">
+                                    <span className="flex items-center justify-center w-6 h-6 bg-blue-500 rounded-full">
+                                      <span className="text-xs font-bold text-white">
+                                        3
+                                      </span>
+                                    </span>
+                                    <Cog className="w-4 h-4 text-blue-500" />
+                                    <label className="text-sm text-gray-700">
+                                      카테고리
+                                    </label>
+                                  </div>
+                                  <div className="px-4 py-3 font-mono text-sm text-gray-900 transition-all duration-200 border-2 border-gray-200 rounded-xl bg-gray-50">
+                                    {(() => {
+                                      if (!selectedMaterialForInfo.materialCategory)
+                                        return '-'
+
+                                      const categoryMap = {
+                                        raw_material: '원자재',
+                                        component: '부품',
+                                        assembly: '조립품',
+                                        finished_goods: '완제품',
+                                        packaging: '포장재',
+                                        consumables: '소모품',
+                                        other: '기타'
+                                      }
+
+                                      return (
+                                        categoryMap[
+                                          selectedMaterialForInfo.materialCategory as keyof typeof categoryMap
+                                        ] || selectedMaterialForInfo.materialCategory
+                                      )
+                                    })()}
+                                  </div>
+                                </div>
+
+                                {/* 설명 */}
+                                {selectedMaterialForInfo.materialDescription ? (
+                                  <div className="space-y-2">
+                                    <div className="flex items-center space-x-2">
+                                      <span className="flex items-center justify-center w-6 h-6 bg-blue-500 rounded-full">
+                                        <span className="text-xs font-bold text-white">
+                                          4
+                                        </span>
+                                      </span>
+                                      <AlertCircle className="w-4 h-4 text-blue-500" />
+                                      <label className="text-sm font-semibold text-gray-700">
+                                        설명
+                                      </label>
+                                    </div>
+                                    <div className="px-4 py-3 text-sm leading-relaxed text-gray-900 transition-all duration-200 border-2 border-gray-200 rounded-xl bg-gray-50">
+                                      {selectedMaterialForInfo.materialDescription}
+                                    </div>
+                                  </div>
+                                ) : (
+                                  <div className="space-y-2">
+                                    <div className="flex items-center space-x-2">
+                                      <span className="flex items-center justify-center w-6 h-6 bg-gray-400 rounded-full">
+                                        <span className="text-xs font-bold text-white">
+                                          4
+                                        </span>
+                                      </span>
+                                      <AlertCircle className="w-4 h-4 text-gray-400" />
+                                      <label className="text-sm font-semibold text-gray-500">
+                                        설명
+                                      </label>
+                                    </div>
+                                    <div className="flex items-center justify-center px-4 py-3 text-sm text-gray-500 transition-all duration-200 border-2 border-gray-200 border-dashed rounded-xl bg-gray-50">
+                                      <AlertCircle className="w-4 h-4 mr-2" />
+                                      추가 설명이 없습니다
+                                    </div>
+                                  </div>
+                                )}
+                              </div>
+                            </div>
+                          ) : (
+                            <div className="space-y-3">
+                              <div className="flex items-center gap-2 pb-3 border-b border-gray-200">
+                                <Package className="w-5 h-5 text-gray-400" />
+                                <h4 className="text-lg font-semibold text-gray-500">
+                                  자재코드 정보
+                                </h4>
+                              </div>
+                              <div className="flex items-center justify-center px-4 py-6 text-sm text-gray-500 transition-all duration-200 border-2 border-gray-200 border-dashed rounded-xl bg-gray-50">
+                                <AlertCircle className="w-5 h-5 mr-2" />
+                                자재코드를 먼저 선택해주세요
+                              </div>
+                            </div>
+                          )}
+                        </PopoverContent>
+                      </Popover>
                     </div>
-                    <Input
-                      type={field.type}
-                      value={state[field.key] || ''}
-                      onChange={handleChange(field.key)}
-                      placeholder={field.placeholder}
-                      className="w-full px-4 py-2 text-sm transition-all duration-200 border-2 border-gray-200 rounded-xl focus:border-blue-500 focus:ring-4 focus:ring-blue-100 hover:border-gray-300"
-                    />
-                    <p className="mt-2 text-xs text-gray-500">{field.description}</p>
+
+                    {/* 로딩 상태 */}
+                    {isLoadingMaterialCodes && (
+                      <div className="flex items-center gap-2 p-2 text-gray-600 border border-gray-200 rounded-lg bg-gray-50">
+                        <div className="w-3 h-3 border border-gray-300 rounded-full border-t-blue-500 animate-spin"></div>
+                        <span className="text-xs">로딩 중...</span>
+                      </div>
+                    )}
+
+                    {/* 에러 상태 */}
+                    {materialCodesError && (
+                      <div className="flex items-center gap-2 p-2 text-red-600 border border-red-200 rounded-lg bg-red-50">
+                        <AlertCircle className="w-3 h-3" />
+                        <span className="text-xs">{materialCodesError}</span>
+                      </div>
+                    )}
+
+                    {/* 빈 상태 */}
+                    {!isLoadingMaterialCodes &&
+                      !materialCodesError &&
+                      assignedMaterialCodes.length === 0 && (
+                        <div className="flex items-center gap-2 p-2 border rounded-lg text-amber-600 bg-amber-50 border-amber-200">
+                          <AlertCircle className="w-3 h-3" />
+                          <span className="text-xs">할당된 자재 코드가 없습니다</span>
+                        </div>
+                      )}
+
+                    {/* 자재코드 선택 드롭다운 */}
+                    {!isLoadingMaterialCodes &&
+                      !materialCodesError &&
+                      assignedMaterialCodes.length > 0 && (
+                        <Select
+                          value={hierarchicalState.assignedMaterialCode || ''}
+                          onValueChange={handleAssignedMaterialCodeSelect}
+                          disabled={isLoadingMaterialCodes}>
+                          <SelectTrigger className="w-full px-4 py-3 text-sm transition-all duration-200 border-2 border-gray-200 rounded-xl focus:border-blue-500 focus:ring-4 focus:ring-blue-100 hover:border-gray-300">
+                            <SelectValue placeholder="자재코드 선택" />
+                          </SelectTrigger>
+                          <SelectContent>
+                            {assignedMaterialCodes.map(assigned => (
+                              <SelectItem key={assigned.id} value={assigned.materialCode}>
+                                <div className="flex flex-col">
+                                  <span className="text-sm font-semibold">
+                                    {assigned.materialCode}
+                                  </span>
+                                  <span className="text-xs text-gray-500">
+                                    {assigned.materialName}
+                                  </span>
+                                </div>
+                              </SelectItem>
+                            ))}
+                          </SelectContent>
+                        </Select>
+                      )}
+
+                    <p className="mt-1 text-xs text-gray-500">
+                      {hierarchicalState.assignedMaterialCode
+                        ? `선택됨: ${
+                            assignedMaterialCodes.find(
+                              a =>
+                                a.materialCode === hierarchicalState.assignedMaterialCode
+                            )?.materialName || ''
+                          }`
+                        : assignedMaterialCodes.length > 0
+                        ? '상위 협력사 자재코드'
+                        : ''}
+                    </p>
                   </div>
-                ))}
+
+                  {/* 2. 연결된 자재코드 */}
+                  {hierarchicalState.assignedMaterialCode && (
+                    <div>
+                      <div className="flex items-center mb-2 space-x-2">
+                        <div className="flex items-center justify-center w-6 h-6 bg-blue-500 rounded-full">
+                          <span className="text-xs font-bold text-white">2</span>
+                        </div>
+                        <Tag className="w-4 h-4 text-blue-500" />
+                        <label className="text-sm font-semibold text-gray-700">
+                          연결된 자재코드
+                        </label>
+                        {hierarchicalState.hasExistingMapping && (
+                          <span className="px-2 py-1 text-xs font-medium text-blue-700 bg-blue-100 rounded-full">
+                            기존
+                          </span>
+                        )}
+                        {hierarchicalState.isCreatingNewMapping && (
+                          <span className="px-2 py-1 text-xs font-medium text-blue-700 bg-blue-100 rounded-full">
+                            신규
+                          </span>
+                        )}
+                      </div>
+                      <Input
+                        type="text"
+                        value={hierarchicalState.mappedMaterialCode || ''}
+                        onChange={handleMappedMaterialCodeChange}
+                        placeholder="내 자재코드 (예: P1-A001)"
+                        disabled={hierarchicalState.hasExistingMapping}
+                        className={`w-full px-4 py-3 text-sm transition-all duration-200 border-2 rounded-xl focus:ring-4 ${
+                          hierarchicalState.hasExistingMapping
+                            ? 'border-gray-200 bg-gray-50 text-gray-700 cursor-not-allowed'
+                            : 'border-gray-200 focus:border-blue-500 focus:ring-blue-100 hover:border-gray-300'
+                        }`}
+                      />
+                      <p className="mt-1 text-xs text-gray-500">
+                        {hierarchicalState.hasExistingMapping
+                          ? '기존 매핑된 코드'
+                          : '내 자재코드 입력'}
+                      </p>
+                    </div>
+                  )}
+
+                  {/* 3. 자재명 */}
+                  {hierarchicalState.assignedMaterialCode && (
+                    <div>
+                      <div className="flex items-center mb-2 space-x-2">
+                        <div className="flex items-center justify-center w-6 h-6 bg-blue-500 rounded-full">
+                          <span className="text-xs font-bold text-white">3</span>
+                        </div>
+                        <Cog className="w-4 h-4 text-blue-500" />
+                        <label className="text-sm font-semibold text-gray-700">
+                          자재명
+                        </label>
+                      </div>
+                      <Input
+                        type="text"
+                        value={hierarchicalState.materialName || ''}
+                        onChange={handleMaterialNameChange}
+                        placeholder="자재명 (예: 1차사 전용 타이어)"
+                        disabled={hierarchicalState.hasExistingMapping}
+                        className={`w-full px-4 py-3 text-sm transition-all duration-200 border-2 rounded-xl focus:ring-4 ${
+                          hierarchicalState.hasExistingMapping
+                            ? 'border-gray-200 bg-gray-50 text-gray-700 cursor-not-allowed'
+                            : 'border-gray-200 focus:border-blue-500 focus:ring-blue-100 hover:border-gray-300'
+                        }`}
+                      />
+                      <p className="mt-1 text-xs text-gray-500">
+                        {hierarchicalState.hasExistingMapping
+                          ? '기존 매핑의 자재명'
+                          : '자재 명칭 입력'}
+                      </p>
+                    </div>
+                  )}
+                </div>
+
+                {/* 매핑 관계 시각화 - 컴팩트 버전 */}
+                {hierarchicalState.assignedMaterialCode &&
+                  hierarchicalState.mappedMaterialCode &&
+                  hierarchicalState.materialName && (
+                    <div className="p-3 border-2 border-indigo-200 rounded-lg bg-indigo-50">
+                      <h4 className="flex items-center gap-2 mb-2 text-xs font-semibold text-indigo-700">
+                        <div className="w-1.5 h-1.5 bg-indigo-500 rounded-full"></div>
+                        자재코드 매핑 관계
+                      </h4>
+                      <div className="flex items-center justify-between p-2 bg-white border border-indigo-200 rounded-lg">
+                        <div className="flex-1 text-center">
+                          <div className="text-xs font-medium text-gray-500">상위</div>
+                          <div className="text-xs font-semibold text-indigo-600 truncate">
+                            {hierarchicalState.assignedMaterialCode}
+                          </div>
+                        </div>
+                        <div className="flex items-center px-2">
+                          <div className="w-2 h-0.5 bg-indigo-300"></div>
+                          <div className="w-1 h-1 mx-1 bg-indigo-500 rounded-full"></div>
+                          <div className="w-2 h-0.5 bg-indigo-300"></div>
+                        </div>
+                        <div className="flex-1 text-center">
+                          <div className="text-xs font-medium text-gray-500">내 코드</div>
+                          <div className="text-xs font-semibold text-indigo-600 truncate">
+                            {hierarchicalState.mappedMaterialCode}
+                          </div>
+                        </div>
+                        <div className="flex items-center px-2">
+                          <div className="w-2 h-0.5 bg-indigo-300"></div>
+                          <div className="w-1 h-1 mx-1 bg-indigo-500 rounded-full"></div>
+                          <div className="w-2 h-0.5 bg-indigo-300"></div>
+                        </div>
+                        <div className="flex-1 text-center">
+                          <div className="text-xs font-medium text-gray-500">자재명</div>
+                          <div className="text-xs font-semibold text-indigo-600 truncate">
+                            {hierarchicalState.materialName}
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                  )}
               </div>
             )}
             <div className="grid grid-cols-1 gap-6 md:grid-cols-2">

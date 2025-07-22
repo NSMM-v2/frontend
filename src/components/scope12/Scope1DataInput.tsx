@@ -8,7 +8,6 @@ import {motion, AnimatePresence} from 'framer-motion'
 
 // UI 아이콘 임포트
 import {
-  Plus, // 플러스 아이콘 (추가)
   Trash2, // 삭제 아이콘
   Save, // 저장 아이콘
   Sparkles, // LCA 모드용 아이콘 추가
@@ -50,9 +49,7 @@ import {ExcelCascadingSelector} from '@/components/scope12/Scope12ExcelCascading
 import {
   SelectorState,
   ScopeEmissionResponse,
-  ScopeEmissionRequest,
-  ScopeEmissionUpdateRequest,
-  InputType
+  ScopeEmissionRequest
 } from '@/types/scopeTypes'
 import {
   createScopeEmission,
@@ -126,7 +123,7 @@ export function Scope1DataInput({
   const [deleteDialogStates, setDeleteDialogStates] = useState<Record<number, boolean>>(
     {}
   )
-  
+
   // 각 계산기별 공장 설비 상태 변경 핸들러
   const handleFactoryToggle = (calculatorId: number, checked: boolean) => {
     onFactoryEnabledChange(calculatorId, checked)
@@ -142,7 +139,7 @@ export function Scope1DataInput({
     isManualInput: boolean
   ) => {
     if (!selectedYear || !selectedMonth) {
-      showError('보고연도와 보고월을 먼저 선택해주세요.')
+      showError('연도와 월을 먼저 선택해주세요.')
       return
     }
 
@@ -290,7 +287,7 @@ export function Scope1DataInput({
    */
   const handleComplete = async () => {
     if (!selectedYear || !selectedMonth) {
-      showError('보고연도와 보고월을 먼저 선택해주세요.')
+      showError('연도와 월을 먼저 선택해주세요.')
       return
     }
 
@@ -491,7 +488,7 @@ export function Scope1DataInput({
                   <Card className="overflow-hidden bg-white border-0 shadow-lg rounded-3xl">
                     {/* 계산기 헤더 */}
                     <div className="p-6 bg-gradient-to-r from-blue-50 to-blue-100">
-                      <div className="relative flex items-center">
+                      <div className="relative flex items-center gap-2">
                         {/* 계산기 번호 배지 */}
                         <motion.div
                           initial={{scale: 0}}
@@ -500,7 +497,7 @@ export function Scope1DataInput({
                             delay: 0,
                             duration: 0.3
                           }}
-                          className="flex items-center justify-center mr-5 bg-blue-500 shadow-md w-14 h-14 rounded-2xl">
+                          className="flex items-center justify-center mr-5 bg-blue-500 shadow-md w-14 h-14 rounded-2xl ">
                           <span className="text-lg font-bold text-white">
                             {index + 1}
                           </span>
@@ -519,30 +516,27 @@ export function Scope1DataInput({
                             <p className="text-sm text-gray-600">{description}</p>
                           </motion.div>
                         </div>
-                        <div className="flex items-center space-x-3">
+                        <motion.div
+                          initial={{opacity: 0, scale: 0.8}}
+                          animate={{opacity: 1, scale: 1}}
+                          transition={{delay: 0, duration: 0.3}}
+                          className="flex items-center px-4 py-2 space-x-3 transition-all bg-white border border-blue-200 shadow-sm rounded-xl hover:bg-blue-50">
                           <Switch
                             checked={calculator.factoryEnabled}
-                            onCheckedChange={(checked) => handleFactoryToggle(calculator.id, checked)}
+                            onCheckedChange={checked =>
+                              onFactoryEnabledChange(calculator.id, checked)
+                            }
                             className="data-[state=checked]:bg-blue-500"
                           />
-
-                          {/* 라벨 */}
                           <span
                             className={`text-sm font-medium transition-colors ${
-                              calculator.factoryEnabled ? 'text-blue-600' : 'text-gray-500'
+                              calculator.factoryEnabled
+                                ? 'text-blue-600'
+                                : 'text-gray-500'
                             }`}>
                             공장 설비
                           </span>
-                          {/* 상태 표시 */}
-                          <span
-                            className={`text-xs px-2 py-1 rounded-full font-medium transition-colors ${
-                              calculator.factoryEnabled
-                                ? 'text-blue-700 bg-blue-100'
-                                : 'text-gray-500 bg-gray-100'
-                            }`}>
-                            {calculator.factoryEnabled ? '활성' : '비활성'}
-                          </span>
-                        </div>
+                        </motion.div>
                         {/* 오른쪽 컨트롤 영역 */}
                         <div className="flex items-center space-x-4">
                           {/* 수동 입력 모드 토글 */}
@@ -551,7 +545,6 @@ export function Scope1DataInput({
                             animate={{opacity: 1, scale: 1}}
                             transition={{delay: 0, duration: 0.3}}
                             className="flex items-center px-4 py-2 space-x-3 transition-all bg-white border border-blue-200 shadow-sm rounded-xl hover:bg-blue-50">
-                            {/* 토글 스위치 */}
                             <Switch
                               checked={mode}
                               onCheckedChange={checked =>

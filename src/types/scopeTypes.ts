@@ -277,3 +277,34 @@ export interface Category5Detail {
   scope3Category5: number // Scope3 Cat.5
   finalTotal: number // 최종 총계
 }
+
+// ============================================================================
+// Scope 3 통합 배출량 타입 정의 (Scope 3 Combined Emission Types)
+// ============================================================================
+
+/**
+ * Scope 3 통합 배출량 응답 (백엔드 Scope3CombinedEmissionResponse와 1:1 매핑)
+ * 특수집계배출량 + 일반 Scope3 카테고리별 배출량의 합계를 제공
+ */
+export interface Scope3CombinedEmissionResponse {
+  // 기본 정보
+  reportingYear: number // 보고 연도
+  reportingMonth?: number // 보고 월 (월별 조회시에만 값 존재)
+  userType: string // 사용자 타입 (HEADQUARTERS/PARTNER)
+  organizationId: number // 조직 ID (본사 ID 또는 협력사 ID)
+  
+  // 특수집계 배출량 (Cat.1, 2, 4, 5 finalTotal 합계)
+  specialAggregationTotal: number // 특수집계 총합
+  specialAggregationDetail: Scope3SpecialAggregationResponse // 특수집계 상세 내역
+  
+  // 일반 Scope3 카테고리별 배출량 합계
+  regularCategoryTotal: number // 일반 카테고리 총합
+  yearlyCategories?: CategoryYearlyEmission[] // 연별 조회시 카테고리별 데이터
+  monthlyCategories?: CategoryMonthlyEmission[] // 월별 조회시 카테고리별 데이터
+  
+  // 최종 통합 배출량 (특수집계 + 일반 카테고리)
+  totalScope3Emission: number // 최종 Scope 3 총 배출량
+  
+  // 데이터 건수
+  totalDataCount: number // 총 데이터 건수
+}

@@ -3,7 +3,7 @@
 import Link from 'next/link'
 import {useState} from 'react'
 import {motion} from 'framer-motion'
-
+import React from 'react'
 import {
   Home,
   Check,
@@ -31,7 +31,7 @@ const COMPLIANCE_AREAS = [
   {
     icon: Users,
     title: '인권 및 노동',
-    description: '아동노동, 강제노동, 차별 금지 등',
+    description: '아동노동, 강제노동 등',
     items: 9,
     iconColor: 'text-red-600',
     bgColor: 'bg-red-100'
@@ -39,7 +39,7 @@ const COMPLIANCE_AREAS = [
   {
     icon: AlertTriangle,
     title: '산업안전·보건',
-    description: '작업장 안전, 화학물질, 건강검진 등',
+    description: '작업장 안전, 화학물질 등',
     items: 6,
     iconColor: 'text-yellow-600',
     bgColor: 'bg-yellow-100'
@@ -47,7 +47,7 @@ const COMPLIANCE_AREAS = [
   {
     icon: Leaf,
     title: '환경경영',
-    description: '온실가스, 물·폐기물, 생태계 등',
+    description: '온실가스, 물·폐기물 등',
     items: 8,
     iconColor: 'text-green-600',
     bgColor: 'bg-green-100'
@@ -55,7 +55,7 @@ const COMPLIANCE_AREAS = [
   {
     icon: FileText,
     title: '공급망 및 조달',
-    description: 'ESG 조항 계약, 강제노동 점검 등',
+    description: '공급업체 실사,모니터링 등',
     items: 9,
     iconColor: 'text-blue-600',
     bgColor: 'bg-blue-100'
@@ -63,7 +63,7 @@ const COMPLIANCE_AREAS = [
   {
     icon: Shield,
     title: '윤리경영 및 정보보호',
-    description: '반부패, 정보보안, 개인정보보호 등',
+    description: '반부패, 개인정보보호 등',
     items: 8,
     iconColor: 'text-indigo-600',
     bgColor: 'bg-indigo-100'
@@ -118,15 +118,17 @@ function ComplianceAreaCard({
   return (
     <div
       onClick={() => onClick(index)}
-      className="p-4 mt-10 transition-all duration-500 bg-white border border-gray-100 shadow-sm cursor-pointer rounded-2xl hover:shadow-sm hover:transform hover:scale-105">
+      className="min-w-[195px] p-4 mt-1 transition-all duration-500 bg-white border border-gray-100 shadow-sm cursor-pointer rounded-2xl hover:shadow-sm hover:transform hover:scale-105">
       <div className="flex items-center gap-3 mb-2">
         <div
           className={`w-8 h-8 rounded-2xl flex items-center justify-center ${area.bgColor}`}>
           <Icon className={`w-4 h-4 ${area.iconColor}`} />
         </div>
-        <h4 className="text-base font-bold text-gray-900">{area.title}</h4>
+        <h4 className="text-sm font-bold text-gray-900">{area.title}</h4>
       </div>
-      <p className="text-sm gray-600">{area.description}</p>
+      <p className="flex items-center justify-center text-sm text-center text-gray-600">
+        {area.description}
+      </p>
       <div className="flex justify-end mt-2">
         <span className="inline-block w-fit px-2 py-0.5 text-xs text-gray-500 bg-gray-100 rounded-full text-center">
           {area.items}개 항목
@@ -142,19 +144,7 @@ function ComplianceAreasGrid({
   handleCardClick: (index: number) => void
 }) {
   return (
-    <div id="compliance-areas-grid" className="mb-10">
-      <motion.div
-        whileHover={{scale: 1.1}}
-        whileTap={{scale: 0.95}}
-        className="flex justify-center mb-6 cursor-pointer"
-        onClick={() => {
-          const element = document.getElementById('compliance-areas-grid')
-          if (element) {
-            element.scrollIntoView({behavior: 'smooth'})
-          }
-        }}>
-        <ChevronDown className="w-8 h-20 text-gray-500 animate-bounce" />
-      </motion.div>
+    <div id="compliance-areas-grid" className="mb-8">
       <div className="grid grid-cols-1 gap-6 md:grid-cols-3 xl:grid-cols-5">
         {COMPLIANCE_AREAS.map((area, index) => (
           <ComplianceAreaCard
@@ -171,7 +161,9 @@ function ComplianceAreasGrid({
 
 export function CSDDDLayout() {
   const [openDialogIndex, setOpenDialogIndex] = useState<number | null>(null)
+
   const handleCardClick = (index: number) => setOpenDialogIndex(index)
+
   const closeDialog = () => setOpenDialogIndex(null)
 
   const groupedPreviews: Record<
@@ -225,6 +217,7 @@ export function CSDDDLayout() {
         관련기준: 'UNGP, 국내 인권경영 가이드라인'
       }
     ],
+
     '산업안전·보건': [
       {
         항목: '작업장 안전관리',
@@ -257,6 +250,7 @@ export function CSDDDLayout() {
         관련기준: '산업안전보건법, CSDDD'
       }
     ],
+
     환경경영: [
       {
         항목: '온실가스 배출 관리',
@@ -299,6 +293,7 @@ export function CSDDDLayout() {
         관련기준: 'EU CSDDD'
       }
     ],
+
     '공급망 및 조달': [
       {
         항목: 'ESG 조항 포함 계약',
@@ -346,6 +341,7 @@ export function CSDDDLayout() {
         관련기준: 'EU CSDDD'
       }
     ],
+
     '윤리경영 및 정보보호': [
       {
         항목: '반부패 정책 수립',
@@ -425,19 +421,6 @@ export function CSDDDLayout() {
         transition={{delay: 0.6, duration: 0.5}}
         className="space-y-6">
         <div className="bg-white border border-gray-200 shadow-sm rounded-xl">
-          <div className="px-8 py-6 bg-gradient-to-r from-blue-50 to-blue-100 rounded-t-xl">
-            <div className="flex items-center justify-between">
-              <div>
-                <h2 className="mb-2 text-2xl font-bold text-blue-900">
-                  CSDDD 자가진단 시스템
-                </h2>
-                <p className="text-sm text-blue-700">
-                  40개 핵심 항목을 통한 ESG 리스크 평가 및 준수율 분석
-                </p>
-              </div>
-            </div>
-          </div>
-
           <div className="p-8">
             <div className="grid grid-cols-1 gap-8 lg:grid-cols-2">
               <div>
@@ -485,7 +468,7 @@ export function CSDDDLayout() {
               </div>
             </div>
 
-            <div className="flex flex-col gap-4 pt-8 mt-8 border-t border-gray-200 sm:flex-row">
+            <div className="grid grid-cols-1 gap-4 mt-8 md:grid-cols-3">
               <Link
                 href="/CSDDD/self-assessment"
                 className="flex items-center justify-center px-8 py-4 text-lg font-semibold text-white transition-all duration-300 transform bg-green-500 shadow-sm rounded-xl hover:bg-green-700 hover:scale-105 hover:shadow-sm">
@@ -528,7 +511,7 @@ export function CSDDDLayout() {
                   <div
                     key={index}
                     className="flex items-start p-2 space-x-2 bg-white border border-blue-200 rounded-md">
-                    <p className="text-sm leading-snug text-blue-800">{notice}</p>
+                    <p className="text-xs leading-snug text-blue-800">{notice}</p>
                   </div>
                 ))}
               </div>
@@ -537,60 +520,92 @@ export function CSDDDLayout() {
         </div>
 
         {openDialogIndex !== null && (
-          <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/30">
-            <div className="w-full max-w-6xl max-h-[90vh] overflow-hidden rounded-2xl bg-white shadow-sm border border-gray-200">
-              <div className="flex items-start justify-between gap-4 px-8 py-6 border-b border-gray-200 bg-gradient-to-br from-gray-50 to-white">
-                <div className="space-y-1">
-                  <h3 className="text-xl font-bold text-gray-900">
-                    {COMPLIANCE_AREAS[openDialogIndex].title} - 평가 항목
-                  </h3>
-                  <p className="text-sm leading-relaxed text-gray-600">
-                    {COMPLIANCE_AREAS[openDialogIndex].description}
-                  </p>
+          <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-sm">
+            <div className="w-full max-w-7xl max-h-[95vh] overflow-hidden rounded-3xl bg-white shadow-2xl border border-gray-100">
+              {/* 모달 헤더 */}
+              <div className="relative px-8 py-8 border-b border-gray-200 bg-gradient-to-br from-white via-gray-50 to-blue-50">
+                <div className="flex items-start justify-between gap-6">
+                  <div className="flex items-start gap-4">
+                    {/* 카테고리 아이콘 */}
+                    <div
+                      className={`w-16 h-16 rounded-2xl flex items-center justify-center ${COMPLIANCE_AREAS[openDialogIndex].bgColor} shadow-lg`}>
+                      {React.createElement(COMPLIANCE_AREAS[openDialogIndex].icon, {
+                        className: `w-8 h-8 ${COMPLIANCE_AREAS[openDialogIndex].iconColor}`
+                      })}
+                    </div>
+
+                    <div className="space-y-2">
+                      <div className="flex items-center gap-2">
+                        <h3 className="text-2xl font-bold text-gray-900">
+                          {COMPLIANCE_AREAS[openDialogIndex].title}
+                        </h3>
+                        <span className="px-3 py-1 text-xs font-medium text-blue-700 bg-blue-100 rounded-full">
+                          {COMPLIANCE_AREAS[openDialogIndex].items}개 항목
+                        </span>
+                      </div>
+                      <p className="max-w-2xl text-base leading-relaxed text-gray-600">
+                        {COMPLIANCE_AREAS[openDialogIndex].description}
+                      </p>
+                    </div>
+                  </div>
+
+                  <button
+                    onClick={() => setOpenDialogIndex(null)}
+                    className="p-3 text-gray-400 transition-all duration-200 rounded-full hover:text-gray-600 hover:bg-white/80 hover:shadow-lg"
+                    aria-label="닫기">
+                    <X className="w-6 h-6" />
+                  </button>
                 </div>
-                <button
-                  onClick={() => setOpenDialogIndex(null)}
-                  className="p-2 text-gray-500 transition-colors rounded-lg hover:text-gray-700 hover:bg-gray-100"
-                  aria-label="닫기">
-                  <X className="w-5 h-5" />
-                </button>
+
+                {/* 장식적 요소 */}
+                <div className="absolute w-32 h-32 rounded-full top-4 right-24 bg-gradient-to-br from-blue-100/40 to-purple-100/40 blur-3xl"></div>
+                <div className="absolute w-24 h-24 rounded-full bottom-4 left-32 bg-gradient-to-br from-green-100/40 to-blue-100/40 blur-2xl"></div>
               </div>
 
-              <div className="overflow-auto max-h-[75vh] px-8 py-6">
-                <table className="w-full text-left border-collapse">
-                  <thead>
-                    <tr className="border-b border-gray-200">
-                      <th className="pb-3 pr-6 w-[30%] text-sm font-semibold text-gray-900">
-                        평가 항목
-                      </th>
-                      <th className="pb-3 pr-6 w-[40%] text-sm font-semibold text-gray-900">
-                        세부 내용
-                      </th>
-                      <th className="pb-3 w-[30%] text-sm font-semibold text-gray-900">
-                        관련 기준
-                      </th>
-                    </tr>
-                  </thead>
-                  <tbody className="text-sm">
-                    {groupedPreviews[COMPLIANCE_AREAS[openDialogIndex].title].map(
-                      (item, idx) => (
-                        <tr
-                          key={idx}
-                          className="transition-colors border-b border-gray-100 hover:bg-gray-50/50">
-                          <td className="py-4 pr-6 font-medium text-gray-900 align-top">
-                            {item.항목}
-                          </td>
-                          <td className="py-4 pr-6 leading-relaxed text-gray-700 align-top">
-                            {item.설명}
-                          </td>
-                          <td className="py-4 text-gray-600 align-top">
-                            {item.관련기준}
-                          </td>
-                        </tr>
-                      )
-                    )}
-                  </tbody>
-                </table>
+              <div className="overflow-auto max-h-[75vh] px-8 py-8 bg-gradient-to-b from-white to-gray-50/30">
+                <div className="overflow-hidden bg-white border border-gray-200 shadow-sm rounded-2xl">
+                  <table className="w-full text-left border-collapse">
+                    <thead>
+                      <tr className="border-b border-gray-200 bg-gradient-to-r from-gray-50 to-blue-50/50">
+                        <th className="px-6 py-4 w-[30%] text-sm font-bold text-gray-900">
+                          평가 항목
+                        </th>
+                        <th className="px-6 py-4 w-[40%] text-sm font-bold text-gray-900">
+                          세부 내용
+                        </th>
+                        <th className="px-6 py-4 w-[30%] text-sm font-bold text-gray-900">
+                          관련 기준
+                        </th>
+                      </tr>
+                    </thead>
+                    <tbody className="text-sm">
+                      {groupedPreviews[COMPLIANCE_AREAS[openDialogIndex].title].map(
+                        (item, idx) => (
+                          <tr
+                            key={idx}
+                            className={`transition-all duration-200 border-b border-gray-100 hover:bg-gradient-to-r hover:from-blue-50/50 hover:to-transparent hover:shadow-sm ${
+                              idx % 2 === 0 ? 'bg-white' : 'bg-gray-50/30'
+                            }`}>
+                            <td className="px-6 py-5 font-semibold text-gray-900 align-top">
+                              <div className="flex items-start gap-2">
+                                <div className="flex-shrink-0 w-2 h-2 mt-2 bg-blue-500 rounded-full"></div>
+                                <span>{item.항목}</span>
+                              </div>
+                            </td>
+                            <td className="px-6 py-5 leading-relaxed text-gray-700 align-top">
+                              {item.설명}
+                            </td>
+                            <td className="px-6 py-5 align-top">
+                              <span className="inline-block px-3 py-1 text-xs font-medium text-blue-700 bg-blue-100 rounded-full">
+                                {item.관련기준}
+                              </span>
+                            </td>
+                          </tr>
+                        )
+                      )}
+                    </tbody>
+                  </table>
+                </div>
               </div>
             </div>
           </div>

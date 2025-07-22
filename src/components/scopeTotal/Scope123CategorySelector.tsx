@@ -41,15 +41,15 @@ export const scope3CategoryList = {
   list2: '자본재', // 건물, 장비, 인프라 투자
   list3: '연료 및 에너지 관련 활동', // 연료 채굴, 운송, 정제
   list4: '업스트림 운송 및 유통', // 공급업체에서 자사까지 운송
-  list5: '폐기물 처리', // 운영 중 발생하는 폐기물
-  list6: '사업장 관련 활동', // 출장, 통근 등
-  list7: '직원 통근', // 직원 출퇴근 교통수단
-  list8: '출장', // 업무 관련 출장
-  list9: '다운스트림 및 유통', // 자사에서 고객까지 운송
-  list10: '판매 후 처리', // 제품 포장재 처리
-  list11: '제품 사용', // 제품 사용 단계 배출
-  list12: '제품 폐기', // 제품 폐기 단계 배출
-  list13: '임대 자산', // 임대 부동산, 장비
+  list5: '운영 과정에서 발생하는 폐기물', // 운영 중 발생하는 폐기물
+  list6: '출장', // 출장, 통근 등
+  list7: '직원 출퇴근', // 직원 출퇴근 교통수단
+  list8: '업스트림 임대 자산', // 업무 관련 출장
+  list9: '다운스트림 운송 및 유통', // 자사에서 고객까지 운송
+  list10: '판매된 제품의 처리', // 제품 포장재 처리
+  list11: '판매된 제품의 사용', // 제품 사용 단계 배출
+  list12: '판매된 제품의 수명 종료 처리', // 제품 폐기 단계 배출
+  list13: '다운스트림 임대 자산', // 임대 부동산, 장비
   list14: '프랜차이즈', // 프랜차이즈 운영
   list15: '투자' // 투자 포트폴리오 배출
 } as const
@@ -160,7 +160,7 @@ export function CategorySelector<KeyType extends string>({
               }`}
               onClick={() => onCategorySelect(key as KeyType)}>
               <CardHeader className="p-4">
-                <div className="flex justify-between items-start">
+                <div className="flex items-start justify-between">
                   <div className="flex-1">
                     {pathname === '/scope3' && (
                       <div className="mb-2 text-xs font-medium text-gray-500">
@@ -174,7 +174,7 @@ export function CategorySelector<KeyType extends string>({
                 </div>
 
                 {/* 배출량 표시 */}
-                <div className="flex justify-between items-center pt-3 mt-3 border-t border-gray-200">
+                <div className="flex items-center justify-between pt-3 mt-3 border-t border-gray-200">
                   <div
                     className={`text-lg font-bold transition-colors ${
                       hasData
@@ -189,7 +189,7 @@ export function CategorySelector<KeyType extends string>({
                 </div>
 
                 {/* 상태 표시 */}
-                <div className="flex justify-between items-center pt-3 mt-3 border-t border-gray-200">
+                <div className="flex items-center justify-between pt-3 mt-3 border-t border-gray-200">
                   <div
                     className={`flex items-center text-xs ${
                       hasData

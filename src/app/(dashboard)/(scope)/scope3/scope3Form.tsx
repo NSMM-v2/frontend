@@ -32,17 +32,15 @@ import {scope3CategoryList} from '@/components/scopeTotal/Scope123CategorySelect
 import {
   SelectorState,
   ScopeEmissionResponse,
-  ScopeCategorySummary,
   CategoryYearlyEmission,
   CategoryMonthlyEmission,
   Scope3SpecialAggregationResponse
 } from '@/types/scopeTypes'
 import {
   deleteScopeEmission,
-  fetchCategoryYearlyEmissions,
-  fetchCategoryMonthlyEmissions,
   fetchEmissionsByScope,
-  fetchScope3SpecialAggregation
+  fetchScope3CombinedMonthlyEmission,
+  fetchScope3CombinedYearlyEmission
 } from '@/services/scopeService'
 import {DirectionButton} from '@/components/layout/direction'
 
@@ -152,15 +150,12 @@ export default function Scope3Form() {
   // 전체 Scope3 배출량 데이터 (년/월 기준)
   const [, setScope3Data] = useState<ScopeEmissionResponse[]>([])
 
-  // 카테고리별 요약 데이터 (CategorySummaryCard용)
-  const [categorySummary, setCategorySummary] = useState<ScopeCategorySummary>({})
-
   // 데이터 새로고침 트리거 (CRUD 작업 후 데이터 다시 로드용)
   const [refreshTrigger, setRefreshTrigger] = useState<number>(0)
 
   // 기간별 데이터 상태 관리 (Period-specific Data State)
-  const [periodEmissions, setPeriodEmissions] = useState<ScopeEmissionResponse[]>([])
-  const [periodTotal, setPeriodTotal] = useState<number>(0)
+  const [, setPeriodEmissions] = useState<ScopeEmissionResponse[]>([])
+  const [, setPeriodTotal] = useState<number>(0)
   const [filteredCategoryTotals, setFilteredCategoryTotals] = useState<
     Record<Scope3CategoryKey, number>
   >({
@@ -182,13 +177,12 @@ export default function Scope3Form() {
   })
 
   // 카테고리별 상세 데이터 상태 (Category Detail Data State)
-  const [categoryYearlyData, setCategoryYearlyData] = useState<CategoryYearlyEmission[]>(
-    []
-  )
+  const [, setCategoryYearlyData] = useState<CategoryYearlyEmission[]>([])
   const [categoryMonthlyData, setCategoryMonthlyData] = useState<
     CategoryMonthlyEmission[]
   >([])
   const [totalSumAllCategories, setTotalSumAllCategories] = useState<number>(0)
+  const [monthlyTotalScope3Emission, setMonthlyTotalScope3Emission] = useState<number>(0)
 
   // Scope 3 특수 집계 데이터 상태 (Scope 3 Special Aggregation State)
   const [scope3SpecialData, setScope3SpecialData] =
@@ -474,24 +468,24 @@ export default function Scope3Form() {
     setActiveCategory(null)
   }
 
-  // 전체 총 배출량 계산
-  const grandTotal = Object.keys({
-    list1: '',
-    list2: '',
-    list3: '',
-    list4: '',
-    list5: '',
-    list6: '',
-    list7: '',
-    list8: '',
-    list9: '',
-    list10: '',
-    list11: '',
-    list12: '',
-    list13: '',
-    list14: '',
-    list15: ''
-  }).reduce((sum, key) => sum + getTotalEmission(key as Scope3CategoryKey), 0)
+  // 전체 총 배출량 계산 (사용 안함 - 주석 처리)
+  // const grandTotal = Object.keys({
+  //   list1: '',
+  //   list2: '',
+  //   list3: '',
+  //   list4: '',
+  //   list5: '',
+  //   list6: '',
+  //   list7: '',
+  //   list8: '',
+  //   list9: '',
+  //   list10: '',
+  //   list11: '',
+  //   list12: '',
+  //   list13: '',
+  //   list14: '',
+  //   list15: ''
+  // }).reduce((sum, key) => sum + getTotalEmission(key as Scope3CategoryKey), 0)
 
   // ========================================================================
   // 백엔드 데이터 로드 함수 (Backend Data Loading Functions)
@@ -500,76 +494,72 @@ export default function Scope3Form() {
   /**
    * 연도/월별 Scope3 데이터 전체 조회
    * selectedYear, selectedMonth 변경 시 자동 호출
-   * 새로운 카테고리별 API 메서드 사용으로 상세한 집계 정보 제공
+   * 새로운 통합 API 메서드 사용으로 상세한 집계 정보 제공
    * + Scope 3 특수 집계 데이터 조회 추가
    */
   const loadScope3Data = async () => {
     if (!selectedYear) return
 
     try {
-      // 1. 항상 연간 데이터 조회 (연 배출량 카드용)
-      const yearlyData = await fetchCategoryYearlyEmissions('SCOPE3', selectedYear)
+      // 1. 항상 연간 통합 데이터 조회 (연 배출량 카드용)
+      const yearlyResponse = await fetchScope3CombinedYearlyEmission(selectedYear)
+
+      // 연간 데이터에서 카테고리별 상세 정보 추출
+      const yearlyData = yearlyResponse?.yearlyCategories || []
       setCategoryYearlyData(yearlyData)
 
       // 2. 연간 총 배출량 설정
-      let yearlyTotalSum = 0
-      if (yearlyData.length > 0 && yearlyData[0].totalSumAllCategories) {
-        yearlyTotalSum = yearlyData[0].totalSumAllCategories
-      }
+      let yearlyTotalSum = yearlyResponse?.totalScope3Emission || 0
       setTotalSumAllCategories(yearlyTotalSum)
 
-      // 3. 월이 선택된 경우 월간 데이터 조회
+      // 3. 월이 선택된 경우 월간 통합 데이터 조회
       let monthlyFilteredData: CategoryMonthlyEmission[] = []
       let monthlyTotalSum = 0
 
       if (selectedMonth) {
-        // 월간 데이터 조회
-        const monthlyData = await fetchCategoryMonthlyEmissions('SCOPE3', selectedYear)
-        // 선택된 월의 데이터만 필터링
-        monthlyFilteredData = monthlyData.filter(data => data.month === selectedMonth)
+        // 월간 통합 데이터 조회
+        const monthlyResponse = await fetchScope3CombinedMonthlyEmission(
+          selectedYear,
+          selectedMonth
+        )
+
+        // 월간 데이터에서 카테고리별 상세 정보 추출
+        monthlyFilteredData = monthlyResponse?.monthlyCategories || []
         setCategoryMonthlyData(monthlyFilteredData)
 
-        // 해당 월의 총 배출량 계산
-        monthlyTotalSum = monthlyFilteredData.reduce((sum, category) => {
-          return sum + (category.totalEmission || 0)
-        }, 0)
+        // 해당 월의 총 배출량 설정 (통합 API에서 제공하는 정확한 값 사용)
+        monthlyTotalSum = monthlyResponse?.totalScope3Emission || 0
+        setMonthlyTotalScope3Emission(monthlyTotalSum)
 
-        // 4. Scope 3 특수 집계 데이터 조회 (월이 선택된 경우에만)
-        try {
+        // 4. 월간 통합 응답에서 특수 집계 데이터 추출 (월이 선택된 경우에만)
+        if (monthlyResponse?.specialAggregationDetail) {
           console.log(
-            `[Scope3Form] 특수 집계 데이터 요청: ${selectedYear}년 ${selectedMonth}월`
+            `[Scope3Form] 특수 집계 데이터 추출: ${selectedYear}년 ${selectedMonth}월`
           )
-          const specialAggregationData = await fetchScope3SpecialAggregation(
-            selectedYear,
-            selectedMonth
-          )
-          setScope3SpecialData(specialAggregationData)
+          setScope3SpecialData(monthlyResponse.specialAggregationDetail)
 
-          if (specialAggregationData) {
-            console.log('[Scope3Form] 특수 집계 데이터 로드 완료:', {
-              연도: specialAggregationData.reportingYear,
-              월: specialAggregationData.reportingMonth,
-              사용자타입: specialAggregationData.userType,
-              조직ID: specialAggregationData.organizationId,
-              'Cat.1 총 배출량 (계층적 롤업)':
-                specialAggregationData.category1TotalEmission,
-              'Cat.2 총 배출량 (계층적 롤업)':
-                specialAggregationData.category2TotalEmission,
-              'Cat.4 총 배출량 (계층적 롤업)':
-                specialAggregationData.category4TotalEmission,
-              'Cat.5 총 배출량 (계층적 롤업)':
-                specialAggregationData.category5TotalEmission
-            })
-          } else {
-            console.log('[Scope3Form] 특수 집계 데이터 없음')
-          }
-        } catch (error) {
-          console.warn('[Scope3Form] 특수 집계 데이터 조회 실패:', error)
+          console.log('[Scope3Form] 특수 집계 데이터 로드 완료:', {
+            연도: monthlyResponse.specialAggregationDetail.reportingYear,
+            월: monthlyResponse.specialAggregationDetail.reportingMonth,
+            사용자타입: monthlyResponse.specialAggregationDetail.userType,
+            조직ID: monthlyResponse.specialAggregationDetail.organizationId,
+            'Cat.1 총 배출량 (계층적 롤업)':
+              monthlyResponse.specialAggregationDetail.category1TotalEmission,
+            'Cat.2 총 배출량 (계층적 롤업)':
+              monthlyResponse.specialAggregationDetail.category2TotalEmission,
+            'Cat.4 총 배출량 (계층적 롤업)':
+              monthlyResponse.specialAggregationDetail.category4TotalEmission,
+            'Cat.5 총 배출량 (계층적 롤업)':
+              monthlyResponse.specialAggregationDetail.category5TotalEmission
+          })
+        } else {
+          console.log('[Scope3Form] 특수 집계 데이터 없음')
           setScope3SpecialData(null)
         }
       } else {
         setCategoryMonthlyData([])
         setScope3SpecialData(null) // 월이 선택되지 않으면 특수 집계 데이터 초기화
+        setMonthlyTotalScope3Emission(0) // 월별 총 배출량도 초기화
         console.log('[Scope3Form] 월이 선택되지 않아 특수 집계 데이터 초기화')
       }
 
@@ -587,6 +577,8 @@ export default function Scope3Form() {
 
       setPeriodEmissions(filteredEmissions)
       setScope3Data(filteredEmissions)
+      // 필터링된 데이터를 convertBackendDataToCalculators에 전달
+      // 내부에서 다시 필터링되지만, 이미 필터링된 데이터를 전달하여 성능 최적화
       convertBackendDataToCalculators(filteredEmissions)
 
       // 6. 기간별 총 배출량 설정 (월이 선택된 경우 월 총합, 아니면 연 총합)
@@ -613,12 +605,14 @@ export default function Scope3Form() {
 
       // 월이 선택된 경우 월별 데이터 기준, 아니면 연간 데이터 기준으로 카테고리 총합 계산
       const dataForCategories = selectedMonth ? monthlyFilteredData : yearlyData
-      dataForCategories.forEach(category => {
-        const categoryKey = getCategoryKeyByNumber(category.categoryNumber || 0)
-        if (categoryKey) {
-          categoryTotals[categoryKey] = category.totalEmission || 0
+      dataForCategories.forEach(
+        (category: CategoryYearlyEmission | CategoryMonthlyEmission) => {
+          const categoryKey = getCategoryKeyByNumber(category.categoryNumber || 0)
+          if (categoryKey) {
+            categoryTotals[categoryKey] = category.totalEmission || 0
+          }
         }
-      })
+      )
 
       setFilteredCategoryTotals(categoryTotals)
     } catch (error) {
@@ -630,6 +624,7 @@ export default function Scope3Form() {
       setCategoryYearlyData([])
       setCategoryMonthlyData([])
       setScope3SpecialData(null)
+      setMonthlyTotalScope3Emission(0)
       setFilteredCategoryTotals({
         list1: 0,
         list2: 0,
@@ -654,6 +649,7 @@ export default function Scope3Form() {
    * 백엔드 데이터를 프론트엔드 계산기 형식으로 변환
    * 기존 저장된 데이터를 각 카테고리의 계산기 목록으로 변환하여 표시
    * 완전 초기화를 통해 이전 데이터 잔존 방지
+   * 선택된 월에 해당하는 데이터만 필터링하여 표시
    */
   const convertBackendDataToCalculators = (data: ScopeEmissionResponse[]) => {
     const categorizedData: {[key in Scope3CategoryKey]?: CalculatorData[]} = {}
@@ -676,6 +672,7 @@ export default function Scope3Form() {
     }
 
     // 카테고리별로 데이터 그룹화
+    // data는 이미 loadScope3Data에서 필터링된 상태이므로 추가 필터링 불필요
     data.forEach(emission => {
       const categoryKey = getCategoryKeyByNumber(emission.scope3CategoryNumber || 0)
       if (!categoryKey) return
@@ -901,52 +898,129 @@ export default function Scope3Form() {
   // 특수 집계 데이터 활용 함수 (Special Aggregation Data Functions)
   // ========================================================================
 
+  // /**
+  //  * 특수 집계 데이터가 있는 카테고리의 배출량 반환
+  //  * Cat.1, 2, 4, 5는 특수 집계 값 우선 사용 (월이 선택된 경우에만)
+  //  */
+  // const getEmissionForCategory = (categoryKey: Scope3CategoryKey): number => {
+  //   // 특수 집계 데이터가 있고 월이 선택된 경우
+  //   if (scope3SpecialData && selectedMonth) {
+  //     switch (categoryKey) {
+  //       case 'list1': // Cat.1: 구매한 상품 및 서비스
+  //         console.log(
+  //           `[getEmissionForCategory] Cat.1 특수 집계 값 사용: ${scope3SpecialData.category1TotalEmission}`
+  //         )
+  //         return scope3SpecialData.category1TotalEmission
+  //       case 'list2': // Cat.2: 자본재
+  //         console.log(
+  //           `[getEmissionForCategory] Cat.2 특수 집계 값 사용: ${scope3SpecialData.category2TotalEmission}`
+  //         )
+  //         return scope3SpecialData.category2TotalEmission
+  //       case 'list4': // Cat.4: 업스트림 운송 및 유통
+  //         console.log(
+  //           `[getEmissionForCategory] Cat.4 특수 집계 값 사용: ${scope3SpecialData.category4TotalEmission}`
+  //         )
+  //         return scope3SpecialData.category4TotalEmission
+  //       case 'list5': // Cat.5: 폐기물 처리
+  //         console.log(
+  //           `[getEmissionForCategory] Cat.5 특수 집계 값 사용: ${scope3SpecialData.category5TotalEmission}`
+  //         )
+  //         return scope3SpecialData.category5TotalEmission
+  //       default:
+  //         // 다른 카테고리는 기존 로직 사용
+  //         break
+  //     }
+  //   }
+
+  //   // 일반 집계 데이터 사용 (Cat.3, 6-15 또는 특수 집계 데이터가 없는 경우)
+  //   const filteredTotal = filteredCategoryTotals[categoryKey] || 0
+  //   const localTotal = getTotalEmission(categoryKey)
+  //   const finalValue = Math.max(filteredTotal, localTotal)
+
+  //   if (filteredTotal > 0 || localTotal > 0) {
+  //     console.log(
+  //       `[getEmissionForCategory] ${categoryKey} 일반 집계 값 사용: ${finalValue} (filtered: ${filteredTotal}, local: ${localTotal})`
+  //     )
+  //   }
+
+  //   return finalValue
+  // }
+
   /**
    * 특수 집계 데이터가 있는 카테고리의 배출량 반환
-   * Cat.1, 2, 4, 5는 특수 집계 값 우선 사용 (월이 선택된 경우에만)
+   * Cat.1, 2, 4, 5는 본인 입력 데이터 + 업스트림 공식 값으로 계산
+   * 다른 카테고리는 현재 계산기에 로드된 데이터 기반으로 계산
    */
   const getEmissionForCategory = (categoryKey: Scope3CategoryKey): number => {
-    // 특수 집계 데이터가 있고 월이 선택된 경우
-    if (scope3SpecialData && selectedMonth) {
+    // 현재 계산기에 로드된 데이터를 기반으로 한 실제 배출량 계산
+    const localTotal = getTotalEmission(categoryKey)
+
+    // 특수 집계 카테고리 (Cat.1, 2, 4, 5)인 경우 업스트림 공식 값 추가
+    if (isSpecialAggregationCategory(categoryKey) && scope3SpecialData && selectedMonth) {
+      const isHeadquarters = scope3SpecialData.userType === 'HEADQUARTERS'
+
+      // 본사인 경우: scope3SpecialData의 특수 집계 값 직접 사용
+      if (isHeadquarters) {
+        let specialAggregationValue = 0
+
+        switch (categoryKey) {
+          case 'list1': // Cat.1: 구매한 상품 및 서비스
+            specialAggregationValue = scope3SpecialData.category1TotalEmission || 0
+            break
+          case 'list2': // Cat.2: 자본재
+            specialAggregationValue = scope3SpecialData.category2TotalEmission || 0
+            break
+          case 'list4': // Cat.4: 업스트림 운송 및 유통
+            specialAggregationValue = scope3SpecialData.category4TotalEmission || 0
+            break
+          case 'list5': // Cat.5: 폐기물 처리
+            specialAggregationValue = scope3SpecialData.category5TotalEmission || 0
+            break
+        }
+
+        console.log(
+          `[getEmissionForCategory] ${categoryKey} 본사 계정 - 특수 집계 롤업 값 사용: ${specialAggregationValue}`
+        )
+        return specialAggregationValue
+      }
+
+      // 하위 조직이거나 본사이지만 백엔드 데이터가 없는 경우: 기존 로직 사용
+      let upstreamValue = 0
+
       switch (categoryKey) {
         case 'list1': // Cat.1: 구매한 상품 및 서비스
-          console.log(
-            `[getEmissionForCategory] Cat.1 특수 집계 값 사용: ${scope3SpecialData.category1TotalEmission}`
-          )
-          return scope3SpecialData.category1TotalEmission
+          upstreamValue = scope3SpecialData.category1TotalEmission || 0
+          break
         case 'list2': // Cat.2: 자본재
-          console.log(
-            `[getEmissionForCategory] Cat.2 특수 집계 값 사용: ${scope3SpecialData.category2TotalEmission}`
-          )
-          return scope3SpecialData.category2TotalEmission
+          upstreamValue = scope3SpecialData.category2TotalEmission || 0
+          break
         case 'list4': // Cat.4: 업스트림 운송 및 유통
-          console.log(
-            `[getEmissionForCategory] Cat.4 특수 집계 값 사용: ${scope3SpecialData.category4TotalEmission}`
-          )
-          return scope3SpecialData.category4TotalEmission
+          upstreamValue = scope3SpecialData.category4TotalEmission || 0
+          break
         case 'list5': // Cat.5: 폐기물 처리
-          console.log(
-            `[getEmissionForCategory] Cat.5 특수 집계 값 사용: ${scope3SpecialData.category5TotalEmission}`
-          )
-          return scope3SpecialData.category5TotalEmission
-        default:
-          // 다른 카테고리는 기존 로직 사용
+          upstreamValue = scope3SpecialData.category5TotalEmission || 0
           break
       }
+
+      const totalValue = localTotal + upstreamValue
+
+      console.log(
+        `[getEmissionForCategory] ${categoryKey} 하위 조직 또는 신규 입력 합계 계산: ` +
+          `본인 입력(${localTotal}) + 업스트림(${upstreamValue}) = ${totalValue}`
+      )
+
+      return totalValue
     }
 
-    // 일반 집계 데이터 사용 (Cat.3, 6-15 또는 특수 집계 데이터가 없는 경우)
-    const filteredTotal = filteredCategoryTotals[categoryKey] || 0
-    const localTotal = getTotalEmission(categoryKey)
-    const finalValue = Math.max(filteredTotal, localTotal)
-
-    if (filteredTotal > 0 || localTotal > 0) {
+    // 일반 카테고리 (Cat.3, 6-15)는 현재 계산기에 로드된 데이터만 사용
+    // 이렇게 하면 월 변경 시 해당 월의 데이터만 표시됨
+    if (localTotal > 0) {
       console.log(
-        `[getEmissionForCategory] ${categoryKey} 일반 집계 값 사용: ${finalValue} (filtered: ${filteredTotal}, local: ${localTotal})`
+        `[getEmissionForCategory] ${categoryKey} 현재 계산기 데이터 사용: ${localTotal}`
       )
     }
 
-    return finalValue
+    return localTotal
   }
 
   /**
@@ -957,15 +1031,15 @@ export default function Scope3Form() {
   }
 
   /**
-   * 특수 집계 배지 표시 여부
+   * 특수 집계 배지 표시 여부 (사용 안함 - 주석 처리)
    */
-  const shouldShowSpecialBadge = (categoryKey: Scope3CategoryKey): boolean => {
-    return (
-      scope3SpecialData !== null &&
-      selectedMonth !== null &&
-      isSpecialAggregationCategory(categoryKey)
-    )
-  }
+  // const shouldShowSpecialBadge = (categoryKey: Scope3CategoryKey): boolean => {
+  //   return (
+  //     scope3SpecialData !== null &&
+  //     selectedMonth !== null &&
+  //     isSpecialAggregationCategory(categoryKey)
+  //   )
+  // }
 
   // ========================================================================
   // 렌더링 (Rendering)
@@ -1035,15 +1109,11 @@ export default function Scope3Form() {
                       {selectedYear}년 연 배출량
                     </p>
                     <h3 className="text-2xl font-bold text-gray-900">
-                      {categoryYearlyData.length > 0 &&
-                      categoryYearlyData[0].totalSumAllCategories
-                        ? categoryYearlyData[0].totalSumAllCategories.toLocaleString(
-                            undefined,
-                            {
-                              maximumFractionDigits: 2,
-                              minimumFractionDigits: 2
-                            }
-                          )
+                      {totalSumAllCategories > 0
+                        ? totalSumAllCategories.toLocaleString(undefined, {
+                            maximumFractionDigits: 2,
+                            minimumFractionDigits: 2
+                          })
                         : '0.00'}
 
                       <span className="ml-1 text-sm font-normal text-gray-500">
@@ -1055,7 +1125,7 @@ export default function Scope3Form() {
                 <div className="flex flex-col w-full space-y-3">
                   <label className="flex items-center gap-2 text-sm font-semibold whitespace-nowrap text-customG-700">
                     <CalendarDays className="w-4 h-4" />
-                    보고연도
+                    연도
                   </label>
                   <Input
                     type="number"
@@ -1084,19 +1154,13 @@ export default function Scope3Form() {
                       배출량
                     </p>
                     <h3 className="text-2xl font-bold text-gray-900">
-                      {selectedMonth && categoryMonthlyData.length > 0
-                        ? categoryMonthlyData
-                            .reduce(
-                              (sum: number, category: CategoryMonthlyEmission) =>
-                                sum + (category.totalEmission || 0),
-                              0
-                            )
-                            .toLocaleString(undefined, {
+                      {selectedMonth
+                        ? monthlyTotalScope3Emission > 0
+                          ? monthlyTotalScope3Emission.toLocaleString(undefined, {
                               maximumFractionDigits: 2,
                               minimumFractionDigits: 2
                             })
-                        : selectedMonth
-                        ? '0.00'
+                          : '0.00'
                         : '월 선택 필요'}
 
                       <span className="ml-1 text-sm font-normal text-gray-500">
@@ -1107,8 +1171,7 @@ export default function Scope3Form() {
                 </div>
                 <div className="flex flex-col w-full space-y-3">
                   <label className="flex items-center gap-2 text-sm font-semibold text-customG-700">
-                    <CalendarDays className="w-4 h-4" />
-                    보고월
+                    <CalendarDays className="w-4 h-4" />월
                   </label>
                   <MonthSelector
                     className="w-full"

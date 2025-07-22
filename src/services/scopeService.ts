@@ -9,7 +9,8 @@ import {
   MonthlyEmissionSummary,
   CategoryYearlyEmission,
   CategoryMonthlyEmission,
-  Scope3SpecialAggregationResponse
+  Scope3SpecialAggregationResponse,
+  Scope3CombinedEmissionResponse
 } from '@/types/scopeTypes'
 
 // 통합 Scope 배출량 데이터 생성 API (Creation APIs)
@@ -377,7 +378,6 @@ export const fetchScope3SpecialAggregation = async (
         })
       }
 
-      showSuccess(`${year}년 ${month}월 Scope 3 특수 집계 결과가 조회되었습니다.`)
       return result
     } else {
       throw new Error(response.data.message || 'Scope 3 특수 집계 조회에 실패했습니다.')
@@ -452,5 +452,188 @@ const handleScope3SpecialAggregationError = (error: any, year: number, month: nu
     showError('네트워크 연결을 확인해주세요.')
   } else {
     showError(`Scope 3 특수 집계 조회 중 오류가 발생했습니다. (${year}년 ${month}월)`)
+  }
+}
+
+// ============================================================================
+// Scope 3 통합 배출량 집계 API (Scope 3 Combined Emission Aggregation APIs)
+// ============================================================================
+
+/**
+ * Scope 3 월별 통합 배출량 집계 조회
+ * 특수집계배출량 + 일반 Scope3 카테고리별 월별 배출량
+ * 백엔드 엔드포인트: GET /api/v1/scope/aggregation/scope3-combined/{year}/{month}
+ *
+ * @param year 보고 연도 (예: 2024)
+ * @param month 보고 월 (1-12)
+ * @returns Promise<Scope3CombinedEmissionResponse | null> Scope 3 월별 통합 배출량 결과
+ */
+export const fetchScope3CombinedMonthlyEmission = async (
+  year: number,
+  month: number
+): Promise<Scope3CombinedEmissionResponse | null> => {
+  try {
+    // 월 값 유효성 검증 (클라이언트 측)
+    if (month < 1 || month > 12) {
+      dismissLoading()
+      showError('월은 1-12 범위여야 합니다.')
+      return null
+    }
+
+    const response = await api.get<ApiResponse<Scope3CombinedEmissionResponse>>(
+      `/api/v1/scope/aggregation/scope3-combined/${year}/${month}`
+    )
+
+    dismissLoading()
+
+    if (response.data.success && response.data.data) {
+      const result = response.data.data
+
+      // 집계 결과 로그 출력 (개발 환경에서만)
+      if (process.env.NODE_ENV === 'development') {
+        console.log('[Scope3 월별 통합 집계] 조회 완료:', {
+          연도: result.reportingYear,
+          월: result.reportingMonth,
+          사용자타입: result.userType,
+          조직ID: result.organizationId,
+          '특수집계 총계': result.specialAggregationTotal,
+          '일반카테고리 총계': result.regularCategoryTotal,
+          '최종 Scope3 총 배출량': result.totalScope3Emission,
+          '총 데이터 건수': result.totalDataCount
+        })
+      }
+
+      return result
+    } else {
+      throw new Error(response.data.message || 'Scope 3 월별 통합 배출량 집계 조회에 실패했습니다.')
+    }
+  } catch (error: any) {
+    dismissLoading()
+    handleScope3CombinedEmissionError(error, year, month)
+    return null
+  }
+}
+
+/**
+ * Scope 3 연별 통합 배출량 집계 조회
+ * 특수집계배출량 + 일반 Scope3 카테고리별 연별 배출량
+ * 백엔드 엔드포인트: GET /api/v1/scope/aggregation/scope3-combined/{year}
+ *
+ * @param year 보고 연도 (예: 2024)
+ * @returns Promise<Scope3CombinedEmissionResponse | null> Scope 3 연별 통합 배출량 결과
+ */
+export const fetchScope3CombinedYearlyEmission = async (
+  year: number
+): Promise<Scope3CombinedEmissionResponse | null> => {
+  try {
+    const response = await api.get<ApiResponse<Scope3CombinedEmissionResponse>>(
+      `/api/v1/scope/aggregation/scope3-combined/${year}`
+    )
+
+    dismissLoading()
+
+    if (response.data.success && response.data.data) {
+      const result = response.data.data
+
+      // 집계 결과 로그 출력 (개발 환경에서만)
+      if (process.env.NODE_ENV === 'development') {
+        console.log('[Scope3 연별 통합 집계] 조회 완료:', {
+          연도: result.reportingYear,
+          사용자타입: result.userType,
+          조직ID: result.organizationId,
+          '특수집계 총계': result.specialAggregationTotal,
+          '일반카테고리 총계': result.regularCategoryTotal,
+          '최종 Scope3 총 배출량': result.totalScope3Emission,
+          '총 데이터 건수': result.totalDataCount
+        })
+      }
+
+      return result
+    } else {
+      throw new Error(response.data.message || 'Scope 3 연별 통합 배출량 집계 조회에 실패했습니다.')
+    }
+  } catch (error: any) {
+    dismissLoading()
+    handleScope3CombinedEmissionError(error, year)
+    return null
+  }
+}
+
+// ============================================================================
+// Scope 3 통합 배출량 집계 전용 에러 처리 함수
+// ============================================================================
+
+/**
+ * Scope 3 통합 배출량 집계 관련 에러 처리 헬퍼 함수
+ * 백엔드 컨트롤러의 에러 코드와 매핑하여 사용자 친화적 메시지 제공
+ * @param error 에러 객체
+ * @param year 요청한 연도
+ * @param month 요청한 월 (연별 조회시 선택사항)
+ */
+const handleScope3CombinedEmissionError = (error: any, year: number, month?: number) => {
+  if (error?.response?.status === 400) {
+    const errorMessage =
+      error.response?.data?.message || '요청 데이터가 올바르지 않습니다.'
+    const errorCode = error.response?.data?.errorCode
+
+    let userFriendlyMessage = errorMessage
+
+    // 백엔드 ErrorCode에 따른 사용자 친화적 메시지 변환
+    switch (errorCode) {
+      case 'INVALID_MONTH_RANGE':
+        userFriendlyMessage = '월은 1-12 범위여야 합니다.'
+        break
+      case 'INVALID_NUMERIC_FORMAT':
+        userFriendlyMessage = '연도와 월은 숫자여야 합니다.'
+        break
+      case 'VALIDATION_ERROR':
+        userFriendlyMessage = '입력 데이터 검증에 실패했습니다.'
+        break
+      default:
+        if (month !== undefined) {
+          userFriendlyMessage = `${year}년 ${month}월 데이터 요청이 올바르지 않습니다.`
+        } else {
+          userFriendlyMessage = `${year}년 데이터 요청이 올바르지 않습니다.`
+        }
+        break
+    }
+
+    showError(userFriendlyMessage)
+  } else if (error?.response?.status === 403) {
+    const errorCode = error.response?.data?.errorCode
+    if (errorCode === 'ACCESS_DENIED') {
+      showError('Scope 3 통합 배출량 집계 조회 권한이 없습니다.')
+    } else {
+      showError('접근 권한이 부족합니다.')
+    }
+  } else if (error?.response?.status === 404) {
+    if (month !== undefined) {
+      showError(`${year}년 ${month}월에 해당하는 배출량 데이터를 찾을 수 없습니다.`)
+    } else {
+      showError(`${year}년에 해당하는 배출량 데이터를 찾을 수 없습니다.`)
+    }
+  } else if (error?.response?.status === 500) {
+    const errorCode = error.response?.data?.errorCode
+    if (errorCode === 'SCOPE3_COMBINED_MONTHLY_AGGREGATION_ERROR' || 
+        errorCode === 'SCOPE3_COMBINED_YEARLY_AGGREGATION_ERROR') {
+      showError('Scope 3 통합 배출량 집계 처리 중 서버 오류가 발생했습니다.')
+    } else {
+      showError('서버에서 오류가 발생했습니다. 잠시 후 다시 시도해주세요.')
+    }
+  } else if (error?.response?.status === 401) {
+    showError('로그인이 필요합니다. 다시 로그인해주세요.')
+  } else if (error?.response?.data?.message) {
+    showError(error.response.data.message)
+  } else if (
+    error?.code === 'NETWORK_ERROR' ||
+    error?.message?.includes('Network Error')
+  ) {
+    showError('네트워크 연결을 확인해주세요.')
+  } else {
+    if (month !== undefined) {
+      showError(`Scope 3 월별 통합 배출량 집계 조회 중 오류가 발생했습니다. (${year}년 ${month}월)`)
+    } else {
+      showError(`Scope 3 연별 통합 배출량 집계 조회 중 오류가 발생했습니다. (${year}년)`)
+    }
   }
 }

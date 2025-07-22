@@ -45,11 +45,11 @@ export function ExcelCascadingSelector({
     list3: ['원료 및 에너지 생산', '수송'],
     list4: ['수송'],
     list5: ['폐기물 처리'],
-    list6: [], // 예: 폐기물 처리
-    list7: [],
+    list6: ['원료 및 에너지 생산'], // 예: 폐기물 처리
+    list7: ['원료 및 에너지 생산'], // 예: 사업장 운영
     list8: [], // 예: 직원 통근
-    list9: [],
-    list10: [], // 예: 다운스트림 및 유통
+    list9: ['수송'],
+    list10: ['원료 및 에너지 생산'], // 예: 다운스트림 및 유통
     list11: [],
     list12: ['폐기물 처리'], // 예: 제품 사용
     list13: [], // 예: 제품 폐기
@@ -61,16 +61,16 @@ export function ExcelCascadingSelector({
   const separateFilterMap: Record<Scope3CategoryKey, SeparateFilterRule> = {
     list1: {exclude: ['에너지']}, // 예시
     list2: {exclude: ['에너지']}, // list2는 필터링 안 함 → 전체 표시
-    list3: {include: ['에너지', '육상수송', '항공수송', '해상수송']}, // list3는 에너지, 육상수송, 항공수송, 해상수송만 표시
-    list4: undefined,
+    list3: {include: ['육상수송', '항공수송', '해상수송']}, // list3는 에너지, 육상수송, 항공수송, 해상수송만 표시
+    list4: undefined, // list4는 필터링 안 함 → 전체 표시
     list5: undefined,
-    list6: undefined, // list6는 필터링 안 함 → 전체 표시
-    list7: undefined, // list7는 필터링 안 함 → 전체 표시
+    list6: {include: ['에너지']}, // list6는 필터링 안 함 → 전체 표시
+    list7: {include: ['에너지']}, // list7는 필터링 안 함 → 전체 표시
     list8: undefined,
-    list9: undefined, // list9는 필터링 안 함 → 전체 표시
-    list10: undefined,
+    list9: {include: ['육상수송', '항공수송', '해상수송']}, // list9는 필터링 안 함 → 전체 표시
+    list10: {exclude: ['에너지', '건축자재','전기부품','금속']},
     list11: undefined, // list11는 필터링 안 함 → 전체 표시
-    list12: undefined,
+    list12: {include: ['매립','소각','재활용']}, // list12는 매립, 소각, 재활용만 표시
     list13: undefined,
     list14: undefined, // list14는 필터링 안 함 → 전체 표시
     list15: undefined // list15는 필터링 안 함 → 전체 표시
@@ -252,6 +252,7 @@ export function ExcelCascadingSelector({
     const num = parseFloat(value)
     if (isNaN(num) || num < 0) {
       console.warn('유효하지 않은 수량 입력:', value)
+      alert('유효하지 않은 수량입니다. 0 이상의 숫자를 입력해주세요.')
       onChangeTotal(id, 0)
       return
     }
@@ -337,8 +338,7 @@ export function ExcelCascadingSelector({
   const calculatedEmission =
     state.quantity &&
     selectedItem &&
-    !isNaN(parseFloat(state.quantity)) &&
-    parseFloat(state.quantity) > 0
+    !isNaN(parseFloat(state.quantity)) 
       ? parseFloat(state.quantity) * selectedItem.kgCO2eq
       : 0
 

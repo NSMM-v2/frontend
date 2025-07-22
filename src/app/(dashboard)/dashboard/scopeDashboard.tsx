@@ -224,6 +224,11 @@ export default function ScopeDashboard() {
   const handleProductSelect = (product: Product) => {
     setSelectedProduct(product)
   }
+
+  // 스크롤 이벤트 전파 방지 핸들러
+  const handleScrollEvent = (e: React.WheelEvent) => {
+    e.stopPropagation()
+  }
   //============================================================================================================search 부분
 
   const [searchQuery, setSearchQuery] = useState('')
@@ -251,7 +256,9 @@ export default function ScopeDashboard() {
    * 협력사 레벨에 따른 스타일 클래스 반환
    */
   const getLevelStyle = (level: number) => {
-    switch (level) {
+    // 문자열로 들어올 수 있으므로 숫자로 변환
+    const numLevel = Number(level)
+    switch (numLevel) {
       case 0:
         return 'bg-yellow-50 border-yellow-200 text-yellow-800' // 본사
       case 1:
@@ -269,10 +276,12 @@ export default function ScopeDashboard() {
    * 협력사 레벨 표시 텍스트 반환
    */
   const getLevelText = (level: number) => {
-    if (level === 0) {
+    // 문자열로 들어올 수 있으므로 숫자로 변환
+    const numLevel = Number(level)
+    if (numLevel === 0) {
       return '본사'
     }
-    return `${level}차 협력사`
+    return `${numLevel}차 협력사`
   }
 
   /**
@@ -344,7 +353,7 @@ export default function ScopeDashboard() {
   // ========================================================================
 
   return (
-    <div className="w-full h-screen pt-24 pb-4">
+    <div className="w-full h-screen pt-24 pb-4 overflow-hidden">
       <div className="flex flex-col w-full h-full gap-4">
         <div className="flex flex-row h-[50%] w-full gap-4">
           {/* ======================================================================
@@ -352,6 +361,7 @@ export default function ScopeDashboard() {
               ====================================================================== */}
           <Card className="w-[30%] h-full bg-white rounded-lg p-4 flex flex-col">
             <Tabs defaultValue="company" className="w-full">
+
               <div className="flex flex-row items-center justify-between gap-2">
                 <TabsList>
                   <TabsTrigger value="company" onClick={() => setActiveTab('company')}>
@@ -369,9 +379,13 @@ export default function ScopeDashboard() {
                   className="w-full h-8 p-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500"
                 />
               </div>
-              <CardContent className="flex w-full max-h-[280px] p-0 overflow-hidden overflow-y-auto border rounded-lg custom-scrollbar allow-scroll">
-                <TabsContent value="company">
-                  <div className="flex flex-col h-full gap-2 p-2">
+              <CardContent className="flex-1 min-h-0 p-0 mt-2 overflow-hidden border rounded-lg">
+                <TabsContent
+                  value="company"
+                  className="h-full overflow-y-auto custom-scrollbar"
+                  style={{overscrollBehavior: 'contain', touchAction: 'pan-y'}}
+                  onWheel={handleScrollEvent}>
+                  <div className="flex flex-col h-full min-h-0 gap-2 p-2">
                     {loading && (
                       <div className="flex items-center justify-center h-full">
                         <div className="text-sm text-gray-500">
@@ -413,11 +427,12 @@ export default function ScopeDashboard() {
                         <div
                           key={partner.partnerId}
                           onClick={() => handlePartnerSelect(partner)}
-                          className={`rounded-lg border shadow-sm min-h-16 p-3 cursor-pointer transition-all duration-200 hover:shadow-md ${
-                            selectedPartner?.partnerId === partner.partnerId
-                              ? 'border-blue-500 bg-blue-50'
-                              : 'border-gray-200 bg-white hover:bg-gray-50'
-                          }`}>
+                          className={`rounded-lg border min-h-16 p-3 cursor-pointer transition-all duration-200
+                            ${
+                              selectedPartner?.partnerId === partner.partnerId
+                                ? 'border-blue-500 bg-blue-50 font-semibold shadow'
+                                : 'border-gray-200 bg-white hover:bg-gray-50'
+                            }`}>
                           <div className="flex flex-col gap-1">
                             {/* 회사명 */}
                             <div className="text-sm font-medium text-gray-900 truncate">
@@ -436,30 +451,28 @@ export default function ScopeDashboard() {
                                 {getLevelText(partner.level)}
                               </span>
                             </div>
-
-                            {/* 상위 협력사 정보 (2차, 3차인 경우) */}
-                            {partner.parentPartnerName && (
-                              <div className="text-xs text-gray-400">
-                                상위: {partner.parentPartnerName}
-                              </div>
-                            )}
                           </div>
                         </div>
                       ))}
                   </div>
                 </TabsContent>
                 {/* 제품 탭 -------------------------------------------------- */}
-                <TabsContent value="product">
-                  <div className="flex flex-col flex-1 gap-2 p-2 overflow-y-auto border rounded-lg scroll-auto custom-scrollbar">
+                <TabsContent
+                  value="product"
+                  className="h-full overflow-y-auto custom-scrollbar"
+                  style={{overscrollBehavior: 'contain', touchAction: 'pan-y'}}
+                  onWheel={handleScrollEvent}>
+                  <div className="flex flex-col h-full min-h-0 gap-2 p-2">
                     {filteredProducts.map(product => (
                       <div
                         key={product.productCode}
                         onClick={() => handleProductSelect(product)}
-                        className={`rounded-lg border shadow-sm min-h-16 p-3 cursor-pointer transition-all duration-200 hover:shadow-md ${
-                          selectedProduct?.productCode === product.productCode
-                            ? 'border-blue-500 bg-blue-50'
-                            : 'border-gray-200 bg-white hover:bg-gray-50'
-                        }}`}>
+                        className={`rounded-lg border min-h-16 p-3 cursor-pointer transition-all duration-200
+                          ${
+                            selectedProduct?.productCode === product.productCode
+                              ? 'border-blue-500 bg-blue-50 font-semibold shadow'
+                              : 'border-gray-200 bg-white hover:bg-gray-50'
+                          }`}>
                         <div className="font-medium">{product.productName}</div>
                         <div className="text-sm text-gray-500">{product.productCode}</div>
                       </div>
@@ -575,7 +588,7 @@ export default function ScopeDashboard() {
                 </div>
               ) : // 데이터 테이블 =======================================================================================================================================
               monthlyData.length > 0 ? (
-                <div className="max-h-0">
+                <div className="h-full overflow-y-auto custom-scrollbar">
                   <table className="w-full text-sm border">
                     <thead className="bg-gray-100">
                       <tr>
