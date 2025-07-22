@@ -359,8 +359,9 @@ export default function ScopeDashboard() {
           {/* ======================================================================
               협력사 리스트 섹션 (Partner List Section)
               ====================================================================== */}
-          <Card className="w-[30%] flex flex-col h-full bg-white rounded-lg p-4">
-            <Tabs defaultValue="company" className="flex flex-col w-full h-full min-h-0">
+          <Card className="w-[30%] h-full bg-white rounded-lg p-4 flex flex-col">
+            <Tabs defaultValue="company" className="w-full">
+
               <div className="flex flex-row items-center justify-between gap-2">
                 <TabsList>
                   <TabsTrigger value="company" onClick={() => setActiveTab('company')}>
@@ -566,7 +567,7 @@ export default function ScopeDashboard() {
             <CardTitle className="text-lg font-bold">탄소 배출량 데이터</CardTitle>
           </CardHeader>
           {/* 콘텐트 부분 ============================================================================================================================= */}
-          <CardContent className="flex-1 p-2 overflow-y-auto border rounded-lg scroll-auto custom-scrollbar">
+          <CardContent className="flex-1 p-2 overflow-hidden border rounded-lg allow-scroll custom-scrollbar">
             {selectedPartner ? (
               chartError ? (
                 <div className="flex items-center justify-center w-full h-full">
