@@ -642,7 +642,7 @@ export default function CSDDDDashboard() {
                 )}
               </div>
             </CardHeader>
-            <CardContent className="flex flex-col gap-6 p-6 overflow-hidden overflow-y-auto">
+            <CardContent className="flex flex-col gap-6 p-6">
               {selectedPartner && currentResult ? (
                 <>
                   <div className="grid grid-cols-2 gap-4">
@@ -685,13 +685,13 @@ export default function CSDDDDashboard() {
                   </div>
 
                   <div className="border rounded-lg">
-                    <div className="flex items-center justify-between p-4 border-b bg-gray-50">
-                      <h3 className="font-medium text-gray-900">위반 항목 상세</h3>
+                    <div className="flex items-center justify-between p-3 border-b bg-gradient-to-br from-blue-50 to-white">
+                      <h3 className="font-medium text-gray-600">위반 항목 상세</h3>
                     </div>
 
                     <div className="p-1.5">
                       {/* 카테고리 그리드 */}
-                      <div className="grid grid-cols-3 gap-2 mb-2">
+                      <div className="grid grid-cols-3 gap-2 mb-1">
                         {getCategoryInfo()
                           .slice(0, 3)
                           .map(category => {
