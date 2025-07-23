@@ -308,7 +308,7 @@ export function CategoryDataInput({
 
       // 입력 모드 제어 (수정: 논리 반전)
       inputType: isManualInput ? 'MANUAL' : ('LCA' as InputType),
-      hasProductMapping: false // Scope 3는 제품 매핑 불가
+      hasMaterialMapping: false // Scope 3는 자재 매핑 불가
     }
   }
 

@@ -98,6 +98,7 @@ export function SelfInputScope12Calculator({
       onChangeState(newState)
 
       // 제품 정보 필드 변경 시 토글 상태 자동 업데이트
+      // productName은 materialName으로, productCode는 internalMaterialCode로 매핑됨
       if (key === 'productName' || key === 'productCode') {
         setProductEnabled(!!(newState.productName || newState.productCode))
       }
@@ -268,19 +269,34 @@ export function SelfInputScope12Calculator({
     fetchMaterialData()
   }, [])
 
-  // 제품 정보 상태 동기화
+  // 제품 정보 상태 동기화 (Material Mapping 데이터 고려)
   useEffect(() => {
-    setProductEnabled(!!(state.productName || state.productCode))
-  }, [state.productName, state.productCode])
+    setProductEnabled(!!(state.productName || state.productCode || state.upstreamMaterialCode))
+  }, [state.productName, state.productCode, state.upstreamMaterialCode])
+
+  // 기존 데이터 로드 시 hierarchicalState 동기화
+  useEffect(() => {
+    if (state.upstreamMaterialCode && state.productCode && state.productName) {
+      setHierarchicalState({
+        assignedMaterialCode: state.upstreamMaterialCode,
+        mappedMaterialCode: state.productCode,
+        materialName: state.productName,
+        hasExistingMapping: true,
+        isCreatingNewMapping: false
+      })
+    }
+  }, [state.upstreamMaterialCode, state.productCode, state.productName])
 
   // 제품 정보 토글 변경 핸들러 추가
   const handleProductToggle = (checked: boolean) => {
     setProductEnabled(checked)
 
     // 토글을 끄면 제품 정보 필드 초기화
+    // productName은 materialName으로, productCode는 internalMaterialCode로 매핑됨
     if (!checked) {
       onChangeState({
         ...state,
+        upstreamMaterialCode: '',
         productName: '',
         productCode: ''
       })
@@ -314,6 +330,7 @@ export function SelfInputScope12Calculator({
       // 상태 업데이트
       onChangeState({
         ...state,
+        upstreamMaterialCode: materialCode,
         productCode: existingMapping.childMaterialCode,
         productName: existingMapping.childMaterialName
       })
@@ -330,6 +347,7 @@ export function SelfInputScope12Calculator({
       // 기존 상태 초기화 (자재명은 선택된 자재의 이름으로 설정)
       onChangeState({
         ...state,
+        upstreamMaterialCode: materialCode,
         productCode: '',
         productName: selectedMaterial.materialName
       })
@@ -674,17 +692,11 @@ export function SelfInputScope12Calculator({
                         value={hierarchicalState.mappedMaterialCode || ''}
                         onChange={handleMappedMaterialCodeChange}
                         placeholder="내 자재코드 (예: P1-A001)"
-                        disabled={hierarchicalState.hasExistingMapping}
-                        className={`w-full px-4 py-3 text-sm transition-all duration-200 border-2 rounded-xl focus:ring-4 ${
-                          hierarchicalState.hasExistingMapping
-                            ? 'border-gray-200 bg-gray-50 text-gray-700 cursor-not-allowed'
-                            : 'border-gray-200 focus:border-blue-500 focus:ring-blue-100 hover:border-gray-300'
-                        }`}
+                        disabled={false}
+                        className="w-full px-4 py-3 text-sm transition-all duration-200 border-2 rounded-xl focus:ring-4 border-gray-200 focus:border-blue-500 focus:ring-blue-100 hover:border-gray-300"
                       />
                       <p className="mt-1 text-xs text-gray-500">
-                        {hierarchicalState.hasExistingMapping
-                          ? '기존 매핑된 코드'
-                          : '내 자재코드 입력'}
+                        내 자재코드 입력 (수정 가능)
                       </p>
                     </div>
                   )}
@@ -706,17 +718,11 @@ export function SelfInputScope12Calculator({
                         value={hierarchicalState.materialName || ''}
                         onChange={handleMaterialNameChange}
                         placeholder="자재명 (예: 1차사 전용 타이어)"
-                        disabled={hierarchicalState.hasExistingMapping}
-                        className={`w-full px-4 py-3 text-sm transition-all duration-200 border-2 rounded-xl focus:ring-4 ${
-                          hierarchicalState.hasExistingMapping
-                            ? 'border-gray-200 bg-gray-50 text-gray-700 cursor-not-allowed'
-                            : 'border-gray-200 focus:border-blue-500 focus:ring-blue-100 hover:border-gray-300'
-                        }`}
+                        disabled={false}
+                        className="w-full px-4 py-3 text-sm transition-all duration-200 border-2 rounded-xl focus:ring-4 border-gray-200 focus:border-blue-500 focus:ring-blue-100 hover:border-gray-300"
                       />
                       <p className="mt-1 text-xs text-gray-500">
-                        {hierarchicalState.hasExistingMapping
-                          ? '기존 매핑의 자재명'
-                          : '자재 명칭 입력'}
+                        자재 명칭 입력 (수정 가능)
                       </p>
                     </div>
                   )}

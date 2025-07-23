@@ -934,8 +934,9 @@ export default function Scope1Form() {
           unit: emission.unit || '',
           kgCO2eq: emission.emissionFactor.toString(),
           quantity: emission.activityAmount.toString(),
-          productName: emission.productName || '',
-          productCode: emission.companyProductCode || ''
+          upstreamMaterialCode: emission.upstreamMaterialCode || '',
+          productName: emission.materialName || '',
+          productCode: emission.internalMaterialCode || ''
         },
         savedData: emission,
         factoryEnabled: emission.factoryEnabled || false

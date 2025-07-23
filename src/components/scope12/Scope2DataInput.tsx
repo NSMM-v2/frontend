@@ -244,12 +244,19 @@ export function Scope2DataInput({
       unit: state.unit || '',
       emissionFactor,
       totalEmission,
-      productName: state.productName || '',
-      companyProductCode: state.productCode || '',
+      
+      // 자재코드 매핑 정보 (Material Code Mapping)
+      materialAssignmentId: undefined,
+      materialMappingId: undefined,
+      upstreamMaterialCode: state.upstreamMaterialCode || undefined,
+      internalMaterialCode: state.productCode || '',
+      materialName: state.productName || '',
+      upstreamPartnerId: undefined,
+      
       inputType: isManualInput ? 'MANUAL' : 'LCA',
       reportingYear: selectedYear,
       reportingMonth: selectedMonth || 1,
-      hasProductMapping: !!(state.productName || state.productCode)
+      hasMaterialMapping: !!(state.upstreamMaterialCode && state.productCode && state.productName)
     }
   }
 

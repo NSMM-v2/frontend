@@ -204,12 +204,13 @@ export function Scope1DataInput({
       subcategory: state.separate || '',
       rawMaterial: state.rawMaterial || '',
 
-      ...(state.productName || state.productCode
-        ? {
-            companyProductCode: state.productCode || '',
-            productName: state.productName || ''
-          }
-        : {}),
+      // 자재코드 매핑 정보 (Material Code Mapping)
+      materialAssignmentId: undefined,
+      materialMappingId: undefined,
+      upstreamMaterialCode: state.upstreamMaterialCode || undefined,
+      internalMaterialCode: state.productCode || '',
+      materialName: state.productName || '',
+      upstreamPartnerId: undefined,
 
       activityAmount,
       unit: state.unit || '',
@@ -220,7 +221,7 @@ export function Scope1DataInput({
       reportingMonth: selectedMonth || 1,
 
       inputType: isManualInput ? 'MANUAL' : 'LCA',
-      hasProductMapping: !!(state.productName || state.productCode)
+      hasMaterialMapping: !!(state.upstreamMaterialCode && state.productCode && state.productName)
     }
   }
 

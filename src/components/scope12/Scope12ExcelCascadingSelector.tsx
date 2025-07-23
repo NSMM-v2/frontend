@@ -175,10 +175,23 @@ export function ExcelCascadingSelector({
     fetchMaterialData()
   }, [])
 
-  // 제품 정보 상태 동기화
+  // 제품 정보 상태 동기화 (Material Mapping 데이터 고려)
   useEffect(() => {
-    setProductEnabled(!!(state.productName || state.productCode))
-  }, [state.productName, state.productCode])
+    setProductEnabled(!!(state.productName || state.productCode || state.upstreamMaterialCode))
+  }, [state.productName, state.productCode, state.upstreamMaterialCode])
+
+  // 기존 데이터 로드 시 hierarchicalState 동기화
+  useEffect(() => {
+    if (state.upstreamMaterialCode && state.productCode && state.productName) {
+      setHierarchicalState({
+        assignedMaterialCode: state.upstreamMaterialCode,
+        mappedMaterialCode: state.productCode,
+        materialName: state.productName,
+        hasExistingMapping: true,
+        isCreatingNewMapping: false
+      })
+    }
+  }, [state.upstreamMaterialCode, state.productCode, state.productName])
 
   // 백엔드에서 불러온 데이터로 초기 선택 상태 복원
   const restoreInitialSelection = (csvData: CO2Data[]) => {
@@ -458,6 +471,7 @@ export function ExcelCascadingSelector({
     if (!checked) {
       onChangeState({
         ...state,
+        upstreamMaterialCode: '',
         productName: '',
         productCode: ''
       })
@@ -488,9 +502,10 @@ export function ExcelCascadingSelector({
         isCreatingNewMapping: false
       })
 
-      // 상태 업데이트
+      // 상태 업데이터
       onChangeState({
         ...state,
+        upstreamMaterialCode: materialCode,
         productCode: existingMapping.childMaterialCode,
         productName: existingMapping.childMaterialName
       })
@@ -507,6 +522,7 @@ export function ExcelCascadingSelector({
       // 기존 상태 초기화 (자재명은 선택된 자재의 이름으로 설정)
       onChangeState({
         ...state,
+        upstreamMaterialCode: materialCode,
         productCode: '',
         productName: selectedMaterial.materialName
       })
@@ -556,6 +572,7 @@ export function ExcelCascadingSelector({
       onChangeState(newState)
 
       // 제품 정보 필드 변경 시 토글 상태 자동 업데이트
+      // productName은 materialName으로, productCode는 internalMaterialCode로 매핑됨
       if (key === 'productName' || key === 'productCode') {
         setProductEnabled(!!(newState.productName || newState.productCode))
       }
