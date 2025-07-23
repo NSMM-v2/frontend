@@ -118,7 +118,7 @@ function ComplianceAreaCard({
   return (
     <div
       onClick={() => onClick(index)}
-      className="min-w-[195px] p-4 mt-1 transition-all duration-500 bg-white border border-gray-100 shadow-sm cursor-pointer rounded-2xl hover:shadow-sm hover:transform hover:scale-105">
+      className="min-w-[180px] p-2 py-3 mt-1 transition-all duration-500 bg-white border border-gray-100 shadow-sm cursor-pointer rounded-2xl hover:shadow-sm hover:transform hover:scale-105">
       <div className="flex items-center gap-3 mb-2">
         <div
           className={`w-8 h-8 rounded-2xl flex items-center justify-center ${area.bgColor}`}>
@@ -492,16 +492,17 @@ export function CSDDDLayout() {
 
         <ComplianceAreasGrid handleCardClick={handleCardClick} />
 
-        <div className="p-8 border border-blue-100 bg-blue-50 rounded-2xl">
-          <div className="flex items-start space-x-6">
-            <div className="flex items-center justify-center w-16 h-16 bg-blue-500 rounded-2xl">
-              <AlertTriangle className="w-8 h-8 text-white" />
+        <div className="p-6 border border-blue-100 bg-blue-50 rounded-2xl">
+          <div className="flex flex-col items-start w-full">
+            <div className="flex flex-row items-center w-full gap-3 mb-4">
+              <div className="flex items-center justify-center w-10 h-10 bg-blue-500 rounded-2xl">
+                <AlertTriangle className="w-6 h-6 text-white" />
+              </div>
+              <h4 className="text-2xl font-bold text-blue-900">중요 안내사항</h4>
             </div>
 
-            <div className="flex-1">
-              <h4 className="mb-6 text-2xl font-bold text-blue-900">중요 안내사항</h4>
-
-              <div className="grid grid-cols-1 gap-2 text-sm text-blue-800 md:grid-cols-2">
+            <div className="flex-1 w-full">
+              <div className="grid w-full grid-cols-1 gap-2 text-sm text-blue-800 md:grid-cols-2">
                 {[
                   'CSDDD는 2024년부터 단계적으로 적용되며, 2027년부터 본격 시행됩니다.',
                   '자가진단 결과는 법적 구속력이 없으며, 내부 개선 목적으로만 활용됩니다.',
