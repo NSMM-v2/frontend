@@ -371,7 +371,7 @@ export function PartnerTable({
   }, [partners, sortConfig])
 
   return (
-    <div className="overflow-hidden bg-white border-2 shadow-sm rounded-2xl border-slate-200">
+    <div className="overflow-hidden bg-white border shadow-sm rounded-2xl">
       <Table>
         <TableHeader>
           <TableRow className="border-b-2 bg-gradient-to-r from-slate-50 to-slate-100 border-slate-200">
