@@ -1083,7 +1083,7 @@ export function ExcelCascadingSelector({
                     value={field.value}
                     onChange={e => field.onChange(e.target.value)}
                     disabled={field.disabled}
-                    className="w-full px-4 py-3 text-sm transition-all duration-200 border-2 border-gray-200 rounded-xl focus:border-blue-500 focus:ring-4 focus:ring-blue-100 hover:border-gray-300 disabled:bg-gray-100 disabled:cursor-not-allowed min-h-12">
+                    className="w-full px-4 text-sm transition-all duration-200 border-2 border-gray-200 rounded-xl focus:border-blue-500 focus:ring-4 focus:ring-blue-100 hover:border-gray-300 disabled:bg-gray-100 disabled:cursor-not-allowed min-h-9">
                     <option value="">{field.placeholder}</option>
                     {field.options.map(option => (
                       <option key={option} value={option}>
@@ -1133,7 +1133,7 @@ export function ExcelCascadingSelector({
                   </div>
 
                   {/* 정보 표시 필드 */}
-                  <div className="px-4 py-3 text-sm transition-all duration-200 border-2 border-gray-200 rounded-xl bg-gray-50 min-h-12">
+                  <div className="px-4 py-1 text-sm transition-all duration-200 border-2 border-gray-200 rounded-xl bg-gray-50 min-h-9">
                     {field.value}
                     {field.unit && (
                       <span className="ml-1 text-xs text-gray-500">{field.unit}</span>
@@ -1183,7 +1183,7 @@ export function ExcelCascadingSelector({
                 value={state.quantity}
                 onChange={e => handleQuantityChange(e.target.value)}
                 disabled={!state.rawMaterial}
-                className={`px-4 py-3 w-full text-sm rounded-xl border-2 transition-all duration-200 focus:ring-4 focus:ring-blue-100 min-h-12 ${
+                className={`px-4 w-full text-sm rounded-xl border-2 transition-all duration-200 focus:ring-4 focus:ring-blue-100 min-h-9 ${
                   !state.rawMaterial
                     ? 'border-gray-200 bg-gray-100 cursor-not-allowed text-gray-500'
                     : 'border-gray-200 hover:border-gray-300 focus:border-blue-500'
