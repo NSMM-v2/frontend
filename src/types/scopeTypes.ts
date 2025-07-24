@@ -372,3 +372,38 @@ export interface MappedMaterialCodeListItem {
   materialName: string // 자재명 (예: 1차 협력사 할당 테스트)
   materialDescription: string // 자재 설명
 }
+
+/**
+ * 맵핑된 자재코드 월별 집계 아이템 (백엔드 API 응답과 1:1 매핑)
+ * 개별 월의 배출량 및 데이터 건수 정보
+ */
+export interface MappedMaterialMonthlyTotal {
+  month: number // 월 (1-12)
+  totalEmission: number // 해당 월의 총 배출량
+  dataCount: number // 해당 월의 데이터 건수
+}
+
+/**
+ * 맵핑된 자재코드 상세 정보 (백엔드 API 응답과 1:1 매핑)
+ * 자재별 Scope 1+2 배출량 상세 데이터
+ */
+export interface MappedMaterialDetail {
+  materialName: string // 자재명
+  internalMaterialCode: string // 내부 자재코드 (예: B100)
+  upstreamMaterialCode: string // 상위 자재코드 (예: A100)
+  scope1Emission: number // Scope 1 배출량
+  scope2Emission: number // Scope 2 배출량
+  totalEmission: number // 통합 배출량 (Scope 1 + Scope 2)
+}
+
+/**
+ * 맵핑된 자재코드 월별 집계 대시보드 응답 (백엔드 API 응답과 1:1 매핑)
+ * /api/v1/scope/aggregation/mapped-materials/dashboard/{year} 엔드포인트 응답 구조
+ */
+export interface MappedMaterialMonthlyAggregationResponse {
+  userType: string // 사용자 타입 (HEADQUARTERS | PARTNER)
+  organizationId: number // 조직 ID (본사 ID 또는 협력사 ID)
+  reportingYear: number // 보고 연도
+  monthlyTotals: MappedMaterialMonthlyTotal[] // 월별 집계 데이터 배열 (12개월)
+  materialDetails: MappedMaterialDetail[] // 자재별 상세 배출량 데이터
+}

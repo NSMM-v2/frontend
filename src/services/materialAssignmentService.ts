@@ -7,7 +7,8 @@ import {
 } from '@/types/partnerCompanyType'
 import {
   MappedMaterialDashboardResponse,
-  MappedMaterialCodeListItem
+  MappedMaterialCodeListItem,
+  MappedMaterialMonthlyAggregationResponse
 } from '@/types/scopeTypes'
 
 // ============================================================================
@@ -394,6 +395,31 @@ export const materialAssignmentService = {
       throw new Error(response.data.message || '맵핑된 자재코드 목록 조회에 실패했습니다')
     } catch (error) {
       console.error('맵핑된 자재코드 목록 조회 오류:', error)
+      throw error
+    }
+  },
+
+  /**
+   * 맵핑된 자재코드 월별 총합 조회
+   * 지정된 연도의 월별 배출량 총합 데이터 반환
+   */
+  async getMappedMaterialMonthlyAggregation(
+    year: number
+  ): Promise<MappedMaterialMonthlyAggregationResponse> {
+    try {
+      const response = await api.get<ApiResponse<MappedMaterialMonthlyAggregationResponse>>(
+        `/api/v1/scope/aggregation/mapped-materials/dashboard/${year}`
+      )
+
+      if (response.data.success && response.data.data) {
+        return response.data.data
+      }
+
+      throw new Error(
+        response.data.message || '맵핑된 자재코드 월별 총합 조회에 실패했습니다'
+      )
+    } catch (error) {
+      console.error('맵핑된 자재코드 월별 총합 조회 오류:', error)
       throw error
     }
   }
