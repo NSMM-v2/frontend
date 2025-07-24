@@ -10,6 +10,8 @@ import {
 import {
   Chart as ChartJS,
   BarElement,
+  LineElement,
+  PointElement,
   CategoryScale,
   LinearScale,
   Title,
@@ -17,18 +19,15 @@ import {
   Legend
 } from 'chart.js'
 import {Tabs, TabsContent, TabsList, TabsTrigger} from '@/components/ui/tabs'
-import {Bar} from 'react-chartjs-2'
+import {Bar, Line} from 'react-chartjs-2'
 import {useState, useEffect} from 'react'
 import authService, {UserInfo} from '@/services/authService'
 import {fetchPartnerMonthlyEmissions} from '@/services/scopeService'
 import {materialAssignmentService} from '@/services/materialAssignmentService'
 import {
   MonthlyEmissionSummary,
-  MappedMaterialDashboardResponse,
   MappedMaterialCodeListItem,
-  MappedMaterialItem,
   MappedMaterialMonthlyAggregationResponse,
-  MappedMaterialMonthlyTotal,
   MappedMaterialDetail
 } from '@/types/scopeTypes'
 
@@ -36,7 +35,7 @@ import {
 // Chart.js 설정 (Chart.js Configuration)
 // ============================================================================
 
-ChartJS.register(BarElement, CategoryScale, LinearScale, Title, Tooltip, Legend)
+ChartJS.register(BarElement, LineElement, PointElement, CategoryScale, LinearScale, Title, Tooltip, Legend)
 
 const chartOptions = {
   responsive: true,
@@ -73,14 +72,6 @@ interface PartnerInfo {
   createdAt: string // 생성일시
 }
 
-const products = [
-  {productName: '휠', productCode: 'L01'},
-  {productName: '엔진', productCode: 'L02'},
-  {productName: '차체', productCode: 'L03'}
-] as const
-
-type Product = (typeof products)[number]
-
 export default function ScopeDashboard() {
   // ========================================================================
   // 상태 관리 (State Management)
@@ -91,7 +82,6 @@ export default function ScopeDashboard() {
   const [loading, setLoading] = useState(true) // 로딩 상태
   const [error, setError] = useState<string | null>(null) // 에러 상태
   const [selectedPartner, setSelectedPartner] = useState<PartnerInfo | null>(null) // 선택된 협력사
-  const [selectedProduct, setSelectedProduct] = useState<Product | null>(null) // 선택한 제품
   const [selectedYear, setSelectedYear] = useState<number>(new Date().getFullYear()) // 선택된 년도
   const [monthlyData, setMonthlyData] = useState<MonthlyEmissionSummary[]>([]) // 월별 배출량 데이터
   const [chartLoading, setChartLoading] = useState(false) // 차트 로딩 상태
@@ -101,8 +91,7 @@ export default function ScopeDashboard() {
   const [mappedMaterials, setMappedMaterials] = useState<MappedMaterialCodeListItem[]>([]) // 맵핑된 자재코드 목록
   const [selectedMaterial, setSelectedMaterial] =
     useState<MappedMaterialCodeListItem | null>(null) // 선택된 자재
-  const [materialDashboardData, setMaterialDashboardData] =
-    useState<MappedMaterialDashboardResponse | null>(null) // 자재별 대시보드 데이터
+
   const [materialMonthlyData, setMaterialMonthlyData] =
     useState<MappedMaterialMonthlyAggregationResponse | null>(null) // 자재 월별 총합 데이터
   const [materialLoading, setMaterialLoading] = useState(false) // 자재 로딩 상태
@@ -111,9 +100,7 @@ export default function ScopeDashboard() {
   // UI 상태 관리
   const [searchQuery, setSearchQuery] = useState('') // 검색 쿼리
   const [activeTab, setActiveTab] = useState<'company' | 'material'>('company') // 활성 탭
-  const [materialChartType, setMaterialChartType] = useState<'monthly' | 'individual'>(
-    'monthly'
-  ) // 자재 차트 유형
+  const [chartType, setChartType] = useState<'bar' | 'line'>('bar') // 차트 유형 (막대/꺾은선)
 
   // ========================================================================
   // 생명주기 관리 (Lifecycle Management)
@@ -131,10 +118,9 @@ export default function ScopeDashboard() {
     }
   }, [selectedPartner?.partnerId])
 
-  // 자재 탭에서 첫 번째 자재 선택 시 대시보드 데이터 로드
+  // 자재 탭에서 첫 번째 자재 선택 시 월별 데이터 로드
   useEffect(() => {
     if (selectedMaterial && activeTab === 'material' && !materialLoading) {
-      loadMaterialDashboardData(selectedYear)
       loadMaterialMonthlyData(selectedYear)
     }
   }, [selectedMaterial, activeTab])
@@ -241,31 +227,6 @@ export default function ScopeDashboard() {
     }
   }
 
-  /**
-   * 자재별 배출량 대시보드 데이터 로드
-   */
-  const loadMaterialDashboardData = async (year: number, month?: number) => {
-    try {
-      setMaterialLoading(true)
-      setMaterialError(null)
-
-      const dashboardData = await materialAssignmentService.getMappedMaterialDashboard(
-        year,
-        month
-      )
-      setMaterialDashboardData(dashboardData)
-    } catch (error) {
-      console.error('자재별 대시보드 데이터 로드 실패:', error)
-      setMaterialError(
-        error instanceof Error
-          ? error.message
-          : '자재별 배출량 데이터 로드 중 오류가 발생했습니다'
-      )
-      setMaterialDashboardData(null)
-    } finally {
-      setMaterialLoading(false)
-    }
-  }
 
   /**
    * 자재 월별 총합 데이터 로드
@@ -324,26 +285,6 @@ export default function ScopeDashboard() {
   }
 
   /**
-   * 년도 선택 핸들러
-   */
-  const handleYearSelect = (year: number) => {
-    setSelectedYear(year)
-    // 년도 변경 시 선택된 협력사가 있으면 데이터 다시 로드
-    if (selectedPartner?.partnerId !== undefined) {
-      loadPartnerMonthlyData(selectedPartner.partnerId, year)
-    }
-    // 년도 변경 시 선택된 자재가 있으면 데이터 다시 로드
-    if (selectedMaterial) {
-      loadMaterialDashboardData(year)
-      loadMaterialMonthlyData(year)
-    }
-  }
-  //제품 선택 부분
-  const handleProductSelect = (product: Product) => {
-    setSelectedProduct(product)
-  }
-
-  /**
    * 자재 선택 핸들러
    */
   const handleMaterialSelect = (material: MappedMaterialCodeListItem) => {
@@ -370,11 +311,6 @@ export default function ScopeDashboard() {
       partner.hierarchicalId.toLowerCase().includes(q) ||
       (partner.parentPartnerName?.toLowerCase().includes(q) ?? false)
     )
-  })
-
-  const filteredProducts = products.filter(product => {
-    const q = searchQuery.toLowerCase()
-    return product.productCode.toLowerCase().includes(q)
   })
 
   const filteredMaterials = mappedMaterials.filter(material => {
@@ -419,20 +355,6 @@ export default function ScopeDashboard() {
   }
 
   /**
-   * 권한 정보 표시 텍스트 반환
-   */
-  const getAccessInfoText = () => {
-    if (!userInfo) return ''
-
-    if (userInfo.userType === 'HEADQUARTERS') {
-      return '모든 협력사 조회 가능'
-    } else {
-      const level = userInfo.level || 1
-      return `본인 + ${level + 1}차 협력사 조회 가능`
-    }
-  }
-
-  /**
    * 월별 데이터를 기반으로 차트 데이터 생성 (협력사 탭용)
    */
   const generateChartData = () => {
@@ -470,43 +392,6 @@ export default function ScopeDashboard() {
     }
   }
 
-  /**
-   * 자재별 배출량 데이터를 기반으로 차트 데이터 생성 (자재 탭용)
-   */
-  const generateMaterialChartData = () => {
-    if (!materialDashboardData?.mappedMaterials.length) {
-      return {
-        labels: [],
-        datasets: []
-      }
-    }
-
-    const labels = materialDashboardData.mappedMaterials.map(
-      item => `${item.materialName} (${item.internalMaterialCode})`
-    )
-    const scope1Data = materialDashboardData.mappedMaterials.map(
-      item => item.scope1Emission
-    )
-    const scope2Data = materialDashboardData.mappedMaterials.map(
-      item => item.scope2Emission
-    )
-
-    return {
-      labels,
-      datasets: [
-        {
-          label: 'Scope 1',
-          data: scope1Data,
-          backgroundColor: 'rgba(255, 99, 132, 0.5)'
-        },
-        {
-          label: 'Scope 2',
-          data: scope2Data,
-          backgroundColor: 'rgba(53, 162, 235, 0.5)'
-        }
-      ]
-    }
-  }
 
   /**
    * 자재 월별 총합 데이터를 기반으로 차트 데이터 생성 (자재 탭 월별 차트용)
@@ -524,17 +409,37 @@ export default function ScopeDashboard() {
       item => item.totalEmission
     )
 
+    const baseDataset = {
+      label: '총 배출량',
+      data: totalEmissionData,
+      backgroundColor: 'rgba(75, 192, 192, 0.5)',
+      borderColor: 'rgba(75, 192, 192, 1)',
+      borderWidth: 2
+    }
+
+    // 꺾은선 그래프용 추가 속성
+    if (chartType === 'line') {
+      return {
+        labels,
+        datasets: [
+          {
+            ...baseDataset,
+            fill: false,
+            tension: 0.4, // 곡선 부드럽게
+            pointRadius: 6,
+            pointHoverRadius: 8,
+            pointBackgroundColor: 'rgba(75, 192, 192, 1)',
+            pointBorderColor: '#fff',
+            pointBorderWidth: 2
+          }
+        ]
+      }
+    }
+
+    // 막대그래프용
     return {
       labels,
-      datasets: [
-        {
-          label: '총 배출량',
-          data: totalEmissionData,
-          backgroundColor: 'rgba(75, 192, 192, 0.5)',
-          borderColor: 'rgba(75, 192, 192, 1)',
-          borderWidth: 1
-        }
-      ]
+      datasets: [baseDataset]
     }
   }
 
@@ -752,11 +657,7 @@ export default function ScopeDashboard() {
               <div className="flex items-center justify-between">
                 <div>
                   <CardTitle className="text-lg font-bold">
-                    {activeTab === 'company'
-                      ? '총 탄소 배출량'
-                      : materialChartType === 'monthly'
-                      ? '월별 총 배출량'
-                      : '자재별 배출량 (Scope 1+2)'}
+                    {activeTab === 'company' ? '총 탄소 배출량' : '월별 총 배출량'}
                   </CardTitle>
                   <CardDescription>
                     {activeTab === 'company'
@@ -768,6 +669,35 @@ export default function ScopeDashboard() {
                       : '자재를 선택해주세요'}
                   </CardDescription>
                 </div>
+                {/* 차트 타입 전환 버튼 (자재 탭에서 월별 데이터가 2개 이상일 때만 표시) */}
+                {activeTab === 'material' && 
+                 materialMonthlyData?.monthlyTotals && 
+                 materialMonthlyData.monthlyTotals.length >= 2 && (
+                  <div className="flex items-center gap-2">
+                    <div className="flex border border-gray-300 rounded-md">
+                      <button
+                        onClick={() => setChartType('bar')}
+                        className={`px-3 py-2 text-lg ${
+                          chartType === 'bar'
+                            ? 'bg-blue-500 text-white'
+                            : 'bg-white text-gray-700'
+                        } rounded-l-md hover:bg-blue-400 hover:text-white transition-colors`}
+                        title="막대그래프">
+                        📊
+                      </button>
+                      <button
+                        onClick={() => setChartType('line')}
+                        className={`px-3 py-2 text-lg ${
+                          chartType === 'line'
+                            ? 'bg-blue-500 text-white'
+                            : 'bg-white text-gray-700'
+                        } rounded-r-md hover:bg-blue-400 hover:text-white transition-colors`}
+                        title="꺾은선그래프">
+                        📈
+                      </button>
+                    </div>
+                  </div>
+                )}
                 {/* 년도 선택 드롭다운 */}
                 <div className="flex items-center gap-2">
                   <label className="text-sm font-medium text-gray-700">년도:</label>
@@ -782,7 +712,6 @@ export default function ScopeDashboard() {
                       ) {
                         loadPartnerMonthlyData(selectedPartner.partnerId, year)
                       } else if (activeTab === 'material' && selectedMaterial) {
-                        loadMaterialDashboardData(year)
                         loadMaterialMonthlyData(year)
                       }
                     }}
@@ -842,7 +771,7 @@ export default function ScopeDashboard() {
                     </div>
                   </div>
                 )
-              ) : // 자재 탭 차트
+              ) : // 자재 탭 차트 (월별 총합만)
               selectedMaterial ? (
                 materialError ? (
                   <div className="flex items-center justify-center w-full h-full">
@@ -852,7 +781,6 @@ export default function ScopeDashboard() {
                       <div className="mt-1 text-sm">{materialError}</div>
                       <button
                         onClick={() => {
-                          loadMaterialDashboardData(selectedYear)
                           loadMaterialMonthlyData(selectedYear)
                         }}
                         className="px-3 py-1 mt-2 text-xs text-red-700 bg-red-100 rounded hover:bg-red-200">
@@ -860,10 +788,10 @@ export default function ScopeDashboard() {
                       </button>
                     </div>
                   </div>
-                ) : materialChartType === 'monthly' ? (
-                  // 월별 총합 차트
-                  materialMonthlyData?.monthlyTotals.length ? (
-                    <div className="w-full h-full">
+                ) : materialMonthlyData?.monthlyTotals.length ? (
+                  // 월별 총합 차트 (막대그래프 또는 꺾은선그래프)
+                  <div className="w-full h-full">
+                    {chartType === 'bar' ? (
                       <Bar
                         options={{
                           ...chartOptions,
@@ -878,35 +806,28 @@ export default function ScopeDashboard() {
                         }}
                         data={generateMaterialMonthlyChartData()}
                       />
-                    </div>
-                  ) : (
-                    <div className="flex items-center justify-center w-full h-full">
-                      <div className="text-center text-gray-500">
-                        <div className="mb-2 text-lg">📝</div>
-                        <div>{selectedYear}년 월별 배출량 데이터가 없습니다</div>
-                        <div className="text-sm">다른 년도를 선택해보세요</div>
-                      </div>
-                    </div>
-                  )
-                ) : // 자재별 차트
-                materialDashboardData?.mappedMaterials.length ? (
-                  <div className="w-full h-full">
-                    <Bar
-                      options={{
-                        ...chartOptions,
-                        plugins: {
-                          ...chartOptions.plugins,
-                          title: {display: true, text: '자재별 Scope 1+2 배출량'}
-                        }
-                      }}
-                      data={generateMaterialChartData()}
-                    />
+                    ) : (
+                      <Line
+                        options={{
+                          ...chartOptions,
+                          plugins: {
+                            ...chartOptions.plugins,
+                            title: {display: true, text: '월별 총 배출량'}
+                          },
+                          scales: {
+                            x: {stacked: false},
+                            y: {stacked: false}
+                          }
+                        }}
+                        data={generateMaterialMonthlyChartData()}
+                      />
+                    )}
                   </div>
                 ) : (
                   <div className="flex items-center justify-center w-full h-full">
                     <div className="text-center text-gray-500">
                       <div className="mb-2 text-lg">📝</div>
-                      <div>{selectedYear}년 자재별 배출량 데이터가 없습니다</div>
+                      <div>{selectedYear}년 월별 배출량 데이터가 없습니다</div>
                       <div className="text-sm">다른 년도를 선택해보세요</div>
                     </div>
                   </div>
@@ -930,11 +851,7 @@ export default function ScopeDashboard() {
         <Card className="flex flex-col w-full h-[48%] p-4 bg-white rounded-lg">
           <CardHeader className="p-0">
             <CardTitle className="text-lg font-bold">
-              {activeTab === 'company'
-                ? '탄소 배출량 데이터'
-                : materialChartType === 'monthly'
-                ? '월별 배출량 상세 데이터'
-                : '자재별 배출량 상세 데이터'}
+              {activeTab === 'company' ? '탄소 배출량 데이터' : '월별 배출량 상세 데이터'}
             </CardTitle>
           </CardHeader>
           <CardContent className="flex-1 min-h-0 p-0 mt-2 overflow-y-auto border rounded-lg custom-scrollbar allow-scroll">
@@ -1043,7 +960,7 @@ export default function ScopeDashboard() {
                   </div>
                 </div>
               )
-            ) : // 자재 탭 테이블
+            ) : // 자재 탭 테이블 (월별 총합 테이블만)
             selectedMaterial ? (
               materialError ? (
                 <div className="flex items-center justify-center w-full h-full">
@@ -1053,7 +970,6 @@ export default function ScopeDashboard() {
                     <div className="mt-1 text-sm">{materialError}</div>
                     <button
                       onClick={() => {
-                        loadMaterialDashboardData(selectedYear)
                         loadMaterialMonthlyData(selectedYear)
                       }}
                       className="px-3 py-1 mt-2 text-xs text-red-700 bg-red-100 rounded hover:bg-red-200">
@@ -1061,82 +977,8 @@ export default function ScopeDashboard() {
                     </button>
                   </div>
                 </div>
-              ) : materialChartType === 'monthly' ? (
+              ) : materialMonthlyData?.materialDetails.length ? (
                 // 월별 총합 테이블 - 자재별 상세 정보 표시
-                materialMonthlyData?.materialDetails.length ? (
-                  <table className="w-full h-full overflow-y-auto custom-scrollbar allow-scroll">
-                    <thead className="bg-gray-100">
-                      <tr>
-                        <th className="px-4 py-2 text-center border">자재명</th>
-                        <th className="px-4 py-2 text-center border">내부 자재코드</th>
-                        <th className="px-4 py-2 text-center border">상위 자재코드</th>
-                        <th className="px-4 py-2 text-center border">Scope 1 (tCO₂eq)</th>
-                        <th className="px-4 py-2 text-center border">Scope 2 (tCO₂eq)</th>
-                        <th className="px-4 py-2 text-center border">
-                          통합 배출량 (tCO₂eq)
-                        </th>
-                      </tr>
-                    </thead>
-                    <tbody>
-                      {materialMonthlyData.materialDetails.map((item, index) => (
-                        <tr
-                          key={`${item.internalMaterialCode}-${index}`}
-                          className="hover:bg-gray-50">
-                          <td className="px-4 py-2 font-medium text-center border">
-                            {item.materialName}
-                          </td>
-                          <td className="px-4 py-2 font-mono text-center border">
-                            {item.internalMaterialCode}
-                          </td>
-                          <td className="px-4 py-2 font-mono text-center text-blue-600 border">
-                            {item.upstreamMaterialCode || '-'}
-                          </td>
-                          <td className="px-4 py-2 text-right border">
-                            {item.scope1Emission.toLocaleString()}
-                          </td>
-                          <td className="px-4 py-2 text-right border">
-                            {item.scope2Emission.toLocaleString()}
-                          </td>
-                          <td className="px-4 py-2 font-medium text-right border">
-                            {item.totalEmission.toLocaleString()}
-                          </td>
-                        </tr>
-                      ))}
-                    </tbody>
-                    <tfoot className="bg-gray-50">
-                      <tr className="font-bold">
-                        <td className="px-4 py-2 text-center border" colSpan={3}>
-                          합계
-                        </td>
-                        <td className="px-4 py-2 text-right border">
-                          {materialMonthlyData.materialDetails
-                            .reduce((sum, item) => sum + item.scope1Emission, 0)
-                            .toLocaleString()}
-                        </td>
-                        <td className="px-4 py-2 text-right border">
-                          {materialMonthlyData.materialDetails
-                            .reduce((sum, item) => sum + item.scope2Emission, 0)
-                            .toLocaleString()}
-                        </td>
-                        <td className="px-4 py-2 text-right border">
-                          {materialMonthlyData.materialDetails
-                            .reduce((sum, item) => sum + item.totalEmission, 0)
-                            .toLocaleString()}
-                        </td>
-                      </tr>
-                    </tfoot>
-                  </table>
-                ) : (
-                  <div className="flex items-center justify-center h-full">
-                    <div className="text-center text-gray-500">
-                      <div className="mb-2 text-lg">📝</div>
-                      <div>{selectedYear}년 자재별 배출량 데이터가 없습니다</div>
-                      <div className="text-sm">다른 년도를 선택해보세요</div>
-                    </div>
-                  </div>
-                )
-              ) : // 자재별 테이블
-              materialDashboardData?.mappedMaterials.length ? (
                 <table className="w-full h-full overflow-y-auto custom-scrollbar allow-scroll">
                   <thead className="bg-gray-100">
                     <tr>
@@ -1148,12 +990,10 @@ export default function ScopeDashboard() {
                       <th className="px-4 py-2 text-center border">
                         통합 배출량 (tCO₂eq)
                       </th>
-                      <th className="px-4 py-2 text-center border">비율 (%)</th>
-                      <th className="px-4 py-2 text-center border">데이터 건수</th>
                     </tr>
                   </thead>
                   <tbody>
-                    {materialDashboardData.mappedMaterials.map((item, index) => (
+                    {materialMonthlyData.materialDetails.map((item, index) => (
                       <tr
                         key={`${item.internalMaterialCode}-${index}`}
                         className="hover:bg-gray-50">
@@ -1173,13 +1013,7 @@ export default function ScopeDashboard() {
                           {item.scope2Emission.toLocaleString()}
                         </td>
                         <td className="px-4 py-2 font-medium text-right border">
-                          {item.combinedEmission.toLocaleString()}
-                        </td>
-                        <td className="px-4 py-2 text-right text-orange-600 border">
-                          {item.emissionPercentage.toFixed(1)}%
-                        </td>
-                        <td className="px-4 py-2 text-center text-gray-600 border">
-                          {item.dataCount}건
+                          {item.totalEmission.toLocaleString()}
                         </td>
                       </tr>
                     ))}
@@ -1190,17 +1024,19 @@ export default function ScopeDashboard() {
                         합계
                       </td>
                       <td className="px-4 py-2 text-right border">
-                        {materialDashboardData.totalScope1Emission.toLocaleString()}
+                        {materialMonthlyData.materialDetails
+                          .reduce((sum, item) => sum + item.scope1Emission, 0)
+                          .toLocaleString()}
                       </td>
                       <td className="px-4 py-2 text-right border">
-                        {materialDashboardData.totalScope2Emission.toLocaleString()}
+                        {materialMonthlyData.materialDetails
+                          .reduce((sum, item) => sum + item.scope2Emission, 0)
+                          .toLocaleString()}
                       </td>
                       <td className="px-4 py-2 text-right border">
-                        {materialDashboardData.totalCombinedEmission.toLocaleString()}
-                      </td>
-                      <td className="px-4 py-2 text-right border">100.0%</td>
-                      <td className="px-4 py-2 text-center border">
-                        {materialDashboardData.totalDataCount}건
+                        {materialMonthlyData.materialDetails
+                          .reduce((sum, item) => sum + item.totalEmission, 0)
+                          .toLocaleString()}
                       </td>
                     </tr>
                   </tfoot>
@@ -1209,7 +1045,7 @@ export default function ScopeDashboard() {
                 <div className="flex items-center justify-center h-full">
                   <div className="text-center text-gray-500">
                     <div className="mb-2 text-lg">📝</div>
-                    <div>{selectedYear}년 자재별 배출량 데이터가 없습니다</div>
+                    <div>{selectedYear}년 월별 배출량 데이터가 없습니다</div>
                     <div className="text-sm">다른 년도를 선택해보세요</div>
                   </div>
                 </div>
