@@ -315,3 +315,60 @@ export interface Scope3CombinedEmissionResponse {
   // 데이터 건수
   totalDataCount: number // 총 데이터 건수
 }
+
+// ============================================================================
+// 맵핑된 자재코드 대시보드 타입 정의 (Mapped Material Dashboard Types)
+// ============================================================================
+
+/**
+ * 맵핑된 자재코드 대시보드 응답 (백엔드 MappedMaterialDashboardResponse와 1:1 매핑)
+ * 맵핑된 자재코드별 Scope 1 + Scope 2 배출량 통합 표시
+ */
+export interface MappedMaterialDashboardResponse {
+  // 조직 정보
+  userType: string // HEADQUARTERS | PARTNER
+  organizationId: number // 본사ID 또는 협력사ID
+  reportingYear: number // 보고 연도
+  reportingMonth?: number // 보고 월 (null인 경우 연간 집계)
+
+  // 집계 결과
+  mappedMaterials: MappedMaterialItem[] // 맵핑된 자재 목록
+  totalScope1Emission: number // 전체 Scope 1 배출량 합계
+  totalScope2Emission: number // 전체 Scope 2 배출량 합계
+  totalCombinedEmission: number // 전체 Scope 1+2 배출량 합계
+  totalDataCount: number // 전체 데이터 건수
+
+  // 계산된 속성
+  materialCount?: number // 자재코드 개수
+  averageEmissionPerMaterial?: number // 자재당 평균 배출량
+}
+
+/**
+ * 개별 맵핑된 자재 항목 (백엔드 MappedMaterialItem과 1:1 매핑)
+ */
+export interface MappedMaterialItem {
+  // 자재코드 정보
+  internalMaterialCode: string // 내부 자재코드 (예: B100, FE200)
+  materialName: string // 자재명
+  upstreamMaterialCode: string // 상위에서 할당받은 자재코드 (예: A100, FE100)
+  partnerId?: number // 협력사 ID (계층 조회시에만 포함)
+
+  // 배출량 정보
+  scope1Emission: number // Scope 1 배출량
+  scope2Emission: number // Scope 2 배출량
+  combinedEmission: number // Scope 1+2 통합 배출량
+  dataCount: number // 해당 자재의 데이터 건수
+
+  // 비율 정보 (전체 대비)
+  emissionPercentage: number // 전체 대비 배출량 비율
+}
+
+/**
+ * 맵핑된 자재코드 목록 조회 응답 아이템 (백엔드 API 응답과 1:1 매핑)
+ * 배출량 집계 없이 자재코드 정보만 제공
+ */
+export interface MappedMaterialCodeListItem {
+  materialCode: string // 자재코드 (예: A100)
+  materialName: string // 자재명 (예: 1차 협력사 할당 테스트)
+  materialDescription: string // 자재 설명
+}

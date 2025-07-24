@@ -5,6 +5,10 @@ import {
   MaterialAssignmentRequest,
   MaterialAssignmentResponse
 } from '@/types/partnerCompanyType'
+import {
+  MappedMaterialDashboardResponse,
+  MappedMaterialCodeListItem
+} from '@/types/scopeTypes'
 
 // ============================================================================
 // 자재코드 할당 서비스
@@ -337,6 +341,60 @@ export const materialAssignmentService = {
             ? error.message
             : '삭제 가능 여부 확인 중 오류가 발생했습니다'
       }
+    }
+  },
+
+  /**
+   * 맵핑된 자재코드 대시보드 조회
+   * 각 조직은 직속 하위 레벨이 맵핑한 자재코드만 조회
+   */
+  async getMappedMaterialDashboard(
+    year: number,
+    month?: number
+  ): Promise<MappedMaterialDashboardResponse> {
+    try {
+      const params = new URLSearchParams()
+      if (month !== undefined) {
+        params.append('month', month.toString())
+      }
+
+      const url = `/api/v1/scope/aggregation/mapped-materials/dashboard/${year}${
+        params.toString() ? `?${params.toString()}` : ''
+      }`
+
+      const response = await api.get<ApiResponse<MappedMaterialDashboardResponse>>(url)
+
+      if (response.data.success && response.data.data) {
+        return response.data.data
+      }
+
+      throw new Error(
+        response.data.message || '맵핑된 자재코드 대시보드 조회에 실패했습니다'
+      )
+    } catch (error) {
+      console.error('맵핑된 자재코드 대시보드 조회 오류:', error)
+      throw error
+    }
+  },
+
+  /**
+   * 맵핑된 자재코드 목록 조회
+   * 협력사별 맵핑된 자재코드 목록만 반환 (배출량 집계 없음)
+   */
+  async getMappedMaterialCodeList(): Promise<MappedMaterialCodeListItem[]> {
+    try {
+      const response = await api.get<ApiResponse<MappedMaterialCodeListItem[]>>(
+        '/api/v1/scope/aggregation/mapped-materials/codes'
+      )
+
+      if (response.data.success && response.data.data) {
+        return response.data.data
+      }
+
+      throw new Error(response.data.message || '맵핑된 자재코드 목록 조회에 실패했습니다')
+    } catch (error) {
+      console.error('맵핑된 자재코드 목록 조회 오류:', error)
+      throw error
     }
   }
 }
