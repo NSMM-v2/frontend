@@ -177,7 +177,9 @@ export function ExcelCascadingSelector({
 
   // 제품 정보 상태 동기화 (Material Mapping 데이터 고려)
   useEffect(() => {
-    setProductEnabled(!!(state.productName || state.productCode || state.upstreamMaterialCode))
+    setProductEnabled(
+      !!(state.productName || state.productCode || state.upstreamMaterialCode)
+    )
   }, [state.productName, state.productCode, state.upstreamMaterialCode])
 
   // 기존 데이터 로드 시 hierarchicalState 동기화
@@ -271,13 +273,12 @@ export function ExcelCascadingSelector({
     list11: undefined,
     list12: undefined
   }
-  // ... rest of the code remains the same ...
-  // const categoryList = unique(data.map(d => d.category))
+
   const filteredSeparateList = useMemo(() => {
     const validSeparates = unique(
       data
         .filter(item => {
-          // 1️⃣ scopeCategory 조건
+          // scopeCategory 조건
           const scopeRule = scopeCategoryFilterMap[activeCategory]
           const scopeOK = scopeRule
             ? 'include' in scopeRule
@@ -289,7 +290,7 @@ export function ExcelCascadingSelector({
                 )
             : true
 
-          // 2️⃣ materialState 조건
+          // materialState 조건
           const stateRule = stateFilterMap[activeCategory]
           const stateOK = stateRule
             ? 'include' in stateRule
@@ -297,7 +298,7 @@ export function ExcelCascadingSelector({
               : !stateRule.exclude.includes((item.materialState || '').trim())
             : true
 
-          // 3️⃣ separateFilterMap 조건
+          // separateFilterMap 조건
           const separateRule = separateFilterMap[activeCategory]
           const separateOK = separateRule
             ? 'include' in separateRule
@@ -318,10 +319,10 @@ export function ExcelCascadingSelector({
   }, [data, activeCategory])
 
   const rawMaterialList = useMemo(() => {
-    // 1️⃣ 먼저 선택된 separate로 필터링
+    // 먼저 선택된 separate로 필터링
     let filtered = data.filter(d => d.separate === state.separate)
 
-    // 2️⃣ scopeCategoryFilterMap 규칙 적용 (separate처럼)
+    // scopeCategoryFilterMap 규칙 적용 (separate처럼)
     const separateRule = scopeCategoryFilterMap[activeCategory]
     if (separateRule) {
       if ('include' in separateRule) {
@@ -335,7 +336,7 @@ export function ExcelCascadingSelector({
       }
     }
 
-    // 3️⃣ 상태 필터 (기존)
+    // 상태 필터 (기존)
     const stateRule = stateFilterMap[activeCategory]
     if (stateRule) {
       if ('include' in stateRule) {
@@ -969,16 +970,11 @@ export function ExcelCascadingSelector({
                         value={hierarchicalState.mappedMaterialCode || ''}
                         onChange={handleMappedMaterialCodeChange}
                         placeholder="내 자재코드 (예: P1-A001)"
-                        disabled={hierarchicalState.hasExistingMapping}
-                        className={`w-full px-4 py-3 text-sm transition-all duration-200 border-2 rounded-xl focus:ring-4 ${
-                          hierarchicalState.hasExistingMapping
-                            ? 'border-gray-200 bg-gray-50 text-gray-700 cursor-not-allowed'
-                            : 'border-gray-200 focus:border-blue-500 focus:ring-blue-100 hover:border-gray-300'
-                        }`}
+                        className="w-full px-4 py-3 text-sm transition-all duration-200 border-2 border-gray-200 rounded-xl focus:border-blue-500 focus:ring-4 focus:ring-blue-100 hover:border-gray-300"
                       />
                       <p className="mt-1 text-xs text-gray-500">
                         {hierarchicalState.hasExistingMapping
-                          ? '기존 매핑된 코드'
+                          ? '기존 매핑된 코드 (수정 가능)'
                           : '내 자재코드 입력'}
                       </p>
                     </div>
@@ -1001,16 +997,11 @@ export function ExcelCascadingSelector({
                         value={hierarchicalState.materialName || ''}
                         onChange={handleMaterialNameChange}
                         placeholder="자재명 (예: 1차사 전용 타이어)"
-                        disabled={hierarchicalState.hasExistingMapping}
-                        className={`w-full px-4 py-3 text-sm transition-all duration-200 border-2 rounded-xl focus:ring-4 ${
-                          hierarchicalState.hasExistingMapping
-                            ? 'border-gray-200 bg-gray-50 text-gray-700 cursor-not-allowed'
-                            : 'border-gray-200 focus:border-blue-500 focus:ring-blue-100 hover:border-gray-300'
-                        }`}
+                        className="w-full px-4 py-3 text-sm transition-all duration-200 border-2 border-gray-200 rounded-xl focus:border-blue-500 focus:ring-4 focus:ring-blue-100 hover:border-gray-300"
                       />
                       <p className="mt-1 text-xs text-gray-500">
                         {hierarchicalState.hasExistingMapping
-                          ? '기존 매핑의 자재명'
+                          ? '기존 매핑의 자재명 (수정 가능)'
                           : '자재 명칭 입력'}
                       </p>
                     </div>
