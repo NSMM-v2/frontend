@@ -667,8 +667,8 @@ export function PartnerTable({
               {selectedCompanyForInfo?.corpNameEng && (
                 <div className="p-4 transition-all duration-200 border-2 rounded-xl bg-slate-50/50 border-slate-200 hover:bg-slate-50">
                   <div className="flex items-center gap-3">
-                    <div className="flex items-center justify-center w-8 h-8 rounded-lg bg-slate-100">
-                      <Globe className="w-4 h-4 text-slate-600" />
+                    <div className="flex items-center justify-center w-8 h-8 bg-blue-100 rounded-lg">
+                      <Globe className="w-4 h-4 text-blue-600" />
                     </div>
                     <div className="flex-1">
                       <span className="block text-sm font-medium text-slate-500">
@@ -686,8 +686,8 @@ export function PartnerTable({
               {selectedCompanyForInfo?.ceoName && (
                 <div className="p-4 transition-all duration-200 border-2 rounded-xl bg-slate-50/50 border-slate-200 hover:bg-slate-50">
                   <div className="flex items-center gap-3">
-                    <div className="flex items-center justify-center w-8 h-8 bg-green-100 rounded-lg">
-                      <User className="w-4 h-4 text-green-600" />
+                    <div className="flex items-center justify-center w-8 h-8 bg-blue-100 rounded-lg">
+                      <User className="w-4 h-4 text-blue-600" />
                     </div>
                     <div className="flex-1">
                       <span className="block text-sm font-medium text-slate-500">
@@ -705,8 +705,8 @@ export function PartnerTable({
               {selectedCompanyForInfo?.phoneNumber && (
                 <div className="p-4 transition-all duration-200 border-2 rounded-xl bg-slate-50/50 border-slate-200 hover:bg-slate-50">
                   <div className="flex items-center gap-3">
-                    <div className="flex items-center justify-center w-8 h-8 bg-orange-100 rounded-lg">
-                      <Phone className="w-4 h-4 text-orange-600" />
+                    <div className="flex items-center justify-center w-8 h-8 bg-blue-100 rounded-lg">
+                      <Phone className="w-4 h-4 text-blue-600" />
                     </div>
                     <div className="flex-1">
                       <span className="block text-sm font-medium text-slate-500">
@@ -725,8 +725,8 @@ export function PartnerTable({
             {selectedCompanyForInfo?.address && (
               <div className="p-4 transition-all duration-200 border-2 rounded-xl bg-slate-50/50 border-slate-200 hover:bg-slate-50">
                 <div className="flex items-start gap-3">
-                  <div className="flex items-center justify-center w-8 h-8 bg-red-100 rounded-lg">
-                    <MapPin className="w-4 h-4 text-red-600" />
+                  <div className="flex items-center justify-center w-8 h-8 bg-blue-100 rounded-lg">
+                    <MapPin className="w-4 h-4 text-blue-600" />
                   </div>
                   <div className="flex-1">
                     <span className="block text-sm font-medium text-slate-500">주소</span>
@@ -772,8 +772,8 @@ export function PartnerTable({
                 {/* DART 코드 */}
                 <div className="p-4 transition-all duration-200 border-2 rounded-xl bg-gradient-to-r from-slate-50 to-slate-100 border-slate-200 hover:from-slate-100 hover:to-slate-50">
                   <div className="flex items-center gap-3">
-                    <div className="flex items-center justify-center w-8 h-8 rounded-lg bg-slate-200">
-                      <Code className="w-4 h-4 text-slate-700" />
+                    <div className="flex items-center justify-center w-8 h-8 bg-blue-100 rounded-lg">
+                      <Code className="w-4 h-4 text-blue-600" />
                     </div>
                     <div className="flex-1">
                       <span className="block text-sm font-medium text-slate-500">
@@ -792,7 +792,7 @@ export function PartnerTable({
                   <div className="p-4 transition-all duration-200 border-2 border-blue-200 rounded-xl bg-gradient-to-r from-blue-50 to-blue-100 hover:from-blue-100 hover:to-blue-50">
                     <div className="flex items-center gap-3">
                       <div className="flex items-center justify-center w-8 h-8 bg-blue-200 rounded-lg">
-                        <TrendingUp className="w-4 h-4 text-blue-700" />
+                        <TrendingUp className="w-4 h-4 text-blue-600" />
                       </div>
                       <div className="flex-1">
                         <span className="block text-sm font-medium text-blue-600">

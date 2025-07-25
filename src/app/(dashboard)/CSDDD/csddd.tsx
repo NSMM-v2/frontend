@@ -12,9 +12,9 @@ import {
   Users,
   FileText,
   AlertTriangle,
-  ChevronDown,
   X,
-  Play
+  Play,
+  BarChart3
 } from 'lucide-react'
 
 import {
@@ -90,12 +90,12 @@ function DiagnosisProcedure() {
   ]
 
   return (
-    <div className="space-y-4">
+    <div className="space-y-3">
       {steps.map((step, index) => (
-        <div key={index} className="flex items-start p-4 space-x-4 bg-gray-50 rounded-xl">
-          <div className="w-3 h-3 mt-1.5 bg-blue-500 rounded-full" />
+        <div key={index} className="flex items-start p-3 space-x-3 rounded-lg bg-gray-50">
+          <div className="w-2 h-2 mt-2 bg-blue-500 rounded-full" />
           <div>
-            <p className="mb-1 font-bold text-gray-900">{step.title}</p>
+            <p className="mb-1 font-semibold text-gray-900">{step.title}</p>
             <p className="text-sm text-gray-600">{step.description}</p>
           </div>
         </div>
@@ -118,22 +118,20 @@ function ComplianceAreaCard({
   return (
     <div
       onClick={() => onClick(index)}
-      className="min-w-[180px] p-2 py-3 mt-1 transition-all duration-500 bg-white border border-gray-100 shadow-sm cursor-pointer rounded-2xl hover:shadow-sm hover:transform hover:scale-105">
-      <div className="flex items-center gap-3 mb-2">
+      className="p-4 transition-all duration-200 bg-white border border-gray-200 rounded-lg shadow-sm cursor-pointer hover:shadow-md hover:border-gray-300">
+      <div className="flex items-center gap-3 mb-3">
         <div
-          className={`w-8 h-8 rounded-2xl flex items-center justify-center ${area.bgColor}`}>
-          <Icon className={`w-4 h-4 ${area.iconColor}`} />
+          className={`w-10 h-10 rounded-lg flex items-center justify-center ${area.bgColor}`}>
+          <Icon className={`w-5 h-5 ${area.iconColor}`} />
         </div>
-        <h4 className="text-sm font-bold text-gray-900">{area.title}</h4>
+        <div className="flex-1">
+          <h4 className="text-sm font-semibold text-gray-900">{area.title}</h4>
+          <span className="inline-block px-2 py-0.5 text-xs text-gray-500 bg-gray-100 rounded-full">
+            {area.items}개 항목
+          </span>
+        </div>
       </div>
-      <p className="flex items-center justify-center text-sm text-center text-gray-600">
-        {area.description}
-      </p>
-      <div className="flex justify-end mt-2">
-        <span className="inline-block w-fit px-2 py-0.5 text-xs text-gray-500 bg-gray-100 rounded-full text-center">
-          {area.items}개 항목
-        </span>
-      </div>
+      <p className="text-sm leading-relaxed text-gray-600">{area.description}</p>
     </div>
   )
 }
@@ -145,7 +143,7 @@ function ComplianceAreasGrid({
 }) {
   return (
     <div id="compliance-areas-grid" className="mb-8">
-      <div className="grid grid-cols-1 gap-6 md:grid-cols-3 xl:grid-cols-5">
+      <div className="grid grid-cols-1 gap-0.5 md:grid-cols-2 lg:grid-cols-5">
         {COMPLIANCE_AREAS.map((area, index) => (
           <ComplianceAreaCard
             key={index}
@@ -387,7 +385,8 @@ export function CSDDDLayout() {
   }
 
   return (
-    <div className="flex flex-col w-full h-full p-4 pt-24">
+    <div className="flex flex-col w-full h-full pt-24 pb-4">
+      {/* 브레드크럼 네비게이션 */}
       <div className="flex flex-row items-center p-2 px-2 mb-4 text-sm text-gray-500 bg-white rounded-lg shadow-sm">
         <Breadcrumb>
           <BreadcrumbList>
@@ -397,14 +396,15 @@ export function CSDDDLayout() {
             </BreadcrumbItem>
             <BreadcrumbSeparator />
             <BreadcrumbItem>
-              <span className="font-bold text-blue-600">CSDDD</span>{' '}
+              <span className="font-bold text-blue-600">CSDDD</span>
             </BreadcrumbItem>
           </BreadcrumbList>
         </Breadcrumb>
       </div>
 
-      <div className="flex flex-row w-full h-24 mb-4">
-        <div className="flex flex-row items-center p-4 space-x-4 transition rounded-md">
+      {/* 헤더 섹션 */}
+      <div className="flex flex-row justify-between w-full mb-4">
+        <div className="flex flex-row items-center p-4">
           <PageHeader
             icon={<Shield className="w-6 h-6 text-blue-600" />}
             title="CSDDD 자가진단 시스템"
@@ -416,20 +416,20 @@ export function CSDDDLayout() {
       </div>
 
       <motion.div
-        initial={{opacity: 0, scale: 0.95}}
-        animate={{opacity: 1, scale: 1}}
-        transition={{delay: 0.6, duration: 0.5}}
+        initial={{opacity: 0, y: 10}}
+        animate={{opacity: 1, y: 0}}
+        transition={{duration: 0.3, delay: 0.1}}
         className="space-y-6">
         <div className="bg-white border border-gray-200 shadow-sm rounded-xl">
-          <div className="p-8">
-            <div className="grid grid-cols-1 gap-8 lg:grid-cols-2">
+          <div className="p-6">
+            <div className="grid grid-cols-1 gap-6 lg:grid-cols-2">
               <div>
-                <h3 className="flex items-center gap-3 mb-6 text-2xl font-bold text-gray-900">
-                  <Check className="w-6 h-6 text-green-600" />
+                <h3 className="flex items-center gap-3 mb-4 text-xl font-bold text-gray-900">
+                  <Check className="w-5 h-5 text-green-600" />
                   평가 특징
                 </h3>
 
-                <div className="space-y-4">
+                <div className="space-y-3">
                   {[
                     {
                       title: '실시간 위험도 분석',
@@ -439,7 +439,6 @@ export function CSDDDLayout() {
                       title: '가중치 기반 점수',
                       description: '항목별 중요도에 따른 정밀 평가'
                     },
-
                     {
                       title: '결과 다운로드',
                       description: '상세 보고서 및 분석 결과 제공'
@@ -447,10 +446,12 @@ export function CSDDDLayout() {
                   ].map((feature, index) => (
                     <div
                       key={index}
-                      className="flex items-start p-4 space-x-4 bg-gray-50 rounded-xl">
-                      <div className="w-3 h-3 mt-1.5 bg-blue-500 rounded-full" />
+                      className="flex items-start p-3 space-x-3 rounded-lg bg-gray-50">
+                      <div className="w-2 h-2 mt-2 bg-blue-500 rounded-full" />
                       <div>
-                        <p className="mb-1 font-bold text-gray-900">{feature.title}</p>
+                        <p className="mb-1 font-semibold text-gray-900">
+                          {feature.title}
+                        </p>
                         <p className="text-sm text-gray-600">{feature.description}</p>
                       </div>
                     </div>
@@ -459,8 +460,8 @@ export function CSDDDLayout() {
               </div>
 
               <div>
-                <h3 className="flex items-center gap-3 mb-6 text-2xl font-bold text-gray-900">
-                  <Play className="w-6 h-6 text-blue-600" />
+                <h3 className="flex items-center gap-3 mb-4 text-xl font-bold text-gray-900">
+                  <Play className="w-5 h-5 text-blue-600" />
                   진단 절차
                 </h3>
 
@@ -468,23 +469,26 @@ export function CSDDDLayout() {
               </div>
             </div>
 
-            <div className="grid grid-cols-1 gap-4 mt-8 md:grid-cols-3">
+            <div className="grid grid-cols-1 gap-4 mt-6 md:grid-cols-3">
               <Link
                 href="/CSDDD/self-assessment"
-                className="flex items-center justify-center px-8 py-4 text-lg font-semibold text-white transition-all duration-300 transform bg-green-500 shadow-sm rounded-xl hover:bg-green-700 hover:scale-105 hover:shadow-sm">
+                className="flex items-center justify-center gap-2 px-6 py-4 text-base font-semibold text-white transition-all duration-200 bg-blue-600 rounded-lg shadow-sm hover:bg-blue-700 hover:shadow-md hover:-translate-y-0.5">
+                <Play className="w-4 h-4" />
                 자가진단 시작하기
               </Link>
 
               <Link
                 href="/CSDDD/evaluation"
-                className="flex items-center justify-center px-8 py-4 text-lg font-semibold text-white transition-all duration-300 transform bg-blue-500 shadow-sm rounded-xl hover:bg-blue-700 hover:scale-105 hover:shadow-sm">
+                className="flex items-center justify-center gap-2 px-6 py-4 text-base font-semibold text-blue-600 transition-all duration-200 bg-white border-2 border-blue-600 rounded-lg shadow-sm hover:bg-blue-50 hover:shadow-md hover:-translate-y-0.5">
+                <BarChart3 className="w-4 h-4" />
                 결과 보기
               </Link>
 
               <Link
                 href="/CSDDD/partnerEvaluation"
-                className="flex items-center justify-center px-8 py-4 text-lg font-semibold text-white transition-all duration-300 transform bg-indigo-500 shadow-sm rounded-xl hover:bg-indigo-700 hover:scale-105 hover:shadow-sm">
-                협력사 자가진단 확인
+                className="flex items-center justify-center gap-2 px-6 py-4 text-base font-semibold text-blue-600 transition-all duration-200 bg-white border-2 border-blue-600 rounded-lg shadow-sm hover:bg-blue-50 hover:shadow-md hover:-translate-y-0.5">
+                <Users className="w-4 h-4" />
+                협력사 자가진단 결과 확인
               </Link>
             </div>
           </div>
@@ -492,59 +496,56 @@ export function CSDDDLayout() {
 
         <ComplianceAreasGrid handleCardClick={handleCardClick} />
 
-        <div className="p-6 border border-blue-100 bg-blue-50 rounded-2xl">
-          <div className="flex flex-col items-start w-full">
-            <div className="flex flex-row items-center w-full gap-3 mb-4">
-              <div className="flex items-center justify-center w-10 h-10 bg-blue-500 rounded-2xl">
-                <AlertTriangle className="w-6 h-6 text-white" />
-              </div>
-              <h4 className="text-2xl font-bold text-blue-900">중요 안내사항</h4>
+        <div className="p-6 border border-blue-200 bg-blue-50 rounded-xl">
+          <div className="flex items-start gap-4 mb-4">
+            <div className="flex items-center justify-center w-8 h-8 bg-blue-600 rounded-lg">
+              <AlertTriangle className="w-4 h-4 text-white" />
             </div>
+            <h4 className="text-lg font-bold text-blue-900">중요 안내사항</h4>
+          </div>
 
-            <div className="flex-1 w-full">
-              <div className="grid w-full grid-cols-1 gap-2 text-sm text-blue-800 md:grid-cols-2">
-                {[
-                  'CSDDD는 2024년부터 단계적으로 적용되며, 2027년부터 본격 시행됩니다.',
-                  '자가진단 결과는 법적 구속력이 없으며, 내부 개선 목적으로만 활용됩니다.',
-                  '정확한 평가를 위해 관련 부서와의 사전 협의가 필요합니다.',
-                  '중대 위반 항목 발견 시 즉시 개선조치를 권장합니다.'
-                ].map((notice, index) => (
-                  <div
-                    key={index}
-                    className="flex items-start p-2 space-x-2 bg-white border border-blue-200 rounded-md">
-                    <p className="text-xs leading-snug text-blue-800">{notice}</p>
-                  </div>
-                ))}
+          <div className="grid grid-cols-1 gap-3 md:grid-cols-2">
+            {[
+              'CSDDD는 2024년부터 단계적으로 적용되며, 2027년부터 본격 시행됩니다.',
+              '자가진단 결과는 법적 구속력이 없으며, 내부 개선 목적으로만 활용됩니다.',
+              '정확한 평가를 위해 관련 부서와의 사전 협의가 필요합니다.',
+              '중대 위반 항목 발견 시 즉시 개선조치를 권장합니다.'
+            ].map((notice, index) => (
+              <div
+                key={index}
+                className="flex items-start p-3 space-x-2 bg-white border border-blue-200 rounded-lg">
+                <div className="w-1.5 h-1.5 mt-2 bg-blue-500 rounded-full flex-shrink-0" />
+                <p className="text-sm leading-relaxed text-blue-800">{notice}</p>
               </div>
-            </div>
+            ))}
           </div>
         </div>
 
         {openDialogIndex !== null && (
           <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-sm">
-            <div className="w-full max-w-7xl max-h-[95vh] overflow-hidden rounded-3xl bg-white shadow-2xl border border-gray-100">
+            <div className="w-full max-w-6xl max-h-[90vh] overflow-hidden rounded-xl bg-white shadow-xl border border-gray-200">
               {/* 모달 헤더 */}
-              <div className="relative px-8 py-8 border-b border-gray-200 bg-gradient-to-br from-white via-gray-50 to-blue-50">
-                <div className="flex items-start justify-between gap-6">
-                  <div className="flex items-start gap-4">
+              <div className="px-6 py-4 border-b border-gray-200 bg-gradient-to-br from-blue-50 to-white">
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-4">
                     {/* 카테고리 아이콘 */}
                     <div
-                      className={`w-16 h-16 rounded-2xl flex items-center justify-center ${COMPLIANCE_AREAS[openDialogIndex].bgColor} shadow-lg`}>
+                      className={`w-12 h-12 rounded-lg flex items-center justify-center ${COMPLIANCE_AREAS[openDialogIndex].bgColor}`}>
                       {React.createElement(COMPLIANCE_AREAS[openDialogIndex].icon, {
-                        className: `w-8 h-8 ${COMPLIANCE_AREAS[openDialogIndex].iconColor}`
+                        className: `w-6 h-6 ${COMPLIANCE_AREAS[openDialogIndex].iconColor}`
                       })}
                     </div>
 
-                    <div className="space-y-2">
-                      <div className="flex items-center gap-2">
-                        <h3 className="text-2xl font-bold text-gray-900">
+                    <div>
+                      <div className="flex items-center gap-2 mb-1">
+                        <h3 className="text-xl font-bold text-gray-900 whitespace-nowrap">
                           {COMPLIANCE_AREAS[openDialogIndex].title}
                         </h3>
-                        <span className="px-3 py-1 text-xs font-medium text-blue-700 bg-blue-100 rounded-full">
+                        <span className="px-2 py-1 text-xs font-medium text-blue-700 bg-blue-100 rounded-full whitespace-nowrap">
                           {COMPLIANCE_AREAS[openDialogIndex].items}개 항목
                         </span>
                       </div>
-                      <p className="max-w-2xl text-base leading-relaxed text-gray-600">
+                      <p className="text-sm text-gray-600">
                         {COMPLIANCE_AREAS[openDialogIndex].description}
                       </p>
                     </div>
@@ -552,52 +553,48 @@ export function CSDDDLayout() {
 
                   <button
                     onClick={() => setOpenDialogIndex(null)}
-                    className="p-3 text-gray-400 transition-all duration-200 rounded-full hover:text-gray-600 hover:bg-white/80 hover:shadow-lg"
+                    className="p-2 text-gray-400 transition-colors rounded-lg hover:text-gray-600 hover:bg-gray-100"
                     aria-label="닫기">
-                    <X className="w-6 h-6" />
+                    <X className="w-5 h-5" />
                   </button>
                 </div>
-
-                {/* 장식적 요소 */}
-                <div className="absolute w-32 h-32 rounded-full top-4 right-24 bg-gradient-to-br from-blue-100/40 to-purple-100/40 blur-3xl"></div>
-                <div className="absolute w-24 h-24 rounded-full bottom-4 left-32 bg-gradient-to-br from-green-100/40 to-blue-100/40 blur-2xl"></div>
               </div>
 
-              <div className="overflow-auto max-h-[75vh] px-8 py-8 bg-gradient-to-b from-white to-gray-50/30">
-                <div className="overflow-hidden bg-white border border-gray-200 shadow-sm rounded-2xl">
+              <div className="overflow-auto max-h-[70vh] px-6 py-4">
+                <div className="overflow-hidden bg-white border border-gray-200 rounded-lg">
                   <table className="w-full text-left border-collapse">
                     <thead>
-                      <tr className="border-b border-gray-200 bg-gradient-to-r from-gray-50 to-blue-50/50">
-                        <th className="px-6 py-4 w-[30%] text-sm font-bold text-gray-900">
+                      <tr className="border-b border-gray-200 bg-blue-50">
+                        <th className="text-center px-4 py-3 w-[25%] text-base font-semibold text-gray-900">
                           평가 항목
                         </th>
-                        <th className="px-6 py-4 w-[40%] text-sm font-bold text-gray-900">
+                        <th className="text-center px-4 py-3 w-[50%] text-base font-semibold text-gray-900">
                           세부 내용
                         </th>
-                        <th className="px-6 py-4 w-[30%] text-sm font-bold text-gray-900">
+                        <th className="text-center px-4 py-3 w-[30%] text-base font-semibold text-gray-900">
                           관련 기준
                         </th>
                       </tr>
                     </thead>
-                    <tbody className="text-sm">
+                    <tbody className="text-base">
                       {groupedPreviews[COMPLIANCE_AREAS[openDialogIndex].title].map(
                         (item, idx) => (
                           <tr
                             key={idx}
-                            className={`transition-all duration-200 border-b border-gray-100 hover:bg-gradient-to-r hover:from-blue-50/50 hover:to-transparent hover:shadow-sm ${
-                              idx % 2 === 0 ? 'bg-white' : 'bg-gray-50/30'
+                            className={`transition-colors border-b border-gray-100 hover:bg-gray-50 ${
+                              idx % 2 === 0 ? 'bg-white' : 'bg-gray-50/50'
                             }`}>
-                            <td className="px-6 py-5 font-semibold text-gray-900 align-top">
-                              <div className="flex items-start gap-2">
-                                <div className="flex-shrink-0 w-2 h-2 mt-2 bg-blue-500 rounded-full"></div>
+                            <td className="px-4 py-4 text-center text-gray-900 align-top">
+                              <div className="flex items-center justify-center gap-2">
+                                <div className="flex-shrink-0 w-1.5 h-1.5 bg-blue-500 rounded-full"></div>
                                 <span>{item.항목}</span>
                               </div>
                             </td>
-                            <td className="px-6 py-5 leading-relaxed text-gray-700 align-top">
+                            <td className="px-4 py-4 leading-relaxed text-center text-gray-700 align-top">
                               {item.설명}
                             </td>
-                            <td className="px-6 py-5 align-top">
-                              <span className="inline-block px-3 py-1 text-xs font-medium text-blue-700 bg-blue-100 rounded-full">
+                            <td className="px-4 py-4 text-center align-top">
+                              <span className="inline-block px-2 py-1 text-sm font-medium text-blue-700 bg-blue-100 rounded-full">
                                 {item.관련기준}
                               </span>
                             </td>

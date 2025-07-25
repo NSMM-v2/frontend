@@ -795,19 +795,19 @@ export default function CSAssessmentPage() {
             <button
               onClick={handleSubmit}
               disabled={isSubmitting}
-              className={`flex items-center space-x-3 px-8 py-4 text-lg font-semibold rounded-2xl transition-all duration-300 shadow-sm hover:shadow-sm hover:-translate-y-1 ${
+              className={`inline-flex items-center gap-2 px-8 py-4 text-sm font-semibold rounded-lg shadow-sm transition-all duration-200 ${
                 isSubmitting
                   ? 'text-white cursor-not-allowed bg-slate-400'
-                  : 'text-white bg-blue-500 hover:bg-blue-600'
+                  : 'text-white bg-blue-500 hover:bg-blue-600 active:scale-[0.98] active:duration-75'
               }`}>
               {isSubmitting ? (
                 <>
-                  <div className="w-3 h-3 border-2 border-t-2 rounded-full animate-spin border-white/20 border-t-white"></div>
+                  <div className="w-4 h-4 border-2 border-t-2 rounded-full animate-spin border-white/20 border-t-white"></div>
                   <span>제출 중...</span>
                 </>
               ) : (
                 <>
-                  <Send className="w-3 h-3" />
+                  <Send className="w-4 h-4" />
                   <span>자가진단 제출</span>
                 </>
               )}
