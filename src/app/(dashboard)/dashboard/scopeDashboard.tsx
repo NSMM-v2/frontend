@@ -19,6 +19,15 @@ import {
   Legend
 } from 'chart.js'
 import {Tabs, TabsContent, TabsList, TabsTrigger} from '@/components/ui/tabs'
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+  TableFooter
+} from '@/components/ui/table'
 import {Bar, Line} from 'react-chartjs-2'
 import {useState, useEffect} from 'react'
 import authService, {UserInfo} from '@/services/authService'
@@ -27,15 +36,23 @@ import {materialAssignmentService} from '@/services/materialAssignmentService'
 import {
   MonthlyEmissionSummary,
   MappedMaterialCodeListItem,
-  MappedMaterialMonthlyAggregationResponse,
-  MappedMaterialDetail
+  MappedMaterialMonthlyAggregationResponse
 } from '@/types/scopeTypes'
 
 // ============================================================================
 // Chart.js 설정 (Chart.js Configuration)
 // ============================================================================
 
-ChartJS.register(BarElement, LineElement, PointElement, CategoryScale, LinearScale, Title, Tooltip, Legend)
+ChartJS.register(
+  BarElement,
+  LineElement,
+  PointElement,
+  CategoryScale,
+  LinearScale,
+  Title,
+  Tooltip,
+  Legend
+)
 
 const chartOptions = {
   responsive: true,
@@ -227,7 +244,6 @@ export default function ScopeDashboard() {
     }
   }
 
-
   /**
    * 자재 월별 총합 데이터 로드
    */
@@ -418,7 +434,6 @@ export default function ScopeDashboard() {
     }
   }
 
-
   /**
    * 자재 월별 총합 데이터를 기반으로 차트 데이터 생성 (자재 탭 월별 차트용)
    */
@@ -504,7 +519,7 @@ export default function ScopeDashboard() {
                   </TabsTrigger>
                 </TabsList>
                 <input
-                  type="text"
+                  type="text "
                   value={searchQuery}
                   onChange={e => setSearchQuery(e.target.value)}
                   placeholder={
@@ -697,9 +712,9 @@ export default function ScopeDashboard() {
                 </div>
                 {/* 차트 타입 전환 버튼 (데이터가 2개 이상일 때만 표시) */}
                 {((activeTab === 'company' && monthlyData && monthlyData.length >= 2) ||
-                  (activeTab === 'material' && 
-                   materialMonthlyData?.monthlyTotals && 
-                   materialMonthlyData.monthlyTotals.length >= 2)) && (
+                  (activeTab === 'material' &&
+                    materialMonthlyData?.monthlyTotals &&
+                    materialMonthlyData.monthlyTotals.length >= 2)) && (
                   <div className="flex items-center gap-2">
                     <div className="flex border border-gray-300 rounded-md">
                       <button
@@ -907,72 +922,80 @@ export default function ScopeDashboard() {
                     </div>
                   </div>
                 ) : monthlyData.length > 0 ? (
-                  <table className="w-full h-full overflow-y-auto custom-scrollbar allow-scroll">
-                    <thead className="bg-gray-100">
-                      <tr>
-                        <th className="px-4 py-2 text-center border">월</th>
-                        <th className="px-4 py-2 text-center border">Scope 1 (tCO₂eq)</th>
-                        <th className="px-4 py-2 text-center border">Scope 2 (tCO₂eq)</th>
-                        <th className="px-4 py-2 text-center border">Scope 3 (tCO₂eq)</th>
-                        <th className="px-4 py-2 text-center border">
+                  <Table>
+                    <TableHeader>
+                      <TableRow className="bg-gradient-to-br from-blue-50 to-white">
+                        <TableHead className="font-bold text-center">월</TableHead>
+                        <TableHead className="font-bold text-center">
+                          Scope 1 (tCO₂eq)
+                        </TableHead>
+                        <TableHead className="font-bold text-center">
+                          Scope 2 (tCO₂eq)
+                        </TableHead>
+                        <TableHead className="font-bold text-center">
+                          Scope 3 (tCO₂eq)
+                        </TableHead>
+                        <TableHead className="font-bold text-center">
                           총 배출량 (tCO₂eq)
-                        </th>
-                        <th className="px-4 py-2 text-center border">데이터 건수</th>
-                      </tr>
-                    </thead>
-                    <tbody>
+                        </TableHead>
+                        <TableHead className="font-bold text-center">
+                          데이터 건수
+                        </TableHead>
+                      </TableRow>
+                    </TableHeader>
+                    <TableBody>
                       {monthlyData.map(item => (
-                        <tr key={item.month} className="hover:bg-gray-50">
-                          <td className="px-4 py-2 font-medium text-center border">
+                        <TableRow key={item.month}>
+                          <TableCell className="font-medium text-center">
                             {selectedYear}년 {item.month}월
-                          </td>
-                          <td className="px-4 py-2 text-right border">
+                          </TableCell>
+                          <TableCell className="text-right ">
                             {item.scope1Total.toLocaleString()}
-                          </td>
-                          <td className="px-4 py-2 text-right border">
+                          </TableCell>
+                          <TableCell className="text-right">
                             {item.scope2Total.toLocaleString()}
-                          </td>
-                          <td className="px-4 py-2 text-right border">
+                          </TableCell>
+                          <TableCell className="text-right">
                             {item.scope3Total.toLocaleString()}
-                          </td>
-                          <td className="px-4 py-2 font-medium text-right border">
+                          </TableCell>
+                          <TableCell className="font-medium text-right">
                             {item.totalEmission.toLocaleString()}
-                          </td>
-                          <td className="px-4 py-2 text-center text-gray-600 border">
+                          </TableCell>
+                          <TableCell className="text-center text-muted-foreground">
                             {item.dataCount}건
-                          </td>
-                        </tr>
+                          </TableCell>
+                        </TableRow>
                       ))}
-                    </tbody>
-                    <tfoot className="bg-gray-50">
-                      <tr className="font-bold">
-                        <td className="px-4 py-2 text-center border">합계</td>
-                        <td className="px-4 py-2 text-right border">
+                    </TableBody>
+                    <TableFooter>
+                      <TableRow className="bg-gradient-to-br from-blue-50 to-white">
+                        <TableCell className="font-bold text-center">합계</TableCell>
+                        <TableCell className="font-bold text-right">
                           {monthlyData
                             .reduce((sum, item) => sum + item.scope1Total, 0)
                             .toLocaleString()}
-                        </td>
-                        <td className="px-4 py-2 text-right border">
+                        </TableCell>
+                        <TableCell className="font-bold text-right">
                           {monthlyData
                             .reduce((sum, item) => sum + item.scope2Total, 0)
                             .toLocaleString()}
-                        </td>
-                        <td className="px-4 py-2 text-right border">
+                        </TableCell>
+                        <TableCell className="font-bold text-right">
                           {monthlyData
                             .reduce((sum, item) => sum + item.scope3Total, 0)
                             .toLocaleString()}
-                        </td>
-                        <td className="px-4 py-2 text-right border">
+                        </TableCell>
+                        <TableCell className="font-bold text-right">
                           {monthlyData
                             .reduce((sum, item) => sum + item.totalEmission, 0)
                             .toLocaleString()}
-                        </td>
-                        <td className="px-4 py-2 text-center border">
+                        </TableCell>
+                        <TableCell className="font-bold text-center">
                           {monthlyData.reduce((sum, item) => sum + item.dataCount, 0)}건
-                        </td>
-                      </tr>
-                    </tfoot>
-                  </table>
+                        </TableCell>
+                      </TableRow>
+                    </TableFooter>
+                  </Table>
                 ) : (
                   <div className="flex items-center justify-center h-full">
                     <div className="text-center text-gray-500">
@@ -1010,68 +1033,74 @@ export default function ScopeDashboard() {
                 </div>
               ) : materialMonthlyData?.materialDetails.length ? (
                 // 월별 총합 테이블 - 자재별 상세 정보 표시
-                <table className="w-full h-full overflow-y-auto custom-scrollbar allow-scroll">
-                  <thead className="bg-gray-100">
-                    <tr>
-                      <th className="px-4 py-2 text-center border">자재명</th>
-                      <th className="px-4 py-2 text-center border">내부 자재코드</th>
-                      <th className="px-4 py-2 text-center border">상위 자재코드</th>
-                      <th className="px-4 py-2 text-center border">Scope 1 (tCO₂eq)</th>
-                      <th className="px-4 py-2 text-center border">Scope 2 (tCO₂eq)</th>
-                      <th className="px-4 py-2 text-center border">
+                <Table>
+                  <TableHeader>
+                    <TableRow className="bg-gradient-to-br from-blue-50 to-white">
+                      <TableHead className="font-bold text-center">자재명</TableHead>
+                      <TableHead className="font-bold text-center">
+                        내부 자재코드
+                      </TableHead>
+                      <TableHead className="font-bold text-center">
+                        상위 자재코드
+                      </TableHead>
+                      <TableHead className="font-bold text-center">
+                        Scope 1 (tCO₂eq)
+                      </TableHead>
+                      <TableHead className="font-bold text-center">
+                        Scope 2 (tCO₂eq)
+                      </TableHead>
+                      <TableHead className="font-bold text-center">
                         통합 배출량 (tCO₂eq)
-                      </th>
-                    </tr>
-                  </thead>
-                  <tbody>
+                      </TableHead>
+                    </TableRow>
+                  </TableHeader>
+                  <TableBody>
                     {materialMonthlyData.materialDetails.map((item, index) => (
-                      <tr
-                        key={`${item.internalMaterialCode}-${index}`}
-                        className="hover:bg-gray-50">
-                        <td className="px-4 py-2 font-medium text-center border">
+                      <TableRow key={`${item.internalMaterialCode}-${index}`}>
+                        <TableCell className="font-medium text-center">
                           {item.materialName}
-                        </td>
-                        <td className="px-4 py-2 font-mono text-center border">
+                        </TableCell>
+                        <TableCell className="font-mono text-center">
                           {item.internalMaterialCode}
-                        </td>
-                        <td className="px-4 py-2 font-mono text-center text-blue-600 border">
+                        </TableCell>
+                        <TableCell className="font-mono text-center text-blue-600">
                           {item.upstreamMaterialCode || '-'}
-                        </td>
-                        <td className="px-4 py-2 text-right border">
+                        </TableCell>
+                        <TableCell className="text-right">
                           {item.scope1Emission.toLocaleString()}
-                        </td>
-                        <td className="px-4 py-2 text-right border">
+                        </TableCell>
+                        <TableCell className="text-right">
                           {item.scope2Emission.toLocaleString()}
-                        </td>
-                        <td className="px-4 py-2 font-medium text-right border">
+                        </TableCell>
+                        <TableCell className="font-medium text-right">
                           {item.totalEmission.toLocaleString()}
-                        </td>
-                      </tr>
+                        </TableCell>
+                      </TableRow>
                     ))}
-                  </tbody>
-                  <tfoot className="bg-gray-50">
-                    <tr className="font-bold">
-                      <td className="px-4 py-2 text-center border" colSpan={3}>
+                  </TableBody>
+                  <TableFooter>
+                    <TableRow className="bg-gradient-to-br from-blue-50 to-white">
+                      <TableCell className="font-bold text-center" colSpan={3}>
                         합계
-                      </td>
-                      <td className="px-4 py-2 text-right border">
+                      </TableCell>
+                      <TableCell className="font-bold text-right">
                         {materialMonthlyData.materialDetails
                           .reduce((sum, item) => sum + item.scope1Emission, 0)
                           .toLocaleString()}
-                      </td>
-                      <td className="px-4 py-2 text-right border">
+                      </TableCell>
+                      <TableCell className="font-bold text-right">
                         {materialMonthlyData.materialDetails
                           .reduce((sum, item) => sum + item.scope2Emission, 0)
                           .toLocaleString()}
-                      </td>
-                      <td className="px-4 py-2 text-right border">
+                      </TableCell>
+                      <TableCell className="font-bold text-right">
                         {materialMonthlyData.materialDetails
                           .reduce((sum, item) => sum + item.totalEmission, 0)
                           .toLocaleString()}
-                      </td>
-                    </tr>
-                  </tfoot>
-                </table>
+                      </TableCell>
+                    </TableRow>
+                  </TableFooter>
+                </Table>
               ) : (
                 <div className="flex items-center justify-center h-full">
                   <div className="text-center text-gray-500">

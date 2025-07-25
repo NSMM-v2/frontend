@@ -686,7 +686,7 @@ export default function CSDDDDashboard() {
 
                   <div className="border rounded-lg">
                     <div className="flex items-center justify-between p-3 border-b bg-gradient-to-br from-blue-50 to-white">
-                      <h3 className="font-medium text-gray-600">위반 항목 상세</h3>
+                      <h3 className="font-bold text-gray-600">위반 항목 상세</h3>
                     </div>
 
                     <div className="p-2">
