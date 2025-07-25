@@ -370,25 +370,51 @@ export default function ScopeDashboard() {
     const scope2Data = monthlyData.map(item => item.scope2Total)
     const scope3Data = monthlyData.map(item => item.scope3Total)
 
+    const baseDatasets = [
+      {
+        label: 'Scope 1',
+        data: scope1Data,
+        backgroundColor: 'rgba(255, 99, 132, 0.5)',
+        borderColor: 'rgba(255, 99, 132, 1)',
+        borderWidth: 2
+      },
+      {
+        label: 'Scope 2',
+        data: scope2Data,
+        backgroundColor: 'rgba(53, 162, 235, 0.5)',
+        borderColor: 'rgba(53, 162, 235, 1)',
+        borderWidth: 2
+      },
+      {
+        label: 'Scope 3',
+        data: scope3Data,
+        backgroundColor: 'rgba(75, 192, 192, 0.5)',
+        borderColor: 'rgba(75, 192, 192, 1)',
+        borderWidth: 2
+      }
+    ]
+
+    // 꺾은선 그래프용 추가 속성
+    if (chartType === 'line') {
+      return {
+        labels,
+        datasets: baseDatasets.map(dataset => ({
+          ...dataset,
+          fill: false,
+          tension: 0.4, // 곡선 부드럽게
+          pointRadius: 6,
+          pointHoverRadius: 8,
+          pointBackgroundColor: dataset.borderColor,
+          pointBorderColor: '#fff',
+          pointBorderWidth: 2
+        }))
+      }
+    }
+
+    // 막대그래프용
     return {
       labels,
-      datasets: [
-        {
-          label: 'Scope 1',
-          data: scope1Data,
-          backgroundColor: 'rgba(255, 99, 132, 0.5)'
-        },
-        {
-          label: 'Scope 2',
-          data: scope2Data,
-          backgroundColor: 'rgba(53, 162, 235, 0.5)'
-        },
-        {
-          label: 'Scope 3',
-          data: scope3Data,
-          backgroundColor: 'rgba(75, 192, 192, 0.5)'
-        }
-      ]
+      datasets: baseDatasets
     }
   }
 
@@ -669,10 +695,11 @@ export default function ScopeDashboard() {
                       : '자재를 선택해주세요'}
                   </CardDescription>
                 </div>
-                {/* 차트 타입 전환 버튼 (자재 탭에서 월별 데이터가 2개 이상일 때만 표시) */}
-                {activeTab === 'material' && 
-                 materialMonthlyData?.monthlyTotals && 
-                 materialMonthlyData.monthlyTotals.length >= 2 && (
+                {/* 차트 타입 전환 버튼 (데이터가 2개 이상일 때만 표시) */}
+                {((activeTab === 'company' && monthlyData && monthlyData.length >= 2) ||
+                  (activeTab === 'material' && 
+                   materialMonthlyData?.monthlyTotals && 
+                   materialMonthlyData.monthlyTotals.length >= 2)) && (
                   <div className="flex items-center gap-2">
                     <div className="flex border border-gray-300 rounded-md">
                       <button
@@ -751,7 +778,11 @@ export default function ScopeDashboard() {
                     </div>
                   ) : monthlyData.length > 0 ? (
                     <div className="w-full h-full">
-                      <Bar options={chartOptions} data={generateChartData()} />
+                      {chartType === 'bar' ? (
+                        <Bar options={chartOptions} data={generateChartData()} />
+                      ) : (
+                        <Line options={chartOptions} data={generateChartData()} />
+                      )}
                     </div>
                   ) : (
                     <div className="flex items-center justify-center w-full h-full">
