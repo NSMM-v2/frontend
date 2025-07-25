@@ -37,9 +37,13 @@ export interface ScopeEmissionRequest {
   scope2CategoryNumber?: number // 1-2 (Scope 2인 경우만)
   scope3CategoryNumber?: number // 1-15 (Scope 3인 경우만)
 
-  // 제품 코드 매핑 정보 (Scope 1, 2만 지원)
-  companyProductCode?: string // 회사별 제품 코드
-  productName?: string // 제품명
+  // 자재코드 매핑 정보 (Material Code Mapping)
+  materialAssignmentId?: number // 자재 할당 정보 연결용 ID
+  materialMappingId?: number // 자재 매핑 정보 연결용 ID
+  upstreamMaterialCode?: string // 상위에서 할당받은 자재코드 (A100, FE100...) - 최상위인 경우 null
+  internalMaterialCode?: string // 내부 자재코드 (B100, FE200...)
+  materialName?: string // 자재명
+  upstreamPartnerId?: number // 상위 협력사 ID (null이면 본사)
 
   factoryEnabled?: boolean
 
@@ -56,7 +60,7 @@ export interface ScopeEmissionRequest {
 
   // 입력 모드 제어
   inputType: InputType // MANUAL, LCA
-  hasProductMapping: boolean // 제품 코드 매핑 여부
+  hasMaterialMapping: boolean // 자재 코드 매핑 여부 (renamed from hasProductMapping)
 }
 
 /**
@@ -75,9 +79,13 @@ export interface ScopeEmissionResponse {
   scope3CategoryNumber?: number
   scope3CategoryName?: string
 
-  // 제품 코드 매핑 정보
-  companyProductCode?: string
-  productName?: string
+  // 자재코드 매핑 정보 (Material Code Mapping)
+  materialAssignmentId?: number // 자재 할당 정보 연결용 ID
+  materialMappingId?: number // 자재 매핑 정보 연결용 ID
+  upstreamMaterialCode?: string // 상위에서 할당받은 자재코드 (A100, FE100...) - 최상위인 경우 null
+  internalMaterialCode?: string // 내부 자재코드 (B100, FE200...)
+  upstreamPartnerId?: number // 상위 협력사 ID (null이면 본사)
+  // 주의: materialName은 백엔드 Response에서 제거됨
 
   factoryEnabled?: boolean
 
@@ -92,7 +100,7 @@ export interface ScopeEmissionResponse {
 
   // 입력 모드 및 보고 기간
   inputType: InputType
-  hasProductMapping: boolean
+  hasMaterialMapping: boolean // 자재 코드 매핑 여부 (renamed from hasProductMapping)
   reportingYear: number
   reportingMonth: number
 
@@ -105,17 +113,18 @@ export interface ScopeEmissionResponse {
  * 통합 Scope 배출량 업데이트 요청 데이터 (백엔드 ScopeEmissionUpdateRequest와 1:1 매핑)
  */
 export interface ScopeEmissionUpdateRequest {
-  // Scope 분류 및 카테고리 정보
-  scopeType?: ScopeType
-  scope1CategoryNumber?: number
-  scope2CategoryNumber?: number
-  scope3CategoryNumber?: number
-
-  // 제품 코드 매핑 정보
-  companyProductCode?: string
-  productName?: string
-
+  // 입력 모드 제어
+  inputType?: InputType
+  hasMaterialMapping?: boolean // 자재 코드 매핑 여부 (renamed from hasProductMapping)
   factoryEnabled?: boolean
+
+  // 자재코드 매핑 정보 (Material Code Mapping)
+  materialAssignmentId?: number // 자재 할당 정보 연결용 ID
+  materialMappingId?: number // 자재 매핑 정보 연결용 ID
+  upstreamMaterialCode?: string // 상위에서 할당받은 자재코드 (A100, FE100...) - 최상위인 경우 null
+  internalMaterialCode?: string // 내부 자재코드 (B100, FE200...)
+  materialName?: string // 자재명
+  upstreamPartnerId?: number // 상위 협력사 ID (null이면 본사)
 
   // 프론트엔드 입력 데이터
   majorCategory?: string
@@ -125,12 +134,8 @@ export interface ScopeEmissionUpdateRequest {
   unit?: string
   emissionFactor?: number
   totalEmission?: number
-  reportingYear?: number
-  reportingMonth?: number
-
-  // 입력 모드 제어
-  inputType?: InputType
-  hasProductMapping?: boolean
+  reportingYear?: number // 선택적 필드 (백엔드에서 @NotNull 잘못 적용됨)
+  reportingMonth?: number // 선택적 필드 (백엔드에서 @NotNull 잘못 적용됨)
 }
 
 /**
@@ -146,7 +151,8 @@ export interface ScopeCategorySummary {
 // ============================================================================
 
 /**
- * 프론트엔드 셀렉터 상태 (기존 유지)
+ * 프론트엔드 셀렉터 상태
+ * Note: 기존 필드명 유지하되, productName/productCode는 materialName/internalMaterialCode로 매핑됨
  */
 export interface SelectorState {
   category: string
@@ -155,8 +161,9 @@ export interface SelectorState {
   unit?: string
   kgCO2eq?: string
   quantity: string
-  productName?: string
-  productCode?: string
+  productName?: string // materialName으로 매핑됨
+  productCode?: string // internalMaterialCode로 매핑됨
+  upstreamMaterialCode?: string // 상위 할당 자재코드 (Material Mapping용)
 }
 
 export interface MonthlyEmissionSummary {
@@ -292,19 +299,111 @@ export interface Scope3CombinedEmissionResponse {
   reportingMonth?: number // 보고 월 (월별 조회시에만 값 존재)
   userType: string // 사용자 타입 (HEADQUARTERS/PARTNER)
   organizationId: number // 조직 ID (본사 ID 또는 협력사 ID)
-  
+
   // 특수집계 배출량 (Cat.1, 2, 4, 5 finalTotal 합계)
   specialAggregationTotal: number // 특수집계 총합
   specialAggregationDetail: Scope3SpecialAggregationResponse // 특수집계 상세 내역
-  
+
   // 일반 Scope3 카테고리별 배출량 합계
   regularCategoryTotal: number // 일반 카테고리 총합
   yearlyCategories?: CategoryYearlyEmission[] // 연별 조회시 카테고리별 데이터
   monthlyCategories?: CategoryMonthlyEmission[] // 월별 조회시 카테고리별 데이터
-  
+
   // 최종 통합 배출량 (특수집계 + 일반 카테고리)
   totalScope3Emission: number // 최종 Scope 3 총 배출량
-  
+
   // 데이터 건수
   totalDataCount: number // 총 데이터 건수
+}
+
+// ============================================================================
+// 맵핑된 자재코드 대시보드 타입 정의 (Mapped Material Dashboard Types)
+// ============================================================================
+
+/**
+ * 맵핑된 자재코드 대시보드 응답 (백엔드 MappedMaterialDashboardResponse와 1:1 매핑)
+ * 맵핑된 자재코드별 Scope 1 + Scope 2 배출량 통합 표시
+ */
+export interface MappedMaterialDashboardResponse {
+  // 조직 정보
+  userType: string // HEADQUARTERS | PARTNER
+  organizationId: number // 본사ID 또는 협력사ID
+  reportingYear: number // 보고 연도
+  reportingMonth?: number // 보고 월 (null인 경우 연간 집계)
+
+  // 집계 결과
+  mappedMaterials: MappedMaterialItem[] // 맵핑된 자재 목록
+  totalScope1Emission: number // 전체 Scope 1 배출량 합계
+  totalScope2Emission: number // 전체 Scope 2 배출량 합계
+  totalCombinedEmission: number // 전체 Scope 1+2 배출량 합계
+  totalDataCount: number // 전체 데이터 건수
+
+  // 계산된 속성
+  materialCount?: number // 자재코드 개수
+  averageEmissionPerMaterial?: number // 자재당 평균 배출량
+}
+
+/**
+ * 개별 맵핑된 자재 항목 (백엔드 MappedMaterialItem과 1:1 매핑)
+ */
+export interface MappedMaterialItem {
+  // 자재코드 정보
+  internalMaterialCode: string // 내부 자재코드 (예: B100, FE200)
+  materialName: string // 자재명
+  upstreamMaterialCode: string // 상위에서 할당받은 자재코드 (예: A100, FE100)
+  partnerId?: number // 협력사 ID (계층 조회시에만 포함)
+
+  // 배출량 정보
+  scope1Emission: number // Scope 1 배출량
+  scope2Emission: number // Scope 2 배출량
+  combinedEmission: number // Scope 1+2 통합 배출량
+  dataCount: number // 해당 자재의 데이터 건수
+
+  // 비율 정보 (전체 대비)
+  emissionPercentage: number // 전체 대비 배출량 비율
+}
+
+/**
+ * 맵핑된 자재코드 목록 조회 응답 아이템 (백엔드 API 응답과 1:1 매핑)
+ * 배출량 집계 없이 자재코드 정보만 제공
+ */
+export interface MappedMaterialCodeListItem {
+  materialCode: string // 자재코드 (예: A100)
+  materialName: string // 자재명 (예: 1차 협력사 할당 테스트)
+  materialDescription: string // 자재 설명
+}
+
+/**
+ * 맵핑된 자재코드 월별 집계 아이템 (백엔드 API 응답과 1:1 매핑)
+ * 개별 월의 배출량 및 데이터 건수 정보
+ */
+export interface MappedMaterialMonthlyTotal {
+  month: number // 월 (1-12)
+  totalEmission: number // 해당 월의 총 배출량
+  dataCount: number // 해당 월의 데이터 건수
+}
+
+/**
+ * 맵핑된 자재코드 상세 정보 (백엔드 API 응답과 1:1 매핑)
+ * 자재별 Scope 1+2 배출량 상세 데이터
+ */
+export interface MappedMaterialDetail {
+  materialName: string // 자재명
+  internalMaterialCode: string // 내부 자재코드 (예: B100)
+  upstreamMaterialCode: string // 상위 자재코드 (예: A100)
+  scope1Emission: number // Scope 1 배출량
+  scope2Emission: number // Scope 2 배출량
+  totalEmission: number // 통합 배출량 (Scope 1 + Scope 2)
+}
+
+/**
+ * 맵핑된 자재코드 월별 집계 대시보드 응답 (백엔드 API 응답과 1:1 매핑)
+ * /api/v1/scope/aggregation/mapped-materials/dashboard/{year} 엔드포인트 응답 구조
+ */
+export interface MappedMaterialMonthlyAggregationResponse {
+  userType: string // 사용자 타입 (HEADQUARTERS | PARTNER)
+  organizationId: number // 조직 ID (본사 ID 또는 협력사 ID)
+  reportingYear: number // 보고 연도
+  monthlyTotals: MappedMaterialMonthlyTotal[] // 월별 집계 데이터 배열 (12개월)
+  materialDetails: MappedMaterialDetail[] // 자재별 상세 배출량 데이터
 }

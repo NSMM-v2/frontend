@@ -798,7 +798,7 @@ export default function FinancialRiskForm() {
   // ========================================================================
 
   return (
-    <div className="flex flex-col w-full pt-24">
+    <div className="flex flex-col w-full pt-24 pb-4">
       {/* ======================================================================
           상단 네비게이션 섹션 (Top Navigation Section)
           ====================================================================== */}
@@ -891,7 +891,7 @@ export default function FinancialRiskForm() {
 
       <LoadingState isLoading={isLoading} error={error} isEmpty={!riskData}>
         {riskData && (
-          <div className="mt-10 space-y-4">
+          <div className="mt-4 space-y-4">
             {/* ======================================================================
                 재무 위험 분석 결과 섹션 (Financial Risk Analysis Results)
                 ====================================================================== */}
@@ -993,7 +993,7 @@ export default function FinancialRiskForm() {
             {/* ======================================================================
                 세부 위험 분석 섹션 (Detailed Risk Analysis Section)
                 ====================================================================== */}
-            <Card className="mt-10 overflow-hidden shadow-sm">
+            <Card className="mt-4 overflow-hidden shadow-sm">
               <CardHeader className="p-8 bg-white border-b">
                 <div className="flex items-center justify-between">
                   <div className="flex items-center gap-4">

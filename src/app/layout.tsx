@@ -5,8 +5,7 @@ import {Toaster} from 'react-hot-toast'
 export default function RootLayout({children}: {children: React.ReactNode}) {
   return (
     <html lang="ko">
-
-      <body className="flex flex-col min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100">
+      <body className="flex flex-col min-h-screen font-Pretendard bg-gradient-to-br from-blue-50 to-indigo-100">
         {children}
         <Toaster
           position="top-center"

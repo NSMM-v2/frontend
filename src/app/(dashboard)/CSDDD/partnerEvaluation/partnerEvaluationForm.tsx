@@ -370,7 +370,7 @@ export default function PartnerEvaluationForm() {
                 </div>
                 {/* 본사용 협력사 선택 필터 */}
                 {userInfo?.userType === 'HEADQUARTERS' && (
-                  <div className="flex items-center gap-3 p-4 transition-all duration-200 border border-blue-100 shadow-sm bg-gradient-to-br from-blue-50 to-white rounded-xl hover:shadow-sm">
+                  <div className="flex items-center gap-3 px-4 py-2 transition-all duration-200 border border-blue-100 shadow-sm bg-gradient-to-br from-blue-50 to-white rounded-xl hover:shadow-sm">
                     <div className="flex items-center gap-2">
                       <Building2 className="w-5 h-5 text-blue-500" />
                       <label

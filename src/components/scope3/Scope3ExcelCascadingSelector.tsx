@@ -68,9 +68,9 @@ export function ExcelCascadingSelector({
     list7: {include: ['에너지']}, // list7는 필터링 안 함 → 전체 표시
     list8: undefined,
     list9: {include: ['육상수송', '항공수송', '해상수송']}, // list9는 필터링 안 함 → 전체 표시
-    list10: {exclude: ['에너지', '건축자재','전기부품','금속']},
+    list10: {exclude: ['에너지', '건축자재', '전기부품', '금속']},
     list11: undefined, // list11는 필터링 안 함 → 전체 표시
-    list12: {include: ['매립','소각','재활용']}, // list12는 매립, 소각, 재활용만 표시
+    list12: {include: ['매립', '소각', '재활용']}, // list12는 매립, 소각, 재활용만 표시
     list13: undefined,
     list14: undefined, // list14는 필터링 안 함 → 전체 표시
     list15: undefined // list15는 필터링 안 함 → 전체 표시
@@ -94,11 +94,9 @@ export function ExcelCascadingSelector({
             separate: row['구분'].trim(),
             RawMaterial: row['원료/에너지'].trim(),
             unit: row['단위']?.trim() || '',
-            kgCO2eq:
-              parseFloat(row['탄소발자국 (CO2e)'])||
-              0
+            kgCO2eq: parseFloat(row['탄소발자국 (CO2e)']) || 0
           }))
-        
+
         setData(parsed)
       } catch (error) {
         console.error('CSV 데이터 로딩 실패:', error)
@@ -336,9 +334,7 @@ export function ExcelCascadingSelector({
    * 계산된 배출량 값
    */
   const calculatedEmission =
-    state.quantity &&
-    selectedItem &&
-    !isNaN(parseFloat(state.quantity)) 
+    state.quantity && selectedItem && !isNaN(parseFloat(state.quantity))
       ? parseFloat(state.quantity) * selectedItem.kgCO2eq
       : 0
 
@@ -347,8 +343,8 @@ export function ExcelCascadingSelector({
       initial={{opacity: 0, scale: 0.95}}
       animate={{opacity: 1, scale: 1}}
       transition={{duration: 0.5, type: 'spring', stiffness: 100}}
-      className="mx-auto w-full max-w-4xl">
-      <Card className="overflow-hidden bg-white rounded-3xl border-0 shadow-sm">
+      className="w-full max-w-4xl mx-auto">
+      <Card className="overflow-hidden bg-white border-0 shadow-sm rounded-3xl">
         {/* ======================================================================
             카드 헤더 (Card Header)
             ====================================================================== */}
@@ -378,7 +374,7 @@ export function ExcelCascadingSelector({
                   className="space-y-3">
                   {/* 필드 라벨 */}
                   <div className="flex items-center space-x-2">
-                    <span className="flex justify-center items-center w-7 h-7 text-xs font-bold text-white bg-blue-500 rounded-full">
+                    <span className="flex items-center justify-center text-xs font-bold text-white bg-blue-500 rounded-full w-7 h-7">
                       {field.step}
                     </span>
                     <field.icon className="w-4 h-4 text-blue-500" />
@@ -392,7 +388,7 @@ export function ExcelCascadingSelector({
                     value={field.value}
                     onChange={e => field.onChange(e.target.value)}
                     disabled={field.disabled}
-                    className="px-4 py-3 w-full text-sm rounded-xl border-2 border-gray-200 transition-all duration-200 focus:border-blue-500 focus:ring-4 focus:ring-blue-100 hover:border-gray-300 disabled:bg-gray-100 disabled:cursor-not-allowed">
+                    className="w-full px-4 text-sm transition-all duration-200 border-2 border-gray-200 h-9 rounded-xl focus:border-blue-500 focus:ring-4 focus:ring-blue-100 hover:border-gray-300 disabled:bg-gray-100 disabled:cursor-not-allowed">
                     <option value="">{field.placeholder}</option>
                     {field.options.map(option => (
                       <option key={option} value={option}>
@@ -432,7 +428,7 @@ export function ExcelCascadingSelector({
                   className="space-y-3">
                   {/* 필드 라벨 */}
                   <div className="flex items-center space-x-2">
-                    <span className="flex justify-center items-center w-7 h-7 text-xs font-bold text-white bg-blue-500 rounded-full">
+                    <span className="flex items-center justify-center text-xs font-bold text-white bg-blue-500 rounded-full w-7 h-7">
                       {field.step}
                     </span>
                     <field.icon className="w-4 h-4 text-blue-500" />
@@ -442,7 +438,7 @@ export function ExcelCascadingSelector({
                   </div>
 
                   {/* 정보 표시 필드 */}
-                  <div className="px-4 py-3 text-sm bg-gray-100 rounded-xl border-2 border-gray-200 min-h-12">
+                  <div className="px-4 py-1 text-sm bg-gray-100 border-2 border-gray-200 rounded-xl min-h-9">
                     {field.value}
                     {field.unit && (
                       <span className="ml-1 text-xs text-gray-500">{field.unit}</span>
@@ -477,7 +473,7 @@ export function ExcelCascadingSelector({
               className="space-y-3">
               {/* 필드 라벨 */}
               <div className="flex items-center space-x-2">
-                <span className="flex justify-center items-center w-7 h-7 text-xs font-bold text-white bg-blue-500 rounded-full">
+                <span className="flex items-center justify-center text-xs font-bold text-white bg-blue-500 rounded-full w-7 h-7">
                   6
                 </span>
                 <Hash className="w-4 h-4 text-blue-500" />
@@ -492,7 +488,7 @@ export function ExcelCascadingSelector({
                 value={state.quantity}
                 onChange={e => handleQuantityChange(e.target.value)}
                 disabled={!state.rawMaterial}
-                className={`px-4 py-3 w-full text-sm rounded-xl border-2 transition-all duration-200 focus:ring-4 focus:ring-blue-100 ${
+                className={`px-4 h-9 w-full text-sm rounded-xl border-2 transition-all duration-200 focus:ring-4 focus:ring-blue-100 ${
                   !state.rawMaterial
                     ? 'border-gray-200 bg-gray-100 cursor-not-allowed text-gray-500'
                     : 'border-gray-200 hover:border-gray-300 focus:border-blue-500'
@@ -519,14 +515,14 @@ export function ExcelCascadingSelector({
             animate={{opacity: 1, scale: 1}}
             transition={{delay: 1.0, duration: 0.5}}
             className="relative">
-            <div className="overflow-hidden relative p-6 bg-gradient-to-br from-blue-50 via-blue-100 to-blue-200 rounded-2xl border-2 border-blue-200 shadow-md">
+            <div className="relative p-6 overflow-hidden border-2 border-blue-200 shadow-md bg-gradient-to-br from-blue-50 via-blue-100 to-blue-200 rounded-2xl">
               {/* 배경 장식 */}
-              <div className="absolute top-2 right-2 w-16 h-16 bg-blue-300 rounded-full opacity-20 blur-xl" />
-              <div className="absolute bottom-2 left-2 w-12 h-12 bg-blue-400 rounded-lg transform rotate-12 opacity-15" />
+              <div className="absolute w-16 h-16 bg-blue-300 rounded-full top-2 right-2 opacity-20 blur-xl" />
+              <div className="absolute w-12 h-12 transform bg-blue-400 rounded-lg bottom-2 left-2 rotate-12 opacity-15" />
 
-              <div className="flex relative justify-between items-center">
+              <div className="relative flex items-center justify-between">
                 <div className="flex items-center space-x-3">
-                  <div className="flex justify-center items-center w-12 h-12 bg-blue-500 rounded-xl shadow-md">
+                  <div className="flex items-center justify-center w-12 h-12 bg-blue-500 shadow-md rounded-xl">
                     <TrendingUp className="w-6 h-6 text-white" />
                   </div>
                   <div>

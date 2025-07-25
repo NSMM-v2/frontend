@@ -45,7 +45,9 @@ import {
   MaterialCodeCreateRequest,
   MaterialCodeUpdateRequest,
   MaterialCodeBatchCreateRequest,
-  MaterialAssignmentResponse
+  MaterialAssignmentResponse,
+  MaterialAssignmentRequest,
+  MaterialAssignmentBatchRequest
 } from '@/types/partnerCompanyType'
 import {cn} from '@/lib/utils'
 import {updateAccountCreatedStatus} from '@/services/partnerCompanyService'
@@ -219,14 +221,26 @@ export function PartnerTable({
       // 저장 타입에 따른 API 호출
       if ('materialCodes' in data) {
         // 다중 자재코드 저장 (일괄 할당)
-        const batchRequest = {
+        // 일괄 할당 전 필수 필드 검증 (TypeScript 타입 안전성 확보)
+        const invalidCodes = data.materialCodes.filter(
+          code => !code.materialCode || !code.materialName
+        )
+        if (invalidCodes.length > 0) {
+          toast({
+            title: '자재코드 관리',
+            description: `${invalidCodes.length}개의 자재코드에 필수 정보가 누락되었습니다. 자재코드와 자재명을 모두 입력해주세요.`,
+            variant: 'destructive'
+          })
+          return // 모달을 닫지 않고 사용자가 수정할 수 있도록 함
+        }
+
+        const batchRequest: MaterialAssignmentBatchRequest = {
           toPartnerId: partnerId,
           materialCodes: data.materialCodes.map(code => ({
-            materialCode: code.materialCode,
-            materialName: code.materialName,
-            materialCategory: code.category,
-            materialSpec: code.description, // description을 materialSpec으로 매핑
-            materialDescription: code.description
+            materialCode: code.materialCode!,
+            materialName: code.materialName!,
+            materialCategory: code.materialCategory,
+            materialDescription: code.materialDescription
           })),
           assignedBy: 'Current User', // TODO: 실제 사용자 정보
           assignmentReason: '자재코드 일괄 할당'
@@ -240,14 +254,29 @@ export function PartnerTable({
           title: '자재코드 관리',
           description: `${results.length}개의 자재코드가 성공적으로 할당되었습니다.`
         })
-      } else if ('materialCode' in data && materialCodeModalState.mode === 'create') {
+      } else if (
+        'materialCode' in data &&
+        (materialCodeModalState.mode === 'create' ||
+          materialCodeModalState.mode === 'assign')
+      ) {
         // 단일 자재코드 생성
-        const request = {
-          materialCode: data.materialCode,
-          materialName: data.materialName,
-          materialCategory: data.category,
-          materialSpec: data.description, // description을 materialSpec으로 매핑
-          materialDescription: data.description,
+        // 필수 필드 검증 (TypeScript 타입 안전성 확보)
+        if (!data.materialCode || !data.materialName) {
+          toast({
+            title: '자재코드 관리',
+            description: '자재코드와 자재명은 필수 입력 항목입니다.',
+            variant: 'destructive'
+          })
+          return // 모달을 닫지 않고 사용자가 수정할 수 있도록 함
+        }
+
+        const request: MaterialAssignmentRequest = {
+          materialInfo: {
+            materialCode: data.materialCode,
+            materialName: data.materialName,
+            materialCategory: data.materialCategory,
+            materialDescription: data.materialDescription
+          },
           toPartnerId: partnerId,
           assignedBy: 'Current User', // TODO: 실제 사용자 정보
           assignmentReason: '자재코드 할당'
@@ -342,7 +371,7 @@ export function PartnerTable({
   }, [partners, sortConfig])
 
   return (
-    <div className="overflow-hidden bg-white border-2 shadow-sm rounded-2xl border-slate-200">
+    <div className="overflow-hidden bg-white border shadow-sm rounded-2xl">
       <Table>
         <TableHeader>
           <TableRow className="border-b-2 bg-gradient-to-r from-slate-50 to-slate-100 border-slate-200">
@@ -638,8 +667,8 @@ export function PartnerTable({
               {selectedCompanyForInfo?.corpNameEng && (
                 <div className="p-4 transition-all duration-200 border-2 rounded-xl bg-slate-50/50 border-slate-200 hover:bg-slate-50">
                   <div className="flex items-center gap-3">
-                    <div className="flex items-center justify-center w-8 h-8 rounded-lg bg-slate-100">
-                      <Globe className="w-4 h-4 text-slate-600" />
+                    <div className="flex items-center justify-center w-8 h-8 bg-blue-100 rounded-lg">
+                      <Globe className="w-4 h-4 text-blue-600" />
                     </div>
                     <div className="flex-1">
                       <span className="block text-sm font-medium text-slate-500">
@@ -657,8 +686,8 @@ export function PartnerTable({
               {selectedCompanyForInfo?.ceoName && (
                 <div className="p-4 transition-all duration-200 border-2 rounded-xl bg-slate-50/50 border-slate-200 hover:bg-slate-50">
                   <div className="flex items-center gap-3">
-                    <div className="flex items-center justify-center w-8 h-8 bg-green-100 rounded-lg">
-                      <User className="w-4 h-4 text-green-600" />
+                    <div className="flex items-center justify-center w-8 h-8 bg-blue-100 rounded-lg">
+                      <User className="w-4 h-4 text-blue-600" />
                     </div>
                     <div className="flex-1">
                       <span className="block text-sm font-medium text-slate-500">
@@ -676,8 +705,8 @@ export function PartnerTable({
               {selectedCompanyForInfo?.phoneNumber && (
                 <div className="p-4 transition-all duration-200 border-2 rounded-xl bg-slate-50/50 border-slate-200 hover:bg-slate-50">
                   <div className="flex items-center gap-3">
-                    <div className="flex items-center justify-center w-8 h-8 bg-orange-100 rounded-lg">
-                      <Phone className="w-4 h-4 text-orange-600" />
+                    <div className="flex items-center justify-center w-8 h-8 bg-blue-100 rounded-lg">
+                      <Phone className="w-4 h-4 text-blue-600" />
                     </div>
                     <div className="flex-1">
                       <span className="block text-sm font-medium text-slate-500">
@@ -696,8 +725,8 @@ export function PartnerTable({
             {selectedCompanyForInfo?.address && (
               <div className="p-4 transition-all duration-200 border-2 rounded-xl bg-slate-50/50 border-slate-200 hover:bg-slate-50">
                 <div className="flex items-start gap-3">
-                  <div className="flex items-center justify-center w-8 h-8 bg-red-100 rounded-lg">
-                    <MapPin className="w-4 h-4 text-red-600" />
+                  <div className="flex items-center justify-center w-8 h-8 bg-blue-100 rounded-lg">
+                    <MapPin className="w-4 h-4 text-blue-600" />
                   </div>
                   <div className="flex-1">
                     <span className="block text-sm font-medium text-slate-500">주소</span>
@@ -743,8 +772,8 @@ export function PartnerTable({
                 {/* DART 코드 */}
                 <div className="p-4 transition-all duration-200 border-2 rounded-xl bg-gradient-to-r from-slate-50 to-slate-100 border-slate-200 hover:from-slate-100 hover:to-slate-50">
                   <div className="flex items-center gap-3">
-                    <div className="flex items-center justify-center w-8 h-8 rounded-lg bg-slate-200">
-                      <Code className="w-4 h-4 text-slate-700" />
+                    <div className="flex items-center justify-center w-8 h-8 bg-blue-100 rounded-lg">
+                      <Code className="w-4 h-4 text-blue-600" />
                     </div>
                     <div className="flex-1">
                       <span className="block text-sm font-medium text-slate-500">
@@ -763,7 +792,7 @@ export function PartnerTable({
                   <div className="p-4 transition-all duration-200 border-2 border-blue-200 rounded-xl bg-gradient-to-r from-blue-50 to-blue-100 hover:from-blue-100 hover:to-blue-50">
                     <div className="flex items-center gap-3">
                       <div className="flex items-center justify-center w-8 h-8 bg-blue-200 rounded-lg">
-                        <TrendingUp className="w-4 h-4 text-blue-700" />
+                        <TrendingUp className="w-4 h-4 text-blue-600" />
                       </div>
                       <div className="flex-1">
                         <span className="block text-sm font-medium text-blue-600">

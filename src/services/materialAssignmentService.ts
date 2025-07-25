@@ -5,6 +5,11 @@ import {
   MaterialAssignmentRequest,
   MaterialAssignmentResponse
 } from '@/types/partnerCompanyType'
+import {
+  MappedMaterialDashboardResponse,
+  MappedMaterialCodeListItem,
+  MappedMaterialMonthlyAggregationResponse
+} from '@/types/scopeTypes'
 
 // ============================================================================
 // 자재코드 할당 서비스
@@ -67,25 +72,50 @@ export const materialAssignmentService = {
     request: MaterialAssignmentRequest
   ): Promise<MaterialAssignmentResponse> {
     try {
+      console.log('=== materialAssignmentService.createAssignment 시작 ===')
+      console.log('요청 데이터:', JSON.stringify(request, null, 2))
+      console.log('API URL:', '/api/v1/scope/material-assignments')
+
+      console.log('요청 전송 중...')
       const response = await api.post<ApiResponse<MaterialAssignmentResponse>>(
         '/api/v1/scope/material-assignments',
         request
       )
+      console.log('백엔드 응답:', response.data)
 
       if (response.data.success && response.data.data) {
+        console.log('생성 성공:', response.data.data)
         return response.data.data
       }
 
+      console.error('생성 실패 - 응답 데이터:', response.data)
       throw new Error(response.data.message || '자재코드 할당에 실패했습니다')
     } catch (error) {
-      console.error('자재코드 할당 생성 오류:', error)
+      console.error('=== 자재코드 할당 생성 오류 ===')
+      console.error('전체 에러 정보:', error)
 
-      // 백엔드 에러 메시지 추출
+      // 백엔드 에러 메시지 추출 및 개선
       if (error instanceof Error && 'response' in error) {
         const axiosError = error as any
+        console.error('백엔드 에러 응답:', axiosError.response?.data)
+        console.error('상태 코드:', axiosError.response?.status)
+        console.error('요청 헤더:', axiosError.config?.headers)
+
         if (axiosError.response?.data?.message) {
-          throw new Error(axiosError.response.data.message)
+          const message = axiosError.response.data.message
+          // materialInfo 관련 에러를 더 명확하게 처리
+          if (
+            message.includes('materialInfo') ||
+            message.includes('자재 정보는 필수입니다')
+          ) {
+            throw new Error(
+              '자재 정보가 올바르지 않습니다. 자재코드와 자재명을 확인해주세요.'
+            )
+          }
+          throw new Error(message)
         }
+      } else {
+        console.error('Axios 에러가 아닌 에러:', error)
       }
 
       throw error
@@ -112,11 +142,21 @@ export const materialAssignmentService = {
     } catch (error) {
       console.error('자재코드 일괄 할당 오류:', error)
 
-      // 백엔드 에러 메시지 추출
+      // 백엔드 에러 메시지 추출 및 개선
       if (error instanceof Error && 'response' in error) {
         const axiosError = error as any
         if (axiosError.response?.data?.message) {
-          throw new Error(axiosError.response.data.message)
+          const message = axiosError.response.data.message
+          // materialInfo 관련 에러를 더 명확하게 처리
+          if (
+            message.includes('materialInfo') ||
+            message.includes('자재 정보는 필수입니다')
+          ) {
+            throw new Error(
+              '자재 정보가 올바르지 않습니다. 자재코드와 자재명을 확인해주세요.'
+            )
+          }
+          throw new Error(message)
         }
       }
 
@@ -145,11 +185,21 @@ export const materialAssignmentService = {
     } catch (error) {
       console.error('자재코드 할당 수정 오류:', error)
 
-      // 백엔드 에러 메시지 추출
+      // 백엔드 에러 메시지 추출 및 개선
       if (error instanceof Error && 'response' in error) {
         const axiosError = error as any
         if (axiosError.response?.data?.message) {
-          throw new Error(axiosError.response.data.message)
+          const message = axiosError.response.data.message
+          // materialInfo 관련 에러를 더 명확하게 처리
+          if (
+            message.includes('materialInfo') ||
+            message.includes('자재 정보는 필수입니다')
+          ) {
+            throw new Error(
+              '자재 정보가 올바르지 않습니다. 자재코드와 자재명을 확인해주세요.'
+            )
+          }
+          throw new Error(message)
         }
       }
 
@@ -172,11 +222,60 @@ export const materialAssignmentService = {
     } catch (error) {
       console.error('자재코드 할당 삭제 오류:', error)
 
-      // 백엔드 에러 메시지 추출
+      // 백엔드 에러 메시지 추출 및 개선
       if (error instanceof Error && 'response' in error) {
         const axiosError = error as any
         if (axiosError.response?.data?.message) {
-          throw new Error(axiosError.response.data.message)
+          const message = axiosError.response.data.message
+          // materialInfo 관련 에러를 더 명확하게 처리
+          if (
+            message.includes('materialInfo') ||
+            message.includes('자재 정보는 필수입니다')
+          ) {
+            throw new Error(
+              '자재 정보가 올바르지 않습니다. 자재코드와 자재명을 확인해주세요.'
+            )
+          }
+          throw new Error(message)
+        }
+      }
+
+      throw error
+    }
+  },
+
+  /**
+   * 내 자재 데이터 조회 (본사: 더미 데이터, 협력사: 할당받은 자재 데이터)
+   */
+  async getMyMaterialData(): Promise<MaterialAssignmentResponse[]> {
+    try {
+      const response = await api.get<ApiResponse<MaterialAssignmentResponse[]>>(
+        '/api/v1/scope/material-assignments/my-materials'
+      )
+
+      if (response.data.success && response.data.data) {
+        return response.data.data
+      }
+
+      throw new Error(response.data.message || '내 자재 데이터 조회에 실패했습니다')
+    } catch (error) {
+      console.error('내 자재 데이터 조회 오류:', error)
+
+      // 백엔드 에러 메시지 추출 및 개선
+      if (error instanceof Error && 'response' in error) {
+        const axiosError = error as any
+        if (axiosError.response?.data?.message) {
+          const message = axiosError.response.data.message
+          // materialInfo 관련 에러를 더 명확하게 처리
+          if (
+            message.includes('materialInfo') ||
+            message.includes('자재 정보는 필수입니다')
+          ) {
+            throw new Error(
+              '자재 정보가 올바르지 않습니다. 자재코드와 자재명을 확인해주세요.'
+            )
+          }
+          throw new Error(message)
         }
       }
 
@@ -244,6 +343,85 @@ export const materialAssignmentService = {
             : '삭제 가능 여부 확인 중 오류가 발생했습니다'
       }
     }
+  },
+
+  /**
+   * 맵핑된 자재코드 대시보드 조회
+   * 각 조직은 직속 하위 레벨이 맵핑한 자재코드만 조회
+   */
+  async getMappedMaterialDashboard(
+    year: number,
+    month?: number
+  ): Promise<MappedMaterialDashboardResponse> {
+    try {
+      const params = new URLSearchParams()
+      if (month !== undefined) {
+        params.append('month', month.toString())
+      }
+
+      const url = `/api/v1/scope/aggregation/mapped-materials/dashboard/${year}${
+        params.toString() ? `?${params.toString()}` : ''
+      }`
+
+      const response = await api.get<ApiResponse<MappedMaterialDashboardResponse>>(url)
+
+      if (response.data.success && response.data.data) {
+        return response.data.data
+      }
+
+      throw new Error(
+        response.data.message || '맵핑된 자재코드 대시보드 조회에 실패했습니다'
+      )
+    } catch (error) {
+      console.error('맵핑된 자재코드 대시보드 조회 오류:', error)
+      throw error
+    }
+  },
+
+  /**
+   * 맵핑된 자재코드 목록 조회
+   * 협력사별 맵핑된 자재코드 목록만 반환 (배출량 집계 없음)
+   */
+  async getMappedMaterialCodeList(): Promise<MappedMaterialCodeListItem[]> {
+    try {
+      const response = await api.get<ApiResponse<MappedMaterialCodeListItem[]>>(
+        '/api/v1/scope/aggregation/mapped-materials/codes'
+      )
+
+      if (response.data.success && response.data.data) {
+        return response.data.data
+      }
+
+      throw new Error(response.data.message || '맵핑된 자재코드 목록 조회에 실패했습니다')
+    } catch (error) {
+      console.error('맵핑된 자재코드 목록 조회 오류:', error)
+      throw error
+    }
+  },
+
+  /**
+   * 맵핑된 자재코드 월별 총합 조회
+   * 지정된 연도의 월별 배출량 총합 데이터 반환
+   */
+  async getMappedMaterialMonthlyAggregation(
+    year: number
+  ): Promise<MappedMaterialMonthlyAggregationResponse> {
+    try {
+      const response = await api.get<ApiResponse<MappedMaterialMonthlyAggregationResponse>>(
+        `/api/v1/scope/aggregation/mapped-materials/dashboard/${year}`
+      )
+
+      if (response.data.success && response.data.data) {
+        return response.data.data
+      }
+
+      throw new Error(
+        response.data.message || '맵핑된 자재코드 월별 총합 조회에 실패했습니다'
+      )
+    } catch (error) {
+      console.error('맵핑된 자재코드 월별 총합 조회 오류:', error)
+      throw error
+    }
   }
 }
 
@@ -282,39 +460,50 @@ export const validateMaterialCode = (code: string): boolean => {
 }
 
 /**
- * 자재코드 할당 요청 데이터 검증
+ * 자재코드 할당 요청 데이터 검증 (MaterialInfo 구조 기반)
  */
 export const validateAssignmentRequest = (
   request: MaterialAssignmentRequest
 ): string[] => {
   const errors: string[] = []
 
-  if (!request.materialCode?.trim()) {
+  // materialInfo 객체 존재 확인
+  if (!request.materialInfo) {
+    errors.push('자재 정보는 필수입니다')
+    return errors // materialInfo가 없으면 추가 검증 불가
+  }
+
+  const {materialInfo} = request
+
+  // 자재코드 검증
+  if (!materialInfo.materialCode?.trim()) {
     errors.push('자재코드는 필수입니다')
-  } else if (!validateMaterialCode(request.materialCode)) {
+  } else if (!validateMaterialCode(materialInfo.materialCode)) {
     errors.push('자재코드는 영문과 숫자 조합으로 3-50자여야 합니다')
   }
 
-  if (!request.materialName?.trim()) {
+  // 자재명 검증
+  if (!materialInfo.materialName?.trim()) {
     errors.push('자재명은 필수입니다')
-  } else if (request.materialName.length > 200) {
+  } else if (materialInfo.materialName.length > 200) {
     errors.push('자재명은 200자 이하여야 합니다')
   }
 
+  // 할당 대상 협력사 검증
   if (!request.toPartnerId || request.toPartnerId.trim() === '') {
     errors.push('할당받을 협력사를 선택해주세요')
   }
 
-  if (request.materialDescription && request.materialDescription.length > 1000) {
+  // 선택적 필드 검증
+  if (
+    materialInfo.materialDescription &&
+    materialInfo.materialDescription.length > 1000
+  ) {
     errors.push('자재 설명은 1000자 이하여야 합니다')
   }
 
-  if (request.materialCategory && request.materialCategory.length > 100) {
+  if (materialInfo.materialCategory && materialInfo.materialCategory.length > 100) {
     errors.push('카테고리는 100자 이하여야 합니다')
-  }
-
-  if (request.materialSpec && request.materialSpec.length > 500) {
-    errors.push('자재 스펙은 500자 이하여야 합니다')
   }
 
   return errors

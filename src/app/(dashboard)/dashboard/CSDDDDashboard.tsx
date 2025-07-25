@@ -542,7 +542,7 @@ export default function CSDDDDashboard() {
           </div>
         )}
 
-        <div className="flex flex-row gap-4 py-4 pt-2 w-full h-[calc(100vh-300px)]">
+        <div className="flex flex-row gap-4 w-full h-[calc(100vh-300px)]">
           <Card className="w-[30%] h-full bg-white rounded-lg p-4 flex flex-col">
             <div className="flex flex-row items-center justify-between gap-2 mb-2">
               <input
@@ -606,7 +606,7 @@ export default function CSDDDDashboard() {
           </Card>
 
           <Card className="w-[70%] h-full bg-white rounded-lg p-4 flex flex-col">
-            <CardHeader className="flex flex-row items-center gap-4 p-6 border-b border-gray-100">
+            <CardHeader className="flex flex-row items-center gap-4 p-0 pb-4 border-b border-gray-100">
               <div className="flex items-center flex-1">
                 <CardTitle className="flex items-center gap-3 text-2xl font-bold">
                   {currentResult && (
@@ -642,11 +642,11 @@ export default function CSDDDDashboard() {
                 )}
               </div>
             </CardHeader>
-            <CardContent className="flex flex-col gap-6 p-6 overflow-hidden overflow-y-auto">
+            <CardContent className="flex flex-col gap-4 p-4">
               {selectedPartner && currentResult ? (
                 <>
-                  <div className="grid grid-cols-2 gap-4">
-                    <div className="flex flex-row items-center gap-2 p-3 border rounded-lg bg-gradient-to-br from-blue-50 to-white">
+                  <div className="flex flex-row justify-between w-full gap-4">
+                    <div className="flex flex-row items-center w-full gap-2 p-3 border rounded-lg bg-gradient-to-br from-blue-50 to-white">
                       <BarChart3 className="w-5 h-5 text-blue-600" />
                       <div>
                         <div className="text-xs text-gray-500">진단 점수</div>
@@ -655,7 +655,7 @@ export default function CSDDDDashboard() {
                         </div>
                       </div>
                     </div>
-                    <div className="flex flex-row items-center gap-2 p-3 border rounded-lg bg-gradient-to-br from-blue-50 to-white">
+                    <div className="flex flex-row items-center w-full gap-2 p-3 border rounded-lg bg-gradient-to-br from-blue-50 to-white">
                       <BarChart3 className="w-5 h-5 text-gray-700" />
                       <div>
                         <div className="text-xs text-gray-500">종합 점수</div>
@@ -664,7 +664,7 @@ export default function CSDDDDashboard() {
                         </div>
                       </div>
                     </div>
-                    <div className="flex flex-row items-center gap-2 p-3 border rounded-lg bg-gradient-to-br from-blue-50 to-white">
+                    <div className="flex flex-row items-center w-full gap-2 p-3 border rounded-lg bg-gradient-to-br from-blue-50 to-white">
                       <AlertCircle className="w-5 h-5 text-yellow-600" />
                       <div>
                         <div className="text-xs text-gray-500">총 위반</div>
@@ -673,7 +673,7 @@ export default function CSDDDDashboard() {
                         </div>
                       </div>
                     </div>
-                    <div className="flex flex-row items-center gap-2 p-3 border rounded-lg bg-gradient-to-br from-blue-50 to-white">
+                    <div className="flex flex-row items-center w-full gap-2 p-3 border rounded-lg bg-gradient-to-br from-blue-50 to-white">
                       <AlertTriangle className="w-5 h-5 text-red-600" />
                       <div>
                         <div className="text-xs text-gray-500">중대 위반</div>
@@ -685,13 +685,13 @@ export default function CSDDDDashboard() {
                   </div>
 
                   <div className="border rounded-lg">
-                    <div className="flex items-center justify-between p-4 border-b bg-gray-50">
-                      <h3 className="font-medium text-gray-900">위반 항목 상세</h3>
+                    <div className="flex items-center justify-between p-3 border-b bg-gradient-to-br from-blue-50 to-white">
+                      <h3 className="font-bold text-gray-600">위반 항목 상세</h3>
                     </div>
 
-                    <div className="p-1.5">
+                    <div className="p-2">
                       {/* 카테고리 그리드 */}
-                      <div className="grid grid-cols-3 gap-2 mb-2">
+                      <div className="grid grid-cols-3 gap-3 mb-3">
                         {getCategoryInfo()
                           .slice(0, 3)
                           .map(category => {
