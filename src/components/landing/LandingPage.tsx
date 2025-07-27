@@ -365,66 +365,6 @@ export default function LandingPage() {
         </div>
       </section>
 
-      {/* Data Visualization Section */}
-      <section id="dashboards" className="px-4 py-16 bg-white sm:py-24">
-        <div className="mx-auto max-w-7xl">
-          <div className="mb-12 text-center">
-            <h3 className="text-3xl font-bold text-gray-900 sm:text-4xl">
-              데이터 기반 의사결정: 통합 대시보드
-            </h3>
-            <p className="mt-4 text-lg text-gray-600">
-              직관적인 데이터 시각화를 통해 ESG 현황을 한눈에 파악하고 전략적인 결정을
-              내릴 수 있습니다.
-            </p>
-          </div>
-          <div className="grid grid-cols-1 gap-8 lg:grid-cols-2">
-            <ScopeEmissionsChart />
-            <SupplierEmissionsChart />
-            <CSDDDRiskChart />
-          </div>
-        </div>
-      </section>
-
-      {/* Benefits Section */}
-      <section id="benefits" className="px-4 py-16 bg-white sm:py-24">
-        <div className="mx-auto max-w-7xl">
-          <div className="mb-12 text-center">
-            <h3 className="text-3xl font-bold text-gray-900 sm:text-4xl">
-              플랫폼 도입을 통한 기대효과
-            </h3>
-            <p className="mt-4 text-lg text-gray-600">
-              데이터 기반의 투명한 공급망 관리는 기업의 경쟁력을 한 단계 끌어올립니다.
-            </p>
-          </div>
-          <div className="grid grid-cols-1 gap-8 md:grid-cols-3">
-            <div className="p-8 bg-white border border-gray-200 shadow-lg rounded-xl">
-              <div className="text-4xl mb-4 text-[#2D5BFF]">📈</div>
-              <h4 className="mb-2 text-xl font-bold">공급망 가시성 향상</h4>
-              <p className="text-gray-600">
-                다차 협력사까지 실시간 추적 가능한 관리 체계를 구축하여 잠재 리스크를
-                사전에 파악합니다.
-              </p>
-            </div>
-            <div className="p-8 bg-white border border-gray-200 shadow-lg rounded-xl">
-              <div className="text-4xl mb-4 text-[#2AD1E2]">🌍</div>
-              <h4 className="mb-2 text-xl font-bold">ESG 규제 대응 역량 강화</h4>
-              <p className="text-gray-600">
-                EU CSDDD 등 글로벌 규제에 선제적으로 대응하고, 지속가능경영보고서(ESRS)
-                작성에 활용합니다.
-              </p>
-            </div>
-            <div className="p-8 bg-white border border-gray-200 shadow-lg rounded-xl">
-              <div className="text-4xl mb-4 text-[#FFC02D]">🤝</div>
-              <h4 className="mb-2 text-xl font-bold">지속가능한 협력 기반 구축</h4>
-              <p className="text-gray-600">
-                협력사의 자발적 참여를 유도하여 ESG 경영을 공급망 전체로 확산시키는 상생
-                모델을 실현합니다.
-              </p>
-            </div>
-          </div>
-        </div>
-      </section>
-
       {/* CTA Section */}
       <div className="px-6 py-20 bg-blue-50">
         <div className="max-w-4xl mx-auto text-center">
