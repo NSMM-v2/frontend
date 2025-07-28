@@ -356,6 +356,35 @@ export default function CSDDDDashboard() {
     return categoryNames[categoryId] || `카테고리 ${categoryId}`
   }
 
+  // 등급 기반 점수 계산 함수
+  const calculateGradeBasedScore = (categoryAnswers: any[]) => {
+    const gradePoints = {A: 100, B: 80, C: 60, D: 40}
+    let totalPoints = 0
+    let count = 0
+
+    categoryAnswers.forEach(answer => {
+      if (answer.answer) {
+        // 정답인 경우에도 criticalGrade가 있으면 그것을 반영
+        const grade = answer.criticalGrade || 'A'
+        totalPoints += gradePoints[grade as keyof typeof gradePoints] || 100
+      } else {
+        // 오답인 경우 criticalGrade 또는 기본 0점
+        const grade = answer.criticalGrade || 'D'
+        totalPoints += gradePoints[grade as keyof typeof gradePoints] || 0
+      }
+      count++
+    })
+
+    return count > 0 ? Math.round(totalPoints / count) : 0
+  }
+
+  // 기본 준수율 계산 함수 (기존 방식)
+  const calculateBasicComplianceRate = (categoryAnswers: any[]) => {
+    const total = categoryAnswers.length
+    const correct = categoryAnswers.filter(a => a.answer === true).length
+    return total === 0 ? 0 : Math.round((correct / total) * 100)
+  }
+
   const getCategoryInfo = (): CategoryInfo[] => {
     const allCategories = ['1', '2', '3', '4', '5']
     const violationsByCategory =
@@ -454,10 +483,6 @@ export default function CSDDDDashboard() {
   const handlePartnerSelect = (partner: PartnerInfo) => {
     setSelectedPartner(partner)
     setSelectedResultIndex(0)
-  }
-
-  const handleCategoryClick = (categoryId: string) => {
-    setSelectedCategoryId(categoryId)
   }
 
   const handleResultSummaryClick = () => {
@@ -654,7 +679,7 @@ export default function CSDDDDashboard() {
                 )}
               </div>
             </CardHeader>
-            <CardContent className="flex flex-col flex-1 gap-4 p-4 overflow-y-auto custom-scrollbar allow-scroll">
+            <CardContent className="flex flex-col flex-1 overflow-y-auto custom-scrollbar allow-scroll">
               {selectedPartner && currentResult ? (
                 <>
                   <div className="flex flex-row justify-between w-full gap-4">
@@ -713,30 +738,46 @@ export default function CSDDDDashboard() {
                               ],
                               datasets: [
                                 {
-                                  label: '현재 준수율',
+                                  label: '기본 준수율 (%)',
                                   data: ['1', '2', '3', '4', '5'].map(id => {
                                     const answers =
                                       detailedResults[currentResult.id]?.answers || []
                                     const categoryAnswers = answers.filter(a =>
                                       a.questionId.startsWith(id + '.')
                                     )
-                                    const total = categoryAnswers.length
-                                    const correct = categoryAnswers.filter(
-                                      a => a.answer === true
-                                    ).length
-                                    return total === 0
-                                      ? 0
-                                      : Math.round((correct / total) * 100)
+                                    return calculateBasicComplianceRate(categoryAnswers)
                                   }),
-                                  backgroundColor: 'rgba(53, 162, 235, 0.5)',
+                                  backgroundColor: 'rgba(53, 162, 235, 0.2)',
                                   borderColor: 'rgba(53, 162, 235, 1)',
                                   borderWidth: 2,
-                                  pointBackgroundColor: 'rgba(59, 162, 235, 50)',
+                                  pointBackgroundColor: 'rgba(53, 162, 235, 1)',
                                   pointBorderColor: '#ffffff',
                                   pointBorderWidth: 2,
                                   pointRadius: 6,
                                   pointHoverRadius: 8,
                                   pointHoverBackgroundColor: 'rgba(53, 162, 235, 1)',
+                                  pointHoverBorderColor: '#ffffff',
+                                  pointHoverBorderWidth: 3
+                                },
+                                {
+                                  label: '등급 반영 점수',
+                                  data: ['1', '2', '3', '4', '5'].map(id => {
+                                    const answers =
+                                      detailedResults[currentResult.id]?.answers || []
+                                    const categoryAnswers = answers.filter(a =>
+                                      a.questionId.startsWith(id + '.')
+                                    )
+                                    return calculateGradeBasedScore(categoryAnswers)
+                                  }),
+                                  backgroundColor: 'rgba(255, 99, 132, 0.2)',
+                                  borderColor: 'rgba(255, 99, 132, 1)',
+                                  borderWidth: 2,
+                                  pointBackgroundColor: 'rgba(255, 99, 132, 1)',
+                                  pointBorderColor: '#ffffff',
+                                  pointBorderWidth: 2,
+                                  pointRadius: 6,
+                                  pointHoverRadius: 8,
+                                  pointHoverBackgroundColor: 'rgba(255, 99, 132, 1)',
                                   pointHoverBorderColor: '#ffffff',
                                   pointHoverBorderWidth: 3
                                 }
@@ -815,7 +856,34 @@ export default function CSDDDDashboard() {
                                       return context[0].label
                                     },
                                     label: function (context) {
-                                      return `${context.dataset.label}: ${context.parsed.r}%`
+                                      const datasetLabel =
+                                        context.dataset.label || '알 수 없음'
+                                      const value = context.parsed.r
+                                      if (datasetLabel.includes('준수율')) {
+                                        return `${datasetLabel}: ${value}%`
+                                      } else {
+                                        return `${datasetLabel}: ${value}점`
+                                      }
+                                    },
+                                    afterBody: function (context) {
+                                      if (context.length === 2) {
+                                        const basic =
+                                          context.find(c =>
+                                            c.dataset.label?.includes('준수율')
+                                          )?.parsed.r || 0
+                                        const grade =
+                                          context.find(c =>
+                                            c.dataset.label?.includes('등급')
+                                          )?.parsed.r || 0
+                                        const diff = basic - grade
+                                        if (diff > 10) {
+                                          return [
+                                            ``,
+                                            `⚠️ 중대 위반으로 인한 점수 차이: ${diff}점`
+                                          ]
+                                        }
+                                      }
+                                      return []
                                     }
                                   }
                                 }
@@ -828,6 +896,29 @@ export default function CSDDDDashboard() {
                             }}
                           />
                         </div>
+                      </div>
+
+                      {/* 차트 설명 */}
+                      <div className="p-4 mt-1 border rounded-lg bg-gradient-to-r from-blue-50 to-red-50">
+                        <div className="flex items-start gap-3">
+                          <div className="flex items-center gap-2">
+                            <div className="w-4 h-4 bg-blue-500 rounded-full"></div>
+                            <span className="text-sm font-medium text-blue-700">
+                              기본 준수율
+                            </span>
+                          </div>
+                          <div className="flex items-center gap-2">
+                            <div className="w-4 h-4 bg-red-500 rounded-full"></div>
+                            <span className="text-sm font-medium text-red-700">
+                              등급 반영 점수
+                            </span>
+                          </div>
+                        </div>
+                        <p className="mt-2 text-xs text-gray-600">
+                          파란색 선과 빨간색 선의 차이가 클수록 중대 위반의 영향이 큰
+                          카테고리입니다. 등급 반영 점수는 각 문항의 criticalGrade를
+                          반영하여 실제 리스크를 나타냅니다.
+                        </p>
                       </div>
 
                       {/* 상세 점수 요약 삭제됨 */}
