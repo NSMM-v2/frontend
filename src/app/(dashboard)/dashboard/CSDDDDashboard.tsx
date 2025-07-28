@@ -40,6 +40,19 @@ import {
   InfoIcon
 } from 'lucide-react'
 
+import {
+  Chart as ChartJS,
+  RadialLinearScale,
+  PointElement,
+  LineElement,
+  Filler,
+  Tooltip,
+  Legend
+} from 'chart.js'
+import {Radar} from 'react-chartjs-2'
+
+ChartJS.register(RadialLinearScale, PointElement, LineElement, Filler, Tooltip, Legend)
+
 interface PartnerInfo {
   partnerId: number
   uuid: string
@@ -605,8 +618,8 @@ export default function CSDDDDashboard() {
             </div>
           </Card>
 
-          <Card className="w-[70%] h-full bg-white rounded-lg p-4 flex flex-col">
-            <CardHeader className="flex flex-row items-center gap-4 p-0 pb-4 border-b border-gray-100">
+          <Card className="w-[70%] h-full bg-white rounded-lg p-4 flex flex-col overflow-hidden">
+            <CardHeader className="flex flex-row items-center flex-shrink-0 gap-4 p-0 pb-4 border-b border-gray-100">
               <div className="flex items-center flex-1">
                 <CardTitle className="flex items-center gap-3 text-2xl font-bold">
                   {currentResult && (
@@ -642,7 +655,7 @@ export default function CSDDDDashboard() {
                 )}
               </div>
             </CardHeader>
-            <CardContent className="flex flex-col gap-4 p-4">
+            <CardContent className="flex flex-col flex-1 gap-4 p-4 overflow-y-auto custom-scrollbar allow-scroll">
               {selectedPartner && currentResult ? (
                 <>
                   <div className="flex flex-row justify-between w-full gap-4">
@@ -684,122 +697,143 @@ export default function CSDDDDashboard() {
                     </div>
                   </div>
 
-                  <div className="border rounded-lg">
-                    <div className="flex items-center justify-between p-3 border-b bg-gradient-to-br from-blue-50 to-white">
-                      <h3 className="font-bold text-gray-600">위반 항목 상세</h3>
-                    </div>
-
-                    <div className="p-2">
-                      {/* 카테고리 그리드 */}
-                      <div className="grid grid-cols-3 gap-3 mb-3">
-                        {getCategoryInfo()
-                          .slice(0, 3)
-                          .map(category => {
-                            const IconComponent = category.icon
-                            const hasViolations = category.violations.length > 0
-
-                            return (
-                              <div
-                                key={category.id}
-                                onClick={() => handleCategoryClick(category.id)}
-                                className={`
-                              relative p-4 min-h-[120px] rounded-lg border-2 cursor-pointer transition-all duration-200 hover:shadow-sm
-                              ${
-                                hasViolations
-                                  ? 'bg-red-50 border-red-300 hover:bg-red-100'
-                                  : 'bg-green-50 border-green-300 hover:bg-green-100'
+                  {currentResult && detailedResults[currentResult.id] && (
+                    <div className="p-4 mt-1 bg-white border border-gray-200 shadow-sm rounded-xl">
+                      {/* 차트 컨테이너 */}
+                      <div className="overflow-x-auto">
+                        <div className="min-w-[500px] max-w-[700px] w-full h-[400px] mx-auto">
+                          <Radar
+                            style={{width: '100%', height: '100%'}}
+                            data={{
+                              labels: [
+                                '인권 및 노동',
+                                '산업안전 및 보건',
+                                '환경 경영',
+                                '공급망 및 조달',
+                                '윤리경영 및 정보보호'
+                              ],
+                              datasets: [
+                                {
+                                  label: '현재 준수율',
+                                  data: ['1', '2', '3', '4', '5'].map(id => {
+                                    const answers =
+                                      detailedResults[currentResult.id]?.answers || []
+                                    const categoryAnswers = answers.filter(a =>
+                                      a.questionId.startsWith(id + '.')
+                                    )
+                                    const total = categoryAnswers.length
+                                    const correct = categoryAnswers.filter(
+                                      a => a.answer === true
+                                    ).length
+                                    return total === 0
+                                      ? 0
+                                      : Math.round((correct / total) * 100)
+                                  }),
+                                  backgroundColor: 'rgba(59, 130, 246, 0.15)',
+                                  borderColor: 'rgba(59, 130, 246, 0.8)',
+                                  borderWidth: 2,
+                                  pointBackgroundColor: 'rgba(59, 130, 246, 1)',
+                                  pointBorderColor: '#ffffff',
+                                  pointBorderWidth: 2,
+                                  pointRadius: 6,
+                                  pointHoverRadius: 8,
+                                  pointHoverBackgroundColor: 'rgba(59, 130, 246, 1)',
+                                  pointHoverBorderColor: '#ffffff',
+                                  pointHoverBorderWidth: 3
+                                }
+                              ]
+                            }}
+                            options={{
+                              responsive: true,
+                              maintainAspectRatio: false,
+                              interaction: {
+                                intersect: false,
+                                mode: 'point'
+                              },
+                              scales: {
+                                r: {
+                                  min: 0,
+                                  max: 100,
+                                  beginAtZero: true,
+                                  angleLines: {
+                                    display: true,
+                                    color: 'rgba(0, 0, 0, 0.1)',
+                                    lineWidth: 1
+                                  },
+                                  grid: {
+                                    display: true,
+                                    color: 'rgba(0, 0, 0, 0.1)',
+                                    lineWidth: 1
+                                  },
+                                  pointLabels: {
+                                    font: {
+                                      size: 13,
+                                      weight: 600
+                                    },
+                                    color: '#374151',
+                                    padding: 20
+                                  },
+                                  ticks: {
+                                    display: true,
+                                    stepSize: 20,
+                                    color: '#9CA3AF',
+                                    font: {
+                                      size: 11
+                                    },
+                                    backdropColor: 'rgba(255, 255, 255, 0.8)',
+                                    backdropPadding: 4,
+                                    callback: function (value) {
+                                      return value + '%'
+                                    }
+                                  }
+                                }
+                              },
+                              plugins: {
+                                legend: {
+                                  display: true,
+                                  position: 'bottom',
+                                  labels: {
+                                    padding: 20,
+                                    font: {
+                                      size: 13,
+                                      weight: 500
+                                    },
+                                    color: '#374151',
+                                    usePointStyle: true,
+                                    pointStyle: 'circle'
+                                  }
+                                },
+                                tooltip: {
+                                  enabled: true,
+                                  backgroundColor: 'rgba(0, 0, 0, 0.8)',
+                                  titleColor: '#ffffff',
+                                  bodyColor: '#ffffff',
+                                  cornerRadius: 8,
+                                  padding: 12,
+                                  displayColors: true,
+                                  callbacks: {
+                                    title: function (context) {
+                                      return context[0].label
+                                    },
+                                    label: function (context) {
+                                      return `${context.dataset.label}: ${context.parsed.r}%`
+                                    }
+                                  }
+                                }
+                              },
+                              elements: {
+                                line: {
+                                  tension: 0
+                                }
                               }
-                            `}>
-                                <div className="flex items-center justify-between mb-2">
-                                  <div className="flex items-center gap-2">
-                                    <IconComponent
-                                      className={`w-5 h-5 ${
-                                        hasViolations ? 'text-red-600' : 'text-green-600'
-                                      }`}
-                                    />
-                                    <h4
-                                      className={`font-medium text-sm ${
-                                        hasViolations ? 'text-red-800' : 'text-green-800'
-                                      }`}>
-                                      {category.name}
-                                    </h4>
-                                  </div>
-                                  <ChevronRight
-                                    className={`w-4 h-4 ${
-                                      hasViolations ? 'text-red-400' : 'text-green-400'
-                                    }`}
-                                  />
-                                </div>
-                                <div className="absolute flex items-center gap-2 bottom-3 left-4">
-                                  <span
-                                    className={`text-xs ${
-                                      hasViolations ? 'text-red-600' : 'text-green-600'
-                                    }`}>
-                                    {hasViolations
-                                      ? `${category.violations.length}건 위반`
-                                      : '준수'}
-                                  </span>
-                                </div>
-                              </div>
-                            )
-                          })}
+                            }}
+                          />
+                        </div>
                       </div>
 
-                      <div className="grid grid-cols-3 gap-2">
-                        {getCategoryInfo()
-                          .slice(3, 5)
-                          .map(category => {
-                            const IconComponent = category.icon
-                            const hasViolations = category.violations.length > 0
-
-                            return (
-                              <div
-                                key={category.id}
-                                onClick={() => handleCategoryClick(category.id)}
-                                className={`
-                              relative p-4 min-h-[120px] rounded-lg border-2 cursor-pointer transition-all duration-200 hover:shadow-sm
-                              ${
-                                hasViolations
-                                  ? 'bg-red-50 border-red-300 hover:bg-red-100'
-                                  : 'bg-green-50 border-green-300 hover:bg-green-100'
-                              }
-                            `}>
-                                <div className="flex items-center justify-between mb-2">
-                                  <div className="flex items-center gap-2">
-                                    <IconComponent
-                                      className={`w-5 h-5 ${
-                                        hasViolations ? 'text-red-600' : 'text-green-600'
-                                      }`}
-                                    />
-                                    <h4
-                                      className={`font-medium text-sm ${
-                                        hasViolations ? 'text-red-800' : 'text-green-800'
-                                      }`}>
-                                      {category.name}
-                                    </h4>
-                                  </div>
-                                  <ChevronRight
-                                    className={`w-4 h-4 ${
-                                      hasViolations ? 'text-red-400' : 'text-green-400'
-                                    }`}
-                                  />
-                                </div>
-                                <div className="absolute flex items-center gap-2 bottom-3 left-4">
-                                  <span
-                                    className={`text-xs ${
-                                      hasViolations ? 'text-red-600' : 'text-green-600'
-                                    }`}>
-                                    {hasViolations
-                                      ? `${category.violations.length}건 위반`
-                                      : '준수'}
-                                  </span>
-                                </div>
-                              </div>
-                            )
-                          })}
-                      </div>
+                      {/* 상세 점수 요약 삭제됨 */}
                     </div>
-                  </div>
+                  )}
                 </>
               ) : (
                 <div className="flex flex-col items-center justify-center h-full py-24 text-gray-400">
