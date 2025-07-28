@@ -33,7 +33,6 @@ import {
   Leaf,
   Package,
   ShieldCheck,
-  ChevronRight,
   AlertCircle,
   AlertOctagon,
   Scale,
@@ -729,15 +728,15 @@ export default function CSDDDDashboard() {
                                       ? 0
                                       : Math.round((correct / total) * 100)
                                   }),
-                                  backgroundColor: 'rgba(59, 130, 246, 0.15)',
-                                  borderColor: 'rgba(59, 130, 246, 0.8)',
+                                  backgroundColor: 'rgba(53, 162, 235, 0.5)',
+                                  borderColor: 'rgba(53, 162, 235, 1)',
                                   borderWidth: 2,
-                                  pointBackgroundColor: 'rgba(59, 130, 246, 1)',
+                                  pointBackgroundColor: 'rgba(59, 162, 235, 50)',
                                   pointBorderColor: '#ffffff',
                                   pointBorderWidth: 2,
                                   pointRadius: 6,
                                   pointHoverRadius: 8,
-                                  pointHoverBackgroundColor: 'rgba(59, 130, 246, 1)',
+                                  pointHoverBackgroundColor: 'rgba(53, 162, 235, 1)',
                                   pointHoverBorderColor: '#ffffff',
                                   pointHoverBorderWidth: 3
                                 }
