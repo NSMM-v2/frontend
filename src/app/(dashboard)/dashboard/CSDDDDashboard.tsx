@@ -12,6 +12,7 @@ import type {
   SelfAssessmentResponse,
   PaginatedSelfAssessmentResponse
 } from '@/types/csdddType'
+import {questions} from '@/app/(dashboard)/CSDDD/self-assessment/selfAssessmentForm'
 import {Card, CardContent, CardHeader, CardTitle} from '@/components/ui/card'
 
 import {Badge} from '@/components/ui/badge'
@@ -356,26 +357,31 @@ export default function CSDDDDashboard() {
     return categoryNames[categoryId] || `카테고리 ${categoryId}`
   }
 
-  // 등급 기반 점수 계산 함수
+  // 등급 기반 점수 계산 함수 (카테고리별 최저 등급 기준)
   const calculateGradeBasedScore = (categoryAnswers: any[]) => {
     const gradePoints = {A: 100, B: 80, C: 60, D: 40}
-    let totalPoints = 0
-    let count = 0
+    const gradeOrder = ['A', 'B', 'C', 'D'] // 등급 순서 (A가 최고, D가 최저)
+
+    let lowestGrade = 'A' // 기본값은 A등급
 
     categoryAnswers.forEach(answer => {
-      if (answer.answer) {
-        // 정답인 경우에도 criticalGrade가 있으면 그것을 반영
-        const grade = answer.criticalGrade || 'A'
-        totalPoints += gradePoints[grade as keyof typeof gradePoints] || 100
-      } else {
-        // 오답인 경우 criticalGrade 또는 기본 0점
-        const grade = answer.criticalGrade || 'D'
-        totalPoints += gradePoints[grade as keyof typeof gradePoints] || 0
+      // 해당 질문의 criticalViolation 정보 찾기
+      const question = questions.find(q => q.id === answer.questionId)
+
+      if (answer.answer === false) {
+        // 오답인 경우에만 등급 확인
+        if (question?.criticalViolation) {
+          const grade = question.criticalViolation.grade
+          // 현재 등급이 기존 최저 등급보다 낮으면 업데이트
+          if (gradeOrder.indexOf(grade) > gradeOrder.indexOf(lowestGrade)) {
+            lowestGrade = grade
+          }
+        }
+        // criticalViolation이 없는 일반 위반은 등급에 영향 없음 (A등급 유지)
       }
-      count++
     })
 
-    return count > 0 ? Math.round(totalPoints / count) : 0
+    return gradePoints[lowestGrade as keyof typeof gradePoints] || 100
   }
 
   // 기본 준수율 계산 함수 (기존 방식)
@@ -876,12 +882,63 @@ export default function CSDDDDashboard() {
                                             c.dataset.label?.includes('등급')
                                           )?.parsed.r || 0
                                         const diff = basic - grade
+
+                                        // 카테고리별 중대 위반 항목 찾기
+                                        const categoryId = String(
+                                          context[0].dataIndex + 1
+                                        )
+                                        const answers =
+                                          detailedResults[currentResult.id]?.answers || []
+                                        const categoryAnswers = answers.filter(a =>
+                                          a.questionId.startsWith(categoryId + '.')
+                                        )
+                                        const criticalViolations = categoryAnswers.filter(
+                                          answer => {
+                                            const question = questions.find(
+                                              q => q.id === answer.questionId
+                                            )
+                                            return (
+                                              answer.answer === false &&
+                                              question?.criticalViolation
+                                            )
+                                          }
+                                        )
+
+                                        const result = []
                                         if (diff > 10) {
-                                          return [
-                                            ``,
+                                          result.push(
+                                            '',
                                             `⚠️ 중대 위반으로 인한 점수 차이: ${diff}점`
-                                          ]
+                                          )
                                         }
+
+                                        if (criticalViolations.length > 0) {
+                                          result.push(
+                                            '',
+                                            `🚨 중대 위반 항목: ${criticalViolations.length}건`
+                                          )
+                                          criticalViolations
+                                            .slice(0, 3)
+                                            .forEach(violation => {
+                                              const question = questions.find(
+                                                q => q.id === violation.questionId
+                                              )
+                                              if (question?.criticalViolation) {
+                                                result.push(
+                                                  `   • ${violation.questionId}: ${question.criticalViolation.grade}등급`
+                                                )
+                                              }
+                                            })
+                                          if (criticalViolations.length > 3) {
+                                            result.push(
+                                              `   • 외 ${
+                                                criticalViolations.length - 3
+                                              }건...`
+                                            )
+                                          }
+                                        }
+
+                                        return result
                                       }
                                       return []
                                     }
@@ -915,9 +972,15 @@ export default function CSDDDDashboard() {
                           </div>
                         </div>
                         <p className="mt-2 text-xs text-gray-600">
-                          파란색 선과 빨간색 선의 차이가 클수록 중대 위반의 영향이 큰
-                          카테고리입니다. 등급 반영 점수는 각 문항의 criticalGrade를
-                          반영하여 실제 리스크를 나타냅니다.
+                          <strong>파란색 선(기본 준수율)</strong>: 단순 정답률 기준 <br />
+                          <strong>빨간색 선(등급 반영 점수)</strong>: 카테고리별 최저
+                          중대위반 등급에 따른 점수 적용 <br />
+                          <span className="py-1 text-xs bg-gray-100 rounded ">
+                            A등급=100점, B등급=80점, C등급=60점, D등급=40점
+                          </span>
+                          <br />
+                          중대위반이 1개라도 있으면 해당 카테고리 전체가 해당 등급 점수로
+                          결정됩니다.
                         </p>
                       </div>
 

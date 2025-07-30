@@ -134,8 +134,8 @@ export interface ScopeEmissionUpdateRequest {
   unit?: string
   emissionFactor?: number
   totalEmission?: number
-  reportingYear?: number // 선택적 필드 (백엔드에서 @NotNull 잘못 적용됨)
-  reportingMonth?: number // 선택적 필드 (백엔드에서 @NotNull 잘못 적용됨)
+  reportingYear?: number // 선택적 필드 (null이면 업데이트하지 않음)
+  reportingMonth?: number // 선택적 필드 (null이면 업데이트하지 않음)
 }
 
 /**
